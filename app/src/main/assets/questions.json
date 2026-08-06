@@ -1,0 +1,4526 @@
+{
+  "Web Development": {
+    "Genesis Core": [
+      {
+        "question": "Thẻ HTML nào dùng để tạo tiêu đề lớn nhất?",
+        "options": [
+          "<header>",
+          "<h6>",
+          "<h1>",
+          "<title>"
+        ],
+        "correctAnswer": "2"
+      },
+      {
+        "question": "Thuộc tính nào chỉ định đường dẫn hình ảnh trong thẻ <img>?",
+        "options": [
+          "src",
+          "link",
+          "url",
+          "href"
+        ],
+        "correctAnswer": "0"
+      },
+      {
+        "question": "Ý nghĩa của thẻ <ul> trong HTML là gì?",
+        "options": [
+          "Danh sách có thứ tự",
+          "Đoạn văn bản",
+          "Gạch chân văn bản",
+          "Danh sách không thứ tự"
+        ],
+        "correctAnswer": "3"
+      },
+      {
+        "question": "Làm thế nào để tạo một liên kết (hyperlink) trong HTML?",
+        "options": [
+          "<link>",
+          "<a>",
+          "<url>",
+          "<href>"
+        ],
+        "correctAnswer": "1"
+      },
+      {
+        "question": "Thẻ nào được sử dụng để tạo một bảng dữ liệu?",
+        "options": [
+          "<tbody>",
+          "<table>",
+          "<list>",
+          "<grid>"
+        ],
+        "correctAnswer": "1"
+      },
+      {
+        "question": "Thuộc tính nào dùng để gán định danh duy nhất cho một phần tử?",
+        "options": [
+          "id",
+          "name",
+          "style",
+          "class"
+        ],
+        "correctAnswer": "0"
+      },
+      {
+        "question": "Thẻ <head> chứa thông tin gì?",
+        "options": [
+          "Chân trang",
+          "Mã JavaScript chính",
+          "Siêu dữ liệu (metadata)",
+          "Nội dung hiển thị"
+        ],
+        "correctAnswer": "2"
+      },
+      {
+        "question": "Phiên bản mới nhất của HTML hiện nay là gì?",
+        "options": [
+          "HTML4",
+          "XHTML",
+          "HTML5",
+          "HTML6"
+        ],
+        "correctAnswer": "2"
+      },
+      {
+        "question": "Để tạo một ô nhập liệu (input), ta dùng thẻ nào?",
+        "options": [
+          "<input>",
+          "<textfield>",
+          "<text>",
+          "<form>"
+        ],
+        "correctAnswer": "0"
+      },
+      {
+        "question": "Làm sao để tạo chữ in nghiêng trong HTML?",
+        "options": [
+          "<italic>",
+          "<u>",
+          "<b> hoặc <strong>",
+          "<i> hoặc <em>"
+        ],
+        "correctAnswer": "3"
+      },
+      {
+        "question": "Thẻ HTML nào dùng để tạo tiêu đề lớn nhất?",
+        "options": [
+          "<header>",
+          "<h6>",
+          "<title>",
+          "<h1>"
+        ],
+        "correctAnswer": "3"
+      },
+      {
+        "question": "Thuộc tính nào chỉ định đường dẫn hình ảnh trong thẻ <img>?",
+        "options": [
+          "href",
+          "link",
+          "url",
+          "src"
+        ],
+        "correctAnswer": "3"
+      },
+      {
+        "question": "Ý nghĩa của thẻ <ul> trong HTML là gì?",
+        "options": [
+          "Gạch chân văn bản",
+          "Danh sách không thứ tự",
+          "Danh sách có thứ tự",
+          "Đoạn văn bản"
+        ],
+        "correctAnswer": "1"
+      },
+      {
+        "question": "Làm thế nào để tạo một liên kết (hyperlink) trong HTML?",
+        "options": [
+          "<link>",
+          "<href>",
+          "<url>",
+          "<a>"
+        ],
+        "correctAnswer": "3"
+      },
+      {
+        "question": "Thẻ nào được sử dụng để tạo một bảng dữ liệu?",
+        "options": [
+          "<tbody>",
+          "<grid>",
+          "<table>",
+          "<list>"
+        ],
+        "correctAnswer": "2"
+      },
+      {
+        "question": "Thuộc tính nào dùng để gán định danh duy nhất cho một phần tử?",
+        "options": [
+          "class",
+          "name",
+          "id",
+          "style"
+        ],
+        "correctAnswer": "2"
+      },
+      {
+        "question": "Thẻ <head> chứa thông tin gì?",
+        "options": [
+          "Nội dung hiển thị",
+          "Mã JavaScript chính",
+          "Chân trang",
+          "Siêu dữ liệu (metadata)"
+        ],
+        "correctAnswer": "3"
+      },
+      {
+        "question": "Phiên bản mới nhất của HTML hiện nay là gì?",
+        "options": [
+          "HTML5",
+          "HTML6",
+          "XHTML",
+          "HTML4"
+        ],
+        "correctAnswer": "0"
+      },
+      {
+        "question": "Để tạo một ô nhập liệu (input), ta dùng thẻ nào?",
+        "options": [
+          "<textfield>",
+          "<text>",
+          "<form>",
+          "<input>"
+        ],
+        "correctAnswer": "3"
+      },
+      {
+        "question": "Làm sao để tạo chữ in nghiêng trong HTML?",
+        "options": [
+          "<italic>",
+          "<u>",
+          "<i> hoặc <em>",
+          "<b> hoặc <strong>"
+        ],
+        "correctAnswer": "2"
+      },
+      {
+        "question": "Thẻ HTML nào dùng để tạo tiêu đề lớn nhất?",
+        "options": [
+          "<title>",
+          "<h1>",
+          "<h6>",
+          "<header>"
+        ],
+        "correctAnswer": "1"
+      },
+      {
+        "question": "Thuộc tính nào chỉ định đường dẫn hình ảnh trong thẻ <img>?",
+        "options": [
+          "src",
+          "url",
+          "link",
+          "href"
+        ],
+        "correctAnswer": "0"
+      },
+      {
+        "question": "Ý nghĩa của thẻ <ul> trong HTML là gì?",
+        "options": [
+          "Danh sách có thứ tự",
+          "Đoạn văn bản",
+          "Danh sách không thứ tự",
+          "Gạch chân văn bản"
+        ],
+        "correctAnswer": "2"
+      },
+      {
+        "question": "Làm thế nào để tạo một liên kết (hyperlink) trong HTML?",
+        "options": [
+          "<a>",
+          "<href>",
+          "<link>",
+          "<url>"
+        ],
+        "correctAnswer": "0"
+      },
+      {
+        "question": "Thẻ nào được sử dụng để tạo một bảng dữ liệu?",
+        "options": [
+          "<list>",
+          "<grid>",
+          "<table>",
+          "<tbody>"
+        ],
+        "correctAnswer": "2"
+      },
+      {
+        "question": "Thuộc tính nào dùng để gán định danh duy nhất cho một phần tử?",
+        "options": [
+          "id",
+          "style",
+          "class",
+          "name"
+        ],
+        "correctAnswer": "0"
+      },
+      {
+        "question": "Thẻ <head> chứa thông tin gì?",
+        "options": [
+          "Mã JavaScript chính",
+          "Chân trang",
+          "Nội dung hiển thị",
+          "Siêu dữ liệu (metadata)"
+        ],
+        "correctAnswer": "3"
+      },
+      {
+        "question": "Phiên bản mới nhất của HTML hiện nay là gì?",
+        "options": [
+          "HTML6",
+          "HTML4",
+          "XHTML",
+          "HTML5"
+        ],
+        "correctAnswer": "3"
+      },
+      {
+        "question": "Để tạo một ô nhập liệu (input), ta dùng thẻ nào?",
+        "options": [
+          "<text>",
+          "<input>",
+          "<textfield>",
+          "<form>"
+        ],
+        "correctAnswer": "1"
+      },
+      {
+        "question": "Làm sao để tạo chữ in nghiêng trong HTML?",
+        "options": [
+          "<b> hoặc <strong>",
+          "<italic>",
+          "<u>",
+          "<i> hoặc <em>"
+        ],
+        "correctAnswer": "3"
+      },
+      {
+        "question": "Thẻ HTML nào dùng để tạo tiêu đề lớn nhất?",
+        "options": [
+          "<h6>",
+          "<title>",
+          "<header>",
+          "<h1>"
+        ],
+        "correctAnswer": "3"
+      },
+      {
+        "question": "Thuộc tính nào chỉ định đường dẫn hình ảnh trong thẻ <img>?",
+        "options": [
+          "url",
+          "href",
+          "src",
+          "link"
+        ],
+        "correctAnswer": "2"
+      },
+      {
+        "question": "Ý nghĩa của thẻ <ul> trong HTML là gì?",
+        "options": [
+          "Đoạn văn bản",
+          "Gạch chân văn bản",
+          "Danh sách có thứ tự",
+          "Danh sách không thứ tự"
+        ],
+        "correctAnswer": "3"
+      },
+      {
+        "question": "Làm thế nào để tạo một liên kết (hyperlink) trong HTML?",
+        "options": [
+          "<a>",
+          "<href>",
+          "<link>",
+          "<url>"
+        ],
+        "correctAnswer": "0"
+      },
+      {
+        "question": "Thẻ nào được sử dụng để tạo một bảng dữ liệu?",
+        "options": [
+          "<list>",
+          "<table>",
+          "<tbody>",
+          "<grid>"
+        ],
+        "correctAnswer": "1"
+      },
+      {
+        "question": "Thuộc tính nào dùng để gán định danh duy nhất cho một phần tử?",
+        "options": [
+          "style",
+          "id",
+          "class",
+          "name"
+        ],
+        "correctAnswer": "1"
+      },
+      {
+        "question": "Thẻ <head> chứa thông tin gì?",
+        "options": [
+          "Siêu dữ liệu (metadata)",
+          "Chân trang",
+          "Mã JavaScript chính",
+          "Nội dung hiển thị"
+        ],
+        "correctAnswer": "0"
+      },
+      {
+        "question": "Phiên bản mới nhất của HTML hiện nay là gì?",
+        "options": [
+          "XHTML",
+          "HTML5",
+          "HTML4",
+          "HTML6"
+        ],
+        "correctAnswer": "1"
+      },
+      {
+        "question": "Để tạo một ô nhập liệu (input), ta dùng thẻ nào?",
+        "options": [
+          "<input>",
+          "<textfield>",
+          "<text>",
+          "<form>"
+        ],
+        "correctAnswer": "0"
+      },
+      {
+        "question": "Làm sao để tạo chữ in nghiêng trong HTML?",
+        "options": [
+          "<italic>",
+          "<i> hoặc <em>",
+          "<b> hoặc <strong>",
+          "<u>"
+        ],
+        "correctAnswer": "1"
+      },
+      {
+        "question": "Thẻ HTML nào dùng để tạo tiêu đề lớn nhất?",
+        "options": [
+          "<h1>",
+          "<h6>",
+          "<title>",
+          "<header>"
+        ],
+        "correctAnswer": "0"
+      },
+      {
+        "question": "Thuộc tính nào chỉ định đường dẫn hình ảnh trong thẻ <img>?",
+        "options": [
+          "url",
+          "href",
+          "src",
+          "link"
+        ],
+        "correctAnswer": "2"
+      },
+      {
+        "question": "Ý nghĩa của thẻ <ul> trong HTML là gì?",
+        "options": [
+          "Danh sách không thứ tự",
+          "Danh sách có thứ tự",
+          "Đoạn văn bản",
+          "Gạch chân văn bản"
+        ],
+        "correctAnswer": "0"
+      },
+      {
+        "question": "Làm thế nào để tạo một liên kết (hyperlink) trong HTML?",
+        "options": [
+          "<link>",
+          "<url>",
+          "<href>",
+          "<a>"
+        ],
+        "correctAnswer": "3"
+      },
+      {
+        "question": "Thẻ nào được sử dụng để tạo một bảng dữ liệu?",
+        "options": [
+          "<tbody>",
+          "<grid>",
+          "<table>",
+          "<list>"
+        ],
+        "correctAnswer": "2"
+      },
+      {
+        "question": "Thuộc tính nào dùng để gán định danh duy nhất cho một phần tử?",
+        "options": [
+          "id",
+          "name",
+          "class",
+          "style"
+        ],
+        "correctAnswer": "0"
+      },
+      {
+        "question": "Thẻ <head> chứa thông tin gì?",
+        "options": [
+          "Mã JavaScript chính",
+          "Nội dung hiển thị",
+          "Siêu dữ liệu (metadata)",
+          "Chân trang"
+        ],
+        "correctAnswer": "2"
+      },
+      {
+        "question": "Phiên bản mới nhất của HTML hiện nay là gì?",
+        "options": [
+          "HTML5",
+          "XHTML",
+          "HTML4",
+          "HTML6"
+        ],
+        "correctAnswer": "0"
+      },
+      {
+        "question": "Để tạo một ô nhập liệu (input), ta dùng thẻ nào?",
+        "options": [
+          "<textfield>",
+          "<input>",
+          "<form>",
+          "<text>"
+        ],
+        "correctAnswer": "1"
+      },
+      {
+        "question": "Làm sao để tạo chữ in nghiêng trong HTML?",
+        "options": [
+          "<b> hoặc <strong>",
+          "<u>",
+          "<i> hoặc <em>",
+          "<italic>"
+        ],
+        "correctAnswer": "2"
+      }
+    ],
+    "Style Nebula": [
+      {
+        "question": "Thuộc tính CSS nào dùng để đổi màu chữ?",
+        "options": [
+          "bgcolor",
+          "font-color",
+          "text-color",
+          "color"
+        ],
+        "correctAnswer": "3"
+      },
+      {
+        "question": "Cách nào để viết CSS nội tuyến (inline)?",
+        "options": [
+          "Dùng thẻ <css>",
+          "Sử dụng tệp .css bên ngoài",
+          "Viết trong thẻ <style>",
+          "Thêm thuộc tính style=\"...\" vào thẻ HTML"
+        ],
+        "correctAnswer": "3"
+      },
+      {
+        "question": "Làm sao để xóa gạch chân của liên kết trong CSS?",
+        "options": [
+          "underline: none;",
+          "text-decoration: none;",
+          "text-style: none;",
+          "link-decoration: no;"
+        ],
+        "correctAnswer": "1"
+      },
+      {
+        "question": "Thuộc tính nào thay đổi màu nền của một phần tử?",
+        "options": [
+          "bgcolor",
+          "background-color",
+          "background",
+          "color"
+        ],
+        "correctAnswer": "1"
+      },
+      {
+        "question": "Flexbox được kích hoạt bằng thuộc tính nào?",
+        "options": [
+          "display: inline;",
+          "display: flex;",
+          "display: block;",
+          "display: grid;"
+        ],
+        "correctAnswer": "1"
+      },
+      {
+        "question": "Đơn vị nào trong CSS có kích thước tương đối theo kích thước chữ của phần tử gốc (root)?",
+        "options": [
+          "rem",
+          "em",
+          "px",
+          "%"
+        ],
+        "correctAnswer": "0"
+      },
+      {
+        "question": "Thuộc tính nào tạo khoảng cách bên TRONG (giữa nội dung và viền) của một phần tử?",
+        "options": [
+          "margin",
+          "spacing",
+          "border",
+          "padding"
+        ],
+        "correctAnswer": "3"
+      },
+      {
+        "question": "Thuộc tính nào tạo khoảng cách bên NGOÀI (giữa phần tử này và phần tử khác)?",
+        "options": [
+          "padding",
+          "border",
+          "margin",
+          "spacing"
+        ],
+        "correctAnswer": "2"
+      },
+      {
+        "question": "Làm thế nào để làm cho một phần tử trong suốt 50%?",
+        "options": [
+          "transparent: 50%;",
+          "opacity: 0.5;",
+          "alpha: 0.5;",
+          "visibility: 0.5;"
+        ],
+        "correctAnswer": "1"
+      },
+      {
+        "question": "Giá trị nào của position giúp phần tử cố định trên màn hình khi cuộn?",
+        "options": [
+          "fixed",
+          "relative",
+          "sticky",
+          "absolute"
+        ],
+        "correctAnswer": "0"
+      },
+      {
+        "question": "Thuộc tính CSS nào dùng để đổi màu chữ?",
+        "options": [
+          "font-color",
+          "bgcolor",
+          "color",
+          "text-color"
+        ],
+        "correctAnswer": "2"
+      },
+      {
+        "question": "Cách nào để viết CSS nội tuyến (inline)?",
+        "options": [
+          "Viết trong thẻ <style>",
+          "Dùng thẻ <css>",
+          "Sử dụng tệp .css bên ngoài",
+          "Thêm thuộc tính style=\"...\" vào thẻ HTML"
+        ],
+        "correctAnswer": "3"
+      },
+      {
+        "question": "Làm sao để xóa gạch chân của liên kết trong CSS?",
+        "options": [
+          "text-style: none;",
+          "underline: none;",
+          "text-decoration: none;",
+          "link-decoration: no;"
+        ],
+        "correctAnswer": "2"
+      },
+      {
+        "question": "Thuộc tính nào thay đổi màu nền của một phần tử?",
+        "options": [
+          "background",
+          "bgcolor",
+          "background-color",
+          "color"
+        ],
+        "correctAnswer": "2"
+      },
+      {
+        "question": "Flexbox được kích hoạt bằng thuộc tính nào?",
+        "options": [
+          "display: inline;",
+          "display: block;",
+          "display: grid;",
+          "display: flex;"
+        ],
+        "correctAnswer": "3"
+      },
+      {
+        "question": "Đơn vị nào trong CSS có kích thước tương đối theo kích thước chữ của phần tử gốc (root)?",
+        "options": [
+          "%",
+          "rem",
+          "px",
+          "em"
+        ],
+        "correctAnswer": "1"
+      },
+      {
+        "question": "Thuộc tính nào tạo khoảng cách bên TRONG (giữa nội dung và viền) của một phần tử?",
+        "options": [
+          "spacing",
+          "padding",
+          "margin",
+          "border"
+        ],
+        "correctAnswer": "1"
+      },
+      {
+        "question": "Thuộc tính nào tạo khoảng cách bên NGOÀI (giữa phần tử này và phần tử khác)?",
+        "options": [
+          "margin",
+          "spacing",
+          "border",
+          "padding"
+        ],
+        "correctAnswer": "0"
+      },
+      {
+        "question": "Làm thế nào để làm cho một phần tử trong suốt 50%?",
+        "options": [
+          "transparent: 50%;",
+          "visibility: 0.5;",
+          "alpha: 0.5;",
+          "opacity: 0.5;"
+        ],
+        "correctAnswer": "3"
+      },
+      {
+        "question": "Giá trị nào của position giúp phần tử cố định trên màn hình khi cuộn?",
+        "options": [
+          "fixed",
+          "relative",
+          "absolute",
+          "sticky"
+        ],
+        "correctAnswer": "0"
+      },
+      {
+        "question": "Thuộc tính CSS nào dùng để đổi màu chữ?",
+        "options": [
+          "bgcolor",
+          "text-color",
+          "font-color",
+          "color"
+        ],
+        "correctAnswer": "3"
+      },
+      {
+        "question": "Cách nào để viết CSS nội tuyến (inline)?",
+        "options": [
+          "Viết trong thẻ <style>",
+          "Thêm thuộc tính style=\"...\" vào thẻ HTML",
+          "Sử dụng tệp .css bên ngoài",
+          "Dùng thẻ <css>"
+        ],
+        "correctAnswer": "1"
+      },
+      {
+        "question": "Làm sao để xóa gạch chân của liên kết trong CSS?",
+        "options": [
+          "link-decoration: no;",
+          "text-style: none;",
+          "underline: none;",
+          "text-decoration: none;"
+        ],
+        "correctAnswer": "3"
+      },
+      {
+        "question": "Thuộc tính nào thay đổi màu nền của một phần tử?",
+        "options": [
+          "background-color",
+          "color",
+          "bgcolor",
+          "background"
+        ],
+        "correctAnswer": "0"
+      },
+      {
+        "question": "Flexbox được kích hoạt bằng thuộc tính nào?",
+        "options": [
+          "display: grid;",
+          "display: inline;",
+          "display: block;",
+          "display: flex;"
+        ],
+        "correctAnswer": "3"
+      },
+      {
+        "question": "Đơn vị nào trong CSS có kích thước tương đối theo kích thước chữ của phần tử gốc (root)?",
+        "options": [
+          "rem",
+          "em",
+          "%",
+          "px"
+        ],
+        "correctAnswer": "0"
+      },
+      {
+        "question": "Thuộc tính nào tạo khoảng cách bên TRONG (giữa nội dung và viền) của một phần tử?",
+        "options": [
+          "border",
+          "spacing",
+          "margin",
+          "padding"
+        ],
+        "correctAnswer": "3"
+      },
+      {
+        "question": "Thuộc tính nào tạo khoảng cách bên NGOÀI (giữa phần tử này và phần tử khác)?",
+        "options": [
+          "margin",
+          "border",
+          "spacing",
+          "padding"
+        ],
+        "correctAnswer": "0"
+      },
+      {
+        "question": "Làm thế nào để làm cho một phần tử trong suốt 50%?",
+        "options": [
+          "alpha: 0.5;",
+          "opacity: 0.5;",
+          "transparent: 50%;",
+          "visibility: 0.5;"
+        ],
+        "correctAnswer": "1"
+      },
+      {
+        "question": "Giá trị nào của position giúp phần tử cố định trên màn hình khi cuộn?",
+        "options": [
+          "sticky",
+          "fixed",
+          "absolute",
+          "relative"
+        ],
+        "correctAnswer": "1"
+      },
+      {
+        "question": "Thuộc tính CSS nào dùng để đổi màu chữ?",
+        "options": [
+          "font-color",
+          "text-color",
+          "color",
+          "bgcolor"
+        ],
+        "correctAnswer": "2"
+      },
+      {
+        "question": "Cách nào để viết CSS nội tuyến (inline)?",
+        "options": [
+          "Viết trong thẻ <style>",
+          "Sử dụng tệp .css bên ngoài",
+          "Thêm thuộc tính style=\"...\" vào thẻ HTML",
+          "Dùng thẻ <css>"
+        ],
+        "correctAnswer": "2"
+      },
+      {
+        "question": "Làm sao để xóa gạch chân của liên kết trong CSS?",
+        "options": [
+          "underline: none;",
+          "text-decoration: none;",
+          "link-decoration: no;",
+          "text-style: none;"
+        ],
+        "correctAnswer": "1"
+      },
+      {
+        "question": "Thuộc tính nào thay đổi màu nền của một phần tử?",
+        "options": [
+          "background-color",
+          "bgcolor",
+          "background",
+          "color"
+        ],
+        "correctAnswer": "0"
+      },
+      {
+        "question": "Flexbox được kích hoạt bằng thuộc tính nào?",
+        "options": [
+          "display: inline;",
+          "display: block;",
+          "display: grid;",
+          "display: flex;"
+        ],
+        "correctAnswer": "3"
+      },
+      {
+        "question": "Đơn vị nào trong CSS có kích thước tương đối theo kích thước chữ của phần tử gốc (root)?",
+        "options": [
+          "px",
+          "rem",
+          "%",
+          "em"
+        ],
+        "correctAnswer": "1"
+      },
+      {
+        "question": "Thuộc tính nào tạo khoảng cách bên TRONG (giữa nội dung và viền) của một phần tử?",
+        "options": [
+          "margin",
+          "border",
+          "padding",
+          "spacing"
+        ],
+        "correctAnswer": "2"
+      },
+      {
+        "question": "Thuộc tính nào tạo khoảng cách bên NGOÀI (giữa phần tử này và phần tử khác)?",
+        "options": [
+          "margin",
+          "padding",
+          "border",
+          "spacing"
+        ],
+        "correctAnswer": "0"
+      },
+      {
+        "question": "Làm thế nào để làm cho một phần tử trong suốt 50%?",
+        "options": [
+          "opacity: 0.5;",
+          "alpha: 0.5;",
+          "visibility: 0.5;",
+          "transparent: 50%;"
+        ],
+        "correctAnswer": "0"
+      },
+      {
+        "question": "Giá trị nào của position giúp phần tử cố định trên màn hình khi cuộn?",
+        "options": [
+          "relative",
+          "sticky",
+          "absolute",
+          "fixed"
+        ],
+        "correctAnswer": "3"
+      },
+      {
+        "question": "Thuộc tính CSS nào dùng để đổi màu chữ?",
+        "options": [
+          "font-color",
+          "color",
+          "text-color",
+          "bgcolor"
+        ],
+        "correctAnswer": "1"
+      },
+      {
+        "question": "Cách nào để viết CSS nội tuyến (inline)?",
+        "options": [
+          "Viết trong thẻ <style>",
+          "Sử dụng tệp .css bên ngoài",
+          "Thêm thuộc tính style=\"...\" vào thẻ HTML",
+          "Dùng thẻ <css>"
+        ],
+        "correctAnswer": "2"
+      },
+      {
+        "question": "Làm sao để xóa gạch chân của liên kết trong CSS?",
+        "options": [
+          "text-decoration: none;",
+          "link-decoration: no;",
+          "underline: none;",
+          "text-style: none;"
+        ],
+        "correctAnswer": "0"
+      },
+      {
+        "question": "Thuộc tính nào thay đổi màu nền của một phần tử?",
+        "options": [
+          "bgcolor",
+          "background-color",
+          "background",
+          "color"
+        ],
+        "correctAnswer": "1"
+      },
+      {
+        "question": "Flexbox được kích hoạt bằng thuộc tính nào?",
+        "options": [
+          "display: grid;",
+          "display: block;",
+          "display: flex;",
+          "display: inline;"
+        ],
+        "correctAnswer": "2"
+      },
+      {
+        "question": "Đơn vị nào trong CSS có kích thước tương đối theo kích thước chữ của phần tử gốc (root)?",
+        "options": [
+          "em",
+          "px",
+          "%",
+          "rem"
+        ],
+        "correctAnswer": "3"
+      },
+      {
+        "question": "Thuộc tính nào tạo khoảng cách bên TRONG (giữa nội dung và viền) của một phần tử?",
+        "options": [
+          "padding",
+          "margin",
+          "border",
+          "spacing"
+        ],
+        "correctAnswer": "0"
+      },
+      {
+        "question": "Thuộc tính nào tạo khoảng cách bên NGOÀI (giữa phần tử này và phần tử khác)?",
+        "options": [
+          "margin",
+          "spacing",
+          "border",
+          "padding"
+        ],
+        "correctAnswer": "0"
+      },
+      {
+        "question": "Làm thế nào để làm cho một phần tử trong suốt 50%?",
+        "options": [
+          "opacity: 0.5;",
+          "alpha: 0.5;",
+          "visibility: 0.5;",
+          "transparent: 50%;"
+        ],
+        "correctAnswer": "0"
+      },
+      {
+        "question": "Giá trị nào của position giúp phần tử cố định trên màn hình khi cuộn?",
+        "options": [
+          "fixed",
+          "absolute",
+          "relative",
+          "sticky"
+        ],
+        "correctAnswer": "0"
+      }
+    ],
+    "Logic Matrix": [
+      {
+        "question": "Khai báo biến nào không thể thay đổi giá trị sau khi gán trong JavaScript?",
+        "options": [
+          "static",
+          "var",
+          "let",
+          "const"
+        ],
+        "correctAnswer": "3"
+      },
+      {
+        "question": "Kiểu dữ liệu của `typeof 42` là gì?",
+        "options": [
+          "float",
+          "string",
+          "number",
+          "int"
+        ],
+        "correctAnswer": "2"
+      },
+      {
+        "question": "Phương thức nào dùng để in dữ liệu ra bảng điều khiển trình duyệt?",
+        "options": [
+          "console.log()",
+          "echo()",
+          "System.out.println()",
+          "print()"
+        ],
+        "correctAnswer": "0"
+      },
+      {
+        "question": "Làm sao để tạo một mảng rỗng trong JS?",
+        "options": [
+          "{}",
+          "[]",
+          "Array.empty()",
+          "new Array()"
+        ],
+        "correctAnswer": "1"
+      },
+      {
+        "question": "Đâu là cú pháp đúng của Arrow Function?",
+        "options": [
+          "() -> {}",
+          "() => {}",
+          "=> () {}",
+          "function() {}"
+        ],
+        "correctAnswer": "1"
+      },
+      {
+        "question": "Làm thế nào để thêm một phần tử vào cuối mảng?",
+        "options": [
+          "unshift()",
+          "shift()",
+          "push()",
+          "pop()"
+        ],
+        "correctAnswer": "2"
+      },
+      {
+        "question": "Hàm nào dùng để chuyển chuỗi thành số nguyên?",
+        "options": [
+          "parseInt()",
+          "toInteger()",
+          "parseFloat()",
+          "Number()"
+        ],
+        "correctAnswer": "0"
+      },
+      {
+        "question": "Kết quả của `\"2\" + 2` trong JavaScript là gì?",
+        "options": [
+          "\"22\"",
+          "4",
+          "Error",
+          "NaN"
+        ],
+        "correctAnswer": "0"
+      },
+      {
+        "question": "Từ khóa nào dùng để thoát khỏi vòng lặp?",
+        "options": [
+          "break",
+          "exit",
+          "return",
+          "continue"
+        ],
+        "correctAnswer": "0"
+      },
+      {
+        "question": "Đâu là cách so sánh bằng cả giá trị và kiểu dữ liệu?",
+        "options": [
+          "=",
+          "==",
+          "===",
+          "!="
+        ],
+        "correctAnswer": "2"
+      },
+      {
+        "question": "Khai báo biến nào không thể thay đổi giá trị sau khi gán trong JavaScript?",
+        "options": [
+          "const",
+          "var",
+          "static",
+          "let"
+        ],
+        "correctAnswer": "0"
+      },
+      {
+        "question": "Kiểu dữ liệu của `typeof 42` là gì?",
+        "options": [
+          "int",
+          "float",
+          "string",
+          "number"
+        ],
+        "correctAnswer": "3"
+      },
+      {
+        "question": "Phương thức nào dùng để in dữ liệu ra bảng điều khiển trình duyệt?",
+        "options": [
+          "print()",
+          "System.out.println()",
+          "console.log()",
+          "echo()"
+        ],
+        "correctAnswer": "2"
+      },
+      {
+        "question": "Làm sao để tạo một mảng rỗng trong JS?",
+        "options": [
+          "{}",
+          "Array.empty()",
+          "new Array()",
+          "[]"
+        ],
+        "correctAnswer": "3"
+      },
+      {
+        "question": "Đâu là cú pháp đúng của Arrow Function?",
+        "options": [
+          "function() {}",
+          "=> () {}",
+          "() -> {}",
+          "() => {}"
+        ],
+        "correctAnswer": "3"
+      },
+      {
+        "question": "Làm thế nào để thêm một phần tử vào cuối mảng?",
+        "options": [
+          "pop()",
+          "shift()",
+          "unshift()",
+          "push()"
+        ],
+        "correctAnswer": "3"
+      },
+      {
+        "question": "Hàm nào dùng để chuyển chuỗi thành số nguyên?",
+        "options": [
+          "parseInt()",
+          "toInteger()",
+          "parseFloat()",
+          "Number()"
+        ],
+        "correctAnswer": "0"
+      },
+      {
+        "question": "Kết quả của `\"2\" + 2` trong JavaScript là gì?",
+        "options": [
+          "\"22\"",
+          "4",
+          "NaN",
+          "Error"
+        ],
+        "correctAnswer": "0"
+      },
+      {
+        "question": "Từ khóa nào dùng để thoát khỏi vòng lặp?",
+        "options": [
+          "exit",
+          "continue",
+          "break",
+          "return"
+        ],
+        "correctAnswer": "2"
+      },
+      {
+        "question": "Đâu là cách so sánh bằng cả giá trị và kiểu dữ liệu?",
+        "options": [
+          "=",
+          "===",
+          "==",
+          "!="
+        ],
+        "correctAnswer": "1"
+      },
+      {
+        "question": "Khai báo biến nào không thể thay đổi giá trị sau khi gán trong JavaScript?",
+        "options": [
+          "let",
+          "static",
+          "const",
+          "var"
+        ],
+        "correctAnswer": "2"
+      },
+      {
+        "question": "Kiểu dữ liệu của `typeof 42` là gì?",
+        "options": [
+          "int",
+          "float",
+          "number",
+          "string"
+        ],
+        "correctAnswer": "2"
+      },
+      {
+        "question": "Phương thức nào dùng để in dữ liệu ra bảng điều khiển trình duyệt?",
+        "options": [
+          "console.log()",
+          "echo()",
+          "System.out.println()",
+          "print()"
+        ],
+        "correctAnswer": "0"
+      },
+      {
+        "question": "Làm sao để tạo một mảng rỗng trong JS?",
+        "options": [
+          "new Array()",
+          "Array.empty()",
+          "{}",
+          "[]"
+        ],
+        "correctAnswer": "3"
+      },
+      {
+        "question": "Đâu là cú pháp đúng của Arrow Function?",
+        "options": [
+          "=> () {}",
+          "() => {}",
+          "function() {}",
+          "() -> {}"
+        ],
+        "correctAnswer": "1"
+      },
+      {
+        "question": "Làm thế nào để thêm một phần tử vào cuối mảng?",
+        "options": [
+          "push()",
+          "shift()",
+          "unshift()",
+          "pop()"
+        ],
+        "correctAnswer": "0"
+      },
+      {
+        "question": "Hàm nào dùng để chuyển chuỗi thành số nguyên?",
+        "options": [
+          "toInteger()",
+          "parseFloat()",
+          "parseInt()",
+          "Number()"
+        ],
+        "correctAnswer": "2"
+      },
+      {
+        "question": "Kết quả của `\"2\" + 2` trong JavaScript là gì?",
+        "options": [
+          "4",
+          "Error",
+          "\"22\"",
+          "NaN"
+        ],
+        "correctAnswer": "2"
+      },
+      {
+        "question": "Từ khóa nào dùng để thoát khỏi vòng lặp?",
+        "options": [
+          "return",
+          "exit",
+          "continue",
+          "break"
+        ],
+        "correctAnswer": "3"
+      },
+      {
+        "question": "Đâu là cách so sánh bằng cả giá trị và kiểu dữ liệu?",
+        "options": [
+          "==",
+          "===",
+          "!=",
+          "="
+        ],
+        "correctAnswer": "1"
+      },
+      {
+        "question": "Khai báo biến nào không thể thay đổi giá trị sau khi gán trong JavaScript?",
+        "options": [
+          "let",
+          "const",
+          "static",
+          "var"
+        ],
+        "correctAnswer": "1"
+      },
+      {
+        "question": "Kiểu dữ liệu của `typeof 42` là gì?",
+        "options": [
+          "int",
+          "float",
+          "string",
+          "number"
+        ],
+        "correctAnswer": "3"
+      },
+      {
+        "question": "Phương thức nào dùng để in dữ liệu ra bảng điều khiển trình duyệt?",
+        "options": [
+          "print()",
+          "console.log()",
+          "echo()",
+          "System.out.println()"
+        ],
+        "correctAnswer": "1"
+      },
+      {
+        "question": "Làm sao để tạo một mảng rỗng trong JS?",
+        "options": [
+          "[]",
+          "new Array()",
+          "{}",
+          "Array.empty()"
+        ],
+        "correctAnswer": "0"
+      },
+      {
+        "question": "Đâu là cú pháp đúng của Arrow Function?",
+        "options": [
+          "=> () {}",
+          "function() {}",
+          "() => {}",
+          "() -> {}"
+        ],
+        "correctAnswer": "2"
+      },
+      {
+        "question": "Làm thế nào để thêm một phần tử vào cuối mảng?",
+        "options": [
+          "shift()",
+          "pop()",
+          "push()",
+          "unshift()"
+        ],
+        "correctAnswer": "2"
+      },
+      {
+        "question": "Hàm nào dùng để chuyển chuỗi thành số nguyên?",
+        "options": [
+          "Number()",
+          "parseFloat()",
+          "parseInt()",
+          "toInteger()"
+        ],
+        "correctAnswer": "2"
+      },
+      {
+        "question": "Kết quả của `\"2\" + 2` trong JavaScript là gì?",
+        "options": [
+          "\"22\"",
+          "NaN",
+          "Error",
+          "4"
+        ],
+        "correctAnswer": "0"
+      },
+      {
+        "question": "Từ khóa nào dùng để thoát khỏi vòng lặp?",
+        "options": [
+          "break",
+          "exit",
+          "continue",
+          "return"
+        ],
+        "correctAnswer": "0"
+      },
+      {
+        "question": "Đâu là cách so sánh bằng cả giá trị và kiểu dữ liệu?",
+        "options": [
+          "==",
+          "!=",
+          "=",
+          "==="
+        ],
+        "correctAnswer": "3"
+      },
+      {
+        "question": "Khai báo biến nào không thể thay đổi giá trị sau khi gán trong JavaScript?",
+        "options": [
+          "const",
+          "let",
+          "static",
+          "var"
+        ],
+        "correctAnswer": "0"
+      },
+      {
+        "question": "Kiểu dữ liệu của `typeof 42` là gì?",
+        "options": [
+          "string",
+          "int",
+          "float",
+          "number"
+        ],
+        "correctAnswer": "3"
+      },
+      {
+        "question": "Phương thức nào dùng để in dữ liệu ra bảng điều khiển trình duyệt?",
+        "options": [
+          "console.log()",
+          "print()",
+          "System.out.println()",
+          "echo()"
+        ],
+        "correctAnswer": "0"
+      },
+      {
+        "question": "Làm sao để tạo một mảng rỗng trong JS?",
+        "options": [
+          "Array.empty()",
+          "[]",
+          "{}",
+          "new Array()"
+        ],
+        "correctAnswer": "1"
+      },
+      {
+        "question": "Đâu là cú pháp đúng của Arrow Function?",
+        "options": [
+          "() => {}",
+          "=> () {}",
+          "function() {}",
+          "() -> {}"
+        ],
+        "correctAnswer": "0"
+      },
+      {
+        "question": "Làm thế nào để thêm một phần tử vào cuối mảng?",
+        "options": [
+          "unshift()",
+          "pop()",
+          "shift()",
+          "push()"
+        ],
+        "correctAnswer": "3"
+      },
+      {
+        "question": "Hàm nào dùng để chuyển chuỗi thành số nguyên?",
+        "options": [
+          "toInteger()",
+          "parseFloat()",
+          "parseInt()",
+          "Number()"
+        ],
+        "correctAnswer": "2"
+      },
+      {
+        "question": "Kết quả của `\"2\" + 2` trong JavaScript là gì?",
+        "options": [
+          "NaN",
+          "4",
+          "\"22\"",
+          "Error"
+        ],
+        "correctAnswer": "2"
+      },
+      {
+        "question": "Từ khóa nào dùng để thoát khỏi vòng lặp?",
+        "options": [
+          "continue",
+          "return",
+          "break",
+          "exit"
+        ],
+        "correctAnswer": "2"
+      },
+      {
+        "question": "Đâu là cách so sánh bằng cả giá trị và kiểu dữ liệu?",
+        "options": [
+          "!=",
+          "===",
+          "==",
+          "="
+        ],
+        "correctAnswer": "1"
+      }
+    ]
+  },
+  "Advanced Mathematics": {
+    "Algebra Domain": [
+      {
+        "question": "Nghiệm của phương trình 2x - 4 = 0 là gì?",
+        "options": [
+          "x = 0",
+          "x = -2",
+          "x = 2",
+          "x = 4"
+        ],
+        "correctAnswer": "2"
+      },
+      {
+        "question": "Định thức của ma trận đơn vị 2x2 bằng bao nhiêu?",
+        "options": [
+          "2",
+          "1",
+          "-1",
+          "0"
+        ],
+        "correctAnswer": "1"
+      },
+      {
+        "question": "Phương trình bậc hai ax^2 + bx + c = 0 có nghiệm kép khi nào?",
+        "options": [
+          "Delta > 0",
+          "Delta < 0",
+          "Delta = 0",
+          "a = 0"
+        ],
+        "correctAnswer": "2"
+      },
+      {
+        "question": "Hệ phương trình Cramer có nghiệm duy nhất khi nào?",
+        "options": [
+          "Định thức D = 0",
+          "Dy = 0",
+          "Dx = 0",
+          "Định thức D != 0"
+        ],
+        "correctAnswer": "3"
+      },
+      {
+        "question": "Ma trận khả nghịch khi và chỉ khi?",
+        "options": [
+          "Là ma trận vuông",
+          "Định thức bằng 0",
+          "Có các phần tử đường chéo bằng 1",
+          "Định thức khác 0"
+        ],
+        "correctAnswer": "3"
+      },
+      {
+        "question": "Logarit cơ số a của 1 bằng bao nhiêu?",
+        "options": [
+          "0",
+          "Không xác định",
+          "a",
+          "1"
+        ],
+        "correctAnswer": "0"
+      },
+      {
+        "question": "Đạo hàm của x^n là gì?",
+        "options": [
+          "n*x^n",
+          "x^(n+1)/(n+1)",
+          "1/x",
+          "n*x^(n-1)"
+        ],
+        "correctAnswer": "3"
+      },
+      {
+        "question": "Tính chất của ma trận đối xứng là gì?",
+        "options": [
+          "A^T = A^-1",
+          "A^T = A",
+          "A^T = -A",
+          "A^-1 = A"
+        ],
+        "correctAnswer": "1"
+      },
+      {
+        "question": "Một không gian vector phải thỏa mãn bao nhiêu tiên đề cơ bản?",
+        "options": [
+          "4",
+          "8",
+          "6",
+          "10"
+        ],
+        "correctAnswer": "1"
+      },
+      {
+        "question": "Tích vô hướng của hai vector vuông góc bằng bao nhiêu?",
+        "options": [
+          "-1",
+          "Tích độ dài của chúng",
+          "1",
+          "0"
+        ],
+        "correctAnswer": "3"
+      },
+      {
+        "question": "Nghiệm của phương trình 2x - 4 = 0 là gì?",
+        "options": [
+          "x = -2",
+          "x = 4",
+          "x = 2",
+          "x = 0"
+        ],
+        "correctAnswer": "2"
+      },
+      {
+        "question": "Định thức của ma trận đơn vị 2x2 bằng bao nhiêu?",
+        "options": [
+          "1",
+          "2",
+          "-1",
+          "0"
+        ],
+        "correctAnswer": "0"
+      },
+      {
+        "question": "Phương trình bậc hai ax^2 + bx + c = 0 có nghiệm kép khi nào?",
+        "options": [
+          "a = 0",
+          "Delta = 0",
+          "Delta > 0",
+          "Delta < 0"
+        ],
+        "correctAnswer": "1"
+      },
+      {
+        "question": "Hệ phương trình Cramer có nghiệm duy nhất khi nào?",
+        "options": [
+          "Dy = 0",
+          "Định thức D = 0",
+          "Định thức D != 0",
+          "Dx = 0"
+        ],
+        "correctAnswer": "2"
+      },
+      {
+        "question": "Ma trận khả nghịch khi và chỉ khi?",
+        "options": [
+          "Là ma trận vuông",
+          "Có các phần tử đường chéo bằng 1",
+          "Định thức bằng 0",
+          "Định thức khác 0"
+        ],
+        "correctAnswer": "3"
+      },
+      {
+        "question": "Logarit cơ số a của 1 bằng bao nhiêu?",
+        "options": [
+          "0",
+          "Không xác định",
+          "1",
+          "a"
+        ],
+        "correctAnswer": "0"
+      },
+      {
+        "question": "Đạo hàm của x^n là gì?",
+        "options": [
+          "n*x^n",
+          "1/x",
+          "x^(n+1)/(n+1)",
+          "n*x^(n-1)"
+        ],
+        "correctAnswer": "3"
+      },
+      {
+        "question": "Tính chất của ma trận đối xứng là gì?",
+        "options": [
+          "A^T = A^-1",
+          "A^T = A",
+          "A^T = -A",
+          "A^-1 = A"
+        ],
+        "correctAnswer": "1"
+      },
+      {
+        "question": "Một không gian vector phải thỏa mãn bao nhiêu tiên đề cơ bản?",
+        "options": [
+          "10",
+          "6",
+          "4",
+          "8"
+        ],
+        "correctAnswer": "3"
+      },
+      {
+        "question": "Tích vô hướng của hai vector vuông góc bằng bao nhiêu?",
+        "options": [
+          "-1",
+          "0",
+          "Tích độ dài của chúng",
+          "1"
+        ],
+        "correctAnswer": "1"
+      },
+      {
+        "question": "Nghiệm của phương trình 2x - 4 = 0 là gì?",
+        "options": [
+          "x = 0",
+          "x = 2",
+          "x = -2",
+          "x = 4"
+        ],
+        "correctAnswer": "1"
+      },
+      {
+        "question": "Định thức của ma trận đơn vị 2x2 bằng bao nhiêu?",
+        "options": [
+          "2",
+          "0",
+          "-1",
+          "1"
+        ],
+        "correctAnswer": "3"
+      },
+      {
+        "question": "Phương trình bậc hai ax^2 + bx + c = 0 có nghiệm kép khi nào?",
+        "options": [
+          "Delta > 0",
+          "Delta = 0",
+          "a = 0",
+          "Delta < 0"
+        ],
+        "correctAnswer": "1"
+      },
+      {
+        "question": "Hệ phương trình Cramer có nghiệm duy nhất khi nào?",
+        "options": [
+          "Định thức D != 0",
+          "Định thức D = 0",
+          "Dy = 0",
+          "Dx = 0"
+        ],
+        "correctAnswer": "0"
+      },
+      {
+        "question": "Ma trận khả nghịch khi và chỉ khi?",
+        "options": [
+          "Định thức bằng 0",
+          "Là ma trận vuông",
+          "Có các phần tử đường chéo bằng 1",
+          "Định thức khác 0"
+        ],
+        "correctAnswer": "3"
+      },
+      {
+        "question": "Logarit cơ số a của 1 bằng bao nhiêu?",
+        "options": [
+          "a",
+          "0",
+          "Không xác định",
+          "1"
+        ],
+        "correctAnswer": "1"
+      },
+      {
+        "question": "Đạo hàm của x^n là gì?",
+        "options": [
+          "1/x",
+          "x^(n+1)/(n+1)",
+          "n*x^(n-1)",
+          "n*x^n"
+        ],
+        "correctAnswer": "2"
+      },
+      {
+        "question": "Tính chất của ma trận đối xứng là gì?",
+        "options": [
+          "A^T = A",
+          "A^T = -A",
+          "A^-1 = A",
+          "A^T = A^-1"
+        ],
+        "correctAnswer": "0"
+      },
+      {
+        "question": "Một không gian vector phải thỏa mãn bao nhiêu tiên đề cơ bản?",
+        "options": [
+          "8",
+          "10",
+          "4",
+          "6"
+        ],
+        "correctAnswer": "0"
+      },
+      {
+        "question": "Tích vô hướng của hai vector vuông góc bằng bao nhiêu?",
+        "options": [
+          "0",
+          "Tích độ dài của chúng",
+          "-1",
+          "1"
+        ],
+        "correctAnswer": "0"
+      },
+      {
+        "question": "Nghiệm của phương trình 2x - 4 = 0 là gì?",
+        "options": [
+          "x = 4",
+          "x = 2",
+          "x = -2",
+          "x = 0"
+        ],
+        "correctAnswer": "1"
+      },
+      {
+        "question": "Định thức của ma trận đơn vị 2x2 bằng bao nhiêu?",
+        "options": [
+          "0",
+          "-1",
+          "1",
+          "2"
+        ],
+        "correctAnswer": "2"
+      },
+      {
+        "question": "Phương trình bậc hai ax^2 + bx + c = 0 có nghiệm kép khi nào?",
+        "options": [
+          "Delta < 0",
+          "Delta = 0",
+          "Delta > 0",
+          "a = 0"
+        ],
+        "correctAnswer": "1"
+      },
+      {
+        "question": "Hệ phương trình Cramer có nghiệm duy nhất khi nào?",
+        "options": [
+          "Định thức D = 0",
+          "Dx = 0",
+          "Dy = 0",
+          "Định thức D != 0"
+        ],
+        "correctAnswer": "3"
+      },
+      {
+        "question": "Ma trận khả nghịch khi và chỉ khi?",
+        "options": [
+          "Định thức khác 0",
+          "Là ma trận vuông",
+          "Định thức bằng 0",
+          "Có các phần tử đường chéo bằng 1"
+        ],
+        "correctAnswer": "0"
+      },
+      {
+        "question": "Logarit cơ số a của 1 bằng bao nhiêu?",
+        "options": [
+          "1",
+          "0",
+          "a",
+          "Không xác định"
+        ],
+        "correctAnswer": "1"
+      },
+      {
+        "question": "Đạo hàm của x^n là gì?",
+        "options": [
+          "x^(n+1)/(n+1)",
+          "n*x^n",
+          "1/x",
+          "n*x^(n-1)"
+        ],
+        "correctAnswer": "3"
+      },
+      {
+        "question": "Tính chất của ma trận đối xứng là gì?",
+        "options": [
+          "A^-1 = A",
+          "A^T = A",
+          "A^T = A^-1",
+          "A^T = -A"
+        ],
+        "correctAnswer": "1"
+      },
+      {
+        "question": "Một không gian vector phải thỏa mãn bao nhiêu tiên đề cơ bản?",
+        "options": [
+          "8",
+          "4",
+          "6",
+          "10"
+        ],
+        "correctAnswer": "0"
+      },
+      {
+        "question": "Tích vô hướng của hai vector vuông góc bằng bao nhiêu?",
+        "options": [
+          "0",
+          "-1",
+          "Tích độ dài của chúng",
+          "1"
+        ],
+        "correctAnswer": "0"
+      },
+      {
+        "question": "Nghiệm của phương trình 2x - 4 = 0 là gì?",
+        "options": [
+          "x = 2",
+          "x = 0",
+          "x = 4",
+          "x = -2"
+        ],
+        "correctAnswer": "0"
+      },
+      {
+        "question": "Định thức của ma trận đơn vị 2x2 bằng bao nhiêu?",
+        "options": [
+          "1",
+          "-1",
+          "2",
+          "0"
+        ],
+        "correctAnswer": "0"
+      },
+      {
+        "question": "Phương trình bậc hai ax^2 + bx + c = 0 có nghiệm kép khi nào?",
+        "options": [
+          "Delta = 0",
+          "Delta > 0",
+          "Delta < 0",
+          "a = 0"
+        ],
+        "correctAnswer": "0"
+      },
+      {
+        "question": "Hệ phương trình Cramer có nghiệm duy nhất khi nào?",
+        "options": [
+          "Dx = 0",
+          "Định thức D != 0",
+          "Định thức D = 0",
+          "Dy = 0"
+        ],
+        "correctAnswer": "1"
+      },
+      {
+        "question": "Ma trận khả nghịch khi và chỉ khi?",
+        "options": [
+          "Định thức khác 0",
+          "Định thức bằng 0",
+          "Có các phần tử đường chéo bằng 1",
+          "Là ma trận vuông"
+        ],
+        "correctAnswer": "0"
+      },
+      {
+        "question": "Logarit cơ số a của 1 bằng bao nhiêu?",
+        "options": [
+          "Không xác định",
+          "a",
+          "1",
+          "0"
+        ],
+        "correctAnswer": "3"
+      },
+      {
+        "question": "Đạo hàm của x^n là gì?",
+        "options": [
+          "n*x^(n-1)",
+          "1/x",
+          "n*x^n",
+          "x^(n+1)/(n+1)"
+        ],
+        "correctAnswer": "0"
+      },
+      {
+        "question": "Tính chất của ma trận đối xứng là gì?",
+        "options": [
+          "A^T = A^-1",
+          "A^-1 = A",
+          "A^T = -A",
+          "A^T = A"
+        ],
+        "correctAnswer": "3"
+      },
+      {
+        "question": "Một không gian vector phải thỏa mãn bao nhiêu tiên đề cơ bản?",
+        "options": [
+          "8",
+          "6",
+          "4",
+          "10"
+        ],
+        "correctAnswer": "0"
+      },
+      {
+        "question": "Tích vô hướng của hai vector vuông góc bằng bao nhiêu?",
+        "options": [
+          "0",
+          "-1",
+          "Tích độ dài của chúng",
+          "1"
+        ],
+        "correctAnswer": "0"
+      }
+    ],
+    "Calculus Peak": [
+      {
+        "question": "Đạo hàm của sin(x) là gì?",
+        "options": [
+          "-sin(x)",
+          "-cos(x)",
+          "tan(x)",
+          "cos(x)"
+        ],
+        "correctAnswer": "3"
+      },
+      {
+        "question": "Tích phân vô định của e^x là gì?",
+        "options": [
+          "e^x",
+          "ln(x)",
+          "x*e^(x-1)",
+          "e^x + C"
+        ],
+        "correctAnswer": "3"
+      },
+      {
+        "question": "Giới hạn của sin(x)/x khi x tiến tới 0 là?",
+        "options": [
+          "Không tồn tại",
+          "0",
+          "1",
+          "Vô cực"
+        ],
+        "correctAnswer": "2"
+      },
+      {
+        "question": "Đạo hàm của ln(x) là gì?",
+        "options": [
+          "1/x",
+          "x",
+          "e^x",
+          "ln(x)"
+        ],
+        "correctAnswer": "0"
+      },
+      {
+        "question": "Theo định lý Lagrange, nếu hàm liên tục trên [a,b] và khả đạo hàm trên (a,b) thì?",
+        "options": [
+          "f(a) = f(b)",
+          "f(x) là hàm hằng",
+          "Tồn tại c thuộc (a,b) sao cho f'(c) = (f(b)-f(a))/(b-a)",
+          "f'(c) = 0"
+        ],
+        "correctAnswer": "2"
+      },
+      {
+        "question": "Chuỗi Taylor dùng để làm gì?",
+        "options": [
+          "Giải phương trình vi phân",
+          "Tính tích phân xác định",
+          "Xấp xỉ một hàm số bằng một đa thức",
+          "Tính chu vi đường cong"
+        ],
+        "correctAnswer": "2"
+      },
+      {
+        "question": "Đạo hàm cấp 2 của hàm f(x) cho biết điều gì?",
+        "options": [
+          "Độ lồi lõm của đồ thị",
+          "Tiệm cận của đồ thị",
+          "Giao điểm với trục hoành",
+          "Sự đồng biến, nghịch biến"
+        ],
+        "correctAnswer": "0"
+      },
+      {
+        "question": "Tích phân xác định từ a đến b biểu thị điều gì?",
+        "options": [
+          "Thể tích vật thể",
+          "Độ dài đường cong",
+          "Tất cả các ý trên đều có thể đúng",
+          "Diện tích hình thang cong"
+        ],
+        "correctAnswer": "3"
+      },
+      {
+        "question": "Điểm cực đại của hàm số đạt được khi?",
+        "options": [
+          "f'(x) = 0 và f''(x) > 0",
+          "f'(x) > 0",
+          "f''(x) = 0",
+          "f'(x) = 0 và f''(x) < 0"
+        ],
+        "correctAnswer": "3"
+      },
+      {
+        "question": "Quy tắc L'Hôpital dùng để giải quyết vấn đề gì?",
+        "options": [
+          "Tính tích phân phức tạp",
+          "Tính giới hạn dạng vô định",
+          "Giải phương trình đại số",
+          "Tìm đạo hàm hàm ẩn"
+        ],
+        "correctAnswer": "1"
+      },
+      {
+        "question": "Đạo hàm của sin(x) là gì?",
+        "options": [
+          "-sin(x)",
+          "-cos(x)",
+          "tan(x)",
+          "cos(x)"
+        ],
+        "correctAnswer": "3"
+      },
+      {
+        "question": "Tích phân vô định của e^x là gì?",
+        "options": [
+          "e^x + C",
+          "ln(x)",
+          "x*e^(x-1)",
+          "e^x"
+        ],
+        "correctAnswer": "0"
+      },
+      {
+        "question": "Giới hạn của sin(x)/x khi x tiến tới 0 là?",
+        "options": [
+          "0",
+          "Không tồn tại",
+          "Vô cực",
+          "1"
+        ],
+        "correctAnswer": "3"
+      },
+      {
+        "question": "Đạo hàm của ln(x) là gì?",
+        "options": [
+          "ln(x)",
+          "e^x",
+          "1/x",
+          "x"
+        ],
+        "correctAnswer": "2"
+      },
+      {
+        "question": "Theo định lý Lagrange, nếu hàm liên tục trên [a,b] và khả đạo hàm trên (a,b) thì?",
+        "options": [
+          "f(x) là hàm hằng",
+          "f'(c) = 0",
+          "f(a) = f(b)",
+          "Tồn tại c thuộc (a,b) sao cho f'(c) = (f(b)-f(a))/(b-a)"
+        ],
+        "correctAnswer": "3"
+      },
+      {
+        "question": "Chuỗi Taylor dùng để làm gì?",
+        "options": [
+          "Xấp xỉ một hàm số bằng một đa thức",
+          "Giải phương trình vi phân",
+          "Tính tích phân xác định",
+          "Tính chu vi đường cong"
+        ],
+        "correctAnswer": "0"
+      },
+      {
+        "question": "Đạo hàm cấp 2 của hàm f(x) cho biết điều gì?",
+        "options": [
+          "Sự đồng biến, nghịch biến",
+          "Giao điểm với trục hoành",
+          "Độ lồi lõm của đồ thị",
+          "Tiệm cận của đồ thị"
+        ],
+        "correctAnswer": "2"
+      },
+      {
+        "question": "Tích phân xác định từ a đến b biểu thị điều gì?",
+        "options": [
+          "Tất cả các ý trên đều có thể đúng",
+          "Độ dài đường cong",
+          "Diện tích hình thang cong",
+          "Thể tích vật thể"
+        ],
+        "correctAnswer": "2"
+      },
+      {
+        "question": "Điểm cực đại của hàm số đạt được khi?",
+        "options": [
+          "f'(x) > 0",
+          "f'(x) = 0 và f''(x) > 0",
+          "f'(x) = 0 và f''(x) < 0",
+          "f''(x) = 0"
+        ],
+        "correctAnswer": "2"
+      },
+      {
+        "question": "Quy tắc L'Hôpital dùng để giải quyết vấn đề gì?",
+        "options": [
+          "Tìm đạo hàm hàm ẩn",
+          "Tính tích phân phức tạp",
+          "Tính giới hạn dạng vô định",
+          "Giải phương trình đại số"
+        ],
+        "correctAnswer": "2"
+      },
+      {
+        "question": "Đạo hàm của sin(x) là gì?",
+        "options": [
+          "cos(x)",
+          "-sin(x)",
+          "-cos(x)",
+          "tan(x)"
+        ],
+        "correctAnswer": "0"
+      },
+      {
+        "question": "Tích phân vô định của e^x là gì?",
+        "options": [
+          "ln(x)",
+          "x*e^(x-1)",
+          "e^x",
+          "e^x + C"
+        ],
+        "correctAnswer": "3"
+      },
+      {
+        "question": "Giới hạn của sin(x)/x khi x tiến tới 0 là?",
+        "options": [
+          "Không tồn tại",
+          "Vô cực",
+          "1",
+          "0"
+        ],
+        "correctAnswer": "2"
+      },
+      {
+        "question": "Đạo hàm của ln(x) là gì?",
+        "options": [
+          "1/x",
+          "e^x",
+          "x",
+          "ln(x)"
+        ],
+        "correctAnswer": "0"
+      },
+      {
+        "question": "Theo định lý Lagrange, nếu hàm liên tục trên [a,b] và khả đạo hàm trên (a,b) thì?",
+        "options": [
+          "f'(c) = 0",
+          "f(a) = f(b)",
+          "Tồn tại c thuộc (a,b) sao cho f'(c) = (f(b)-f(a))/(b-a)",
+          "f(x) là hàm hằng"
+        ],
+        "correctAnswer": "2"
+      },
+      {
+        "question": "Chuỗi Taylor dùng để làm gì?",
+        "options": [
+          "Tính chu vi đường cong",
+          "Tính tích phân xác định",
+          "Giải phương trình vi phân",
+          "Xấp xỉ một hàm số bằng một đa thức"
+        ],
+        "correctAnswer": "3"
+      },
+      {
+        "question": "Đạo hàm cấp 2 của hàm f(x) cho biết điều gì?",
+        "options": [
+          "Giao điểm với trục hoành",
+          "Tiệm cận của đồ thị",
+          "Sự đồng biến, nghịch biến",
+          "Độ lồi lõm của đồ thị"
+        ],
+        "correctAnswer": "3"
+      },
+      {
+        "question": "Tích phân xác định từ a đến b biểu thị điều gì?",
+        "options": [
+          "Tất cả các ý trên đều có thể đúng",
+          "Diện tích hình thang cong",
+          "Độ dài đường cong",
+          "Thể tích vật thể"
+        ],
+        "correctAnswer": "1"
+      },
+      {
+        "question": "Điểm cực đại của hàm số đạt được khi?",
+        "options": [
+          "f'(x) > 0",
+          "f'(x) = 0 và f''(x) > 0",
+          "f'(x) = 0 và f''(x) < 0",
+          "f''(x) = 0"
+        ],
+        "correctAnswer": "2"
+      },
+      {
+        "question": "Quy tắc L'Hôpital dùng để giải quyết vấn đề gì?",
+        "options": [
+          "Giải phương trình đại số",
+          "Tìm đạo hàm hàm ẩn",
+          "Tính giới hạn dạng vô định",
+          "Tính tích phân phức tạp"
+        ],
+        "correctAnswer": "2"
+      },
+      {
+        "question": "Đạo hàm của sin(x) là gì?",
+        "options": [
+          "-sin(x)",
+          "cos(x)",
+          "-cos(x)",
+          "tan(x)"
+        ],
+        "correctAnswer": "1"
+      },
+      {
+        "question": "Tích phân vô định của e^x là gì?",
+        "options": [
+          "e^x",
+          "ln(x)",
+          "x*e^(x-1)",
+          "e^x + C"
+        ],
+        "correctAnswer": "3"
+      },
+      {
+        "question": "Giới hạn của sin(x)/x khi x tiến tới 0 là?",
+        "options": [
+          "0",
+          "Vô cực",
+          "Không tồn tại",
+          "1"
+        ],
+        "correctAnswer": "3"
+      },
+      {
+        "question": "Đạo hàm của ln(x) là gì?",
+        "options": [
+          "ln(x)",
+          "1/x",
+          "x",
+          "e^x"
+        ],
+        "correctAnswer": "1"
+      },
+      {
+        "question": "Theo định lý Lagrange, nếu hàm liên tục trên [a,b] và khả đạo hàm trên (a,b) thì?",
+        "options": [
+          "Tồn tại c thuộc (a,b) sao cho f'(c) = (f(b)-f(a))/(b-a)",
+          "f(x) là hàm hằng",
+          "f(a) = f(b)",
+          "f'(c) = 0"
+        ],
+        "correctAnswer": "0"
+      },
+      {
+        "question": "Chuỗi Taylor dùng để làm gì?",
+        "options": [
+          "Xấp xỉ một hàm số bằng một đa thức",
+          "Tính tích phân xác định",
+          "Tính chu vi đường cong",
+          "Giải phương trình vi phân"
+        ],
+        "correctAnswer": "0"
+      },
+      {
+        "question": "Đạo hàm cấp 2 của hàm f(x) cho biết điều gì?",
+        "options": [
+          "Tiệm cận của đồ thị",
+          "Giao điểm với trục hoành",
+          "Sự đồng biến, nghịch biến",
+          "Độ lồi lõm của đồ thị"
+        ],
+        "correctAnswer": "3"
+      },
+      {
+        "question": "Tích phân xác định từ a đến b biểu thị điều gì?",
+        "options": [
+          "Tất cả các ý trên đều có thể đúng",
+          "Diện tích hình thang cong",
+          "Thể tích vật thể",
+          "Độ dài đường cong"
+        ],
+        "correctAnswer": "1"
+      },
+      {
+        "question": "Điểm cực đại của hàm số đạt được khi?",
+        "options": [
+          "f''(x) = 0",
+          "f'(x) = 0 và f''(x) > 0",
+          "f'(x) > 0",
+          "f'(x) = 0 và f''(x) < 0"
+        ],
+        "correctAnswer": "3"
+      },
+      {
+        "question": "Quy tắc L'Hôpital dùng để giải quyết vấn đề gì?",
+        "options": [
+          "Tính giới hạn dạng vô định",
+          "Tìm đạo hàm hàm ẩn",
+          "Tính tích phân phức tạp",
+          "Giải phương trình đại số"
+        ],
+        "correctAnswer": "0"
+      },
+      {
+        "question": "Đạo hàm của sin(x) là gì?",
+        "options": [
+          "tan(x)",
+          "-cos(x)",
+          "cos(x)",
+          "-sin(x)"
+        ],
+        "correctAnswer": "2"
+      },
+      {
+        "question": "Tích phân vô định của e^x là gì?",
+        "options": [
+          "ln(x)",
+          "e^x + C",
+          "x*e^(x-1)",
+          "e^x"
+        ],
+        "correctAnswer": "1"
+      },
+      {
+        "question": "Giới hạn của sin(x)/x khi x tiến tới 0 là?",
+        "options": [
+          "Không tồn tại",
+          "0",
+          "Vô cực",
+          "1"
+        ],
+        "correctAnswer": "3"
+      },
+      {
+        "question": "Đạo hàm của ln(x) là gì?",
+        "options": [
+          "ln(x)",
+          "1/x",
+          "x",
+          "e^x"
+        ],
+        "correctAnswer": "1"
+      },
+      {
+        "question": "Theo định lý Lagrange, nếu hàm liên tục trên [a,b] và khả đạo hàm trên (a,b) thì?",
+        "options": [
+          "Tồn tại c thuộc (a,b) sao cho f'(c) = (f(b)-f(a))/(b-a)",
+          "f(x) là hàm hằng",
+          "f(a) = f(b)",
+          "f'(c) = 0"
+        ],
+        "correctAnswer": "0"
+      },
+      {
+        "question": "Chuỗi Taylor dùng để làm gì?",
+        "options": [
+          "Xấp xỉ một hàm số bằng một đa thức",
+          "Tính chu vi đường cong",
+          "Tính tích phân xác định",
+          "Giải phương trình vi phân"
+        ],
+        "correctAnswer": "0"
+      },
+      {
+        "question": "Đạo hàm cấp 2 của hàm f(x) cho biết điều gì?",
+        "options": [
+          "Độ lồi lõm của đồ thị",
+          "Tiệm cận của đồ thị",
+          "Giao điểm với trục hoành",
+          "Sự đồng biến, nghịch biến"
+        ],
+        "correctAnswer": "0"
+      },
+      {
+        "question": "Tích phân xác định từ a đến b biểu thị điều gì?",
+        "options": [
+          "Diện tích hình thang cong",
+          "Tất cả các ý trên đều có thể đúng",
+          "Thể tích vật thể",
+          "Độ dài đường cong"
+        ],
+        "correctAnswer": "0"
+      },
+      {
+        "question": "Điểm cực đại của hàm số đạt được khi?",
+        "options": [
+          "f'(x) > 0",
+          "f'(x) = 0 và f''(x) > 0",
+          "f'(x) = 0 và f''(x) < 0",
+          "f''(x) = 0"
+        ],
+        "correctAnswer": "2"
+      },
+      {
+        "question": "Quy tắc L'Hôpital dùng để giải quyết vấn đề gì?",
+        "options": [
+          "Tính tích phân phức tạp",
+          "Tìm đạo hàm hàm ẩn",
+          "Giải phương trình đại số",
+          "Tính giới hạn dạng vô định"
+        ],
+        "correctAnswer": "3"
+      }
+    ],
+    "Geometry Realm": [
+      {
+        "question": "Tổng các góc trong một tam giác phẳng là?",
+        "options": [
+          "360 độ",
+          "90 độ",
+          "270 độ",
+          "180 độ"
+        ],
+        "correctAnswer": "3"
+      },
+      {
+        "question": "Công thức tính diện tích hình tròn là?",
+        "options": [
+          "4/3*pi*r^3",
+          "pi*d",
+          "pi*r^2",
+          "2*pi*r"
+        ],
+        "correctAnswer": "2"
+      },
+      {
+        "question": "Thể tích của một hình lập phương cạnh a là?",
+        "options": [
+          "a^2",
+          "3*a",
+          "6*a^2",
+          "a^3"
+        ],
+        "correctAnswer": "3"
+      },
+      {
+        "question": "Định lý Pythagoras áp dụng cho loại tam giác nào?",
+        "options": [
+          "Tam giác đều",
+          "Mọi tam giác",
+          "Tam giác vuông",
+          "Tam giác cân"
+        ],
+        "correctAnswer": "2"
+      },
+      {
+        "question": "Đường chéo của hình vuông cạnh a có độ dài là?",
+        "options": [
+          "a*sqrt(2)",
+          "a^2",
+          "2*a",
+          "a/2"
+        ],
+        "correctAnswer": "0"
+      },
+      {
+        "question": "Hình có 6 mặt đều là hình vuông gọi là gì?",
+        "options": [
+          "Hình lập phương",
+          "Hình hộp chữ nhật",
+          "Tứ diện đều",
+          "Bát diện đều"
+        ],
+        "correctAnswer": "0"
+      },
+      {
+        "question": "Khoảng cách giữa 2 điểm (x1, y1) và (x2, y2) là?",
+        "options": [
+          "x2*x1 + y2*y1",
+          "abs(x2-x1) + abs(y2-y1)",
+          "sqrt((x2-x1)^2 + (y2-y1)^2)",
+          "sqrt(x1^2 + y1^2)"
+        ],
+        "correctAnswer": "2"
+      },
+      {
+        "question": "Phương trình đường tròn tâm O(0,0) bán kính r là?",
+        "options": [
+          "x^2/a^2 + y^2/b^2 = 1",
+          "y = ax + b",
+          "x + y = r",
+          "x^2 + y^2 = r^2"
+        ],
+        "correctAnswer": "3"
+      },
+      {
+        "question": "Cos(0 độ) bằng bao nhiêu?",
+        "options": [
+          "-1",
+          "0.5",
+          "1",
+          "0"
+        ],
+        "correctAnswer": "2"
+      },
+      {
+        "question": "Hai đường thẳng có hệ số góc m1 và m2 vuông góc khi nào?",
+        "options": [
+          "m1 + m2 = 0",
+          "m1 = m2",
+          "m1 * m2 = 1",
+          "m1 * m2 = -1"
+        ],
+        "correctAnswer": "3"
+      },
+      {
+        "question": "Tổng các góc trong một tam giác phẳng là?",
+        "options": [
+          "180 độ",
+          "90 độ",
+          "360 độ",
+          "270 độ"
+        ],
+        "correctAnswer": "0"
+      },
+      {
+        "question": "Công thức tính diện tích hình tròn là?",
+        "options": [
+          "pi*r^2",
+          "4/3*pi*r^3",
+          "pi*d",
+          "2*pi*r"
+        ],
+        "correctAnswer": "0"
+      },
+      {
+        "question": "Thể tích của một hình lập phương cạnh a là?",
+        "options": [
+          "a^3",
+          "a^2",
+          "6*a^2",
+          "3*a"
+        ],
+        "correctAnswer": "0"
+      },
+      {
+        "question": "Định lý Pythagoras áp dụng cho loại tam giác nào?",
+        "options": [
+          "Tam giác vuông",
+          "Tam giác cân",
+          "Tam giác đều",
+          "Mọi tam giác"
+        ],
+        "correctAnswer": "0"
+      },
+      {
+        "question": "Đường chéo của hình vuông cạnh a có độ dài là?",
+        "options": [
+          "a^2",
+          "a/2",
+          "a*sqrt(2)",
+          "2*a"
+        ],
+        "correctAnswer": "2"
+      },
+      {
+        "question": "Hình có 6 mặt đều là hình vuông gọi là gì?",
+        "options": [
+          "Tứ diện đều",
+          "Bát diện đều",
+          "Hình lập phương",
+          "Hình hộp chữ nhật"
+        ],
+        "correctAnswer": "2"
+      },
+      {
+        "question": "Khoảng cách giữa 2 điểm (x1, y1) và (x2, y2) là?",
+        "options": [
+          "sqrt((x2-x1)^2 + (y2-y1)^2)",
+          "abs(x2-x1) + abs(y2-y1)",
+          "sqrt(x1^2 + y1^2)",
+          "x2*x1 + y2*y1"
+        ],
+        "correctAnswer": "0"
+      },
+      {
+        "question": "Phương trình đường tròn tâm O(0,0) bán kính r là?",
+        "options": [
+          "y = ax + b",
+          "x^2/a^2 + y^2/b^2 = 1",
+          "x + y = r",
+          "x^2 + y^2 = r^2"
+        ],
+        "correctAnswer": "3"
+      },
+      {
+        "question": "Cos(0 độ) bằng bao nhiêu?",
+        "options": [
+          "-1",
+          "0.5",
+          "1",
+          "0"
+        ],
+        "correctAnswer": "2"
+      },
+      {
+        "question": "Hai đường thẳng có hệ số góc m1 và m2 vuông góc khi nào?",
+        "options": [
+          "m1 * m2 = 1",
+          "m1 * m2 = -1",
+          "m1 = m2",
+          "m1 + m2 = 0"
+        ],
+        "correctAnswer": "1"
+      },
+      {
+        "question": "Tổng các góc trong một tam giác phẳng là?",
+        "options": [
+          "360 độ",
+          "90 độ",
+          "270 độ",
+          "180 độ"
+        ],
+        "correctAnswer": "3"
+      },
+      {
+        "question": "Công thức tính diện tích hình tròn là?",
+        "options": [
+          "pi*r^2",
+          "pi*d",
+          "4/3*pi*r^3",
+          "2*pi*r"
+        ],
+        "correctAnswer": "0"
+      },
+      {
+        "question": "Thể tích của một hình lập phương cạnh a là?",
+        "options": [
+          "6*a^2",
+          "3*a",
+          "a^2",
+          "a^3"
+        ],
+        "correctAnswer": "3"
+      },
+      {
+        "question": "Định lý Pythagoras áp dụng cho loại tam giác nào?",
+        "options": [
+          "Mọi tam giác",
+          "Tam giác vuông",
+          "Tam giác đều",
+          "Tam giác cân"
+        ],
+        "correctAnswer": "1"
+      },
+      {
+        "question": "Đường chéo của hình vuông cạnh a có độ dài là?",
+        "options": [
+          "a*sqrt(2)",
+          "2*a",
+          "a^2",
+          "a/2"
+        ],
+        "correctAnswer": "0"
+      },
+      {
+        "question": "Hình có 6 mặt đều là hình vuông gọi là gì?",
+        "options": [
+          "Hình hộp chữ nhật",
+          "Tứ diện đều",
+          "Bát diện đều",
+          "Hình lập phương"
+        ],
+        "correctAnswer": "3"
+      },
+      {
+        "question": "Khoảng cách giữa 2 điểm (x1, y1) và (x2, y2) là?",
+        "options": [
+          "sqrt(x1^2 + y1^2)",
+          "x2*x1 + y2*y1",
+          "abs(x2-x1) + abs(y2-y1)",
+          "sqrt((x2-x1)^2 + (y2-y1)^2)"
+        ],
+        "correctAnswer": "3"
+      },
+      {
+        "question": "Phương trình đường tròn tâm O(0,0) bán kính r là?",
+        "options": [
+          "y = ax + b",
+          "x^2 + y^2 = r^2",
+          "x + y = r",
+          "x^2/a^2 + y^2/b^2 = 1"
+        ],
+        "correctAnswer": "1"
+      },
+      {
+        "question": "Cos(0 độ) bằng bao nhiêu?",
+        "options": [
+          "0",
+          "-1",
+          "0.5",
+          "1"
+        ],
+        "correctAnswer": "3"
+      },
+      {
+        "question": "Hai đường thẳng có hệ số góc m1 và m2 vuông góc khi nào?",
+        "options": [
+          "m1 = m2",
+          "m1 + m2 = 0",
+          "m1 * m2 = 1",
+          "m1 * m2 = -1"
+        ],
+        "correctAnswer": "3"
+      },
+      {
+        "question": "Tổng các góc trong một tam giác phẳng là?",
+        "options": [
+          "90 độ",
+          "270 độ",
+          "180 độ",
+          "360 độ"
+        ],
+        "correctAnswer": "2"
+      },
+      {
+        "question": "Công thức tính diện tích hình tròn là?",
+        "options": [
+          "pi*r^2",
+          "4/3*pi*r^3",
+          "2*pi*r",
+          "pi*d"
+        ],
+        "correctAnswer": "0"
+      },
+      {
+        "question": "Thể tích của một hình lập phương cạnh a là?",
+        "options": [
+          "6*a^2",
+          "a^2",
+          "a^3",
+          "3*a"
+        ],
+        "correctAnswer": "2"
+      },
+      {
+        "question": "Định lý Pythagoras áp dụng cho loại tam giác nào?",
+        "options": [
+          "Tam giác cân",
+          "Mọi tam giác",
+          "Tam giác vuông",
+          "Tam giác đều"
+        ],
+        "correctAnswer": "2"
+      },
+      {
+        "question": "Đường chéo của hình vuông cạnh a có độ dài là?",
+        "options": [
+          "a/2",
+          "a*sqrt(2)",
+          "a^2",
+          "2*a"
+        ],
+        "correctAnswer": "1"
+      },
+      {
+        "question": "Hình có 6 mặt đều là hình vuông gọi là gì?",
+        "options": [
+          "Hình hộp chữ nhật",
+          "Hình lập phương",
+          "Bát diện đều",
+          "Tứ diện đều"
+        ],
+        "correctAnswer": "1"
+      },
+      {
+        "question": "Khoảng cách giữa 2 điểm (x1, y1) và (x2, y2) là?",
+        "options": [
+          "sqrt(x1^2 + y1^2)",
+          "x2*x1 + y2*y1",
+          "sqrt((x2-x1)^2 + (y2-y1)^2)",
+          "abs(x2-x1) + abs(y2-y1)"
+        ],
+        "correctAnswer": "2"
+      },
+      {
+        "question": "Phương trình đường tròn tâm O(0,0) bán kính r là?",
+        "options": [
+          "x^2/a^2 + y^2/b^2 = 1",
+          "y = ax + b",
+          "x^2 + y^2 = r^2",
+          "x + y = r"
+        ],
+        "correctAnswer": "2"
+      },
+      {
+        "question": "Cos(0 độ) bằng bao nhiêu?",
+        "options": [
+          "0.5",
+          "-1",
+          "1",
+          "0"
+        ],
+        "correctAnswer": "2"
+      },
+      {
+        "question": "Hai đường thẳng có hệ số góc m1 và m2 vuông góc khi nào?",
+        "options": [
+          "m1 = m2",
+          "m1 * m2 = 1",
+          "m1 + m2 = 0",
+          "m1 * m2 = -1"
+        ],
+        "correctAnswer": "3"
+      },
+      {
+        "question": "Tổng các góc trong một tam giác phẳng là?",
+        "options": [
+          "360 độ",
+          "90 độ",
+          "270 độ",
+          "180 độ"
+        ],
+        "correctAnswer": "3"
+      },
+      {
+        "question": "Công thức tính diện tích hình tròn là?",
+        "options": [
+          "pi*d",
+          "2*pi*r",
+          "pi*r^2",
+          "4/3*pi*r^3"
+        ],
+        "correctAnswer": "2"
+      },
+      {
+        "question": "Thể tích của một hình lập phương cạnh a là?",
+        "options": [
+          "6*a^2",
+          "3*a",
+          "a^2",
+          "a^3"
+        ],
+        "correctAnswer": "3"
+      },
+      {
+        "question": "Định lý Pythagoras áp dụng cho loại tam giác nào?",
+        "options": [
+          "Tam giác vuông",
+          "Tam giác đều",
+          "Tam giác cân",
+          "Mọi tam giác"
+        ],
+        "correctAnswer": "0"
+      },
+      {
+        "question": "Đường chéo của hình vuông cạnh a có độ dài là?",
+        "options": [
+          "a*sqrt(2)",
+          "2*a",
+          "a^2",
+          "a/2"
+        ],
+        "correctAnswer": "0"
+      },
+      {
+        "question": "Hình có 6 mặt đều là hình vuông gọi là gì?",
+        "options": [
+          "Hình hộp chữ nhật",
+          "Tứ diện đều",
+          "Bát diện đều",
+          "Hình lập phương"
+        ],
+        "correctAnswer": "3"
+      },
+      {
+        "question": "Khoảng cách giữa 2 điểm (x1, y1) và (x2, y2) là?",
+        "options": [
+          "sqrt((x2-x1)^2 + (y2-y1)^2)",
+          "sqrt(x1^2 + y1^2)",
+          "x2*x1 + y2*y1",
+          "abs(x2-x1) + abs(y2-y1)"
+        ],
+        "correctAnswer": "0"
+      },
+      {
+        "question": "Phương trình đường tròn tâm O(0,0) bán kính r là?",
+        "options": [
+          "y = ax + b",
+          "x^2/a^2 + y^2/b^2 = 1",
+          "x + y = r",
+          "x^2 + y^2 = r^2"
+        ],
+        "correctAnswer": "3"
+      },
+      {
+        "question": "Cos(0 độ) bằng bao nhiêu?",
+        "options": [
+          "0.5",
+          "0",
+          "-1",
+          "1"
+        ],
+        "correctAnswer": "3"
+      },
+      {
+        "question": "Hai đường thẳng có hệ số góc m1 và m2 vuông góc khi nào?",
+        "options": [
+          "m1 = m2",
+          "m1 * m2 = -1",
+          "m1 * m2 = 1",
+          "m1 + m2 = 0"
+        ],
+        "correctAnswer": "1"
+      }
+    ]
+  },
+  "Physics & Chemistry": {
+    "Mechanics Base": [
+      {
+        "question": "Đơn vị của lực trong hệ SI là gì?",
+        "options": [
+          "Watt (W)",
+          "Pascal (Pa)",
+          "Joule (J)",
+          "Newton (N)"
+        ],
+        "correctAnswer": "3"
+      },
+      {
+        "question": "Định luật I Newton còn được gọi là gì?",
+        "options": [
+          "Định luật bảo toàn động lượng",
+          "Định luật vạn vật hấp dẫn",
+          "Định luật bảo toàn năng lượng",
+          "Định luật quán tính"
+        ],
+        "correctAnswer": "3"
+      },
+      {
+        "question": "Công thức tính công cơ học là gì?",
+        "options": [
+          "A = P.t",
+          "A = m.g.h",
+          "A = m.a",
+          "A = F.s.cos(alpha)"
+        ],
+        "correctAnswer": "3"
+      },
+      {
+        "question": "Gia tốc trọng trường g trên Trái Đất xấp xỉ bao nhiêu?",
+        "options": [
+          "100 m/s^2",
+          "9.8 m/s^2",
+          "10 cm/s^2",
+          "3.14 m/s"
+        ],
+        "correctAnswer": "1"
+      },
+      {
+        "question": "Đơn vị của động năng là gì?",
+        "options": [
+          "Newton (N)",
+          "Joule (J)",
+          "Kg.m/s",
+          "Watt (W)"
+        ],
+        "correctAnswer": "1"
+      },
+      {
+        "question": "Mô men lực đặc trưng cho tác dụng gì của lực?",
+        "options": [
+          "Tác dụng cản trở chuyển động",
+          "Tác dụng làm quay",
+          "Tác dụng làm vật dịch chuyển",
+          "Tác dụng làm biến dạng"
+        ],
+        "correctAnswer": "1"
+      },
+      {
+        "question": "Khi ô tô phanh gấp, hành khách bị xô về phía trước là do?",
+        "options": [
+          "Lực hấp dẫn",
+          "Trọng lực",
+          "Lực ma sát",
+          "Quán tính"
+        ],
+        "correctAnswer": "3"
+      },
+      {
+        "question": "Gia tốc của một vật rơi tự do phụ thuộc vào?",
+        "options": [
+          "Hình dạng của vật",
+          "Không phụ thuộc khối lượng vật",
+          "Khối lượng của vật",
+          "Kích thước của vật"
+        ],
+        "correctAnswer": "1"
+      },
+      {
+        "question": "Động lượng p được tính bằng công thức nào?",
+        "options": [
+          "p = 1/2.m.v^2",
+          "p = F.t",
+          "p = m.v",
+          "p = m.a"
+        ],
+        "correctAnswer": "2"
+      },
+      {
+        "question": "Lực ma sát trượt luôn có hướng như thế nào?",
+        "options": [
+          "Hướng về tâm quỹ đạo",
+          "Cùng hướng chuyển động",
+          "Vuông góc với hướng chuyển động",
+          "Ngược hướng chuyển động"
+        ],
+        "correctAnswer": "3"
+      },
+      {
+        "question": "Đơn vị của lực trong hệ SI là gì?",
+        "options": [
+          "Pascal (Pa)",
+          "Watt (W)",
+          "Joule (J)",
+          "Newton (N)"
+        ],
+        "correctAnswer": "3"
+      },
+      {
+        "question": "Định luật I Newton còn được gọi là gì?",
+        "options": [
+          "Định luật bảo toàn động lượng",
+          "Định luật vạn vật hấp dẫn",
+          "Định luật quán tính",
+          "Định luật bảo toàn năng lượng"
+        ],
+        "correctAnswer": "2"
+      },
+      {
+        "question": "Công thức tính công cơ học là gì?",
+        "options": [
+          "A = F.s.cos(alpha)",
+          "A = m.g.h",
+          "A = P.t",
+          "A = m.a"
+        ],
+        "correctAnswer": "0"
+      },
+      {
+        "question": "Gia tốc trọng trường g trên Trái Đất xấp xỉ bao nhiêu?",
+        "options": [
+          "9.8 m/s^2",
+          "3.14 m/s",
+          "10 cm/s^2",
+          "100 m/s^2"
+        ],
+        "correctAnswer": "0"
+      },
+      {
+        "question": "Đơn vị của động năng là gì?",
+        "options": [
+          "Watt (W)",
+          "Joule (J)",
+          "Newton (N)",
+          "Kg.m/s"
+        ],
+        "correctAnswer": "1"
+      },
+      {
+        "question": "Mô men lực đặc trưng cho tác dụng gì của lực?",
+        "options": [
+          "Tác dụng làm quay",
+          "Tác dụng làm biến dạng",
+          "Tác dụng làm vật dịch chuyển",
+          "Tác dụng cản trở chuyển động"
+        ],
+        "correctAnswer": "0"
+      },
+      {
+        "question": "Khi ô tô phanh gấp, hành khách bị xô về phía trước là do?",
+        "options": [
+          "Lực ma sát",
+          "Lực hấp dẫn",
+          "Quán tính",
+          "Trọng lực"
+        ],
+        "correctAnswer": "2"
+      },
+      {
+        "question": "Gia tốc của một vật rơi tự do phụ thuộc vào?",
+        "options": [
+          "Không phụ thuộc khối lượng vật",
+          "Hình dạng của vật",
+          "Khối lượng của vật",
+          "Kích thước của vật"
+        ],
+        "correctAnswer": "0"
+      },
+      {
+        "question": "Động lượng p được tính bằng công thức nào?",
+        "options": [
+          "p = 1/2.m.v^2",
+          "p = m.a",
+          "p = F.t",
+          "p = m.v"
+        ],
+        "correctAnswer": "3"
+      },
+      {
+        "question": "Lực ma sát trượt luôn có hướng như thế nào?",
+        "options": [
+          "Hướng về tâm quỹ đạo",
+          "Cùng hướng chuyển động",
+          "Ngược hướng chuyển động",
+          "Vuông góc với hướng chuyển động"
+        ],
+        "correctAnswer": "2"
+      },
+      {
+        "question": "Đơn vị của lực trong hệ SI là gì?",
+        "options": [
+          "Joule (J)",
+          "Pascal (Pa)",
+          "Newton (N)",
+          "Watt (W)"
+        ],
+        "correctAnswer": "2"
+      },
+      {
+        "question": "Định luật I Newton còn được gọi là gì?",
+        "options": [
+          "Định luật bảo toàn năng lượng",
+          "Định luật bảo toàn động lượng",
+          "Định luật vạn vật hấp dẫn",
+          "Định luật quán tính"
+        ],
+        "correctAnswer": "3"
+      },
+      {
+        "question": "Công thức tính công cơ học là gì?",
+        "options": [
+          "A = m.g.h",
+          "A = m.a",
+          "A = P.t",
+          "A = F.s.cos(alpha)"
+        ],
+        "correctAnswer": "3"
+      },
+      {
+        "question": "Gia tốc trọng trường g trên Trái Đất xấp xỉ bao nhiêu?",
+        "options": [
+          "10 cm/s^2",
+          "3.14 m/s",
+          "9.8 m/s^2",
+          "100 m/s^2"
+        ],
+        "correctAnswer": "2"
+      },
+      {
+        "question": "Đơn vị của động năng là gì?",
+        "options": [
+          "Kg.m/s",
+          "Watt (W)",
+          "Joule (J)",
+          "Newton (N)"
+        ],
+        "correctAnswer": "2"
+      },
+      {
+        "question": "Mô men lực đặc trưng cho tác dụng gì của lực?",
+        "options": [
+          "Tác dụng làm vật dịch chuyển",
+          "Tác dụng làm biến dạng",
+          "Tác dụng làm quay",
+          "Tác dụng cản trở chuyển động"
+        ],
+        "correctAnswer": "2"
+      },
+      {
+        "question": "Khi ô tô phanh gấp, hành khách bị xô về phía trước là do?",
+        "options": [
+          "Quán tính",
+          "Trọng lực",
+          "Lực hấp dẫn",
+          "Lực ma sát"
+        ],
+        "correctAnswer": "0"
+      },
+      {
+        "question": "Gia tốc của một vật rơi tự do phụ thuộc vào?",
+        "options": [
+          "Kích thước của vật",
+          "Không phụ thuộc khối lượng vật",
+          "Hình dạng của vật",
+          "Khối lượng của vật"
+        ],
+        "correctAnswer": "1"
+      },
+      {
+        "question": "Động lượng p được tính bằng công thức nào?",
+        "options": [
+          "p = m.a",
+          "p = m.v",
+          "p = 1/2.m.v^2",
+          "p = F.t"
+        ],
+        "correctAnswer": "1"
+      },
+      {
+        "question": "Lực ma sát trượt luôn có hướng như thế nào?",
+        "options": [
+          "Hướng về tâm quỹ đạo",
+          "Vuông góc với hướng chuyển động",
+          "Ngược hướng chuyển động",
+          "Cùng hướng chuyển động"
+        ],
+        "correctAnswer": "2"
+      },
+      {
+        "question": "Đơn vị của lực trong hệ SI là gì?",
+        "options": [
+          "Watt (W)",
+          "Newton (N)",
+          "Pascal (Pa)",
+          "Joule (J)"
+        ],
+        "correctAnswer": "1"
+      },
+      {
+        "question": "Định luật I Newton còn được gọi là gì?",
+        "options": [
+          "Định luật bảo toàn động lượng",
+          "Định luật vạn vật hấp dẫn",
+          "Định luật bảo toàn năng lượng",
+          "Định luật quán tính"
+        ],
+        "correctAnswer": "3"
+      },
+      {
+        "question": "Công thức tính công cơ học là gì?",
+        "options": [
+          "A = m.a",
+          "A = F.s.cos(alpha)",
+          "A = P.t",
+          "A = m.g.h"
+        ],
+        "correctAnswer": "1"
+      },
+      {
+        "question": "Gia tốc trọng trường g trên Trái Đất xấp xỉ bao nhiêu?",
+        "options": [
+          "10 cm/s^2",
+          "100 m/s^2",
+          "9.8 m/s^2",
+          "3.14 m/s"
+        ],
+        "correctAnswer": "2"
+      },
+      {
+        "question": "Đơn vị của động năng là gì?",
+        "options": [
+          "Watt (W)",
+          "Kg.m/s",
+          "Newton (N)",
+          "Joule (J)"
+        ],
+        "correctAnswer": "3"
+      },
+      {
+        "question": "Mô men lực đặc trưng cho tác dụng gì của lực?",
+        "options": [
+          "Tác dụng làm biến dạng",
+          "Tác dụng làm vật dịch chuyển",
+          "Tác dụng cản trở chuyển động",
+          "Tác dụng làm quay"
+        ],
+        "correctAnswer": "3"
+      },
+      {
+        "question": "Khi ô tô phanh gấp, hành khách bị xô về phía trước là do?",
+        "options": [
+          "Lực hấp dẫn",
+          "Trọng lực",
+          "Lực ma sát",
+          "Quán tính"
+        ],
+        "correctAnswer": "3"
+      },
+      {
+        "question": "Gia tốc của một vật rơi tự do phụ thuộc vào?",
+        "options": [
+          "Khối lượng của vật",
+          "Hình dạng của vật",
+          "Không phụ thuộc khối lượng vật",
+          "Kích thước của vật"
+        ],
+        "correctAnswer": "2"
+      },
+      {
+        "question": "Động lượng p được tính bằng công thức nào?",
+        "options": [
+          "p = 1/2.m.v^2",
+          "p = m.v",
+          "p = m.a",
+          "p = F.t"
+        ],
+        "correctAnswer": "1"
+      },
+      {
+        "question": "Lực ma sát trượt luôn có hướng như thế nào?",
+        "options": [
+          "Cùng hướng chuyển động",
+          "Hướng về tâm quỹ đạo",
+          "Vuông góc với hướng chuyển động",
+          "Ngược hướng chuyển động"
+        ],
+        "correctAnswer": "3"
+      },
+      {
+        "question": "Đơn vị của lực trong hệ SI là gì?",
+        "options": [
+          "Joule (J)",
+          "Pascal (Pa)",
+          "Newton (N)",
+          "Watt (W)"
+        ],
+        "correctAnswer": "2"
+      },
+      {
+        "question": "Định luật I Newton còn được gọi là gì?",
+        "options": [
+          "Định luật bảo toàn động lượng",
+          "Định luật quán tính",
+          "Định luật vạn vật hấp dẫn",
+          "Định luật bảo toàn năng lượng"
+        ],
+        "correctAnswer": "1"
+      },
+      {
+        "question": "Công thức tính công cơ học là gì?",
+        "options": [
+          "A = F.s.cos(alpha)",
+          "A = P.t",
+          "A = m.g.h",
+          "A = m.a"
+        ],
+        "correctAnswer": "0"
+      },
+      {
+        "question": "Gia tốc trọng trường g trên Trái Đất xấp xỉ bao nhiêu?",
+        "options": [
+          "9.8 m/s^2",
+          "100 m/s^2",
+          "10 cm/s^2",
+          "3.14 m/s"
+        ],
+        "correctAnswer": "0"
+      },
+      {
+        "question": "Đơn vị của động năng là gì?",
+        "options": [
+          "Newton (N)",
+          "Joule (J)",
+          "Watt (W)",
+          "Kg.m/s"
+        ],
+        "correctAnswer": "1"
+      },
+      {
+        "question": "Mô men lực đặc trưng cho tác dụng gì của lực?",
+        "options": [
+          "Tác dụng làm biến dạng",
+          "Tác dụng làm vật dịch chuyển",
+          "Tác dụng làm quay",
+          "Tác dụng cản trở chuyển động"
+        ],
+        "correctAnswer": "2"
+      },
+      {
+        "question": "Khi ô tô phanh gấp, hành khách bị xô về phía trước là do?",
+        "options": [
+          "Quán tính",
+          "Lực hấp dẫn",
+          "Trọng lực",
+          "Lực ma sát"
+        ],
+        "correctAnswer": "0"
+      },
+      {
+        "question": "Gia tốc của một vật rơi tự do phụ thuộc vào?",
+        "options": [
+          "Kích thước của vật",
+          "Hình dạng của vật",
+          "Không phụ thuộc khối lượng vật",
+          "Khối lượng của vật"
+        ],
+        "correctAnswer": "2"
+      },
+      {
+        "question": "Động lượng p được tính bằng công thức nào?",
+        "options": [
+          "p = m.a",
+          "p = 1/2.m.v^2",
+          "p = m.v",
+          "p = F.t"
+        ],
+        "correctAnswer": "2"
+      },
+      {
+        "question": "Lực ma sát trượt luôn có hướng như thế nào?",
+        "options": [
+          "Ngược hướng chuyển động",
+          "Cùng hướng chuyển động",
+          "Hướng về tâm quỹ đạo",
+          "Vuông góc với hướng chuyển động"
+        ],
+        "correctAnswer": "0"
+      }
+    ],
+    "Thermo Field": [
+      {
+        "question": "Nhiệt độ tuyệt đối (Kelvin) bằng nhiệt độ Celsius cộng thêm bao nhiêu?",
+        "options": [
+          "273.15",
+          "100",
+          "32",
+          "0"
+        ],
+        "correctAnswer": "0"
+      },
+      {
+        "question": "Định luật bảo toàn và chuyển hóa năng lượng là nội dung của?",
+        "options": [
+          "Nguyên lý I Nhiệt động lực học",
+          "Định luật Boyle-Mariotte",
+          "Định luật Charles",
+          "Nguyên lý II Nhiệt động lực học"
+        ],
+        "correctAnswer": "0"
+      },
+      {
+        "question": "Quá trình đẳng nhiệt là quá trình trong đó?",
+        "options": [
+          "Áp suất không đổi",
+          "Thể tích không đổi",
+          "Nội năng không đổi",
+          "Nhiệt độ không đổi"
+        ],
+        "correctAnswer": "3"
+      },
+      {
+        "question": "Công thức phương trình trạng thái khí lý tưởng là gì?",
+        "options": [
+          "V/T = const",
+          "p = V/T",
+          "p.V = n.R.T",
+          "p.V = const"
+        ],
+        "correctAnswer": "2"
+      },
+      {
+        "question": "Nhiệt lượng cần thiết để vật thay đổi nhiệt độ được tính bằng?",
+        "options": [
+          "Q = m.c.deltaT",
+          "Q = I^2.R.t",
+          "Q = m.lambda",
+          "Q = m.L"
+        ],
+        "correctAnswer": "0"
+      },
+      {
+        "question": "Sự truyền nhiệt bằng cách bức xạ nhiệt có thể xảy ra trong môi trường nào?",
+        "options": [
+          "Chỉ trong chất lỏng và khí",
+          "Chỉ trong chất rắn",
+          "Cả chân không và môi trường vật chất",
+          "Chỉ trong chân không"
+        ],
+        "correctAnswer": "2"
+      },
+      {
+        "question": "Đơn vị của nhiệt dung riêng là gì?",
+        "options": [
+          "J/kg",
+          "W/(m.K)",
+          "J/K",
+          "J/(kg.K)"
+        ],
+        "correctAnswer": "3"
+      },
+      {
+        "question": "Nguyên lý II Nhiệt động lực học khẳng định điều gì?",
+        "options": [
+          "Nhiệt không thể tự truyền từ vật lạnh sang vật nóng hơn",
+          "Năng lượng luôn được bảo toàn",
+          "Độ không tuyệt đối có thể đạt được",
+          "Động cơ nhiệt có thể đạt hiệu suất 100%"
+        ],
+        "correctAnswer": "0"
+      },
+      {
+        "question": "Hiệu suất của động cơ nhiệt Carnot phụ thuộc vào?",
+        "options": [
+          "Thời gian hoạt động",
+          "Cấu tạo động cơ",
+          "Bản chất tác nhân",
+          "Nhiệt độ nguồn nóng và nguồn lạnh"
+        ],
+        "correctAnswer": "3"
+      },
+      {
+        "question": "Chất lỏng bay hơi ở nhiệt độ nào?",
+        "options": [
+          "Chỉ ở nhiệt độ phòng",
+          "Ở mọi nhiệt độ",
+          "Chỉ ở trên 0 độ C",
+          "Chỉ ở nhiệt độ sôi"
+        ],
+        "correctAnswer": "1"
+      },
+      {
+        "question": "Nhiệt độ tuyệt đối (Kelvin) bằng nhiệt độ Celsius cộng thêm bao nhiêu?",
+        "options": [
+          "32",
+          "0",
+          "273.15",
+          "100"
+        ],
+        "correctAnswer": "2"
+      },
+      {
+        "question": "Định luật bảo toàn và chuyển hóa năng lượng là nội dung của?",
+        "options": [
+          "Nguyên lý I Nhiệt động lực học",
+          "Nguyên lý II Nhiệt động lực học",
+          "Định luật Boyle-Mariotte",
+          "Định luật Charles"
+        ],
+        "correctAnswer": "0"
+      },
+      {
+        "question": "Quá trình đẳng nhiệt là quá trình trong đó?",
+        "options": [
+          "Nội năng không đổi",
+          "Áp suất không đổi",
+          "Nhiệt độ không đổi",
+          "Thể tích không đổi"
+        ],
+        "correctAnswer": "2"
+      },
+      {
+        "question": "Công thức phương trình trạng thái khí lý tưởng là gì?",
+        "options": [
+          "V/T = const",
+          "p = V/T",
+          "p.V = n.R.T",
+          "p.V = const"
+        ],
+        "correctAnswer": "2"
+      },
+      {
+        "question": "Nhiệt lượng cần thiết để vật thay đổi nhiệt độ được tính bằng?",
+        "options": [
+          "Q = m.L",
+          "Q = m.c.deltaT",
+          "Q = m.lambda",
+          "Q = I^2.R.t"
+        ],
+        "correctAnswer": "1"
+      },
+      {
+        "question": "Sự truyền nhiệt bằng cách bức xạ nhiệt có thể xảy ra trong môi trường nào?",
+        "options": [
+          "Chỉ trong chất lỏng và khí",
+          "Chỉ trong chân không",
+          "Chỉ trong chất rắn",
+          "Cả chân không và môi trường vật chất"
+        ],
+        "correctAnswer": "3"
+      },
+      {
+        "question": "Đơn vị của nhiệt dung riêng là gì?",
+        "options": [
+          "W/(m.K)",
+          "J/kg",
+          "J/K",
+          "J/(kg.K)"
+        ],
+        "correctAnswer": "3"
+      },
+      {
+        "question": "Nguyên lý II Nhiệt động lực học khẳng định điều gì?",
+        "options": [
+          "Năng lượng luôn được bảo toàn",
+          "Nhiệt không thể tự truyền từ vật lạnh sang vật nóng hơn",
+          "Độ không tuyệt đối có thể đạt được",
+          "Động cơ nhiệt có thể đạt hiệu suất 100%"
+        ],
+        "correctAnswer": "1"
+      },
+      {
+        "question": "Hiệu suất của động cơ nhiệt Carnot phụ thuộc vào?",
+        "options": [
+          "Bản chất tác nhân",
+          "Nhiệt độ nguồn nóng và nguồn lạnh",
+          "Thời gian hoạt động",
+          "Cấu tạo động cơ"
+        ],
+        "correctAnswer": "1"
+      },
+      {
+        "question": "Chất lỏng bay hơi ở nhiệt độ nào?",
+        "options": [
+          "Chỉ ở nhiệt độ sôi",
+          "Chỉ ở trên 0 độ C",
+          "Chỉ ở nhiệt độ phòng",
+          "Ở mọi nhiệt độ"
+        ],
+        "correctAnswer": "3"
+      },
+      {
+        "question": "Nhiệt độ tuyệt đối (Kelvin) bằng nhiệt độ Celsius cộng thêm bao nhiêu?",
+        "options": [
+          "273.15",
+          "32",
+          "100",
+          "0"
+        ],
+        "correctAnswer": "0"
+      },
+      {
+        "question": "Định luật bảo toàn và chuyển hóa năng lượng là nội dung của?",
+        "options": [
+          "Nguyên lý II Nhiệt động lực học",
+          "Nguyên lý I Nhiệt động lực học",
+          "Định luật Charles",
+          "Định luật Boyle-Mariotte"
+        ],
+        "correctAnswer": "1"
+      },
+      {
+        "question": "Quá trình đẳng nhiệt là quá trình trong đó?",
+        "options": [
+          "Nhiệt độ không đổi",
+          "Áp suất không đổi",
+          "Thể tích không đổi",
+          "Nội năng không đổi"
+        ],
+        "correctAnswer": "0"
+      },
+      {
+        "question": "Công thức phương trình trạng thái khí lý tưởng là gì?",
+        "options": [
+          "p = V/T",
+          "p.V = n.R.T",
+          "V/T = const",
+          "p.V = const"
+        ],
+        "correctAnswer": "1"
+      },
+      {
+        "question": "Nhiệt lượng cần thiết để vật thay đổi nhiệt độ được tính bằng?",
+        "options": [
+          "Q = m.L",
+          "Q = m.lambda",
+          "Q = m.c.deltaT",
+          "Q = I^2.R.t"
+        ],
+        "correctAnswer": "2"
+      },
+      {
+        "question": "Sự truyền nhiệt bằng cách bức xạ nhiệt có thể xảy ra trong môi trường nào?",
+        "options": [
+          "Chỉ trong chất lỏng và khí",
+          "Chỉ trong chân không",
+          "Cả chân không và môi trường vật chất",
+          "Chỉ trong chất rắn"
+        ],
+        "correctAnswer": "2"
+      },
+      {
+        "question": "Đơn vị của nhiệt dung riêng là gì?",
+        "options": [
+          "J/kg",
+          "W/(m.K)",
+          "J/(kg.K)",
+          "J/K"
+        ],
+        "correctAnswer": "2"
+      },
+      {
+        "question": "Nguyên lý II Nhiệt động lực học khẳng định điều gì?",
+        "options": [
+          "Năng lượng luôn được bảo toàn",
+          "Nhiệt không thể tự truyền từ vật lạnh sang vật nóng hơn",
+          "Động cơ nhiệt có thể đạt hiệu suất 100%",
+          "Độ không tuyệt đối có thể đạt được"
+        ],
+        "correctAnswer": "1"
+      },
+      {
+        "question": "Hiệu suất của động cơ nhiệt Carnot phụ thuộc vào?",
+        "options": [
+          "Bản chất tác nhân",
+          "Nhiệt độ nguồn nóng và nguồn lạnh",
+          "Cấu tạo động cơ",
+          "Thời gian hoạt động"
+        ],
+        "correctAnswer": "1"
+      },
+      {
+        "question": "Chất lỏng bay hơi ở nhiệt độ nào?",
+        "options": [
+          "Chỉ ở trên 0 độ C",
+          "Chỉ ở nhiệt độ sôi",
+          "Chỉ ở nhiệt độ phòng",
+          "Ở mọi nhiệt độ"
+        ],
+        "correctAnswer": "3"
+      },
+      {
+        "question": "Nhiệt độ tuyệt đối (Kelvin) bằng nhiệt độ Celsius cộng thêm bao nhiêu?",
+        "options": [
+          "100",
+          "0",
+          "32",
+          "273.15"
+        ],
+        "correctAnswer": "3"
+      },
+      {
+        "question": "Định luật bảo toàn và chuyển hóa năng lượng là nội dung của?",
+        "options": [
+          "Nguyên lý I Nhiệt động lực học",
+          "Định luật Charles",
+          "Nguyên lý II Nhiệt động lực học",
+          "Định luật Boyle-Mariotte"
+        ],
+        "correctAnswer": "0"
+      },
+      {
+        "question": "Quá trình đẳng nhiệt là quá trình trong đó?",
+        "options": [
+          "Thể tích không đổi",
+          "Nội năng không đổi",
+          "Nhiệt độ không đổi",
+          "Áp suất không đổi"
+        ],
+        "correctAnswer": "2"
+      },
+      {
+        "question": "Công thức phương trình trạng thái khí lý tưởng là gì?",
+        "options": [
+          "V/T = const",
+          "p.V = n.R.T",
+          "p.V = const",
+          "p = V/T"
+        ],
+        "correctAnswer": "1"
+      },
+      {
+        "question": "Nhiệt lượng cần thiết để vật thay đổi nhiệt độ được tính bằng?",
+        "options": [
+          "Q = m.lambda",
+          "Q = m.L",
+          "Q = m.c.deltaT",
+          "Q = I^2.R.t"
+        ],
+        "correctAnswer": "2"
+      },
+      {
+        "question": "Sự truyền nhiệt bằng cách bức xạ nhiệt có thể xảy ra trong môi trường nào?",
+        "options": [
+          "Cả chân không và môi trường vật chất",
+          "Chỉ trong chất rắn",
+          "Chỉ trong chân không",
+          "Chỉ trong chất lỏng và khí"
+        ],
+        "correctAnswer": "0"
+      },
+      {
+        "question": "Đơn vị của nhiệt dung riêng là gì?",
+        "options": [
+          "J/(kg.K)",
+          "J/K",
+          "J/kg",
+          "W/(m.K)"
+        ],
+        "correctAnswer": "0"
+      },
+      {
+        "question": "Nguyên lý II Nhiệt động lực học khẳng định điều gì?",
+        "options": [
+          "Độ không tuyệt đối có thể đạt được",
+          "Động cơ nhiệt có thể đạt hiệu suất 100%",
+          "Nhiệt không thể tự truyền từ vật lạnh sang vật nóng hơn",
+          "Năng lượng luôn được bảo toàn"
+        ],
+        "correctAnswer": "2"
+      },
+      {
+        "question": "Hiệu suất của động cơ nhiệt Carnot phụ thuộc vào?",
+        "options": [
+          "Bản chất tác nhân",
+          "Nhiệt độ nguồn nóng và nguồn lạnh",
+          "Thời gian hoạt động",
+          "Cấu tạo động cơ"
+        ],
+        "correctAnswer": "1"
+      },
+      {
+        "question": "Chất lỏng bay hơi ở nhiệt độ nào?",
+        "options": [
+          "Chỉ ở trên 0 độ C",
+          "Chỉ ở nhiệt độ phòng",
+          "Ở mọi nhiệt độ",
+          "Chỉ ở nhiệt độ sôi"
+        ],
+        "correctAnswer": "2"
+      },
+      {
+        "question": "Nhiệt độ tuyệt đối (Kelvin) bằng nhiệt độ Celsius cộng thêm bao nhiêu?",
+        "options": [
+          "273.15",
+          "100",
+          "32",
+          "0"
+        ],
+        "correctAnswer": "0"
+      },
+      {
+        "question": "Định luật bảo toàn và chuyển hóa năng lượng là nội dung của?",
+        "options": [
+          "Định luật Boyle-Mariotte",
+          "Định luật Charles",
+          "Nguyên lý I Nhiệt động lực học",
+          "Nguyên lý II Nhiệt động lực học"
+        ],
+        "correctAnswer": "2"
+      },
+      {
+        "question": "Quá trình đẳng nhiệt là quá trình trong đó?",
+        "options": [
+          "Nội năng không đổi",
+          "Áp suất không đổi",
+          "Thể tích không đổi",
+          "Nhiệt độ không đổi"
+        ],
+        "correctAnswer": "3"
+      },
+      {
+        "question": "Công thức phương trình trạng thái khí lý tưởng là gì?",
+        "options": [
+          "p.V = n.R.T",
+          "p.V = const",
+          "p = V/T",
+          "V/T = const"
+        ],
+        "correctAnswer": "0"
+      },
+      {
+        "question": "Nhiệt lượng cần thiết để vật thay đổi nhiệt độ được tính bằng?",
+        "options": [
+          "Q = m.lambda",
+          "Q = m.c.deltaT",
+          "Q = m.L",
+          "Q = I^2.R.t"
+        ],
+        "correctAnswer": "1"
+      },
+      {
+        "question": "Sự truyền nhiệt bằng cách bức xạ nhiệt có thể xảy ra trong môi trường nào?",
+        "options": [
+          "Chỉ trong chân không",
+          "Chỉ trong chất rắn",
+          "Chỉ trong chất lỏng và khí",
+          "Cả chân không và môi trường vật chất"
+        ],
+        "correctAnswer": "3"
+      },
+      {
+        "question": "Đơn vị của nhiệt dung riêng là gì?",
+        "options": [
+          "J/K",
+          "J/(kg.K)",
+          "W/(m.K)",
+          "J/kg"
+        ],
+        "correctAnswer": "1"
+      },
+      {
+        "question": "Nguyên lý II Nhiệt động lực học khẳng định điều gì?",
+        "options": [
+          "Động cơ nhiệt có thể đạt hiệu suất 100%",
+          "Nhiệt không thể tự truyền từ vật lạnh sang vật nóng hơn",
+          "Độ không tuyệt đối có thể đạt được",
+          "Năng lượng luôn được bảo toàn"
+        ],
+        "correctAnswer": "1"
+      },
+      {
+        "question": "Hiệu suất của động cơ nhiệt Carnot phụ thuộc vào?",
+        "options": [
+          "Nhiệt độ nguồn nóng và nguồn lạnh",
+          "Thời gian hoạt động",
+          "Bản chất tác nhân",
+          "Cấu tạo động cơ"
+        ],
+        "correctAnswer": "0"
+      },
+      {
+        "question": "Chất lỏng bay hơi ở nhiệt độ nào?",
+        "options": [
+          "Ở mọi nhiệt độ",
+          "Chỉ ở nhiệt độ sôi",
+          "Chỉ ở nhiệt độ phòng",
+          "Chỉ ở trên 0 độ C"
+        ],
+        "correctAnswer": "0"
+      }
+    ],
+    "Quantum Void": [
+      {
+        "question": "Ai là người đề xuất thuyết lượng tử ánh sáng (photon)?",
+        "options": [
+          "Albert Einstein",
+          "Niels Bohr",
+          "Max Planck",
+          "Isaac Newton"
+        ],
+        "correctAnswer": "0"
+      },
+      {
+        "question": "Theo thuyết lượng tử, năng lượng của một photon tỷ lệ thuận với?",
+        "options": [
+          "Vận tốc ánh sáng",
+          "Bước sóng ánh sáng",
+          "Cường độ ánh sáng",
+          "Tần số ánh sáng"
+        ],
+        "correctAnswer": "3"
+      },
+      {
+        "question": "Nguyên lý bất định Heisenberg phát biểu rằng không thể xác định đồng thời chính xác điều gì của hạt vi mô?",
+        "options": [
+          "Cả A và C đều đúng",
+          "Khối lượng và vận tốc",
+          "Năng lượng và thời gian",
+          "Vị trí và động lượng"
+        ],
+        "correctAnswer": "3"
+      },
+      {
+        "question": "Hạt electron có điện tích là gì?",
+        "options": [
+          "Trung hòa",
+          "Có thể âm hoặc dương",
+          "Dương",
+          "Âm"
+        ],
+        "correctAnswer": "3"
+      },
+      {
+        "question": "Hiện tượng quang điện ngoài xảy ra khi?",
+        "options": [
+          "Kim loại bị nung nóng phát sáng",
+          "Ánh sáng chiếu vào kim loại làm bật electron ra",
+          "Electron hấp thụ nhiệt và bay ra",
+          "Hạt nhân bị phân hạch"
+        ],
+        "correctAnswer": "1"
+      },
+      {
+        "question": "Hạt cơ bản cấu tạo nên proton và neutron là gì?",
+        "options": [
+          "Quark",
+          "Lepton",
+          "Boson",
+          "Electron"
+        ],
+        "correctAnswer": "0"
+      },
+      {
+        "question": "Trong nguyên tử Bohr, khi electron chuyển từ quỹ đạo cao xuống quỹ đạo thấp, nó sẽ?",
+        "options": [
+          "Phát ra một photon",
+          "Hấp thụ một photon",
+          "Trở thành proton",
+          "Không thay đổi năng lượng"
+        ],
+        "correctAnswer": "0"
+      },
+      {
+        "question": "Thí nghiệm giao thoa khe Young chứng minh tính chất gì của ánh sáng?",
+        "options": [
+          "Tính chất hạt",
+          "Tính chất sóng",
+          "Tính chất lượng tử",
+          "Tính chất điện từ"
+        ],
+        "correctAnswer": "1"
+      },
+      {
+        "question": "Vận tốc ánh sáng trong chân không xấp xỉ bằng bao nhiêu?",
+        "options": [
+          "3x10^8 m/s",
+          "3x10^5 km/s",
+          "340 m/s",
+          "Cả A và B đều đúng"
+        ],
+        "correctAnswer": "0"
+      },
+      {
+        "question": "Chất nào sau đây là chất bán dẫn tiêu biểu?",
+        "options": [
+          "Silicon (Si)",
+          "Thủy tinh",
+          "Đồng (Cu)",
+          "Sắt (Fe)"
+        ],
+        "correctAnswer": "0"
+      },
+      {
+        "question": "Ai là người đề xuất thuyết lượng tử ánh sáng (photon)?",
+        "options": [
+          "Isaac Newton",
+          "Max Planck",
+          "Albert Einstein",
+          "Niels Bohr"
+        ],
+        "correctAnswer": "2"
+      },
+      {
+        "question": "Theo thuyết lượng tử, năng lượng của một photon tỷ lệ thuận với?",
+        "options": [
+          "Vận tốc ánh sáng",
+          "Bước sóng ánh sáng",
+          "Cường độ ánh sáng",
+          "Tần số ánh sáng"
+        ],
+        "correctAnswer": "3"
+      },
+      {
+        "question": "Nguyên lý bất định Heisenberg phát biểu rằng không thể xác định đồng thời chính xác điều gì của hạt vi mô?",
+        "options": [
+          "Năng lượng và thời gian",
+          "Cả A và C đều đúng",
+          "Vị trí và động lượng",
+          "Khối lượng và vận tốc"
+        ],
+        "correctAnswer": "2"
+      },
+      {
+        "question": "Hạt electron có điện tích là gì?",
+        "options": [
+          "Âm",
+          "Dương",
+          "Có thể âm hoặc dương",
+          "Trung hòa"
+        ],
+        "correctAnswer": "0"
+      },
+      {
+        "question": "Hiện tượng quang điện ngoài xảy ra khi?",
+        "options": [
+          "Kim loại bị nung nóng phát sáng",
+          "Ánh sáng chiếu vào kim loại làm bật electron ra",
+          "Hạt nhân bị phân hạch",
+          "Electron hấp thụ nhiệt và bay ra"
+        ],
+        "correctAnswer": "1"
+      },
+      {
+        "question": "Hạt cơ bản cấu tạo nên proton và neutron là gì?",
+        "options": [
+          "Quark",
+          "Lepton",
+          "Electron",
+          "Boson"
+        ],
+        "correctAnswer": "0"
+      },
+      {
+        "question": "Trong nguyên tử Bohr, khi electron chuyển từ quỹ đạo cao xuống quỹ đạo thấp, nó sẽ?",
+        "options": [
+          "Hấp thụ một photon",
+          "Phát ra một photon",
+          "Không thay đổi năng lượng",
+          "Trở thành proton"
+        ],
+        "correctAnswer": "1"
+      },
+      {
+        "question": "Thí nghiệm giao thoa khe Young chứng minh tính chất gì của ánh sáng?",
+        "options": [
+          "Tính chất hạt",
+          "Tính chất lượng tử",
+          "Tính chất điện từ",
+          "Tính chất sóng"
+        ],
+        "correctAnswer": "3"
+      },
+      {
+        "question": "Vận tốc ánh sáng trong chân không xấp xỉ bằng bao nhiêu?",
+        "options": [
+          "340 m/s",
+          "3x10^5 km/s",
+          "3x10^8 m/s",
+          "Cả A và B đều đúng"
+        ],
+        "correctAnswer": "2"
+      },
+      {
+        "question": "Chất nào sau đây là chất bán dẫn tiêu biểu?",
+        "options": [
+          "Sắt (Fe)",
+          "Silicon (Si)",
+          "Thủy tinh",
+          "Đồng (Cu)"
+        ],
+        "correctAnswer": "1"
+      },
+      {
+        "question": "Ai là người đề xuất thuyết lượng tử ánh sáng (photon)?",
+        "options": [
+          "Isaac Newton",
+          "Albert Einstein",
+          "Niels Bohr",
+          "Max Planck"
+        ],
+        "correctAnswer": "1"
+      },
+      {
+        "question": "Theo thuyết lượng tử, năng lượng của một photon tỷ lệ thuận với?",
+        "options": [
+          "Bước sóng ánh sáng",
+          "Vận tốc ánh sáng",
+          "Tần số ánh sáng",
+          "Cường độ ánh sáng"
+        ],
+        "correctAnswer": "2"
+      },
+      {
+        "question": "Nguyên lý bất định Heisenberg phát biểu rằng không thể xác định đồng thời chính xác điều gì của hạt vi mô?",
+        "options": [
+          "Vị trí và động lượng",
+          "Cả A và C đều đúng",
+          "Năng lượng và thời gian",
+          "Khối lượng và vận tốc"
+        ],
+        "correctAnswer": "0"
+      },
+      {
+        "question": "Hạt electron có điện tích là gì?",
+        "options": [
+          "Dương",
+          "Âm",
+          "Trung hòa",
+          "Có thể âm hoặc dương"
+        ],
+        "correctAnswer": "1"
+      },
+      {
+        "question": "Hiện tượng quang điện ngoài xảy ra khi?",
+        "options": [
+          "Ánh sáng chiếu vào kim loại làm bật electron ra",
+          "Electron hấp thụ nhiệt và bay ra",
+          "Hạt nhân bị phân hạch",
+          "Kim loại bị nung nóng phát sáng"
+        ],
+        "correctAnswer": "0"
+      },
+      {
+        "question": "Hạt cơ bản cấu tạo nên proton và neutron là gì?",
+        "options": [
+          "Boson",
+          "Lepton",
+          "Electron",
+          "Quark"
+        ],
+        "correctAnswer": "3"
+      },
+      {
+        "question": "Trong nguyên tử Bohr, khi electron chuyển từ quỹ đạo cao xuống quỹ đạo thấp, nó sẽ?",
+        "options": [
+          "Hấp thụ một photon",
+          "Trở thành proton",
+          "Không thay đổi năng lượng",
+          "Phát ra một photon"
+        ],
+        "correctAnswer": "3"
+      },
+      {
+        "question": "Thí nghiệm giao thoa khe Young chứng minh tính chất gì của ánh sáng?",
+        "options": [
+          "Tính chất sóng",
+          "Tính chất hạt",
+          "Tính chất điện từ",
+          "Tính chất lượng tử"
+        ],
+        "correctAnswer": "0"
+      },
+      {
+        "question": "Vận tốc ánh sáng trong chân không xấp xỉ bằng bao nhiêu?",
+        "options": [
+          "340 m/s",
+          "3x10^5 km/s",
+          "Cả A và B đều đúng",
+          "3x10^8 m/s"
+        ],
+        "correctAnswer": "3"
+      },
+      {
+        "question": "Chất nào sau đây là chất bán dẫn tiêu biểu?",
+        "options": [
+          "Silicon (Si)",
+          "Đồng (Cu)",
+          "Sắt (Fe)",
+          "Thủy tinh"
+        ],
+        "correctAnswer": "0"
+      },
+      {
+        "question": "Ai là người đề xuất thuyết lượng tử ánh sáng (photon)?",
+        "options": [
+          "Niels Bohr",
+          "Isaac Newton",
+          "Max Planck",
+          "Albert Einstein"
+        ],
+        "correctAnswer": "3"
+      },
+      {
+        "question": "Theo thuyết lượng tử, năng lượng của một photon tỷ lệ thuận với?",
+        "options": [
+          "Tần số ánh sáng",
+          "Vận tốc ánh sáng",
+          "Cường độ ánh sáng",
+          "Bước sóng ánh sáng"
+        ],
+        "correctAnswer": "0"
+      },
+      {
+        "question": "Nguyên lý bất định Heisenberg phát biểu rằng không thể xác định đồng thời chính xác điều gì của hạt vi mô?",
+        "options": [
+          "Vị trí và động lượng",
+          "Năng lượng và thời gian",
+          "Khối lượng và vận tốc",
+          "Cả A và C đều đúng"
+        ],
+        "correctAnswer": "0"
+      },
+      {
+        "question": "Hạt electron có điện tích là gì?",
+        "options": [
+          "Có thể âm hoặc dương",
+          "Dương",
+          "Âm",
+          "Trung hòa"
+        ],
+        "correctAnswer": "2"
+      },
+      {
+        "question": "Hiện tượng quang điện ngoài xảy ra khi?",
+        "options": [
+          "Ánh sáng chiếu vào kim loại làm bật electron ra",
+          "Kim loại bị nung nóng phát sáng",
+          "Hạt nhân bị phân hạch",
+          "Electron hấp thụ nhiệt và bay ra"
+        ],
+        "correctAnswer": "0"
+      },
+      {
+        "question": "Hạt cơ bản cấu tạo nên proton và neutron là gì?",
+        "options": [
+          "Electron",
+          "Boson",
+          "Lepton",
+          "Quark"
+        ],
+        "correctAnswer": "3"
+      },
+      {
+        "question": "Trong nguyên tử Bohr, khi electron chuyển từ quỹ đạo cao xuống quỹ đạo thấp, nó sẽ?",
+        "options": [
+          "Phát ra một photon",
+          "Không thay đổi năng lượng",
+          "Hấp thụ một photon",
+          "Trở thành proton"
+        ],
+        "correctAnswer": "0"
+      },
+      {
+        "question": "Thí nghiệm giao thoa khe Young chứng minh tính chất gì của ánh sáng?",
+        "options": [
+          "Tính chất điện từ",
+          "Tính chất lượng tử",
+          "Tính chất sóng",
+          "Tính chất hạt"
+        ],
+        "correctAnswer": "2"
+      },
+      {
+        "question": "Vận tốc ánh sáng trong chân không xấp xỉ bằng bao nhiêu?",
+        "options": [
+          "3x10^5 km/s",
+          "Cả A và B đều đúng",
+          "3x10^8 m/s",
+          "340 m/s"
+        ],
+        "correctAnswer": "2"
+      },
+      {
+        "question": "Chất nào sau đây là chất bán dẫn tiêu biểu?",
+        "options": [
+          "Thủy tinh",
+          "Silicon (Si)",
+          "Đồng (Cu)",
+          "Sắt (Fe)"
+        ],
+        "correctAnswer": "1"
+      },
+      {
+        "question": "Ai là người đề xuất thuyết lượng tử ánh sáng (photon)?",
+        "options": [
+          "Max Planck",
+          "Albert Einstein",
+          "Isaac Newton",
+          "Niels Bohr"
+        ],
+        "correctAnswer": "1"
+      },
+      {
+        "question": "Theo thuyết lượng tử, năng lượng của một photon tỷ lệ thuận với?",
+        "options": [
+          "Vận tốc ánh sáng",
+          "Bước sóng ánh sáng",
+          "Cường độ ánh sáng",
+          "Tần số ánh sáng"
+        ],
+        "correctAnswer": "3"
+      },
+      {
+        "question": "Nguyên lý bất định Heisenberg phát biểu rằng không thể xác định đồng thời chính xác điều gì của hạt vi mô?",
+        "options": [
+          "Vị trí và động lượng",
+          "Năng lượng và thời gian",
+          "Khối lượng và vận tốc",
+          "Cả A và C đều đúng"
+        ],
+        "correctAnswer": "0"
+      },
+      {
+        "question": "Hạt electron có điện tích là gì?",
+        "options": [
+          "Trung hòa",
+          "Dương",
+          "Có thể âm hoặc dương",
+          "Âm"
+        ],
+        "correctAnswer": "3"
+      },
+      {
+        "question": "Hiện tượng quang điện ngoài xảy ra khi?",
+        "options": [
+          "Ánh sáng chiếu vào kim loại làm bật electron ra",
+          "Hạt nhân bị phân hạch",
+          "Kim loại bị nung nóng phát sáng",
+          "Electron hấp thụ nhiệt và bay ra"
+        ],
+        "correctAnswer": "0"
+      },
+      {
+        "question": "Hạt cơ bản cấu tạo nên proton và neutron là gì?",
+        "options": [
+          "Quark",
+          "Boson",
+          "Lepton",
+          "Electron"
+        ],
+        "correctAnswer": "0"
+      },
+      {
+        "question": "Trong nguyên tử Bohr, khi electron chuyển từ quỹ đạo cao xuống quỹ đạo thấp, nó sẽ?",
+        "options": [
+          "Hấp thụ một photon",
+          "Không thay đổi năng lượng",
+          "Trở thành proton",
+          "Phát ra một photon"
+        ],
+        "correctAnswer": "3"
+      },
+      {
+        "question": "Thí nghiệm giao thoa khe Young chứng minh tính chất gì của ánh sáng?",
+        "options": [
+          "Tính chất sóng",
+          "Tính chất hạt",
+          "Tính chất lượng tử",
+          "Tính chất điện từ"
+        ],
+        "correctAnswer": "0"
+      },
+      {
+        "question": "Vận tốc ánh sáng trong chân không xấp xỉ bằng bao nhiêu?",
+        "options": [
+          "Cả A và B đều đúng",
+          "3x10^5 km/s",
+          "3x10^8 m/s",
+          "340 m/s"
+        ],
+        "correctAnswer": "2"
+      },
+      {
+        "question": "Chất nào sau đây là chất bán dẫn tiêu biểu?",
+        "options": [
+          "Thủy tinh",
+          "Sắt (Fe)",
+          "Silicon (Si)",
+          "Đồng (Cu)"
+        ],
+        "correctAnswer": "2"
+      }
+    ]
+  }
+}

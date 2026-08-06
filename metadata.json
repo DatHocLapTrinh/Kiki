@@ -1,0 +1,6 @@
+{
+  "name": "AI Study Mentor",
+  "description": "Nền tảng hỏi đáp dựa trên AI, không có sự can thiệp của giáo viên con người. Hỗ trợ học sinh giải bài tập theo từng bước, lưu lịch sử, tiến độ học tập và hệ thống điểm XP.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
