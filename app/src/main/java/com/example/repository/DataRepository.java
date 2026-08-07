@@ -181,6 +181,18 @@ public class DataRepository {
         dao.insertAIQuestion(ai);
     }
 
+    public void saveQuizAttempt(long userId, long chapterId, int total, int correct) {
+        QuizAttemptEntity attempt = new QuizAttemptEntity();
+        attempt.userId = userId;
+        attempt.chapterId = chapterId;
+        attempt.totalQuestions = total;
+        attempt.correctAnswers = correct;
+        attempt.score = total > 0 ? (correct * 100) / total : 0;
+        attempt.status = "COMPLETED";
+        attempt.completedAt = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss", java.util.Locale.US).format(new java.util.Date());
+        dao.insertQuizAttempt(attempt);
+    }
+
     public List<QAItem> getAIHistory(long userId) {
         List<AIQuestionEntity> list = dao.getAIHistory(userId);
         List<QAItem> items = new ArrayList<>();

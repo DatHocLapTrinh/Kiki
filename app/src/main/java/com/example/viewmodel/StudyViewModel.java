@@ -229,10 +229,15 @@ public class StudyViewModel extends ViewModel {
             addXp(correctCount * 20);
         }
         final int finalCorrectCount = correctCount;
+        final int totalCount = results.size();
 
         executor.execute(() -> {
             Long userId = _currentUserId.getValue();
             if (userId != null && userId != -1L) {
+                Long chapterId = repository.getChapterIdByTitle(_currentChapterTitle.getValue());
+                if (chapterId != null && chapterId != -1L) {
+                    repository.saveQuizAttempt(userId, chapterId, totalCount, finalCorrectCount);
+                }
                 recordDailyTaskProgress(userId, "LESSON_COMPLETE", 1);
                 recordDailyTaskProgress(userId, "ANSWER_QUESTIONS", results.size());
                 if (!results.isEmpty() && finalCorrectCount == results.size()) {

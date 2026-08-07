@@ -10,7 +10,7 @@ import retrofit2.converter.moshi.MoshiConverterFactory;
 
 public class RetrofitClient {
     private static final String BASE_URL = "https://api.groq.com/openai/";
-    public static final String API_KEY = "your_groq_api_key_here";
+    public static final String API_KEY = ".....";
     private static GeminiApiService service;
 
     public static GeminiApiService getService() {
