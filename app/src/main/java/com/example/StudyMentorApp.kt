@@ -216,13 +216,55 @@ fun OnboardingScreen(viewModel: StudyViewModel, onFinish: () -> Unit) {
                             1 -> {
                                 Text(strings.chooseDiscipline, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Black, color = Color.White)
                                 Spacer(modifier = Modifier.height(24.dp))
-                                StaggeredOptions(
-                                    options = listOf(strings.webDev, strings.advMath, strings.physicsChem),
-                                    onSelect = { 
-                                        selectedSubj = it
-                                        scope.launch { delay(300); step++ }
+                                val subjectOptions = listOf(strings.webDev, strings.advMath, strings.physicsChem)
+                                var selectedSubjects by remember { mutableStateOf(setOf(strings.physicsChem)) }
+                                Column {
+                                    subjectOptions.forEach { option ->
+                                        val isSelected = option in selectedSubjects
+                                        val haptic = androidx.compose.ui.platform.LocalHapticFeedback.current
+                                        Box(
+                                            modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp).height(56.dp)
+                                                .clip(RoundedCornerShape(16.dp))
+                                                .background(if (isSelected) Color(0x3300F5D4) else Color(0x1AFFFFFF))
+                                                .border(1.dp, if (isSelected) Brush.linearGradient(listOf(Color(0xFF00F5D4), Color(0xFF00B4D8))) else SolidColor(Color(0x33FFFFFF)), RoundedCornerShape(16.dp))
+                                                .clickable {
+                                                    haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                                                    selectedSubjects = if (isSelected && selectedSubjects.size > 1) {
+                                                        selectedSubjects - option
+                                                    } else {
+                                                        selectedSubjects + option
+                                                    }
+                                                },
+                                            contentAlignment = Alignment.Center
+                                        ) {
+                                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                                Text(option, fontSize = 16.sp, color = if (isSelected) Color(0xFF00F5D4) else Color.White, fontWeight = FontWeight.SemiBold)
+                                                if (isSelected) {
+                                                    Spacer(modifier = Modifier.width(8.dp))
+                                                    Icon(Icons.Default.Check, contentDescription = null, tint = Color(0xFF00F5D4), modifier = Modifier.size(18.dp))
+                                                }
+                                            }
+                                        }
                                     }
-                                )
+                                    Spacer(modifier = Modifier.height(16.dp))
+                                    Box(
+                                        modifier = Modifier.fillMaxWidth().height(56.dp)
+                                            .clip(RoundedCornerShape(16.dp))
+                                            .background(Brush.linearGradient(listOf(Color(0xCCFF9E00), Color(0xCC00F5D4))))
+                                            .clickable {
+                                                val firstSubj = selectedSubjects.first()
+                                                selectedSubj = when (firstSubj) {
+                                                    strings.webDev -> "Web Development"
+                                                    strings.advMath -> "Advanced Mathematics"
+                                                    else -> "Physics & Chemistry"
+                                                }
+                                                scope.launch { delay(300); step++ }
+                                            },
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Text(strings.continueJourney, color = Color.White, fontWeight = FontWeight.Bold, fontSize = 15.sp)
+                                    }
+                                }
                             }
                             2 -> {
                                 Text(strings.profileInitialized, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Black, color = Color.White)

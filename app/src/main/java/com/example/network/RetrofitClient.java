@@ -9,7 +9,8 @@ import retrofit2.Retrofit;
 import retrofit2.converter.moshi.MoshiConverterFactory;
 
 public class RetrofitClient {
-    private static final String BASE_URL = "https://generativelanguage.googleapis.com/";
+    private static final String BASE_URL = "https://api.groq.com/openai/";
+    public static final String API_KEY = "your_groq_api_key_here";
     private static GeminiApiService service;
 
     public static GeminiApiService getService() {
@@ -19,6 +20,12 @@ public class RetrofitClient {
 
             OkHttpClient okHttpClient = new OkHttpClient.Builder()
                 .addInterceptor(logging)
+                .addInterceptor(chain -> chain.proceed(
+                    chain.request().newBuilder()
+                        .addHeader("Authorization", "Bearer " + API_KEY)
+                        .addHeader("Content-Type", "application/json")
+                        .build()
+                ))
                 .connectTimeout(60, TimeUnit.SECONDS)
                 .readTimeout(60, TimeUnit.SECONDS)
                 .writeTimeout(60, TimeUnit.SECONDS)

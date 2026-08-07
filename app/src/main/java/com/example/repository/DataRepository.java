@@ -177,6 +177,7 @@ public class DataRepository {
         ai.questionText = question;
         ai.imageUri = imageUri;
         ai.aiAnswer = aiAnswer;
+        ai.createdAt = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss", java.util.Locale.US).format(new java.util.Date());
         dao.insertAIQuestion(ai);
     }
 

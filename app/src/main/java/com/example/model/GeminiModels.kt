@@ -7,13 +7,32 @@ class GeminiModels {
 
     @JsonClass(generateAdapter = true)
     data class GenerateContentRequest(
-        @Json(name = "contents") val contents: List<Content>,
-        @Json(name = "system_instruction") val systemInstruction: Content? = null
+        @Json(name = "model") val model: String = "llama-3.3-70b-versatile",
+        @Json(name = "messages") val messages: List<Message>,
+        @Json(name = "temperature") val temperature: Double = 0.7,
+        @Json(name = "max_tokens") val maxTokens: Int = 1024
     )
 
     @JsonClass(generateAdapter = true)
+    data class Message(
+        @Json(name = "role") val role: String,
+        @Json(name = "content") val content: String
+    )
+
+    @JsonClass(generateAdapter = true)
+    data class GenerateContentResponse(
+        @Json(name = "choices") val choices: List<Choice>? = null
+    )
+
+    @JsonClass(generateAdapter = true)
+    data class Choice(
+        @Json(name = "message") val message: Message
+    )
+
+    // --- Giữ lại để tương thích với code cũ ---
+    @JsonClass(generateAdapter = true)
     data class Content @JvmOverloads constructor(
-        @Json(name = "parts") val parts: List<Part>,
+        @Json(name = "parts") val parts: List<Part> = emptyList(),
         @Json(name = "role") val role: String = "user"
     )
 
@@ -27,15 +46,5 @@ class GeminiModels {
     data class InlineData(
         @Json(name = "mime_type") val mimeType: String,
         @Json(name = "data") val data: String
-    )
-
-    @JsonClass(generateAdapter = true)
-    data class GenerateContentResponse(
-        @Json(name = "candidates") val candidates: List<Candidate>? = null
-    )
-
-    @JsonClass(generateAdapter = true)
-    data class Candidate(
-        @Json(name = "content") val content: Content
     )
 }

@@ -33,7 +33,7 @@ import retrofit2.Response;
 @HiltViewModel
 public class StudyViewModel extends ViewModel {
     public final DataRepository repository;
-    private final ExecutorService executor = Executors.newSingleThreadExecutor();
+    private final ExecutorService executor = Executors.newCachedThreadPool();
 
     private final MutableLiveData<List<QAItem>> _history = new MutableLiveData<>(new ArrayList<>());
     public LiveData<List<QAItem>> getHistory() { return _history; }
@@ -261,6 +261,7 @@ public class StudyViewModel extends ViewModel {
             long userId = repository.getUserIdByEmail(email);
             if (userId != -1L) {
                 _currentUserId.postValue(userId);
+                _history.postValue(new ArrayList<>());
                 com.example.sqlite.room.UserProfileEntity profile = repository.getUserProfile(userId);
                 if (profile != null) {
                     _userName.postValue(profile.displayName);
@@ -270,7 +271,6 @@ public class StudyViewModel extends ViewModel {
                     _mana.postValue(profile.mana);
                     _streak.postValue(profile.currentStreak);
                 }
-                refreshHistory(userId);
                 fetchLeaderboard();
                 refreshDailyTasks();
             }
@@ -344,42 +344,125 @@ public class StudyViewModel extends ViewModel {
 
     public void askQuestion(Context context, String question, Uri imageUri, Runnable onSuccess) {
         if (question.isEmpty() && imageUri == null) return;
-        _isGenerating.setValue(true);
-        
+        _isGenerating.postValue(true);
         executor.execute(() -> {
-            String answer = fetchAnswerFromGemini(context, question, imageUri);
-            Long userId = _currentUserId.getValue();
-            if (userId != null && userId != -1L) {
-                repository.saveAIQuestion(userId, question, imageUri != null ? imageUri.toString() : null, answer);
-                refreshHistory(userId);
-                addXp(20);
+            try {
+                String answer = fetchAnswerFromGemini(context, question, imageUri);
+                Long userId = _currentUserId.getValue();
+                if (userId != null && userId != -1L) {
+                    repository.saveAIQuestion(userId, question, imageUri != null ? imageUri.toString() : null, answer);
+                    List<QAItem> data = repository.getAIHistory(userId);
+                    _history.postValue(data);
+                    repository.updateXP(userId, 20);
+                    Integer currentXp = _xp.getValue();
+                    if (currentXp == null) currentXp = 0;
+                    int newXp = currentXp + 20;
+                    _xp.postValue(newXp);
+                    _level.postValue((newXp / 100) + 1);
+                    _rankTitle.postValue(calculateRankTitle(newXp));
+                } else {
+                    // Chưa đăng nhập: vẫn hiển thị câu trả lời trong session
+                    List<QAItem> current = _history.getValue();
+                    List<QAItem> updated = new ArrayList<>();
+                    updated.add(new QAItem(0, question, imageUri != null ? imageUri.toString() : null, answer, System.currentTimeMillis()));
+                    if (current != null) updated.addAll(current);
+                    _history.postValue(updated);
+                }
+            } finally {
+                _isGenerating.postValue(false);
+                if (onSuccess != null) onSuccess.run();
             }
-            _isGenerating.postValue(false);
-            if (onSuccess != null) onSuccess.run();
         });
     }
 
     public void askFollowUpQuestion(Context context, String currentQuestion, String followUpType) {
-        _isGenerating.setValue(true);
+        _isGenerating.postValue(true);
         executor.execute(() -> {
-            String prompt = "";
-            String title = "";
-            if ("EXPLAIN".equals(followUpType)) {
-                prompt = "Based on the previous question: '" + currentQuestion + "'. Please explain it in more detail, step by step. Reply in the same language.";
-                title = "Giải thích thêm: " + currentQuestion;
-            } else if ("SIMILAR".equals(followUpType)) {
-                prompt = "Based on the previous question: '" + currentQuestion + "'. Please give me a similar practice exercise related to this concept, along with a hint. Reply in the same language.";
-                title = "Bài tập tương tự: " + currentQuestion;
+            try {
+                String prompt = "";
+                String title = "";
+                if ("EXPLAIN".equals(followUpType)) {
+                    prompt = "Based on the question: '" + currentQuestion + "'. Please explain it in more detail, step by step. Use '[STEP] ' prefix for each step. Reply in the same language as the question.";
+                    title = "Giải thích thêm: " + currentQuestion;
+                } else if ("SIMILAR".equals(followUpType)) {
+                    prompt = "Based on the question: '" + currentQuestion + "'. Give me a similar practice exercise with a hint. Use '[STEP] ' prefix for each step. Reply in the same language as the question.";
+                    title = "Bài tập tương tự: " + currentQuestion;
+                }
+                String answer = fetchAnswerFromGemini(context, prompt, null);
+                Long userId = _currentUserId.getValue();
+                if (userId != null && userId != -1L) {
+                    repository.saveAIQuestion(userId, title, null, answer);
+                    List<QAItem> data = repository.getAIHistory(userId);
+                    _history.postValue(data);
+                    repository.updateXP(userId, 10);
+                } else {
+                    List<QAItem> current = _history.getValue();
+                    List<QAItem> updated = new ArrayList<>();
+                    updated.add(new QAItem(0, title, null, answer, System.currentTimeMillis()));
+                    if (current != null) updated.addAll(current);
+                    _history.postValue(updated);
+                }
+            } finally {
+                _isGenerating.postValue(false);
             }
-            
-            String answer = fetchAnswerFromGemini(context, prompt, null);
-            Long userId = _currentUserId.getValue();
-            if (userId != null && userId != -1L) {
-                repository.saveAIQuestion(userId, title, null, answer);
-                refreshHistory(userId);
-                addXp(10);
+        });
+    }
+
+    public void deepAnalysis(Context context, String question) {
+        _isGenerating.postValue(true);
+        executor.execute(() -> {
+            try {
+                String prompt = "Perform a deep academic analysis of this topic: '" + question + "'. Cover: 1) Core concept, 2) Why it works (theory), 3) Common mistakes, 4) Real-world applications. Use '[STEP] ' prefix for each section. Reply in the same language as the question.";
+                String title = "[Phân tích sâu] " + question;
+                String answer = fetchAnswerFromGemini(context, prompt, null);
+                Long userId = _currentUserId.getValue();
+                if (userId != null && userId != -1L) {
+                    repository.saveAIQuestion(userId, title, null, answer);
+                    List<QAItem> data = repository.getAIHistory(userId);
+                    _history.postValue(data);
+                } else {
+                    List<QAItem> current = _history.getValue();
+                    List<QAItem> updated = new ArrayList<>();
+                    updated.add(new QAItem(0, title, null, answer, System.currentTimeMillis()));
+                    if (current != null) updated.addAll(current);
+                    _history.postValue(updated);
+                }
+            } finally {
+                _isGenerating.postValue(false);
             }
-            _isGenerating.postValue(false);
+        });
+    }
+
+    private final MutableLiveData<List<String>> _quizQuestions = new MutableLiveData<>(new ArrayList<>());
+    public LiveData<List<String>> getQuizQuestions() { return _quizQuestions; }
+
+    private final MutableLiveData<Boolean> _quizLoading = new MutableLiveData<>(false);
+    public LiveData<Boolean> isQuizLoading() { return _quizLoading; }
+
+    public void generateQuickQuiz(Context context, String question) {
+        _quizLoading.postValue(true);
+        executor.execute(() -> {
+            try {
+                String prompt = "Create exactly 3 multiple choice questions to test understanding of: '" + question + "'.\n" +
+                    "Format each question EXACTLY like this (no extra text):\n" +
+                    "Q: [question text]\n" +
+                    "A: [option A]\n" +
+                    "B: [option B]\n" +
+                    "C: [option C]\n" +
+                    "D: [option D]\n" +
+                    "ANS: [correct letter A/B/C/D]\n" +
+                    "---\n" +
+                    "Reply in the same language as the topic.";
+                String raw = fetchAnswerFromGemini(context, prompt, null);
+                List<String> blocks = new ArrayList<>();
+                for (String block : raw.split("---")) {
+                    String trimmed = block.trim();
+                    if (!trimmed.isEmpty()) blocks.add(trimmed);
+                }
+                _quizQuestions.postValue(blocks);
+            } finally {
+                _quizLoading.postValue(false);
+            }
         });
     }
 
@@ -410,41 +493,30 @@ public class StudyViewModel extends ViewModel {
 
     private String fetchAnswerFromGemini(Context context, String prompt, Uri uri) {
         try {
-            String apiKey = BuildConfig.GEMINI_API_KEY;
-            if (apiKey.isEmpty()) return "Error: API Key not configured.";
-
-            List<GeminiModels.Part> parts = new ArrayList<>();
             String actualPrompt = prompt.isEmpty() ? "Please explain this image in detail." : prompt;
-            parts.add(new GeminiModels.Part(actualPrompt, null));
 
-            if (uri != null) {
-                String base64 = uriToBase64(context, uri);
-                if (base64 != null) {
-                    parts.add(new GeminiModels.Part(null, new GeminiModels.InlineData("image/jpeg", base64)));
-                }
-            }
-
-            GeminiModels.Content content = new GeminiModels.Content(parts);
-            GeminiModels.Content systemInstruction = new GeminiModels.Content(Collections.singletonList(
-                new GeminiModels.Part("You are an efficient AI Study Mentor. Provide concise, direct Socratic hints. Step-by-step only if complex. Use '[STEP] ' prefix. Be fast and brief.", null)
+            List<GeminiModels.Message> messages = new ArrayList<>();
+            messages.add(new GeminiModels.Message(
+                "system",
+                "You are an efficient AI Study Mentor. Provide concise, direct Socratic hints. Step-by-step only if complex. Use '[STEP] ' prefix. Be fast and brief."
             ));
+            messages.add(new GeminiModels.Message("user", actualPrompt));
 
             GeminiModels.GenerateContentRequest request = new GeminiModels.GenerateContentRequest(
-                Collections.singletonList(content), systemInstruction
+                "llama-3.3-70b-versatile", messages, 0.7, 1024
             );
 
-            Response<GeminiModels.GenerateContentResponse> response = RetrofitClient.getService().generateContent(apiKey, request).execute();
-            if (response.isSuccessful() && response.body() != null && response.body().getCandidates() != null && !response.body().getCandidates().isEmpty()) {
-                return response.body().getCandidates().get(0).getContent().getParts().get(0).getText();
+            Response<GeminiModels.GenerateContentResponse> response = RetrofitClient.getService().generateContent(request).execute();
+            if (response.isSuccessful() && response.body() != null
+                    && response.body().getChoices() != null
+                    && !response.body().getChoices().isEmpty()) {
+                return response.body().getChoices().get(0).getMessage().getContent();
             }
-            
+
             String errorMsg = "API Error. ";
             if (response.errorBody() != null) {
-                try {
-                    errorMsg += response.errorBody().string();
-                } catch (Exception e) {
-                    errorMsg += "Code: " + response.code();
-                }
+                try { errorMsg += response.errorBody().string(); }
+                catch (Exception e) { errorMsg += "Code: " + response.code(); }
             } else {
                 errorMsg += "Status: " + response.code();
             }

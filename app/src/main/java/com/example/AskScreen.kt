@@ -10,6 +10,7 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
@@ -55,85 +56,127 @@ fun AskScreen(viewModel: StudyViewModel) {
     val isGenerating by viewModel.isGenerating().observeAsState(false)
     val latestItem = history.firstOrNull()
     val listState = rememberLazyListState()
+    val quizQuestions by viewModel.quizQuestions.observeAsState(emptyList())
+    val quizLoading by viewModel.isQuizLoading().observeAsState(false)
+    var showQuizDialog by remember { mutableStateOf(false) }
 
     LaunchedEffect(history.size, isGenerating) {
         if (history.isNotEmpty()) {
-            listState.animateScrollToItem(0)
+            listState.animateScrollToItem(history.size)
         }
     }
 
     Column(modifier = Modifier.fillMaxSize().padding(top = 40.dp)) {
         TopAppBar(
             navigationIcon = { Spacer(modifier = Modifier.size(48.dp)) },
-            title = { 
+            title = {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(Icons.Default.AutoFixHigh, contentDescription = null, tint = Color(0xFFFFD166), modifier = Modifier.size(24.dp))
                     Spacer(modifier = Modifier.width(8.dp))
                     val strings = LocalAppStrings.current
-                    Text(strings.knowledgeDecoder, color = Color.White, fontWeight = FontWeight.Bold, fontSize = 20.sp) 
+                    Text(strings.knowledgeDecoder, color = Color.White, fontWeight = FontWeight.Bold, fontSize = 20.sp)
                 }
             },
             colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent)
         )
 
         Box(modifier = Modifier.weight(1f).fillMaxWidth().padding(horizontal = 16.dp)) {
-            if (isGenerating) {
-                MagicalLoadingState()
-            } else if (latestItem != null) {
+            if (history.isEmpty() && !isGenerating) {
+                EmptyAskState()
+            } else {
                 LazyColumn(
                     state = listState,
                     modifier = Modifier.fillMaxSize(),
-                    contentPadding = PaddingValues(bottom = 120.dp)
+                    contentPadding = PaddingValues(bottom = 120.dp),
+                    reverseLayout = false
                 ) {
-                    item {
+                    // Toàn bộ lịch sử chat - cũ nhất trên, mới nhất dưới
+                    items(history.size) { index ->
+                        val item = history[history.size - 1 - index]
                         val strings = LocalAppStrings.current
-                        QuestionCard(
-                            question = latestItem.question.ifBlank { strings.attachedImage },
-                            imageUri = latestItem.imageUri
-                        )
                         Spacer(modifier = Modifier.height(24.dp))
-                        
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(Icons.Default.Psychology, contentDescription = null, tint = Color(0xFF51FAC1), modifier = Modifier.size(20.dp))
-                            Spacer(modifier = Modifier.width(8.dp))
-                            val strings = LocalAppStrings.current
-                            Text(strings.kikiAnalyzingSocratic, fontWeight = FontWeight.Bold, color = Color(0xFF51FAC1), fontSize = 16.sp)
-                        }
-                        Spacer(modifier = Modifier.height(16.dp))
-                    }
-                    
-                    val steps = latestItem.answer.split("[STEP]").filter { it.isNotBlank() }
-                    
-                    itemsIndexed(steps) { index, stepText ->
-                        StepGlassCard(index = index + 1, text = stepText.trim())
-                    }
-
-                    item {
-                        Spacer(modifier = Modifier.height(24.dp))
+                        // Câu hỏi người dùng - bên phải
                         Row(
                             modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(12.dp)
+                            horizontalArrangement = Arrangement.End
                         ) {
+                            QuestionCard(
+                                question = item.question.ifBlank { strings.attachedImage },
+                                imageUri = item.imageUri
+                            )
+                        }
+                        Spacer(modifier = Modifier.height(12.dp))
+                        // Câu trả lời AI - bên trái
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(Icons.Default.Psychology, contentDescription = null, tint = Color(0xFF51FAC1), modifier = Modifier.size(18.dp))
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text(strings.kikiAnalyzingSocratic, fontWeight = FontWeight.Bold, color = Color(0xFF51FAC1), fontSize = 14.sp)
+                        }
+                        Spacer(modifier = Modifier.height(10.dp))
+                        val steps = item.answer.split("[STEP]").filter { it.isNotBlank() }
+                        if (steps.size > 1) {
+                            steps.forEachIndexed { i, stepText ->
+                                StepGlassCard(index = i + 1, text = stepText.trim())
+                            }
+                        } else {
+                            StepGlassCard(index = 1, text = item.answer.trim())
+                        }
+                    }
+
+                    // Nút đề xuất chỉ hiện dưới câu mới nhất
+                    if (latestItem != null && !isGenerating) {
+                        item {
                             val strings = LocalAppStrings.current
-                            QuickActionButton(
-                                text = strings.moreExplanation,
-                                icon = Icons.Default.ChatBubbleOutline,
-                                onClick = { viewModel.askFollowUpQuestion(context, latestItem.question, "EXPLAIN") },
-                                enabled = !isGenerating,
-                                modifier = Modifier.weight(1f)
-                            )
-                            QuickActionButton(
-                                text = strings.similarProblems,
-                                icon = Icons.Default.ContentCopy,
-                                onClick = { viewModel.askFollowUpQuestion(context, latestItem.question, "SIMILAR") },
-                                enabled = !isGenerating,
-                                modifier = Modifier.weight(1f)
-                            )
+                            Spacer(modifier = Modifier.height(12.dp))
+                            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                                ) {
+                                    QuickActionButton(
+                                        text = strings.deepAnalysis,
+                                        icon = Icons.Default.Analytics,
+                                        onClick = { viewModel.deepAnalysis(context, latestItem.question) },
+                                        enabled = true,
+                                        modifier = Modifier.weight(1f)
+                                    )
+                                    QuickActionButton(
+                                        text = strings.quickQuiz,
+                                        icon = Icons.Default.Quiz,
+                                        onClick = {
+                                            showQuizDialog = true
+                                            viewModel.generateQuickQuiz(context, latestItem.question)
+                                        },
+                                        enabled = true,
+                                        modifier = Modifier.weight(1f)
+                                    )
+                                }
+                            }
+                            Spacer(modifier = Modifier.height(8.dp))
+                        }
+                    }
+
+                    // Loading indicator ở dưới cùng
+                    if (isGenerating) {
+                        item {
+                            Box(
+                                modifier = Modifier.fillMaxWidth().padding(vertical = 16.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    CircularProgressIndicator(
+                                        modifier = Modifier.size(18.dp),
+                                        color = Color(0xFF51FAC1),
+                                        strokeWidth = 2.dp
+                                    )
+                                    Spacer(modifier = Modifier.width(10.dp))
+                                    val strings = LocalAppStrings.current
+                                    Text(strings.kikiDecodingMagic, color = Color(0xFF51FAC1), fontSize = 13.sp)
+                                }
+                            }
                         }
                     }
                 }
-            } else {
-                EmptyAskState()
             }
         }
 
@@ -152,6 +195,14 @@ fun AskScreen(viewModel: StudyViewModel) {
                 }
             },
             isGenerating = isGenerating
+        )
+    }
+
+    if (showQuizDialog) {
+        QuizDialog(
+            quizBlocks = quizQuestions,
+            isLoading = quizLoading,
+            onDismiss = { showQuizDialog = false }
         )
     }
 }
@@ -261,4 +312,138 @@ fun SpellInputBar(text: String, onTextChange: (String) -> Unit, selectedImageUri
             }
         }
     }
+}
+
+@Composable
+fun QuizDialog(quizBlocks: List<String>, isLoading: Boolean, onDismiss: () -> Unit) {
+    val strings = LocalAppStrings.current
+    var currentIndex by remember { mutableIntStateOf(0) }
+    var selectedAnswer by remember { mutableStateOf("") }
+    var showResult by remember { mutableStateOf(false) }
+    var score by remember { mutableIntStateOf(0) }
+    var quizFinished by remember { mutableStateOf(false) }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        containerColor = Color(0xFF14142B),
+        shape = RoundedCornerShape(24.dp),
+        title = {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(Icons.Default.Quiz, contentDescription = null, tint = Color(0xFFFFD166), modifier = Modifier.size(22.dp))
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(strings.quizTitle, color = Color.White, fontWeight = FontWeight.ExtraBold, fontSize = 18.sp)
+            }
+        },
+        text = {
+            if (isLoading) {
+                Box(modifier = Modifier.fillMaxWidth().height(120.dp), contentAlignment = Alignment.Center) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        CircularProgressIndicator(color = Color(0xFF51FAC1), modifier = Modifier.size(36.dp))
+                        Spacer(modifier = Modifier.height(12.dp))
+                        Text(strings.kikiDecodingMagic, color = Color(0xFF51FAC1), fontSize = 13.sp)
+                    }
+                }
+            } else if (quizFinished) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.fillMaxWidth()) {
+                    Text("${strings.quizResult}$score/${quizBlocks.size}", color = Color(0xFFFFD166), fontSize = 22.sp, fontWeight = FontWeight.ExtraBold)
+                    Spacer(modifier = Modifier.height(8.dp))
+                    val pct = if (quizBlocks.isNotEmpty()) score * 100 / quizBlocks.size else 0
+                    Text(
+                        when {
+                            pct == 100 -> "🌟 Xuất sắc!"
+                            pct >= 66 -> "💪 Tốt lắm!"
+                            else -> "📚 Cần ôn thêm!"
+                        },
+                        color = Color.White, fontSize = 16.sp
+                    )
+                }
+            } else if (quizBlocks.isNotEmpty() && currentIndex < quizBlocks.size) {
+                val block = quizBlocks[currentIndex]
+                val lines = block.lines().filter { it.isNotBlank() }
+                val question = lines.find { it.startsWith("Q:") }?.removePrefix("Q:")?.trim() ?: ""
+                val optionA = lines.find { it.startsWith("A:") }?.removePrefix("A:")?.trim() ?: ""
+                val optionB = lines.find { it.startsWith("B:") }?.removePrefix("B:")?.trim() ?: ""
+                val optionC = lines.find { it.startsWith("C:") }?.removePrefix("C:")?.trim() ?: ""
+                val optionD = lines.find { it.startsWith("D:") }?.removePrefix("D:")?.trim() ?: ""
+                val correctAns = lines.find { it.startsWith("ANS:") }?.removePrefix("ANS:")?.trim() ?: ""
+                val options = listOf("A" to optionA, "B" to optionB, "C" to optionC, "D" to optionD)
+
+                Column {
+                    Text("${strings.quizTitle} ${currentIndex + 1}/${quizBlocks.size}", color = Color(0xFF51FAC1), fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(question, color = Color.White, fontSize = 15.sp, fontWeight = FontWeight.SemiBold, lineHeight = 22.sp)
+                    Spacer(modifier = Modifier.height(12.dp))
+                    options.forEach { (letter, text) ->
+                        if (text.isBlank()) return@forEach
+                        val isSelected = selectedAnswer == letter
+                        val bgColor = when {
+                            !showResult && isSelected -> Color(0x3351FAC1)
+                            showResult && letter == correctAns -> Color(0x3351FAC1)
+                            showResult && isSelected && letter != correctAns -> Color(0x33FF4444)
+                            else -> Color(0x1AFFFFFF)
+                        }
+                        val borderColor = when {
+                            !showResult && isSelected -> Color(0xFF51FAC1)
+                            showResult && letter == correctAns -> Color(0xFF51FAC1)
+                            showResult && isSelected && letter != correctAns -> Color(0xFFFF4444)
+                            else -> Color(0x33FFFFFF)
+                        }
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 4.dp)
+                                .clip(RoundedCornerShape(12.dp))
+                                .background(bgColor)
+                                .border(1.dp, borderColor, RoundedCornerShape(12.dp))
+                                .clickable(enabled = !showResult) { selectedAnswer = letter }
+                                .padding(horizontal = 14.dp, vertical = 10.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text("$letter. ", color = Color(0xFFFFD166), fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                            Text(text, color = Color.White, fontSize = 13.sp)
+                        }
+                    }
+                    if (showResult) {
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            if (selectedAnswer == correctAns) strings.quizCorrect else "${strings.quizWrong}$correctAns",
+                            color = if (selectedAnswer == correctAns) Color(0xFF51FAC1) else Color(0xFFFF6B6B),
+                            fontWeight = FontWeight.Bold, fontSize = 14.sp
+                        )
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            if (!isLoading && !quizFinished && quizBlocks.isNotEmpty()) {
+                if (!showResult) {
+                    TextButton(
+                        onClick = { if (selectedAnswer.isNotBlank()) showResult = true },
+                        enabled = selectedAnswer.isNotBlank()
+                    ) {
+                        Text("Kiểm tra", color = if (selectedAnswer.isNotBlank()) Color(0xFF51FAC1) else Color(0x66FFFFFF), fontWeight = FontWeight.Bold)
+                    }
+                } else {
+                    TextButton(onClick = {
+                        val block = quizBlocks[currentIndex]
+                        val correctAns = block.lines().find { it.startsWith("ANS:") }?.removePrefix("ANS:")?.trim() ?: ""
+                        if (selectedAnswer == correctAns) score++
+                        if (currentIndex + 1 < quizBlocks.size) {
+                            currentIndex++
+                            selectedAnswer = ""
+                            showResult = false
+                        } else {
+                            quizFinished = true
+                        }
+                    }) {
+                        Text(if (currentIndex + 1 < quizBlocks.size) "Tiếp theo →" else strings.quizClose, color = Color(0xFFFFD166), fontWeight = FontWeight.Bold)
+                    }
+                }
+            } else if (quizFinished) {
+                TextButton(onClick = onDismiss) {
+                    Text(strings.quizClose, color = Color(0xFF51FAC1), fontWeight = FontWeight.Bold)
+                }
+            }
+        }
+    )
 }
