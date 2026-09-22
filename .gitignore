@@ -17,3 +17,7 @@ local.properties
 .env
 debug.keystore
 node_modules/
+*.tmp
+*.docx
+.artifacts/
+*.orig
