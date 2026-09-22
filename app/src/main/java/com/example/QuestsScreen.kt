@@ -10,6 +10,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.*
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -66,9 +67,9 @@ fun QuestsScreen(viewModel: StudyViewModel) {
 
     val quests = dailyTasks.map { task ->
         val meta = when (task.taskType) {
-            "LESSON_COMPLETE" -> QuestMeta(strings.quest1Title, strings.quest1Desc, Icons.Default.Science, Color(0xFF51FAC1))
+            "LESSON_COMPLETE" -> QuestMeta(strings.quest1Title, strings.quest1Desc, Icons.Default.AutoStories, Color(0xFF51FAC1))
             "PERFECT_SCORE" -> QuestMeta(strings.quest2Title, strings.quest2Desc, Icons.Default.Star, Color(0xFFFFD166))
-            else -> QuestMeta(strings.quest3Title, strings.quest3Desc, Icons.Default.MenuBook, Color(0xFF27E0A9))
+            else -> QuestMeta(strings.quest3Title, strings.quest3Desc, Icons.AutoMirrored.Filled.MenuBook, Color(0xFF27E0A9))
         }
         QuestData(
             taskId = task.taskId,
@@ -94,7 +95,7 @@ fun QuestsScreen(viewModel: StudyViewModel) {
             modifier = Modifier.fillMaxWidth().padding(top = 40.dp, start = 76.dp, end = 24.dp, bottom = 16.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Icon(Icons.Default.MenuBook, contentDescription = null, tint = Color(0xFFFFD166), modifier = Modifier.size(28.dp))
+            Icon(Icons.AutoMirrored.Filled.MenuBook, contentDescription = null, tint = Color(0xFFFFD166), modifier = Modifier.size(28.dp))
             Spacer(modifier = Modifier.width(12.dp))
             Text(strings.dailyQuests, color = Color.White, fontSize = 24.sp, fontWeight = FontWeight.ExtraBold)
         }
@@ -125,7 +126,7 @@ fun QuestsScreen(viewModel: StudyViewModel) {
                 contentPadding = PaddingValues(start = 24.dp, end = 24.dp, top = 8.dp, bottom = 120.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                items(quests) { quest ->
+                items(quests, key = { it.taskId }) { quest ->
                     QuestItemCard(
                         quest = quest,
                         onClaim = {

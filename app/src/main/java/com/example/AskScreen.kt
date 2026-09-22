@@ -91,7 +91,13 @@ fun AskScreen(viewModel: StudyViewModel) {
                     reverseLayout = false
                 ) {
                     // Toàn bộ lịch sử chat - cũ nhất trên, mới nhất dưới
-                    items(history.size) { index ->
+                    items(
+                        count = history.size,
+                        key = { index ->
+                            val item = history[history.size - 1 - index]
+                            if (item.id != 0) "qa_${item.id}" else "qa_${index}_${item.question.hashCode()}"
+                        }
+                    ) { index ->
                         val item = history[history.size - 1 - index]
                         val strings = LocalAppStrings.current
                         Spacer(modifier = Modifier.height(24.dp))
@@ -224,7 +230,7 @@ fun MagicalLoadingState() {
     Column(modifier = Modifier.fillMaxSize(), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
         Box(contentAlignment = Alignment.Center, modifier = Modifier.offset(y = floatY.dp)) {
             Box(modifier = Modifier.size(120.dp).scale(pulse).blur(20.dp).background(Color(0xFF8A2BE2).copy(alpha = 0.5f), CircleShape))
-            AsyncImage(model = "https://lh3.googleusercontent.com/aida-public/AB6AXuDHEU1luTpzRMj0AWjSdkrnM7_zqT6q0q2FslynO_5_1cv8tT93rUwkLgv3TCVA6OIKrsN3uY_7GvArdkxJRh6QUHgxg1uy_KrdaaDubiosxU1_D7RJSx7EzX8Um8G1GzxzLPPhd-MydROGtSyI5h-5e4CAMRnPcdG4scRuG0MHAiktwaPicNEkblA9GWH7ufeuVt_eJr8Q2FTnfsFGgknh56kd5Eh2wFZzQVxLWOrIYTfKGl1alFeXtVDmralygqCUa_WYd2Ea34w", contentDescription = "Kiki Loading", modifier = Modifier.size(80.dp).clip(CircleShape).border(2.dp, Color(0xFF51FAC1), CircleShape), contentScale = ContentScale.Crop)
+            AsyncImage(model = R.drawable.kiki_mascot_head, contentDescription = "Kiki Loading", modifier = Modifier.size(80.dp).clip(CircleShape).border(2.dp, Color(0xFF51FAC1), CircleShape), contentScale = ContentScale.Crop)
         }
         Spacer(modifier = Modifier.height(32.dp))
         val strings = LocalAppStrings.current

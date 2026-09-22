@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.*
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
@@ -154,7 +155,7 @@ fun RankRevealScreen(onEnterRealm: () -> Unit, onViewAnalysis: () -> Unit) {
 
                 // Kiki Image
                 AsyncImage(
-                    model = "https://lh3.googleusercontent.com/aida-public/AB6AXuDHEU1luTpzRMj0AWjSdkrnM7_zqT6q0q2FslynO_5_1cv8tT93rUwkLgv3TCVA6OIKrsN3uY_7GvArdkxJRh6QUHgxg1uy_KrdaaDubiosxU1_D7RJSx7EzX8Um8G1GzxzLPPhd-MydROGtSyI5h-5e4CAMRnPcdG4scRuG0MHAiktwaPicNEkblA9GWH7ufeuVt_eJr8Q2FTnfsFGgknh56kd5Eh2wFZzQVxLWOrIYTfKGl1alFeXtVDmralygqCUa_WYd2Ea34w",
+                    model = R.drawable.kiki_mascot_head,
                     contentDescription = "Rank Image",
                     contentScale = ContentScale.Crop,
                     modifier = Modifier
@@ -271,7 +272,7 @@ fun RankRevealScreen(onEnterRealm: () -> Unit, onViewAnalysis: () -> Unit) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Text(strings.continueJourney, color = Color(0xFF4E4636), fontWeight = FontWeight.ExtraBold, fontSize = 18.sp, letterSpacing = 2.sp)
                         Spacer(modifier = Modifier.width(8.dp))
-                        Icon(Icons.Filled.ArrowForward, contentDescription = null, tint = Color(0xFF4E4636))
+                        Icon(Icons.AutoMirrored.Filled.ArrowForward, contentDescription = null, tint = Color(0xFF4E4636))
                     }
                 }
             }

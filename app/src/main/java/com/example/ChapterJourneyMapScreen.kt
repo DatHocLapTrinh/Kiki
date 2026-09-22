@@ -17,6 +17,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.*
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -66,7 +67,7 @@ fun ChapterJourneyMapScreen(
 ) {
     val strings = LocalAppStrings.current
     val scrollState = rememberScrollState()
-    val chapterTitle by viewModel.currentChapterTitle.observeAsState("Genesis Core")
+    val chapterTitle by viewModel.currentChapterTitle.observeAsState("English Fundamentals")
     val chapterIndex by viewModel.currentChapterIndex.observeAsState(1)
     val currentNode by viewModel.currentNode.observeAsState(1)
     val isEnglish by viewModel.isEnglish.observeAsState(false)
@@ -127,22 +128,22 @@ private fun chapterLessonItems(
 ): List<ChapterLessonUi> {
     val copies = if (isEnglish) {
         listOf(
-            "Core Concepts" to "Learn the key ideas in this chapter.",
-            "Explore Examples" to "Connect concepts through guided examples.",
-            "Practice Lab" to "Apply what you learned with practice questions.",
-            "Review Check" to "Review your progress and fix weak points.",
+            "Core Vocabulary & Grammar" to "Master key words and grammatical rules.",
+            "Pronunciation & Usage" to "Explore sentence patterns and natural phrases.",
+            "Fluency Practice" to "Apply what you learned with challenge questions.",
+            "Accuracy Check" to "Review weak points and sharpen comprehension.",
             "Chapter Mastery" to "Complete the chapter and unlock your reward."
         )
     } else {
         listOf(
-            "Kiến thức cốt lõi" to "Nắm những ý chính quan trọng của chương.",
-            "Khám phá ví dụ" to "Kết nối khái niệm qua các ví dụ hướng dẫn.",
-            "Phòng luyện tập" to "Áp dụng kiến thức bằng các câu hỏi luyện tập.",
-            "Ôn tập kiểm tra" to "Ôn lại tiến độ và củng cố điểm còn yếu.",
-            "Chinh phục chương" to "Hoàn thành chương để mở phần thưởng."
+            "Từ Vựng & Ngữ Pháp Gốc" to "Nắm vững từ vựng và cấu trúc ngữ pháp trọng tâm.",
+            "Cách Dùng & Phát Âm" to "Khám phá ngữ cảnh câu và cách dùng tự nhiên.",
+            "Luyện Phản Xạ Tiếng Anh" to "Áp dụng kiến thức qua các câu hỏi thử thách.",
+            "Kiểm Tra Độ Chính Xác" to "Ôn lại tiến độ và củng cố các điểm còn yếu.",
+            "Chinh Phục Chương" to "Hoàn thành chương để mở khóa phần thưởng lớn."
         )
     }
-    val icons = listOf(Icons.Default.MenuBook, Icons.Default.Science, Icons.Default.Calculate, Icons.Default.History, Icons.Default.Diamond)
+    val icons = listOf(Icons.AutoMirrored.Filled.MenuBook, Icons.Default.RecordVoiceOver, Icons.Default.AutoStories, Icons.Default.Spellcheck, Icons.Default.Diamond)
     return copies.mapIndexed { index, copy ->
         ChapterLessonUi(
             index = index + 1,
@@ -181,7 +182,7 @@ private fun ChapterJourneyTopBar(
                 .clickable(onClick = onBack),
             contentAlignment = Alignment.Center
         ) {
-            Icon(Icons.Default.ArrowBack, contentDescription = "Back", tint = Color.White, modifier = Modifier.size(21.dp))
+            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back", tint = Color.White, modifier = Modifier.size(21.dp))
         }
         Spacer(modifier = Modifier.width(12.dp))
         Column(modifier = Modifier.weight(1f)) {

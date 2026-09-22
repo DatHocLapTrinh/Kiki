@@ -36,6 +36,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import com.example.viewmodel.StudyViewModel
+import kotlinx.coroutines.launch
 import java.util.Locale
 
 @Composable
@@ -48,6 +49,7 @@ fun IdentityContent(
     var isSignUp by remember { mutableStateOf(false) }
     val context = LocalContext.current
     val strings = LocalAppStrings.current
+    val coroutineScope = rememberCoroutineScope()
 
     Box(modifier = Modifier.fillMaxSize()) {
         Column(
@@ -101,23 +103,27 @@ fun IdentityContent(
                             }
                             if (isSignUp) {
                                 if (validatePassword(pass)) {
-                                    val res = viewModel.repository.registerUser(name.trim(), normalizedEmail, pass)
-                                    if (res == -2L) {
-                                        Toast.makeText(context, strings.emailExists, Toast.LENGTH_SHORT).show()
-                                    } else {
-                                        Toast.makeText(context, strings.regSuccess, Toast.LENGTH_SHORT).show()
-                                        isSignUp = false
+                                    coroutineScope.launch {
+                                        val res = viewModel.repository.registerUser(name.trim(), normalizedEmail, pass)
+                                        if (res == -2L) {
+                                            Toast.makeText(context, strings.emailExists, Toast.LENGTH_SHORT).show()
+                                        } else {
+                                            Toast.makeText(context, strings.regSuccess, Toast.LENGTH_SHORT).show()
+                                            isSignUp = false
+                                        }
                                     }
                                 } else {
                                     Toast.makeText(context, strings.passwordReq, Toast.LENGTH_LONG).show()
                                 }
                             } else {
-                                val user = viewModel.repository.login(normalizedEmail, pass)
-                                if (user != null) {
-                                    viewModel.onLoginSuccess(normalizedEmail)
-                                    onLoginSuccess()
-                                } else {
-                                    Toast.makeText(context, strings.incorrectLogin, Toast.LENGTH_SHORT).show()
+                                coroutineScope.launch {
+                                    val user = viewModel.repository.login(normalizedEmail, pass)
+                                    if (user != null) {
+                                        viewModel.onLoginSuccess(normalizedEmail)
+                                        onLoginSuccess()
+                                    } else {
+                                        Toast.makeText(context, strings.incorrectLogin, Toast.LENGTH_SHORT).show()
+                                    }
                                 }
                             }
                         }
@@ -295,7 +301,7 @@ fun HeroCharacter() {
                 .clip(CircleShape)
         ) {
             AsyncImage(
-                model = "https://lh3.googleusercontent.com/aida-public/AB6AXuB-fsvNuxcD7JDRAxh7jd2ibqeFzoJZ9kLrZyRrx5XOOiLQROGYMJp71fSZhzUoDi5rXK2nra-uoXfDtEWEJOvBwIcI9RBAQyBBOPs5vJdL4eFo4guCVv8EEm1R6ldD0eEdHKk2vS7kHc3zVzZTYs0Q31A3RX1SIPCBGIKE5AZAFDzT1A4mkFzmUn7doPY4pta97YyrsQIPqzf5NcbxJ-fBgaPXf7nULKfaxAgF4dSS7tuDYZ47qWxKpvbrwdxVW90hbpr7dWmuqvk",
+                model = R.drawable.kiki_hero_auth,
                 contentDescription = "Kiki Avatar",
                 modifier = Modifier.fillMaxSize(),
                 contentScale = ContentScale.Crop

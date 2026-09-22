@@ -16,6 +16,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.*
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -269,7 +270,7 @@ private fun JourneyPath(
                     for (segment in 1..lastSegment) {
                         val startY = nodeY(segment - 1)
                         val endY = nodeY(segment)
-                        quadraticBezierTo(
+                        quadraticTo(
                             (nodeX(segment - 1) + nodeX(segment)) / 2f,
                             startY + (endY - startY) * 0.45f,
                             nodeX(segment),
@@ -411,7 +412,7 @@ private fun JourneyPlanetNode(
                 imageVector = when (stage.state) {
                     JourneyStageState.COMPLETED -> Icons.Default.Check
                     JourneyStageState.CURRENT -> Icons.Default.PlayArrow
-                    JourneyStageState.AVAILABLE -> Icons.Default.ArrowForward
+                    JourneyStageState.AVAILABLE -> Icons.AutoMirrored.Filled.ArrowForward
                     JourneyStageState.LOCKED -> Icons.Default.Lock
                 },
                 contentDescription = null,

@@ -11,8 +11,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowForward
-import androidx.compose.material.icons.automirrored.filled.FormatListBulleted
+import androidx.compose.material.icons.automirrored.filled.*
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -73,11 +72,13 @@ fun StudyMentorApp() {
         animationSpec = tween(1500, easing = FastOutSlowInEasing),
         label = "warp"
     )
+    val batterySaver by viewModel.batterySaver.observeAsState(false)
 
     CosmicScaffold(
         externalTargetX = targetX, 
         externalTargetY = targetY,
-        warpSpeedMultiplier = warpSpeedMultiplier
+        warpSpeedMultiplier = warpSpeedMultiplier,
+        batterySaver = batterySaver
     ) { currentX, currentY, onBurst ->
         val parallaxController = remember(currentX, currentY) {
             ParallaxController(
@@ -159,8 +160,8 @@ fun StudyMentorApp() {
 @Composable
 fun OnboardingScreen(viewModel: StudyViewModel, onFinish: () -> Unit) {
     var step by remember { mutableIntStateOf(0) }
-    var selectedGrade by remember { mutableStateOf("High School") }
-    var selectedSubj by remember { mutableStateOf("Physics & Chemistry") }
+    var selectedLevel by remember { mutableStateOf("Beginner") }
+    var selectedGoal by remember { mutableStateOf("Everyday Fluency") }
     val scope = rememberCoroutineScope()
     val parallax = LocalParallax.current
     
@@ -208,7 +209,11 @@ fun OnboardingScreen(viewModel: StudyViewModel, onFinish: () -> Unit) {
                                 StaggeredOptions(
                                     options = listOf(strings.middleSchool, strings.highSchool, strings.university),
                                     onSelect = { 
-                                        selectedGrade = it
+                                        selectedLevel = when (it) {
+                                            strings.middleSchool -> "Beginner"
+                                            strings.highSchool -> "Intermediate"
+                                            else -> "Advanced"
+                                        }
                                         scope.launch { delay(300); step++ }
                                     }
                                 )
@@ -216,11 +221,11 @@ fun OnboardingScreen(viewModel: StudyViewModel, onFinish: () -> Unit) {
                             1 -> {
                                 Text(strings.chooseDiscipline, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Black, color = Color.White)
                                 Spacer(modifier = Modifier.height(24.dp))
-                                val subjectOptions = listOf(strings.webDev, strings.advMath, strings.physicsChem)
-                                var selectedSubjects by remember { mutableStateOf(setOf(strings.physicsChem)) }
+                                val goalOptions = listOf(strings.goalFluency, strings.goalGrammar, strings.goalExam)
+                                var selectedGoals by remember { mutableStateOf(setOf(strings.goalFluency)) }
                                 Column {
-                                    subjectOptions.forEach { option ->
-                                        val isSelected = option in selectedSubjects
+                                    goalOptions.forEach { option ->
+                                        val isSelected = option in selectedGoals
                                         val haptic = androidx.compose.ui.platform.LocalHapticFeedback.current
                                         Box(
                                             modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp).height(56.dp)
@@ -229,10 +234,10 @@ fun OnboardingScreen(viewModel: StudyViewModel, onFinish: () -> Unit) {
                                                 .border(1.dp, if (isSelected) Brush.linearGradient(listOf(Color(0xFF00F5D4), Color(0xFF00B4D8))) else SolidColor(Color(0x33FFFFFF)), RoundedCornerShape(16.dp))
                                                 .clickable {
                                                     haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                                                    selectedSubjects = if (isSelected && selectedSubjects.size > 1) {
-                                                        selectedSubjects - option
+                                                    selectedGoals = if (isSelected && selectedGoals.size > 1) {
+                                                        selectedGoals - option
                                                     } else {
-                                                        selectedSubjects + option
+                                                        selectedGoals + option
                                                     }
                                                 },
                                             contentAlignment = Alignment.Center
@@ -252,11 +257,11 @@ fun OnboardingScreen(viewModel: StudyViewModel, onFinish: () -> Unit) {
                                             .clip(RoundedCornerShape(16.dp))
                                             .background(Brush.linearGradient(listOf(Color(0xCCFF9E00), Color(0xCC00F5D4))))
                                             .clickable {
-                                                val firstSubj = selectedSubjects.first()
-                                                selectedSubj = when (firstSubj) {
-                                                    strings.webDev -> "Web Development"
-                                                    strings.advMath -> "Advanced Mathematics"
-                                                    else -> "Physics & Chemistry"
+                                                val firstGoal = selectedGoals.first()
+                                                selectedGoal = when (firstGoal) {
+                                                    strings.goalFluency -> "Everyday Fluency"
+                                                    strings.goalGrammar -> "Grammar & Vocabulary"
+                                                    else -> "IELTS & TOEIC"
                                                 }
                                                 scope.launch { delay(300); step++ }
                                             },
@@ -273,11 +278,7 @@ fun OnboardingScreen(viewModel: StudyViewModel, onFinish: () -> Unit) {
                                 Spacer(modifier = Modifier.height(32.dp))
                                 UltimateButton(text = strings.enterMap, icon = Icons.AutoMirrored.Filled.ArrowForward) { 
                                     for(i in 0 until 50) parallax.fireBurst(500f, 1500f)
-                                    // Map localized strings back to internal db values if necessary, or just rely on backend parsing English.
-                                    // But since the options were translated, we need to map them back to English to save in preferences.
-                                    val dbGrade = when(selectedGrade) { strings.middleSchool -> "Middle School"; strings.highSchool -> "High School"; else -> "University / College" }
-                                    val dbSubj = when(selectedSubj) { strings.webDev -> "Web Development"; strings.advMath -> "Advanced Mathematics"; else -> "Physics & Chemistry" }
-                                    viewModel.setPreferences(dbGrade, dbSubj)
+                                    viewModel.setPreferences(selectedLevel, "English")
                                     viewModel.refreshChapters()
                                     onFinish() 
                                 }
@@ -469,6 +470,7 @@ fun MainNavigation(viewModel: StudyViewModel, onLogout: () -> Unit) {
 
             if (showSettings) {
                 SettingsDialog(
+                    viewModel = viewModel,
                     onDismiss = { showSettings = false },
                     onLogout = {
                         showSettings = false
@@ -564,7 +566,7 @@ private fun AppNavigationDrawer(
             )
             NavigationDrawerItem(
                 label = { Text(strings.menuLogout, fontWeight = FontWeight.SemiBold) },
-                icon = { Icon(Icons.Default.Logout, contentDescription = null) },
+                icon = { Icon(Icons.AutoMirrored.Filled.Logout, contentDescription = null) },
                 selected = false,
                 onClick = onLogout,
                 shape = RoundedCornerShape(16.dp),
@@ -598,7 +600,7 @@ fun FloatingNavBar(navController: androidx.navigation.NavHostController, modifie
         verticalAlignment = Alignment.CenterVertically
     ) {
         NavItem("map", Icons.Default.Map, strings.navMap, currentRoute, navController)
-        NavItem("quests", Icons.Default.MenuBook, strings.navLearn, currentRoute, navController)
+        NavItem("quests", Icons.AutoMirrored.Filled.MenuBook, strings.navLearn, currentRoute, navController)
         NavItem("ask", Icons.Default.ChatBubbleOutline, strings.navTutor, currentRoute, navController)
         NavItem("rank", Icons.Default.EmojiEvents, strings.navRank, currentRoute, navController)
         NavItem("profile", Icons.Default.Person, strings.navProfile, currentRoute, navController)

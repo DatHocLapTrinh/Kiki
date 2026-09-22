@@ -18,7 +18,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.Logout
+import androidx.compose.material.icons.automirrored.filled.*
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -54,7 +54,7 @@ fun ProfileScreen(viewModel: StudyViewModel, onLogout: () -> Unit = {}) {
     val isEnglish by viewModel.isEnglish.observeAsState(false)
     val availableChapters by viewModel.availableChapters.observeAsState(emptyList())
     val chapterProgress by viewModel.chapterProgress.observeAsState(emptyList())
-    val currentChapterTitle by viewModel.currentChapterTitle.observeAsState("Genesis Core")
+    val currentChapterTitle by viewModel.currentChapterTitle.observeAsState("English Fundamentals")
     val currentNode by viewModel.currentNode.observeAsState(1)
 
     val journeyStages = remember(availableChapters, chapterProgress) {
@@ -124,7 +124,7 @@ fun ProfileScreen(viewModel: StudyViewModel, onLogout: () -> Unit = {}) {
             }
             Spacer(modifier = Modifier.height(10.dp))
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                ProfileStatCard(Modifier.weight(1f), isEnglishText("Bài học", "Lessons"), "$completedLessons/$totalLessons", Icons.Default.MenuBook, Color(0xFF51FAC1))
+                ProfileStatCard(Modifier.weight(1f), isEnglishText("Bài học", "Lessons"), "$completedLessons/$totalLessons", Icons.AutoMirrored.Filled.MenuBook, Color(0xFF51FAC1))
                 ProfileStatCard(Modifier.weight(1f), strings.starsLabel, "$earnedStars", Icons.Default.Star, Color(0xFFC68CFF))
             }
             Spacer(modifier = Modifier.height(16.dp))
@@ -510,7 +510,7 @@ private fun ProfileSettingsCard(
             Spacer(modifier = Modifier.height(12.dp))
             ProfileSettingRow(strings.languageLabel, Icons.Default.Language, isEnglish, onLanguageChanged)
             Spacer(modifier = Modifier.height(8.dp))
-            ProfileSettingRow(strings.soundEffects, Icons.Default.VolumeUp, soundEnabled, onSoundChanged)
+            ProfileSettingRow(strings.soundEffects, Icons.AutoMirrored.Filled.VolumeUp, soundEnabled, onSoundChanged)
             Spacer(modifier = Modifier.height(8.dp))
             ProfileSettingRow(strings.notifications, Icons.Default.Notifications, notificationsEnabled, onNotificationsChanged)
         }

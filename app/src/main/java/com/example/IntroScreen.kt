@@ -137,6 +137,7 @@ fun CosmicScaffold(
     externalTargetX: Float? = null, 
     externalTargetY: Float? = null, 
     warpSpeedMultiplier: Float = 1f,
+    batterySaver: Boolean = false,
     content: @Composable (currentX: Float, currentY: Float, onBurst: (x: Float, y: Float) -> Unit) -> Unit
 ) {
     var appLaunchState by remember { mutableIntStateOf(0) } 
@@ -200,12 +201,14 @@ fun CosmicScaffold(
     val shootingStars = remember { List(3) { ShootingStar(1000f, 2000f) } }
 
     LaunchedEffect(targetX, targetY) {
-        while (true) {
+        while (kotlin.math.abs(targetX - currentX) > 0.001f || kotlin.math.abs(targetY - currentY) > 0.001f) {
             withFrameNanos {
-                currentX += (targetX - currentX) * 0.1f
-                currentY += (targetY - currentY) * 0.1f
+                currentX += (targetX - currentX) * 0.15f
+                currentY += (targetY - currentY) * 0.15f
             }
         }
+        currentX = targetX
+        currentY = targetY
     }
 
     Box(
@@ -358,61 +361,65 @@ fun CosmicScaffold(
                 var timeMillis by remember { mutableLongStateOf(0L) }
                 val particles = remember { mutableListOf<ManaDust>() }
 
-                LaunchedEffect(Unit) {
-                    while (true) {
-                        withFrameNanos {
-                            timeMillis = it
+                LaunchedEffect(batterySaver) {
+                    if (!batterySaver) {
+                        while (true) {
+                            withFrameNanos {
+                                timeMillis = it
+                            }
                         }
                     }
                 }
 
                 Canvas(modifier = Modifier.fillMaxSize()) {
-                    if (particles.isEmpty() && size.width > 0) {
-                        for (i in 0 until 100) { 
-                            particles.add(ManaDust(size.width, size.height))
+                    if (!batterySaver) {
+                        if (particles.isEmpty() && size.width > 0) {
+                            for (i in 0 until 35) { 
+                                particles.add(ManaDust(size.width, size.height))
+                            }
                         }
-                    }
 
-                    val t = timeMillis / 1_000_000_000f
-                    val windX = (sin(t) * 0.2f + 0.1f).toFloat()
-                    val windY = (cos(t * 0.8f) * 0.2f - 0.2f).toFloat()
+                        val t = timeMillis / 1_000_000_000f
+                        val windX = (sin(t) * 0.2f + 0.1f).toFloat()
+                        val windY = (cos(t * 0.8f) * 0.2f - 0.2f).toFloat()
 
-                    shootingStars.forEach { star ->
-                        if (star.active) {
-                            star.update(warpSpeedMultiplier)
-                            drawLine(
-                                brush = Brush.linearGradient(
-                                    colors = listOf(Color.White, Color.Transparent),
+                        shootingStars.forEach { star ->
+                            if (star.active) {
+                                star.update(warpSpeedMultiplier)
+                                drawLine(
+                                    brush = Brush.linearGradient(
+                                        colors = listOf(Color.White, Color.Transparent),
+                                        start = Offset(star.x, star.y),
+                                        end = Offset(star.x - cos(star.angle)*star.length, star.y - sin(star.angle)*star.length)
+                                    ),
                                     start = Offset(star.x, star.y),
-                                    end = Offset(star.x - cos(star.angle)*star.length, star.y - sin(star.angle)*star.length)
-                                ),
-                                start = Offset(star.x, star.y),
-                                end = Offset(star.x - cos(star.angle)*star.length, star.y - sin(star.angle)*star.length),
-                                strokeWidth = 3f * star.life
-                            )
-                        } else {
-                            star.spawn()
+                                    end = Offset(star.x - cos(star.angle)*star.length, star.y - sin(star.angle)*star.length),
+                                    strokeWidth = 3f * star.life
+                                )
+                            } else {
+                                star.spawn()
+                            }
                         }
-                    }
 
-                    for (i in particles.indices.reversed()) {
-                        val p = particles[i]
-                        p.update(windX, windY, warpSpeedMultiplier)
-                        if (p.life > 0) {
-                            drawCircle(
-                                brush = Brush.radialGradient(
-                                    colors = listOf(p.color.copy(alpha = p.life * 0.5f), Color.Transparent),
-                                    center = Offset(p.x, p.y),
-                                    radius = p.size + p.glow
-                                ),
-                                radius = p.size + p.glow, 
-                                center = Offset(p.x, p.y), 
-                                blendMode = BlendMode.Screen
-                            )
-                            drawCircle(color = Color.White.copy(alpha = p.life), radius = p.size * 0.5f, center = Offset(p.x, p.y))
-                        }
-                        if (p.life <= 0) {
-                            particles[i] = ManaDust(size.width, size.height)
+                        for (i in particles.indices.reversed()) {
+                            val p = particles[i]
+                            p.update(windX, windY, warpSpeedMultiplier)
+                            if (p.life > 0) {
+                                drawCircle(
+                                    brush = Brush.radialGradient(
+                                        colors = listOf(p.color.copy(alpha = p.life * 0.5f), Color.Transparent),
+                                        center = Offset(p.x, p.y),
+                                        radius = p.size + p.glow
+                                    ),
+                                    radius = p.size + p.glow, 
+                                    center = Offset(p.x, p.y), 
+                                    blendMode = BlendMode.Screen
+                                )
+                                drawCircle(color = Color.White.copy(alpha = p.life), radius = p.size * 0.5f, center = Offset(p.x, p.y))
+                            }
+                            if (p.life <= 0) {
+                                particles[i] = ManaDust(size.width, size.height)
+                            }
                         }
                     }
 
@@ -538,7 +545,7 @@ fun IntroContent(currentX: Float, currentY: Float, onBurst: (x: Float, y: Float)
                 )
 
                 AsyncImage(
-                    model = "https://lh3.googleusercontent.com/aida-public/AB6AXuCHzOhZ_Yv9HSJpC8fx2uMMMtXU55pzMAiieefMr9B_K2oDsoSwZVkkpkTTpHl8NmfeQXnDVLF5S349l54_6ZSI0aD4oBRF996wrZQVz_FM5CAX2aBrRKUSSf6AHIplgdF-R5H7uQqCwTSa-f1pvHGvJpkbTjGpDZ-slJctouiKXM8_dYkJ_qe_kBYCg18FxM6J2qT10go0Tce6pm1RDZ1UpDDmW4ebutwbsErHMK1SR9mesBOGZaCZrpbpzUqNfILdHmyDLSoXHps",
+                    model = R.drawable.kiki_hero_intro,
                     contentDescription = "Kiki",
                     modifier = Modifier.fillMaxSize(),
                     contentScale = ContentScale.Fit

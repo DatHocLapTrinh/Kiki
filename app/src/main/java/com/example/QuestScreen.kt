@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.*
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
@@ -36,7 +37,7 @@ import com.example.viewmodel.StudyViewModel
 fun QuestScreen(viewModel: StudyViewModel, onFinish: () -> Unit) {
     val context = LocalContext.current
     val questions by viewModel.questions.observeAsState(emptyList())
-    val chapterTitle by viewModel.currentChapterTitle.observeAsState("Genesis Core")
+    val chapterTitle by viewModel.currentChapterTitle.observeAsState("English Fundamentals")
 
     if (questions.isEmpty()) {
         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
@@ -66,7 +67,7 @@ fun QuestScreen(viewModel: StudyViewModel, onFinish: () -> Unit) {
             Spacer(modifier = Modifier.width(16.dp))
             Box(modifier = Modifier.size(56.dp), contentAlignment = Alignment.Center) {
                 Box(modifier = Modifier.matchParentSize().scale(pulseAnim).background(Brush.linearGradient(listOf(Color(0xFF785A00), Color(0xFF006C4F))), CircleShape).blur(8.dp))
-                AsyncImage(model = "https://lh3.googleusercontent.com/aida-public/AB6AXuDfNo2HXKY8zqyKebsZcDuTH3_wsaO-O1VUAF4jXKsK0IDWO26eUWYkdD16BzL07gMyMF_9bCRwmdR-7IdUUqcroezUSK00BFKhHQ4ZgwgALrrI-CkbLmK4DdO6PHgjD285zxgYm0d16B3evSk_zMFQXz41g6DqbuP5vjYm-iWoQocuY8KWd8z8eeAyUjJuI20n5coxDgdN8_hWEo698CAwLJqqpDxXf3ZO6xAsNhRKbbA4CNTbVIU2w0wRYfVy_eRIYAzLO9rT93k", contentDescription = "Companion", contentScale = ContentScale.Crop, modifier = Modifier.size(48.dp).clip(CircleShape).border(2.dp, Color(0x33FFFFFF), CircleShape))
+                AsyncImage(model = R.drawable.companion_mascot, contentDescription = "Companion", contentScale = ContentScale.Crop, modifier = Modifier.size(48.dp).clip(CircleShape).border(2.dp, Color(0x33FFFFFF), CircleShape))
                 Box(modifier = Modifier.align(Alignment.BottomEnd).size(16.dp).clip(CircleShape).background(Color(0xFF27E0A9)).border(2.dp, Color(0xFF0A0A12), CircleShape))
             }
         }
@@ -132,7 +133,7 @@ fun QuestScreen(viewModel: StudyViewModel, onFinish: () -> Unit) {
         Row(modifier = Modifier.fillMaxWidth().padding(bottom = 32.dp), horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically) {
             val strings = LocalAppStrings.current
             Row(modifier = Modifier.clickable { onFinish() }.padding(8.dp), verticalAlignment = Alignment.CenterVertically) {
-                Icon(Icons.Default.HelpOutline, contentDescription = null, tint = Color.White, modifier = Modifier.size(16.dp))
+                Icon(Icons.AutoMirrored.Filled.HelpOutline, contentDescription = null, tint = Color.White, modifier = Modifier.size(16.dp))
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(strings.skipQuest, color = Color.White, fontSize = 12.sp, fontWeight = FontWeight.Bold)
             }

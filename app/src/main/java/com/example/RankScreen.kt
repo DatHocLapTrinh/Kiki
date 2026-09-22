@@ -93,7 +93,10 @@ fun RankScreen(viewModel: StudyViewModel) {
                     contentPadding = PaddingValues(start = 24.dp, end = 24.dp, bottom = 200.dp), // Extra padding for sticky bar & bottom nav
                     verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    itemsIndexed(players.drop(3)) { _, player ->
+                    itemsIndexed(
+                        players.drop(3),
+                        key = { _, player -> "rank_${player.rank}_${player.name}" }
+                    ) { _, player ->
                         RankListItem(player)
                     }
                 }

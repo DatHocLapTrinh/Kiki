@@ -1,4525 +1,2513 @@
 {
-  "Web Development": {
-    "Genesis Core": [
+  "English": {
+    "English Fundamentals": [
       {
-        "question": "Thẻ HTML nào dùng để tạo tiêu đề lớn nhất?",
+        "question": "She ______ to school by bus every morning.",
         "options": [
-          "<header>",
-          "<h6>",
-          "<h1>",
-          "<title>"
-        ],
-        "correctAnswer": "2"
-      },
-      {
-        "question": "Thuộc tính nào chỉ định đường dẫn hình ảnh trong thẻ <img>?",
-        "options": [
-          "src",
-          "link",
-          "url",
-          "href"
-        ],
-        "correctAnswer": "0"
-      },
-      {
-        "question": "Ý nghĩa của thẻ <ul> trong HTML là gì?",
-        "options": [
-          "Danh sách có thứ tự",
-          "Đoạn văn bản",
-          "Gạch chân văn bản",
-          "Danh sách không thứ tự"
-        ],
-        "correctAnswer": "3"
-      },
-      {
-        "question": "Làm thế nào để tạo một liên kết (hyperlink) trong HTML?",
-        "options": [
-          "<link>",
-          "<a>",
-          "<url>",
-          "<href>"
+          "go",
+          "goes",
+          "going",
+          "is go"
         ],
         "correctAnswer": "1"
       },
       {
-        "question": "Thẻ nào được sử dụng để tạo một bảng dữ liệu?",
+        "question": "They ______ English for two hours yesterday.",
         "options": [
-          "<tbody>",
-          "<table>",
-          "<list>",
-          "<grid>"
+          "study",
+          "studied",
+          "studying",
+          "studies"
         ],
         "correctAnswer": "1"
       },
       {
-        "question": "Thuộc tính nào dùng để gán định danh duy nhất cho một phần tử?",
+        "question": "Look! The baby ______ in her crib.",
         "options": [
-          "id",
-          "name",
-          "style",
-          "class"
-        ],
-        "correctAnswer": "0"
-      },
-      {
-        "question": "Thẻ <head> chứa thông tin gì?",
-        "options": [
-          "Chân trang",
-          "Mã JavaScript chính",
-          "Siêu dữ liệu (metadata)",
-          "Nội dung hiển thị"
-        ],
-        "correctAnswer": "2"
-      },
-      {
-        "question": "Phiên bản mới nhất của HTML hiện nay là gì?",
-        "options": [
-          "HTML4",
-          "XHTML",
-          "HTML5",
-          "HTML6"
-        ],
-        "correctAnswer": "2"
-      },
-      {
-        "question": "Để tạo một ô nhập liệu (input), ta dùng thẻ nào?",
-        "options": [
-          "<input>",
-          "<textfield>",
-          "<text>",
-          "<form>"
-        ],
-        "correctAnswer": "0"
-      },
-      {
-        "question": "Làm sao để tạo chữ in nghiêng trong HTML?",
-        "options": [
-          "<italic>",
-          "<u>",
-          "<b> hoặc <strong>",
-          "<i> hoặc <em>"
-        ],
-        "correctAnswer": "3"
-      },
-      {
-        "question": "Thẻ HTML nào dùng để tạo tiêu đề lớn nhất?",
-        "options": [
-          "<header>",
-          "<h6>",
-          "<title>",
-          "<h1>"
-        ],
-        "correctAnswer": "3"
-      },
-      {
-        "question": "Thuộc tính nào chỉ định đường dẫn hình ảnh trong thẻ <img>?",
-        "options": [
-          "href",
-          "link",
-          "url",
-          "src"
-        ],
-        "correctAnswer": "3"
-      },
-      {
-        "question": "Ý nghĩa của thẻ <ul> trong HTML là gì?",
-        "options": [
-          "Gạch chân văn bản",
-          "Danh sách không thứ tự",
-          "Danh sách có thứ tự",
-          "Đoạn văn bản"
+          "sleeps",
+          "is sleeping",
+          "slept",
+          "has slept"
         ],
         "correctAnswer": "1"
       },
       {
-        "question": "Làm thế nào để tạo một liên kết (hyperlink) trong HTML?",
+        "question": "I have not ______ my homework yet.",
         "options": [
-          "<link>",
-          "<href>",
-          "<url>",
-          "<a>"
-        ],
-        "correctAnswer": "3"
-      },
-      {
-        "question": "Thẻ nào được sử dụng để tạo một bảng dữ liệu?",
-        "options": [
-          "<tbody>",
-          "<grid>",
-          "<table>",
-          "<list>"
-        ],
-        "correctAnswer": "2"
-      },
-      {
-        "question": "Thuộc tính nào dùng để gán định danh duy nhất cho một phần tử?",
-        "options": [
-          "class",
-          "name",
-          "id",
-          "style"
-        ],
-        "correctAnswer": "2"
-      },
-      {
-        "question": "Thẻ <head> chứa thông tin gì?",
-        "options": [
-          "Nội dung hiển thị",
-          "Mã JavaScript chính",
-          "Chân trang",
-          "Siêu dữ liệu (metadata)"
-        ],
-        "correctAnswer": "3"
-      },
-      {
-        "question": "Phiên bản mới nhất của HTML hiện nay là gì?",
-        "options": [
-          "HTML5",
-          "HTML6",
-          "XHTML",
-          "HTML4"
-        ],
-        "correctAnswer": "0"
-      },
-      {
-        "question": "Để tạo một ô nhập liệu (input), ta dùng thẻ nào?",
-        "options": [
-          "<textfield>",
-          "<text>",
-          "<form>",
-          "<input>"
-        ],
-        "correctAnswer": "3"
-      },
-      {
-        "question": "Làm sao để tạo chữ in nghiêng trong HTML?",
-        "options": [
-          "<italic>",
-          "<u>",
-          "<i> hoặc <em>",
-          "<b> hoặc <strong>"
-        ],
-        "correctAnswer": "2"
-      },
-      {
-        "question": "Thẻ HTML nào dùng để tạo tiêu đề lớn nhất?",
-        "options": [
-          "<title>",
-          "<h1>",
-          "<h6>",
-          "<header>"
+          "finish",
+          "finished",
+          "finishing",
+          "finishes"
         ],
         "correctAnswer": "1"
       },
       {
-        "question": "Thuộc tính nào chỉ định đường dẫn hình ảnh trong thẻ <img>?",
+        "question": "We ______ to Paris next summer.",
         "options": [
-          "src",
-          "url",
-          "link",
-          "href"
+          "will travel",
+          "traveled",
+          "travels",
+          "have travel"
         ],
         "correctAnswer": "0"
       },
       {
-        "question": "Ý nghĩa của thẻ <ul> trong HTML là gì?",
+        "question": "He ______ coffee; he prefers tea.",
         "options": [
-          "Danh sách có thứ tự",
-          "Đoạn văn bản",
-          "Danh sách không thứ tự",
-          "Gạch chân văn bản"
+          "not like",
+          "doesn't like",
+          "isn't like",
+          "don't like"
+        ],
+        "correctAnswer": "1"
+      },
+      {
+        "question": "When I was young, I ______ swim very fast.",
+        "options": [
+          "can",
+          "could",
+          "may",
+          "must"
+        ],
+        "correctAnswer": "1"
+      },
+      {
+        "question": "Listen! Someone ______ at the front door.",
+        "options": [
+          "knocks",
+          "knocked",
+          "is knocking",
+          "was knocked"
         ],
         "correctAnswer": "2"
       },
       {
-        "question": "Làm thế nào để tạo một liên kết (hyperlink) trong HTML?",
+        "question": "Water ______ at 100 degrees Celsius.",
         "options": [
-          "<a>",
-          "<href>",
-          "<link>",
-          "<url>"
+          "boil",
+          "boils",
+          "is boiling",
+          "boiled"
         ],
-        "correctAnswer": "0"
+        "correctAnswer": "1"
       },
       {
-        "question": "Thẻ nào được sử dụng để tạo một bảng dữ liệu?",
+        "question": "They ______ in this city since 2018.",
         "options": [
-          "<list>",
-          "<grid>",
-          "<table>",
-          "<tbody>"
+          "live",
+          "lived",
+          "have lived",
+          "are living"
         ],
         "correctAnswer": "2"
       },
       {
-        "question": "Thuộc tính nào dùng để gán định danh duy nhất cho một phần tử?",
-        "options": [
-          "id",
-          "style",
-          "class",
-          "name"
-        ],
-        "correctAnswer": "0"
-      },
-      {
-        "question": "Thẻ <head> chứa thông tin gì?",
-        "options": [
-          "Mã JavaScript chính",
-          "Chân trang",
-          "Nội dung hiển thị",
-          "Siêu dữ liệu (metadata)"
-        ],
-        "correctAnswer": "3"
-      },
-      {
-        "question": "Phiên bản mới nhất của HTML hiện nay là gì?",
-        "options": [
-          "HTML6",
-          "HTML4",
-          "XHTML",
-          "HTML5"
-        ],
-        "correctAnswer": "3"
-      },
-      {
-        "question": "Để tạo một ô nhập liệu (input), ta dùng thẻ nào?",
-        "options": [
-          "<text>",
-          "<input>",
-          "<textfield>",
-          "<form>"
-        ],
-        "correctAnswer": "1"
-      },
-      {
-        "question": "Làm sao để tạo chữ in nghiêng trong HTML?",
-        "options": [
-          "<b> hoặc <strong>",
-          "<italic>",
-          "<u>",
-          "<i> hoặc <em>"
-        ],
-        "correctAnswer": "3"
-      },
-      {
-        "question": "Thẻ HTML nào dùng để tạo tiêu đề lớn nhất?",
-        "options": [
-          "<h6>",
-          "<title>",
-          "<header>",
-          "<h1>"
-        ],
-        "correctAnswer": "3"
-      },
-      {
-        "question": "Thuộc tính nào chỉ định đường dẫn hình ảnh trong thẻ <img>?",
-        "options": [
-          "url",
-          "href",
-          "src",
-          "link"
-        ],
-        "correctAnswer": "2"
-      },
-      {
-        "question": "Ý nghĩa của thẻ <ul> trong HTML là gì?",
-        "options": [
-          "Đoạn văn bản",
-          "Gạch chân văn bản",
-          "Danh sách có thứ tự",
-          "Danh sách không thứ tự"
-        ],
-        "correctAnswer": "3"
-      },
-      {
-        "question": "Làm thế nào để tạo một liên kết (hyperlink) trong HTML?",
-        "options": [
-          "<a>",
-          "<href>",
-          "<link>",
-          "<url>"
-        ],
-        "correctAnswer": "0"
-      },
-      {
-        "question": "Thẻ nào được sử dụng để tạo một bảng dữ liệu?",
-        "options": [
-          "<list>",
-          "<table>",
-          "<tbody>",
-          "<grid>"
-        ],
-        "correctAnswer": "1"
-      },
-      {
-        "question": "Thuộc tính nào dùng để gán định danh duy nhất cho một phần tử?",
-        "options": [
-          "style",
-          "id",
-          "class",
-          "name"
-        ],
-        "correctAnswer": "1"
-      },
-      {
-        "question": "Thẻ <head> chứa thông tin gì?",
-        "options": [
-          "Siêu dữ liệu (metadata)",
-          "Chân trang",
-          "Mã JavaScript chính",
-          "Nội dung hiển thị"
-        ],
-        "correctAnswer": "0"
-      },
-      {
-        "question": "Phiên bản mới nhất của HTML hiện nay là gì?",
-        "options": [
-          "XHTML",
-          "HTML5",
-          "HTML4",
-          "HTML6"
-        ],
-        "correctAnswer": "1"
-      },
-      {
-        "question": "Để tạo một ô nhập liệu (input), ta dùng thẻ nào?",
-        "options": [
-          "<input>",
-          "<textfield>",
-          "<text>",
-          "<form>"
-        ],
-        "correctAnswer": "0"
-      },
-      {
-        "question": "Làm sao để tạo chữ in nghiêng trong HTML?",
-        "options": [
-          "<italic>",
-          "<i> hoặc <em>",
-          "<b> hoặc <strong>",
-          "<u>"
-        ],
-        "correctAnswer": "1"
-      },
-      {
-        "question": "Thẻ HTML nào dùng để tạo tiêu đề lớn nhất?",
-        "options": [
-          "<h1>",
-          "<h6>",
-          "<title>",
-          "<header>"
-        ],
-        "correctAnswer": "0"
-      },
-      {
-        "question": "Thuộc tính nào chỉ định đường dẫn hình ảnh trong thẻ <img>?",
-        "options": [
-          "url",
-          "href",
-          "src",
-          "link"
-        ],
-        "correctAnswer": "2"
-      },
-      {
-        "question": "Ý nghĩa của thẻ <ul> trong HTML là gì?",
-        "options": [
-          "Danh sách không thứ tự",
-          "Danh sách có thứ tự",
-          "Đoạn văn bản",
-          "Gạch chân văn bản"
-        ],
-        "correctAnswer": "0"
-      },
-      {
-        "question": "Làm thế nào để tạo một liên kết (hyperlink) trong HTML?",
-        "options": [
-          "<link>",
-          "<url>",
-          "<href>",
-          "<a>"
-        ],
-        "correctAnswer": "3"
-      },
-      {
-        "question": "Thẻ nào được sử dụng để tạo một bảng dữ liệu?",
-        "options": [
-          "<tbody>",
-          "<grid>",
-          "<table>",
-          "<list>"
-        ],
-        "correctAnswer": "2"
-      },
-      {
-        "question": "Thuộc tính nào dùng để gán định danh duy nhất cho một phần tử?",
-        "options": [
-          "id",
-          "name",
-          "class",
-          "style"
-        ],
-        "correctAnswer": "0"
-      },
-      {
-        "question": "Thẻ <head> chứa thông tin gì?",
-        "options": [
-          "Mã JavaScript chính",
-          "Nội dung hiển thị",
-          "Siêu dữ liệu (metadata)",
-          "Chân trang"
-        ],
-        "correctAnswer": "2"
-      },
-      {
-        "question": "Phiên bản mới nhất của HTML hiện nay là gì?",
-        "options": [
-          "HTML5",
-          "XHTML",
-          "HTML4",
-          "HTML6"
-        ],
-        "correctAnswer": "0"
-      },
-      {
-        "question": "Để tạo một ô nhập liệu (input), ta dùng thẻ nào?",
-        "options": [
-          "<textfield>",
-          "<input>",
-          "<form>",
-          "<text>"
-        ],
-        "correctAnswer": "1"
-      },
-      {
-        "question": "Làm sao để tạo chữ in nghiêng trong HTML?",
-        "options": [
-          "<b> hoặc <strong>",
-          "<u>",
-          "<i> hoặc <em>",
-          "<italic>"
-        ],
-        "correctAnswer": "2"
-      }
-    ],
-    "Style Nebula": [
-      {
-        "question": "Thuộc tính CSS nào dùng để đổi màu chữ?",
-        "options": [
-          "bgcolor",
-          "font-color",
-          "text-color",
-          "color"
-        ],
-        "correctAnswer": "3"
-      },
-      {
-        "question": "Cách nào để viết CSS nội tuyến (inline)?",
-        "options": [
-          "Dùng thẻ <css>",
-          "Sử dụng tệp .css bên ngoài",
-          "Viết trong thẻ <style>",
-          "Thêm thuộc tính style=\"...\" vào thẻ HTML"
-        ],
-        "correctAnswer": "3"
-      },
-      {
-        "question": "Làm sao để xóa gạch chân của liên kết trong CSS?",
-        "options": [
-          "underline: none;",
-          "text-decoration: none;",
-          "text-style: none;",
-          "link-decoration: no;"
-        ],
-        "correctAnswer": "1"
-      },
-      {
-        "question": "Thuộc tính nào thay đổi màu nền của một phần tử?",
-        "options": [
-          "bgcolor",
-          "background-color",
-          "background",
-          "color"
-        ],
-        "correctAnswer": "1"
-      },
-      {
-        "question": "Flexbox được kích hoạt bằng thuộc tính nào?",
-        "options": [
-          "display: inline;",
-          "display: flex;",
-          "display: block;",
-          "display: grid;"
-        ],
-        "correctAnswer": "1"
-      },
-      {
-        "question": "Đơn vị nào trong CSS có kích thước tương đối theo kích thước chữ của phần tử gốc (root)?",
-        "options": [
-          "rem",
-          "em",
-          "px",
-          "%"
-        ],
-        "correctAnswer": "0"
-      },
-      {
-        "question": "Thuộc tính nào tạo khoảng cách bên TRONG (giữa nội dung và viền) của một phần tử?",
-        "options": [
-          "margin",
-          "spacing",
-          "border",
-          "padding"
-        ],
-        "correctAnswer": "3"
-      },
-      {
-        "question": "Thuộc tính nào tạo khoảng cách bên NGOÀI (giữa phần tử này và phần tử khác)?",
-        "options": [
-          "padding",
-          "border",
-          "margin",
-          "spacing"
-        ],
-        "correctAnswer": "2"
-      },
-      {
-        "question": "Làm thế nào để làm cho một phần tử trong suốt 50%?",
-        "options": [
-          "transparent: 50%;",
-          "opacity: 0.5;",
-          "alpha: 0.5;",
-          "visibility: 0.5;"
-        ],
-        "correctAnswer": "1"
-      },
-      {
-        "question": "Giá trị nào của position giúp phần tử cố định trên màn hình khi cuộn?",
-        "options": [
-          "fixed",
-          "relative",
-          "sticky",
-          "absolute"
-        ],
-        "correctAnswer": "0"
-      },
-      {
-        "question": "Thuộc tính CSS nào dùng để đổi màu chữ?",
-        "options": [
-          "font-color",
-          "bgcolor",
-          "color",
-          "text-color"
-        ],
-        "correctAnswer": "2"
-      },
-      {
-        "question": "Cách nào để viết CSS nội tuyến (inline)?",
-        "options": [
-          "Viết trong thẻ <style>",
-          "Dùng thẻ <css>",
-          "Sử dụng tệp .css bên ngoài",
-          "Thêm thuộc tính style=\"...\" vào thẻ HTML"
-        ],
-        "correctAnswer": "3"
-      },
-      {
-        "question": "Làm sao để xóa gạch chân của liên kết trong CSS?",
-        "options": [
-          "text-style: none;",
-          "underline: none;",
-          "text-decoration: none;",
-          "link-decoration: no;"
-        ],
-        "correctAnswer": "2"
-      },
-      {
-        "question": "Thuộc tính nào thay đổi màu nền của một phần tử?",
-        "options": [
-          "background",
-          "bgcolor",
-          "background-color",
-          "color"
-        ],
-        "correctAnswer": "2"
-      },
-      {
-        "question": "Flexbox được kích hoạt bằng thuộc tính nào?",
-        "options": [
-          "display: inline;",
-          "display: block;",
-          "display: grid;",
-          "display: flex;"
-        ],
-        "correctAnswer": "3"
-      },
-      {
-        "question": "Đơn vị nào trong CSS có kích thước tương đối theo kích thước chữ của phần tử gốc (root)?",
-        "options": [
-          "%",
-          "rem",
-          "px",
-          "em"
-        ],
-        "correctAnswer": "1"
-      },
-      {
-        "question": "Thuộc tính nào tạo khoảng cách bên TRONG (giữa nội dung và viền) của một phần tử?",
-        "options": [
-          "spacing",
-          "padding",
-          "margin",
-          "border"
-        ],
-        "correctAnswer": "1"
-      },
-      {
-        "question": "Thuộc tính nào tạo khoảng cách bên NGOÀI (giữa phần tử này và phần tử khác)?",
-        "options": [
-          "margin",
-          "spacing",
-          "border",
-          "padding"
-        ],
-        "correctAnswer": "0"
-      },
-      {
-        "question": "Làm thế nào để làm cho một phần tử trong suốt 50%?",
-        "options": [
-          "transparent: 50%;",
-          "visibility: 0.5;",
-          "alpha: 0.5;",
-          "opacity: 0.5;"
-        ],
-        "correctAnswer": "3"
-      },
-      {
-        "question": "Giá trị nào của position giúp phần tử cố định trên màn hình khi cuộn?",
-        "options": [
-          "fixed",
-          "relative",
-          "absolute",
-          "sticky"
-        ],
-        "correctAnswer": "0"
-      },
-      {
-        "question": "Thuộc tính CSS nào dùng để đổi màu chữ?",
-        "options": [
-          "bgcolor",
-          "text-color",
-          "font-color",
-          "color"
-        ],
-        "correctAnswer": "3"
-      },
-      {
-        "question": "Cách nào để viết CSS nội tuyến (inline)?",
-        "options": [
-          "Viết trong thẻ <style>",
-          "Thêm thuộc tính style=\"...\" vào thẻ HTML",
-          "Sử dụng tệp .css bên ngoài",
-          "Dùng thẻ <css>"
-        ],
-        "correctAnswer": "1"
-      },
-      {
-        "question": "Làm sao để xóa gạch chân của liên kết trong CSS?",
-        "options": [
-          "link-decoration: no;",
-          "text-style: none;",
-          "underline: none;",
-          "text-decoration: none;"
-        ],
-        "correctAnswer": "3"
-      },
-      {
-        "question": "Thuộc tính nào thay đổi màu nền của một phần tử?",
-        "options": [
-          "background-color",
-          "color",
-          "bgcolor",
-          "background"
-        ],
-        "correctAnswer": "0"
-      },
-      {
-        "question": "Flexbox được kích hoạt bằng thuộc tính nào?",
-        "options": [
-          "display: grid;",
-          "display: inline;",
-          "display: block;",
-          "display: flex;"
-        ],
-        "correctAnswer": "3"
-      },
-      {
-        "question": "Đơn vị nào trong CSS có kích thước tương đối theo kích thước chữ của phần tử gốc (root)?",
-        "options": [
-          "rem",
-          "em",
-          "%",
-          "px"
-        ],
-        "correctAnswer": "0"
-      },
-      {
-        "question": "Thuộc tính nào tạo khoảng cách bên TRONG (giữa nội dung và viền) của một phần tử?",
-        "options": [
-          "border",
-          "spacing",
-          "margin",
-          "padding"
-        ],
-        "correctAnswer": "3"
-      },
-      {
-        "question": "Thuộc tính nào tạo khoảng cách bên NGOÀI (giữa phần tử này và phần tử khác)?",
-        "options": [
-          "margin",
-          "border",
-          "spacing",
-          "padding"
-        ],
-        "correctAnswer": "0"
-      },
-      {
-        "question": "Làm thế nào để làm cho một phần tử trong suốt 50%?",
-        "options": [
-          "alpha: 0.5;",
-          "opacity: 0.5;",
-          "transparent: 50%;",
-          "visibility: 0.5;"
-        ],
-        "correctAnswer": "1"
-      },
-      {
-        "question": "Giá trị nào của position giúp phần tử cố định trên màn hình khi cuộn?",
-        "options": [
-          "sticky",
-          "fixed",
-          "absolute",
-          "relative"
-        ],
-        "correctAnswer": "1"
-      },
-      {
-        "question": "Thuộc tính CSS nào dùng để đổi màu chữ?",
-        "options": [
-          "font-color",
-          "text-color",
-          "color",
-          "bgcolor"
-        ],
-        "correctAnswer": "2"
-      },
-      {
-        "question": "Cách nào để viết CSS nội tuyến (inline)?",
-        "options": [
-          "Viết trong thẻ <style>",
-          "Sử dụng tệp .css bên ngoài",
-          "Thêm thuộc tính style=\"...\" vào thẻ HTML",
-          "Dùng thẻ <css>"
-        ],
-        "correctAnswer": "2"
-      },
-      {
-        "question": "Làm sao để xóa gạch chân của liên kết trong CSS?",
-        "options": [
-          "underline: none;",
-          "text-decoration: none;",
-          "link-decoration: no;",
-          "text-style: none;"
-        ],
-        "correctAnswer": "1"
-      },
-      {
-        "question": "Thuộc tính nào thay đổi màu nền của một phần tử?",
-        "options": [
-          "background-color",
-          "bgcolor",
-          "background",
-          "color"
-        ],
-        "correctAnswer": "0"
-      },
-      {
-        "question": "Flexbox được kích hoạt bằng thuộc tính nào?",
-        "options": [
-          "display: inline;",
-          "display: block;",
-          "display: grid;",
-          "display: flex;"
-        ],
-        "correctAnswer": "3"
-      },
-      {
-        "question": "Đơn vị nào trong CSS có kích thước tương đối theo kích thước chữ của phần tử gốc (root)?",
-        "options": [
-          "px",
-          "rem",
-          "%",
-          "em"
-        ],
-        "correctAnswer": "1"
-      },
-      {
-        "question": "Thuộc tính nào tạo khoảng cách bên TRONG (giữa nội dung và viền) của một phần tử?",
-        "options": [
-          "margin",
-          "border",
-          "padding",
-          "spacing"
-        ],
-        "correctAnswer": "2"
-      },
-      {
-        "question": "Thuộc tính nào tạo khoảng cách bên NGOÀI (giữa phần tử này và phần tử khác)?",
-        "options": [
-          "margin",
-          "padding",
-          "border",
-          "spacing"
-        ],
-        "correctAnswer": "0"
-      },
-      {
-        "question": "Làm thế nào để làm cho một phần tử trong suốt 50%?",
-        "options": [
-          "opacity: 0.5;",
-          "alpha: 0.5;",
-          "visibility: 0.5;",
-          "transparent: 50%;"
-        ],
-        "correctAnswer": "0"
-      },
-      {
-        "question": "Giá trị nào của position giúp phần tử cố định trên màn hình khi cuộn?",
-        "options": [
-          "relative",
-          "sticky",
-          "absolute",
-          "fixed"
-        ],
-        "correctAnswer": "3"
-      },
-      {
-        "question": "Thuộc tính CSS nào dùng để đổi màu chữ?",
-        "options": [
-          "font-color",
-          "color",
-          "text-color",
-          "bgcolor"
-        ],
-        "correctAnswer": "1"
-      },
-      {
-        "question": "Cách nào để viết CSS nội tuyến (inline)?",
-        "options": [
-          "Viết trong thẻ <style>",
-          "Sử dụng tệp .css bên ngoài",
-          "Thêm thuộc tính style=\"...\" vào thẻ HTML",
-          "Dùng thẻ <css>"
-        ],
-        "correctAnswer": "2"
-      },
-      {
-        "question": "Làm sao để xóa gạch chân của liên kết trong CSS?",
-        "options": [
-          "text-decoration: none;",
-          "link-decoration: no;",
-          "underline: none;",
-          "text-style: none;"
-        ],
-        "correctAnswer": "0"
-      },
-      {
-        "question": "Thuộc tính nào thay đổi màu nền của một phần tử?",
-        "options": [
-          "bgcolor",
-          "background-color",
-          "background",
-          "color"
-        ],
-        "correctAnswer": "1"
-      },
-      {
-        "question": "Flexbox được kích hoạt bằng thuộc tính nào?",
-        "options": [
-          "display: grid;",
-          "display: block;",
-          "display: flex;",
-          "display: inline;"
-        ],
-        "correctAnswer": "2"
-      },
-      {
-        "question": "Đơn vị nào trong CSS có kích thước tương đối theo kích thước chữ của phần tử gốc (root)?",
-        "options": [
-          "em",
-          "px",
-          "%",
-          "rem"
-        ],
-        "correctAnswer": "3"
-      },
-      {
-        "question": "Thuộc tính nào tạo khoảng cách bên TRONG (giữa nội dung và viền) của một phần tử?",
-        "options": [
-          "padding",
-          "margin",
-          "border",
-          "spacing"
-        ],
-        "correctAnswer": "0"
-      },
-      {
-        "question": "Thuộc tính nào tạo khoảng cách bên NGOÀI (giữa phần tử này và phần tử khác)?",
-        "options": [
-          "margin",
-          "spacing",
-          "border",
-          "padding"
-        ],
-        "correctAnswer": "0"
-      },
-      {
-        "question": "Làm thế nào để làm cho một phần tử trong suốt 50%?",
-        "options": [
-          "opacity: 0.5;",
-          "alpha: 0.5;",
-          "visibility: 0.5;",
-          "transparent: 50%;"
-        ],
-        "correctAnswer": "0"
-      },
-      {
-        "question": "Giá trị nào của position giúp phần tử cố định trên màn hình khi cuộn?",
-        "options": [
-          "fixed",
-          "absolute",
-          "relative",
-          "sticky"
-        ],
-        "correctAnswer": "0"
-      }
-    ],
-    "Logic Matrix": [
-      {
-        "question": "Khai báo biến nào không thể thay đổi giá trị sau khi gán trong JavaScript?",
-        "options": [
-          "static",
-          "var",
-          "let",
-          "const"
-        ],
-        "correctAnswer": "3"
-      },
-      {
-        "question": "Kiểu dữ liệu của `typeof 42` là gì?",
-        "options": [
-          "float",
-          "string",
-          "number",
-          "int"
-        ],
-        "correctAnswer": "2"
-      },
-      {
-        "question": "Phương thức nào dùng để in dữ liệu ra bảng điều khiển trình duyệt?",
-        "options": [
-          "console.log()",
-          "echo()",
-          "System.out.println()",
-          "print()"
-        ],
-        "correctAnswer": "0"
-      },
-      {
-        "question": "Làm sao để tạo một mảng rỗng trong JS?",
-        "options": [
-          "{}",
-          "[]",
-          "Array.empty()",
-          "new Array()"
-        ],
-        "correctAnswer": "1"
-      },
-      {
-        "question": "Đâu là cú pháp đúng của Arrow Function?",
-        "options": [
-          "() -> {}",
-          "() => {}",
-          "=> () {}",
-          "function() {}"
-        ],
-        "correctAnswer": "1"
-      },
-      {
-        "question": "Làm thế nào để thêm một phần tử vào cuối mảng?",
-        "options": [
-          "unshift()",
-          "shift()",
-          "push()",
-          "pop()"
-        ],
-        "correctAnswer": "2"
-      },
-      {
-        "question": "Hàm nào dùng để chuyển chuỗi thành số nguyên?",
-        "options": [
-          "parseInt()",
-          "toInteger()",
-          "parseFloat()",
-          "Number()"
-        ],
-        "correctAnswer": "0"
-      },
-      {
-        "question": "Kết quả của `\"2\" + 2` trong JavaScript là gì?",
-        "options": [
-          "\"22\"",
-          "4",
-          "Error",
-          "NaN"
-        ],
-        "correctAnswer": "0"
-      },
-      {
-        "question": "Từ khóa nào dùng để thoát khỏi vòng lặp?",
-        "options": [
-          "break",
-          "exit",
-          "return",
-          "continue"
-        ],
-        "correctAnswer": "0"
-      },
-      {
-        "question": "Đâu là cách so sánh bằng cả giá trị và kiểu dữ liệu?",
-        "options": [
-          "=",
-          "==",
-          "===",
-          "!="
-        ],
-        "correctAnswer": "2"
-      },
-      {
-        "question": "Khai báo biến nào không thể thay đổi giá trị sau khi gán trong JavaScript?",
-        "options": [
-          "const",
-          "var",
-          "static",
-          "let"
-        ],
-        "correctAnswer": "0"
-      },
-      {
-        "question": "Kiểu dữ liệu của `typeof 42` là gì?",
-        "options": [
-          "int",
-          "float",
-          "string",
-          "number"
-        ],
-        "correctAnswer": "3"
-      },
-      {
-        "question": "Phương thức nào dùng để in dữ liệu ra bảng điều khiển trình duyệt?",
-        "options": [
-          "print()",
-          "System.out.println()",
-          "console.log()",
-          "echo()"
-        ],
-        "correctAnswer": "2"
-      },
-      {
-        "question": "Làm sao để tạo một mảng rỗng trong JS?",
-        "options": [
-          "{}",
-          "Array.empty()",
-          "new Array()",
-          "[]"
-        ],
-        "correctAnswer": "3"
-      },
-      {
-        "question": "Đâu là cú pháp đúng của Arrow Function?",
-        "options": [
-          "function() {}",
-          "=> () {}",
-          "() -> {}",
-          "() => {}"
-        ],
-        "correctAnswer": "3"
-      },
-      {
-        "question": "Làm thế nào để thêm một phần tử vào cuối mảng?",
-        "options": [
-          "pop()",
-          "shift()",
-          "unshift()",
-          "push()"
-        ],
-        "correctAnswer": "3"
-      },
-      {
-        "question": "Hàm nào dùng để chuyển chuỗi thành số nguyên?",
-        "options": [
-          "parseInt()",
-          "toInteger()",
-          "parseFloat()",
-          "Number()"
-        ],
-        "correctAnswer": "0"
-      },
-      {
-        "question": "Kết quả của `\"2\" + 2` trong JavaScript là gì?",
-        "options": [
-          "\"22\"",
-          "4",
-          "NaN",
-          "Error"
-        ],
-        "correctAnswer": "0"
-      },
-      {
-        "question": "Từ khóa nào dùng để thoát khỏi vòng lặp?",
-        "options": [
-          "exit",
-          "continue",
-          "break",
-          "return"
-        ],
-        "correctAnswer": "2"
-      },
-      {
-        "question": "Đâu là cách so sánh bằng cả giá trị và kiểu dữ liệu?",
-        "options": [
-          "=",
-          "===",
-          "==",
-          "!="
-        ],
-        "correctAnswer": "1"
-      },
-      {
-        "question": "Khai báo biến nào không thể thay đổi giá trị sau khi gán trong JavaScript?",
-        "options": [
-          "let",
-          "static",
-          "const",
-          "var"
-        ],
-        "correctAnswer": "2"
-      },
-      {
-        "question": "Kiểu dữ liệu của `typeof 42` là gì?",
-        "options": [
-          "int",
-          "float",
-          "number",
-          "string"
-        ],
-        "correctAnswer": "2"
-      },
-      {
-        "question": "Phương thức nào dùng để in dữ liệu ra bảng điều khiển trình duyệt?",
-        "options": [
-          "console.log()",
-          "echo()",
-          "System.out.println()",
-          "print()"
-        ],
-        "correctAnswer": "0"
-      },
-      {
-        "question": "Làm sao để tạo một mảng rỗng trong JS?",
-        "options": [
-          "new Array()",
-          "Array.empty()",
-          "{}",
-          "[]"
-        ],
-        "correctAnswer": "3"
-      },
-      {
-        "question": "Đâu là cú pháp đúng của Arrow Function?",
-        "options": [
-          "=> () {}",
-          "() => {}",
-          "function() {}",
-          "() -> {}"
-        ],
-        "correctAnswer": "1"
-      },
-      {
-        "question": "Làm thế nào để thêm một phần tử vào cuối mảng?",
-        "options": [
-          "push()",
-          "shift()",
-          "unshift()",
-          "pop()"
-        ],
-        "correctAnswer": "0"
-      },
-      {
-        "question": "Hàm nào dùng để chuyển chuỗi thành số nguyên?",
-        "options": [
-          "toInteger()",
-          "parseFloat()",
-          "parseInt()",
-          "Number()"
-        ],
-        "correctAnswer": "2"
-      },
-      {
-        "question": "Kết quả của `\"2\" + 2` trong JavaScript là gì?",
-        "options": [
-          "4",
-          "Error",
-          "\"22\"",
-          "NaN"
-        ],
-        "correctAnswer": "2"
-      },
-      {
-        "question": "Từ khóa nào dùng để thoát khỏi vòng lặp?",
-        "options": [
-          "return",
-          "exit",
-          "continue",
-          "break"
-        ],
-        "correctAnswer": "3"
-      },
-      {
-        "question": "Đâu là cách so sánh bằng cả giá trị và kiểu dữ liệu?",
-        "options": [
-          "==",
-          "===",
-          "!=",
-          "="
-        ],
-        "correctAnswer": "1"
-      },
-      {
-        "question": "Khai báo biến nào không thể thay đổi giá trị sau khi gán trong JavaScript?",
-        "options": [
-          "let",
-          "const",
-          "static",
-          "var"
-        ],
-        "correctAnswer": "1"
-      },
-      {
-        "question": "Kiểu dữ liệu của `typeof 42` là gì?",
-        "options": [
-          "int",
-          "float",
-          "string",
-          "number"
-        ],
-        "correctAnswer": "3"
-      },
-      {
-        "question": "Phương thức nào dùng để in dữ liệu ra bảng điều khiển trình duyệt?",
-        "options": [
-          "print()",
-          "console.log()",
-          "echo()",
-          "System.out.println()"
-        ],
-        "correctAnswer": "1"
-      },
-      {
-        "question": "Làm sao để tạo một mảng rỗng trong JS?",
-        "options": [
-          "[]",
-          "new Array()",
-          "{}",
-          "Array.empty()"
-        ],
-        "correctAnswer": "0"
-      },
-      {
-        "question": "Đâu là cú pháp đúng của Arrow Function?",
-        "options": [
-          "=> () {}",
-          "function() {}",
-          "() => {}",
-          "() -> {}"
-        ],
-        "correctAnswer": "2"
-      },
-      {
-        "question": "Làm thế nào để thêm một phần tử vào cuối mảng?",
-        "options": [
-          "shift()",
-          "pop()",
-          "push()",
-          "unshift()"
-        ],
-        "correctAnswer": "2"
-      },
-      {
-        "question": "Hàm nào dùng để chuyển chuỗi thành số nguyên?",
-        "options": [
-          "Number()",
-          "parseFloat()",
-          "parseInt()",
-          "toInteger()"
-        ],
-        "correctAnswer": "2"
-      },
-      {
-        "question": "Kết quả của `\"2\" + 2` trong JavaScript là gì?",
-        "options": [
-          "\"22\"",
-          "NaN",
-          "Error",
-          "4"
-        ],
-        "correctAnswer": "0"
-      },
-      {
-        "question": "Từ khóa nào dùng để thoát khỏi vòng lặp?",
-        "options": [
-          "break",
-          "exit",
-          "continue",
-          "return"
-        ],
-        "correctAnswer": "0"
-      },
-      {
-        "question": "Đâu là cách so sánh bằng cả giá trị và kiểu dữ liệu?",
-        "options": [
-          "==",
-          "!=",
-          "=",
-          "==="
-        ],
-        "correctAnswer": "3"
-      },
-      {
-        "question": "Khai báo biến nào không thể thay đổi giá trị sau khi gán trong JavaScript?",
-        "options": [
-          "const",
-          "let",
-          "static",
-          "var"
-        ],
-        "correctAnswer": "0"
-      },
-      {
-        "question": "Kiểu dữ liệu của `typeof 42` là gì?",
-        "options": [
-          "string",
-          "int",
-          "float",
-          "number"
-        ],
-        "correctAnswer": "3"
-      },
-      {
-        "question": "Phương thức nào dùng để in dữ liệu ra bảng điều khiển trình duyệt?",
-        "options": [
-          "console.log()",
-          "print()",
-          "System.out.println()",
-          "echo()"
-        ],
-        "correctAnswer": "0"
-      },
-      {
-        "question": "Làm sao để tạo một mảng rỗng trong JS?",
-        "options": [
-          "Array.empty()",
-          "[]",
-          "{}",
-          "new Array()"
-        ],
-        "correctAnswer": "1"
-      },
-      {
-        "question": "Đâu là cú pháp đúng của Arrow Function?",
-        "options": [
-          "() => {}",
-          "=> () {}",
-          "function() {}",
-          "() -> {}"
-        ],
-        "correctAnswer": "0"
-      },
-      {
-        "question": "Làm thế nào để thêm một phần tử vào cuối mảng?",
-        "options": [
-          "unshift()",
-          "pop()",
-          "shift()",
-          "push()"
-        ],
-        "correctAnswer": "3"
-      },
-      {
-        "question": "Hàm nào dùng để chuyển chuỗi thành số nguyên?",
-        "options": [
-          "toInteger()",
-          "parseFloat()",
-          "parseInt()",
-          "Number()"
-        ],
-        "correctAnswer": "2"
-      },
-      {
-        "question": "Kết quả của `\"2\" + 2` trong JavaScript là gì?",
-        "options": [
-          "NaN",
-          "4",
-          "\"22\"",
-          "Error"
-        ],
-        "correctAnswer": "2"
-      },
-      {
-        "question": "Từ khóa nào dùng để thoát khỏi vòng lặp?",
-        "options": [
-          "continue",
-          "return",
-          "break",
-          "exit"
-        ],
-        "correctAnswer": "2"
-      },
-      {
-        "question": "Đâu là cách so sánh bằng cả giá trị và kiểu dữ liệu?",
-        "options": [
-          "!=",
-          "===",
-          "==",
-          "="
-        ],
-        "correctAnswer": "1"
-      }
-    ]
-  },
-  "Advanced Mathematics": {
-    "Algebra Domain": [
-      {
-        "question": "Nghiệm của phương trình 2x - 4 = 0 là gì?",
-        "options": [
-          "x = 0",
-          "x = -2",
-          "x = 2",
-          "x = 4"
-        ],
-        "correctAnswer": "2"
-      },
-      {
-        "question": "Định thức của ma trận đơn vị 2x2 bằng bao nhiêu?",
-        "options": [
-          "2",
-          "1",
-          "-1",
-          "0"
-        ],
-        "correctAnswer": "1"
-      },
-      {
-        "question": "Phương trình bậc hai ax^2 + bx + c = 0 có nghiệm kép khi nào?",
-        "options": [
-          "Delta > 0",
-          "Delta < 0",
-          "Delta = 0",
-          "a = 0"
-        ],
-        "correctAnswer": "2"
-      },
-      {
-        "question": "Hệ phương trình Cramer có nghiệm duy nhất khi nào?",
-        "options": [
-          "Định thức D = 0",
-          "Dy = 0",
-          "Dx = 0",
-          "Định thức D != 0"
-        ],
-        "correctAnswer": "3"
-      },
-      {
-        "question": "Ma trận khả nghịch khi và chỉ khi?",
-        "options": [
-          "Là ma trận vuông",
-          "Định thức bằng 0",
-          "Có các phần tử đường chéo bằng 1",
-          "Định thức khác 0"
-        ],
-        "correctAnswer": "3"
-      },
-      {
-        "question": "Logarit cơ số a của 1 bằng bao nhiêu?",
-        "options": [
-          "0",
-          "Không xác định",
-          "a",
-          "1"
-        ],
-        "correctAnswer": "0"
-      },
-      {
-        "question": "Đạo hàm của x^n là gì?",
-        "options": [
-          "n*x^n",
-          "x^(n+1)/(n+1)",
-          "1/x",
-          "n*x^(n-1)"
-        ],
-        "correctAnswer": "3"
-      },
-      {
-        "question": "Tính chất của ma trận đối xứng là gì?",
-        "options": [
-          "A^T = A^-1",
-          "A^T = A",
-          "A^T = -A",
-          "A^-1 = A"
-        ],
-        "correctAnswer": "1"
-      },
-      {
-        "question": "Một không gian vector phải thỏa mãn bao nhiêu tiên đề cơ bản?",
-        "options": [
-          "4",
-          "8",
-          "6",
-          "10"
-        ],
-        "correctAnswer": "1"
-      },
-      {
-        "question": "Tích vô hướng của hai vector vuông góc bằng bao nhiêu?",
-        "options": [
-          "-1",
-          "Tích độ dài của chúng",
-          "1",
-          "0"
-        ],
-        "correctAnswer": "3"
-      },
-      {
-        "question": "Nghiệm của phương trình 2x - 4 = 0 là gì?",
-        "options": [
-          "x = -2",
-          "x = 4",
-          "x = 2",
-          "x = 0"
-        ],
-        "correctAnswer": "2"
-      },
-      {
-        "question": "Định thức của ma trận đơn vị 2x2 bằng bao nhiêu?",
-        "options": [
-          "1",
-          "2",
-          "-1",
-          "0"
-        ],
-        "correctAnswer": "0"
-      },
-      {
-        "question": "Phương trình bậc hai ax^2 + bx + c = 0 có nghiệm kép khi nào?",
-        "options": [
-          "a = 0",
-          "Delta = 0",
-          "Delta > 0",
-          "Delta < 0"
-        ],
-        "correctAnswer": "1"
-      },
-      {
-        "question": "Hệ phương trình Cramer có nghiệm duy nhất khi nào?",
-        "options": [
-          "Dy = 0",
-          "Định thức D = 0",
-          "Định thức D != 0",
-          "Dx = 0"
-        ],
-        "correctAnswer": "2"
-      },
-      {
-        "question": "Ma trận khả nghịch khi và chỉ khi?",
-        "options": [
-          "Là ma trận vuông",
-          "Có các phần tử đường chéo bằng 1",
-          "Định thức bằng 0",
-          "Định thức khác 0"
-        ],
-        "correctAnswer": "3"
-      },
-      {
-        "question": "Logarit cơ số a của 1 bằng bao nhiêu?",
-        "options": [
-          "0",
-          "Không xác định",
-          "1",
-          "a"
-        ],
-        "correctAnswer": "0"
-      },
-      {
-        "question": "Đạo hàm của x^n là gì?",
-        "options": [
-          "n*x^n",
-          "1/x",
-          "x^(n+1)/(n+1)",
-          "n*x^(n-1)"
-        ],
-        "correctAnswer": "3"
-      },
-      {
-        "question": "Tính chất của ma trận đối xứng là gì?",
-        "options": [
-          "A^T = A^-1",
-          "A^T = A",
-          "A^T = -A",
-          "A^-1 = A"
-        ],
-        "correctAnswer": "1"
-      },
-      {
-        "question": "Một không gian vector phải thỏa mãn bao nhiêu tiên đề cơ bản?",
-        "options": [
-          "10",
-          "6",
-          "4",
-          "8"
-        ],
-        "correctAnswer": "3"
-      },
-      {
-        "question": "Tích vô hướng của hai vector vuông góc bằng bao nhiêu?",
-        "options": [
-          "-1",
-          "0",
-          "Tích độ dài của chúng",
-          "1"
-        ],
-        "correctAnswer": "1"
-      },
-      {
-        "question": "Nghiệm của phương trình 2x - 4 = 0 là gì?",
-        "options": [
-          "x = 0",
-          "x = 2",
-          "x = -2",
-          "x = 4"
-        ],
-        "correctAnswer": "1"
-      },
-      {
-        "question": "Định thức của ma trận đơn vị 2x2 bằng bao nhiêu?",
-        "options": [
-          "2",
-          "0",
-          "-1",
-          "1"
-        ],
-        "correctAnswer": "3"
-      },
-      {
-        "question": "Phương trình bậc hai ax^2 + bx + c = 0 có nghiệm kép khi nào?",
-        "options": [
-          "Delta > 0",
-          "Delta = 0",
-          "a = 0",
-          "Delta < 0"
-        ],
-        "correctAnswer": "1"
-      },
-      {
-        "question": "Hệ phương trình Cramer có nghiệm duy nhất khi nào?",
-        "options": [
-          "Định thức D != 0",
-          "Định thức D = 0",
-          "Dy = 0",
-          "Dx = 0"
-        ],
-        "correctAnswer": "0"
-      },
-      {
-        "question": "Ma trận khả nghịch khi và chỉ khi?",
-        "options": [
-          "Định thức bằng 0",
-          "Là ma trận vuông",
-          "Có các phần tử đường chéo bằng 1",
-          "Định thức khác 0"
-        ],
-        "correctAnswer": "3"
-      },
-      {
-        "question": "Logarit cơ số a của 1 bằng bao nhiêu?",
+        "question": "She wants to buy ______ umbrella because it is raining.",
         "options": [
           "a",
-          "0",
-          "Không xác định",
-          "1"
+          "an",
+          "the",
+          "some"
         ],
         "correctAnswer": "1"
       },
       {
-        "question": "Đạo hàm của x^n là gì?",
+        "question": "Mount Everest is ______ highest mountain in the world.",
         "options": [
-          "1/x",
-          "x^(n+1)/(n+1)",
-          "n*x^(n-1)",
-          "n*x^n"
-        ],
-        "correctAnswer": "2"
-      },
-      {
-        "question": "Tính chất của ma trận đối xứng là gì?",
-        "options": [
-          "A^T = A",
-          "A^T = -A",
-          "A^-1 = A",
-          "A^T = A^-1"
-        ],
-        "correctAnswer": "0"
-      },
-      {
-        "question": "Một không gian vector phải thỏa mãn bao nhiêu tiên đề cơ bản?",
-        "options": [
-          "8",
-          "10",
-          "4",
-          "6"
-        ],
-        "correctAnswer": "0"
-      },
-      {
-        "question": "Tích vô hướng của hai vector vuông góc bằng bao nhiêu?",
-        "options": [
-          "0",
-          "Tích độ dài của chúng",
-          "-1",
-          "1"
-        ],
-        "correctAnswer": "0"
-      },
-      {
-        "question": "Nghiệm của phương trình 2x - 4 = 0 là gì?",
-        "options": [
-          "x = 4",
-          "x = 2",
-          "x = -2",
-          "x = 0"
-        ],
-        "correctAnswer": "1"
-      },
-      {
-        "question": "Định thức của ma trận đơn vị 2x2 bằng bao nhiêu?",
-        "options": [
-          "0",
-          "-1",
-          "1",
-          "2"
-        ],
-        "correctAnswer": "2"
-      },
-      {
-        "question": "Phương trình bậc hai ax^2 + bx + c = 0 có nghiệm kép khi nào?",
-        "options": [
-          "Delta < 0",
-          "Delta = 0",
-          "Delta > 0",
-          "a = 0"
-        ],
-        "correctAnswer": "1"
-      },
-      {
-        "question": "Hệ phương trình Cramer có nghiệm duy nhất khi nào?",
-        "options": [
-          "Định thức D = 0",
-          "Dx = 0",
-          "Dy = 0",
-          "Định thức D != 0"
-        ],
-        "correctAnswer": "3"
-      },
-      {
-        "question": "Ma trận khả nghịch khi và chỉ khi?",
-        "options": [
-          "Định thức khác 0",
-          "Là ma trận vuông",
-          "Định thức bằng 0",
-          "Có các phần tử đường chéo bằng 1"
-        ],
-        "correctAnswer": "0"
-      },
-      {
-        "question": "Logarit cơ số a của 1 bằng bao nhiêu?",
-        "options": [
-          "1",
-          "0",
           "a",
-          "Không xác định"
+          "an",
+          "the",
+          "no article"
+        ],
+        "correctAnswer": "2"
+      },
+      {
+        "question": "There is ______ milk left in the fridge; we need more.",
+        "options": [
+          "a few",
+          "a little",
+          "many",
+          "few"
         ],
         "correctAnswer": "1"
       },
       {
-        "question": "Đạo hàm của x^n là gì?",
+        "question": "How ______ students are there in your classroom?",
         "options": [
-          "x^(n+1)/(n+1)",
-          "n*x^n",
-          "1/x",
-          "n*x^(n-1)"
-        ],
-        "correctAnswer": "3"
-      },
-      {
-        "question": "Tính chất của ma trận đối xứng là gì?",
-        "options": [
-          "A^-1 = A",
-          "A^T = A",
-          "A^T = A^-1",
-          "A^T = -A"
+          "much",
+          "many",
+          "lot of",
+          "any"
         ],
         "correctAnswer": "1"
       },
       {
-        "question": "Một không gian vector phải thỏa mãn bao nhiêu tiên đề cơ bản?",
+        "question": "He plays ______ guitar very well.",
         "options": [
-          "8",
-          "4",
-          "6",
-          "10"
-        ],
-        "correctAnswer": "0"
-      },
-      {
-        "question": "Tích vô hướng của hai vector vuông góc bằng bao nhiêu?",
-        "options": [
-          "0",
-          "-1",
-          "Tích độ dài của chúng",
-          "1"
-        ],
-        "correctAnswer": "0"
-      },
-      {
-        "question": "Nghiệm của phương trình 2x - 4 = 0 là gì?",
-        "options": [
-          "x = 2",
-          "x = 0",
-          "x = 4",
-          "x = -2"
-        ],
-        "correctAnswer": "0"
-      },
-      {
-        "question": "Định thức của ma trận đơn vị 2x2 bằng bao nhiêu?",
-        "options": [
-          "1",
-          "-1",
-          "2",
-          "0"
-        ],
-        "correctAnswer": "0"
-      },
-      {
-        "question": "Phương trình bậc hai ax^2 + bx + c = 0 có nghiệm kép khi nào?",
-        "options": [
-          "Delta = 0",
-          "Delta > 0",
-          "Delta < 0",
-          "a = 0"
-        ],
-        "correctAnswer": "0"
-      },
-      {
-        "question": "Hệ phương trình Cramer có nghiệm duy nhất khi nào?",
-        "options": [
-          "Dx = 0",
-          "Định thức D != 0",
-          "Định thức D = 0",
-          "Dy = 0"
-        ],
-        "correctAnswer": "1"
-      },
-      {
-        "question": "Ma trận khả nghịch khi và chỉ khi?",
-        "options": [
-          "Định thức khác 0",
-          "Định thức bằng 0",
-          "Có các phần tử đường chéo bằng 1",
-          "Là ma trận vuông"
-        ],
-        "correctAnswer": "0"
-      },
-      {
-        "question": "Logarit cơ số a của 1 bằng bao nhiêu?",
-        "options": [
-          "Không xác định",
           "a",
-          "1",
-          "0"
+          "an",
+          "the",
+          "no article"
         ],
-        "correctAnswer": "3"
+        "correctAnswer": "2"
       },
       {
-        "question": "Đạo hàm của x^n là gì?",
+        "question": "Do you have ______ brothers or sisters?",
         "options": [
-          "n*x^(n-1)",
-          "1/x",
-          "n*x^n",
-          "x^(n+1)/(n+1)"
+          "some",
+          "any",
+          "much",
+          "a few"
+        ],
+        "correctAnswer": "1"
+      },
+      {
+        "question": "I eat ______ apple every afternoon.",
+        "options": [
+          "a",
+          "an",
+          "the",
+          "no article"
+        ],
+        "correctAnswer": "1"
+      },
+      {
+        "question": "Can you give me ______ advice on studying English?",
+        "options": [
+          "an",
+          "some",
+          "many",
+          "a few"
+        ],
+        "correctAnswer": "1"
+      },
+      {
+        "question": "______ sun rises in the east.",
+        "options": [
+          "A",
+          "An",
+          "The",
+          "No article"
+        ],
+        "correctAnswer": "2"
+      },
+      {
+        "question": "She has very ______ friends because she is shy.",
+        "options": [
+          "little",
+          "few",
+          "much",
+          "a little"
+        ],
+        "correctAnswer": "1"
+      },
+      {
+        "question": "We usually meet ______ 7:00 PM on weekdays.",
+        "options": [
+          "at",
+          "on",
+          "in",
+          "by"
         ],
         "correctAnswer": "0"
       },
       {
-        "question": "Tính chất của ma trận đối xứng là gì?",
+        "question": "My birthday is ______ October 15th.",
         "options": [
-          "A^T = A^-1",
-          "A^-1 = A",
-          "A^T = -A",
-          "A^T = A"
+          "at",
+          "on",
+          "in",
+          "to"
         ],
-        "correctAnswer": "3"
+        "correctAnswer": "1"
       },
       {
-        "question": "Một không gian vector phải thỏa mãn bao nhiêu tiên đề cơ bản?",
+        "question": "Flowers bloom beautifully ______ spring.",
         "options": [
-          "8",
-          "6",
-          "4",
-          "10"
+          "at",
+          "on",
+          "in",
+          "from"
+        ],
+        "correctAnswer": "2"
+      },
+      {
+        "question": "The cat is sleeping ______ the table.",
+        "options": [
+          "under",
+          "between",
+          "during",
+          "through"
         ],
         "correctAnswer": "0"
       },
       {
-        "question": "Tích vô hướng của hai vector vuông góc bằng bao nhiêu?",
+        "question": "She was born ______ Hanoi, Vietnam.",
         "options": [
-          "0",
-          "-1",
-          "Tích độ dài của chúng",
-          "1"
+          "at",
+          "on",
+          "in",
+          "into"
+        ],
+        "correctAnswer": "2"
+      },
+      {
+        "question": "I will see you ______ Monday morning.",
+        "options": [
+          "at",
+          "on",
+          "in",
+          "for"
+        ],
+        "correctAnswer": "1"
+      },
+      {
+        "question": "He walked ______ the room and smiled at everyone.",
+        "options": [
+          "into",
+          "onto",
+          "at",
+          "with"
+        ],
+        "correctAnswer": "0"
+      },
+      {
+        "question": "The library is situated ______ the bank and the post office.",
+        "options": [
+          "among",
+          "between",
+          "in",
+          "above"
+        ],
+        "correctAnswer": "1"
+      },
+      {
+        "question": "They have been working here ______ three years.",
+        "options": [
+          "since",
+          "for",
+          "during",
+          "while"
+        ],
+        "correctAnswer": "1"
+      },
+      {
+        "question": "She arrived ______ the airport just in time.",
+        "options": [
+          "at",
+          "in",
+          "on",
+          "to"
+        ],
+        "correctAnswer": "0"
+      },
+      {
+        "question": "This notebook belongs to Sarah; it is ______.",
+        "options": [
+          "hers",
+          "her",
+          "she",
+          "herself"
+        ],
+        "correctAnswer": "0"
+      },
+      {
+        "question": "Neither of the boys brought ______ textbook today.",
+        "options": [
+          "their",
+          "his",
+          "our",
+          "them"
+        ],
+        "correctAnswer": "1"
+      },
+      {
+        "question": "David taught ______ how to play the piano.",
+        "options": [
+          "him",
+          "himself",
+          "his",
+          "he"
+        ],
+        "correctAnswer": "1"
+      },
+      {
+        "question": "______ is ringing the doorbell at this late hour?",
+        "options": [
+          "Whom",
+          "Who",
+          "Whose",
+          "Which"
+        ],
+        "correctAnswer": "1"
+      },
+      {
+        "question": "The car lost ______ front bumper in the accident.",
+        "options": [
+          "it",
+          "it's",
+          "its",
+          "itself"
+        ],
+        "correctAnswer": "2"
+      },
+      {
+        "question": "My brother and ______ went fishing last weekend.",
+        "options": [
+          "me",
+          "I",
+          "myself",
+          "mine"
+        ],
+        "correctAnswer": "1"
+      },
+      {
+        "question": "Everyone should do ______ best to protect the environment.",
+        "options": [
+          "their",
+          "his or her",
+          "our",
+          "them"
+        ],
+        "correctAnswer": "1"
+      },
+      {
+        "question": "Between you and ______, I think our team will win.",
+        "options": [
+          "I",
+          "me",
+          "myself",
+          "mine"
+        ],
+        "correctAnswer": "1"
+      },
+      {
+        "question": "Those shoes are dirty. Please clean ______.",
+        "options": [
+          "it",
+          "they",
+          "them",
+          "their"
+        ],
+        "correctAnswer": "2"
+      },
+      {
+        "question": "Is this pen yours or ______?",
+        "options": [
+          "my",
+          "mine",
+          "me",
+          "myself"
+        ],
+        "correctAnswer": "1"
+      },
+      {
+        "question": "He drives much more ______ than his brother.",
+        "options": [
+          "careful",
+          "carefully",
+          "carefulness",
+          "more careful"
+        ],
+        "correctAnswer": "1"
+      },
+      {
+        "question": "This test is ______ than the one we took last week.",
+        "options": [
+          "easy",
+          "easier",
+          "easiest",
+          "more easy"
+        ],
+        "correctAnswer": "1"
+      },
+      {
+        "question": "She sings as ______ as a professional artist.",
+        "options": [
+          "beautiful",
+          "beautifully",
+          "more beautiful",
+          "most beautifully"
+        ],
+        "correctAnswer": "1"
+      },
+      {
+        "question": "Tokyo is one of the ______ cities in the world.",
+        "options": [
+          "busy",
+          "busier",
+          "busiest",
+          "most busy"
+        ],
+        "correctAnswer": "2"
+      },
+      {
+        "question": "The soup smells delicious, and it tastes ______ too.",
+        "options": [
+          "well",
+          "good",
+          "nicely",
+          "badly"
+        ],
+        "correctAnswer": "1"
+      },
+      {
+        "question": "He was so ______ that he fell asleep immediately.",
+        "options": [
+          "tired",
+          "tiring",
+          "tire",
+          "tiredly"
+        ],
+        "correctAnswer": "0"
+      },
+      {
+        "question": "This is the ______ movie I have ever seen.",
+        "options": [
+          "bad",
+          "worse",
+          "worst",
+          "baddest"
+        ],
+        "correctAnswer": "2"
+      },
+      {
+        "question": "She speaks English ______ fluent than her classmate.",
+        "options": [
+          "much",
+          "more",
+          "most",
+          "very"
+        ],
+        "correctAnswer": "1"
+      },
+      {
+        "question": "The weather is getting ______ day by day.",
+        "options": [
+          "cold and colder",
+          "colder and colder",
+          "more cold",
+          "coldest"
+        ],
+        "correctAnswer": "1"
+      },
+      {
+        "question": "He arrived ______ than expected due to heavy traffic.",
+        "options": [
+          "late",
+          "later",
+          "latest",
+          "lately"
+        ],
+        "correctAnswer": "1"
+      }
+    ],
+    "Vocabulary & Daily Idioms": [
+      {
+        "question": "Never ______ on your dreams, no matter how difficult it gets.",
+        "options": [
+          "give up",
+          "give in",
+          "give away",
+          "give out"
+        ],
+        "correctAnswer": "0"
+      },
+      {
+        "question": "Can you please ______ the lights when leaving the room?",
+        "options": [
+          "turn on",
+          "turn off",
+          "turn up",
+          "turn down"
+        ],
+        "correctAnswer": "1"
+      },
+      {
+        "question": "She offered to ______ my dog while I was on vacation.",
+        "options": [
+          "look after",
+          "look for",
+          "look into",
+          "look at"
+        ],
+        "correctAnswer": "0"
+      },
+      {
+        "question": "The flight was ______ due to thick fog.",
+        "options": [
+          "called off",
+          "called out",
+          "called in",
+          "called away"
+        ],
+        "correctAnswer": "0"
+      },
+      {
+        "question": "He promised to ______ smoking starting next month.",
+        "options": [
+          "give away",
+          "give up",
+          "take up",
+          "take off"
+        ],
+        "correctAnswer": "1"
+      },
+      {
+        "question": "I ran ______ an old high school friend at the mall today.",
+        "options": [
+          "into",
+          "over",
+          "out of",
+          "away"
+        ],
+        "correctAnswer": "0"
+      },
+      {
+        "question": "We have run ______ milk; could you buy some?",
+        "options": [
+          "into",
+          "out of",
+          "over",
+          "through"
+        ],
+        "correctAnswer": "1"
+      },
+      {
+        "question": "The plane will ______ in about twenty minutes.",
+        "options": [
+          "take off",
+          "take on",
+          "take up",
+          "take over"
+        ],
+        "correctAnswer": "0"
+      },
+      {
+        "question": "She had to ______ the job offer because the salary was too low.",
+        "options": [
+          "turn down",
+          "turn off",
+          "turn in",
+          "turn over"
+        ],
+        "correctAnswer": "0"
+      },
+      {
+        "question": "Please ______ the form and submit it to the receptionist.",
+        "options": [
+          "fill out",
+          "fill with",
+          "fill on",
+          "fill over"
+        ],
+        "correctAnswer": "0"
+      },
+      {
+        "question": "The final English exam was a ______; I finished in 20 minutes.",
+        "options": [
+          "piece of cake",
+          "spill the beans",
+          "cold shoulder",
+          "break a leg"
+        ],
+        "correctAnswer": "0"
+      },
+      {
+        "question": "Before her stage performance, her teacher told her to '______!'",
+        "options": [
+          "break a leg",
+          "bite the dust",
+          "hit the sack",
+          "call it a day"
+        ],
+        "correctAnswer": "0"
+      },
+      {
+        "question": "I am feeling a bit ______ today, so I will stay home and rest.",
+        "options": [
+          "over the moon",
+          "under the weather",
+          "in the clouds",
+          "on the fence"
+        ],
+        "correctAnswer": "1"
+      },
+      {
+        "question": "Let's ______ and go to sleep; it is almost midnight.",
+        "options": [
+          "hit the road",
+          "hit the sack",
+          "bite the bullet",
+          "burn the bridge"
+        ],
+        "correctAnswer": "1"
+      },
+      {
+        "question": "Do not ______! The surprise party is supposed to be a secret.",
+        "options": [
+          "spill the beans",
+          "cost an arm and a leg",
+          "cut corners",
+          "face the music"
+        ],
+        "correctAnswer": "0"
+      },
+      {
+        "question": "Buying that luxury sports car cost him ______.",
+        "options": [
+          "a dime a dozen",
+          "an arm and a leg",
+          "a drop in the ocean",
+          "a piece of cake"
+        ],
+        "correctAnswer": "1"
+      },
+      {
+        "question": "It is raining ______ outside; take your umbrella!",
+        "options": [
+          "cats and dogs",
+          "birds and bees",
+          "fish and chips",
+          "apples and oranges"
+        ],
+        "correctAnswer": "0"
+      },
+      {
+        "question": "We decided to ______ and stop working for today.",
+        "options": [
+          "call it a day",
+          "break the ice",
+          "kill two birds",
+          "cut the mustard"
+        ],
+        "correctAnswer": "0"
+      },
+      {
+        "question": "He always plays games ______; once in a blue moon.",
+        "options": [
+          "very frequently",
+          "very rarely",
+          "every weekend",
+          "at midnight"
+        ],
+        "correctAnswer": "1"
+      },
+      {
+        "question": "To start the meeting, the manager told a joke to ______.",
+        "options": [
+          "break the ice",
+          "burn the candle",
+          "hit the nail",
+          "pull the leg"
+        ],
+        "correctAnswer": "0"
+      },
+      {
+        "question": "Students are expected to ______ an effort to improve their grades.",
+        "options": [
+          "do",
+          "make",
+          "take",
+          "give"
+        ],
+        "correctAnswer": "1"
+      },
+      {
+        "question": "Remember to ______ your bed right after waking up.",
+        "options": [
+          "make",
+          "do",
+          "set",
+          "build"
+        ],
+        "correctAnswer": "0"
+      },
+      {
+        "question": "She ______ a deep breath before speaking into the microphone.",
+        "options": [
+          "took",
+          "made",
+          "did",
+          "gave"
+        ],
+        "correctAnswer": "0"
+      },
+      {
+        "question": "Smoking can ______ severe damage to your lungs.",
+        "options": [
+          "do",
+          "make",
+          "give",
+          "bring"
+        ],
+        "correctAnswer": "0"
+      },
+      {
+        "question": "I need to ______ an appointment with Dr. Johnson.",
+        "options": [
+          "make",
+          "take",
+          "do",
+          "have"
+        ],
+        "correctAnswer": "0"
+      },
+      {
+        "question": "He ______ a mistake on the grammar question.",
+        "options": [
+          "did",
+          "made",
+          "took",
+          "created"
+        ],
+        "correctAnswer": "1"
+      },
+      {
+        "question": "Can you ______ me a favor and carry this box?",
+        "options": [
+          "make",
+          "do",
+          "give",
+          "lend"
+        ],
+        "correctAnswer": "1"
+      },
+      {
+        "question": "She loves to ______ photos of sunset over the ocean.",
+        "options": [
+          "make",
+          "take",
+          "do",
+          "draw"
+        ],
+        "correctAnswer": "1"
+      },
+      {
+        "question": "They need to ______ a decision before the deadline.",
+        "options": [
+          "reach",
+          "make",
+          "take",
+          "Both A and B"
+        ],
+        "correctAnswer": "3"
+      },
+      {
+        "question": "He has trouble ______ friends in a new school.",
+        "options": [
+          "doing",
+          "making",
+          "getting",
+          "having"
+        ],
+        "correctAnswer": "1"
+      },
+      {
+        "question": "What is the opposite of the word \"generous\"?",
+        "options": [
+          "stingy",
+          "kind",
+          "polite",
+          "brave"
+        ],
+        "correctAnswer": "0"
+      },
+      {
+        "question": "Which word means \"able to speak two languages fluently\"?",
+        "options": [
+          "bilingual",
+          "monolingual",
+          "linguistic",
+          "polyglot"
+        ],
+        "correctAnswer": "0"
+      },
+      {
+        "question": "The antonym of \"temporary\" is ______.",
+        "options": [
+          "permanent",
+          "brief",
+          "fleeting",
+          "short-term"
+        ],
+        "correctAnswer": "0"
+      },
+      {
+        "question": "Someone who always looks on the bright side of things is an ______.",
+        "options": [
+          "optimist",
+          "pessimist",
+          "introvert",
+          "extrovert"
+        ],
+        "correctAnswer": "0"
+      },
+      {
+        "question": "A synonym for the word \"enormous\" is ______.",
+        "options": [
+          "tiny",
+          "gigantic",
+          "fragile",
+          "narrow"
+        ],
+        "correctAnswer": "1"
+      },
+      {
+        "question": "A person who writes books or articles is an ______.",
+        "options": [
+          "author",
+          "audience",
+          "anchor",
+          "auditor"
+        ],
+        "correctAnswer": "0"
+      },
+      {
+        "question": "The food at the restaurant was ______; everyone loved it.",
+        "options": [
+          "delicious",
+          "disgusting",
+          "bland",
+          "stale"
+        ],
+        "correctAnswer": "0"
+      },
+      {
+        "question": "Which word is closest in meaning to \"reluctant\"?",
+        "options": [
+          "unwilling",
+          "eager",
+          "excited",
+          "confident"
+        ],
+        "correctAnswer": "0"
+      },
+      {
+        "question": "The sound was barely ______; we could hardly hear it.",
+        "options": [
+          "audible",
+          "visible",
+          "flexible",
+          "legible"
+        ],
+        "correctAnswer": "0"
+      },
+      {
+        "question": "To postpone an event means to ______ it.",
+        "options": [
+          "cancel",
+          "delay",
+          "hasten",
+          "celebrate"
+        ],
+        "correctAnswer": "1"
+      },
+      {
+        "question": "Due to her diligence, she received a well-deserved ______ at work.",
+        "options": [
+          "promotion",
+          "punishment",
+          "demotion",
+          "suspension"
+        ],
+        "correctAnswer": "0"
+      },
+      {
+        "question": "The new public transportation system is both efficient and ______.",
+        "options": [
+          "affordable",
+          "costly",
+          "extravagant",
+          "bankrupt"
+        ],
+        "correctAnswer": "0"
+      },
+      {
+        "question": "Regular exercise provides numerous ______ to physical health.",
+        "options": [
+          "benefits",
+          "drawbacks",
+          "penalties",
+          "hazards"
+        ],
+        "correctAnswer": "0"
+      },
+      {
+        "question": "The museum requires all visitors to maintain ______ inside the gallery.",
+        "options": [
+          "silence",
+          "chaos",
+          "noise",
+          "violence"
+        ],
+        "correctAnswer": "0"
+      },
+      {
+        "question": "Pollution is a major ______ to marine life in our oceans.",
+        "options": [
+          "threat",
+          "help",
+          "shield",
+          "cure"
+        ],
+        "correctAnswer": "0"
+      },
+      {
+        "question": "The scientist presented compelling ______ to support his theory.",
+        "options": [
+          "evidence",
+          "rumors",
+          "gossip",
+          "fiction"
+        ],
+        "correctAnswer": "0"
+      },
+      {
+        "question": "Learning a new skill requires patience and ______.",
+        "options": [
+          "persistence",
+          "laziness",
+          "hesitation",
+          "ignorance"
+        ],
+        "correctAnswer": "0"
+      },
+      {
+        "question": "The company launched a new ______ to attract younger customers.",
+        "options": [
+          "campaign",
+          "disaster",
+          "conflict",
+          "penalty"
+        ],
+        "correctAnswer": "0"
+      },
+      {
+        "question": "Clean drinking water is an essential ______ for all humans.",
+        "options": [
+          "necessity",
+          "luxury",
+          "option",
+          "burden"
+        ],
+        "correctAnswer": "0"
+      },
+      {
+        "question": "He showed great ______ when speaking in front of hundreds of people.",
+        "options": [
+          "confidence",
+          "nervous",
+          "cowardice",
+          "doubt"
         ],
         "correctAnswer": "0"
       }
     ],
-    "Calculus Peak": [
+    "Syntax & Sentence Mastery": [
       {
-        "question": "Đạo hàm của sin(x) là gì?",
+        "question": "The famous novel ______ by Charles Dickens in 1843.",
         "options": [
-          "-sin(x)",
-          "-cos(x)",
-          "tan(x)",
-          "cos(x)"
-        ],
-        "correctAnswer": "3"
-      },
-      {
-        "question": "Tích phân vô định của e^x là gì?",
-        "options": [
-          "e^x",
-          "ln(x)",
-          "x*e^(x-1)",
-          "e^x + C"
-        ],
-        "correctAnswer": "3"
-      },
-      {
-        "question": "Giới hạn của sin(x)/x khi x tiến tới 0 là?",
-        "options": [
-          "Không tồn tại",
-          "0",
-          "1",
-          "Vô cực"
-        ],
-        "correctAnswer": "2"
-      },
-      {
-        "question": "Đạo hàm của ln(x) là gì?",
-        "options": [
-          "1/x",
-          "x",
-          "e^x",
-          "ln(x)"
-        ],
-        "correctAnswer": "0"
-      },
-      {
-        "question": "Theo định lý Lagrange, nếu hàm liên tục trên [a,b] và khả đạo hàm trên (a,b) thì?",
-        "options": [
-          "f(a) = f(b)",
-          "f(x) là hàm hằng",
-          "Tồn tại c thuộc (a,b) sao cho f'(c) = (f(b)-f(a))/(b-a)",
-          "f'(c) = 0"
-        ],
-        "correctAnswer": "2"
-      },
-      {
-        "question": "Chuỗi Taylor dùng để làm gì?",
-        "options": [
-          "Giải phương trình vi phân",
-          "Tính tích phân xác định",
-          "Xấp xỉ một hàm số bằng một đa thức",
-          "Tính chu vi đường cong"
-        ],
-        "correctAnswer": "2"
-      },
-      {
-        "question": "Đạo hàm cấp 2 của hàm f(x) cho biết điều gì?",
-        "options": [
-          "Độ lồi lõm của đồ thị",
-          "Tiệm cận của đồ thị",
-          "Giao điểm với trục hoành",
-          "Sự đồng biến, nghịch biến"
-        ],
-        "correctAnswer": "0"
-      },
-      {
-        "question": "Tích phân xác định từ a đến b biểu thị điều gì?",
-        "options": [
-          "Thể tích vật thể",
-          "Độ dài đường cong",
-          "Tất cả các ý trên đều có thể đúng",
-          "Diện tích hình thang cong"
-        ],
-        "correctAnswer": "3"
-      },
-      {
-        "question": "Điểm cực đại của hàm số đạt được khi?",
-        "options": [
-          "f'(x) = 0 và f''(x) > 0",
-          "f'(x) > 0",
-          "f''(x) = 0",
-          "f'(x) = 0 và f''(x) < 0"
-        ],
-        "correctAnswer": "3"
-      },
-      {
-        "question": "Quy tắc L'Hôpital dùng để giải quyết vấn đề gì?",
-        "options": [
-          "Tính tích phân phức tạp",
-          "Tính giới hạn dạng vô định",
-          "Giải phương trình đại số",
-          "Tìm đạo hàm hàm ẩn"
+          "wrote",
+          "was written",
+          "is written",
+          "has written"
         ],
         "correctAnswer": "1"
       },
       {
-        "question": "Đạo hàm của sin(x) là gì?",
+        "question": "Millions of smartphones ______ in Asia every year.",
         "options": [
-          "-sin(x)",
-          "-cos(x)",
-          "tan(x)",
-          "cos(x)"
-        ],
-        "correctAnswer": "3"
-      },
-      {
-        "question": "Tích phân vô định của e^x là gì?",
-        "options": [
-          "e^x + C",
-          "ln(x)",
-          "x*e^(x-1)",
-          "e^x"
-        ],
-        "correctAnswer": "0"
-      },
-      {
-        "question": "Giới hạn của sin(x)/x khi x tiến tới 0 là?",
-        "options": [
-          "0",
-          "Không tồn tại",
-          "Vô cực",
-          "1"
-        ],
-        "correctAnswer": "3"
-      },
-      {
-        "question": "Đạo hàm của ln(x) là gì?",
-        "options": [
-          "ln(x)",
-          "e^x",
-          "1/x",
-          "x"
-        ],
-        "correctAnswer": "2"
-      },
-      {
-        "question": "Theo định lý Lagrange, nếu hàm liên tục trên [a,b] và khả đạo hàm trên (a,b) thì?",
-        "options": [
-          "f(x) là hàm hằng",
-          "f'(c) = 0",
-          "f(a) = f(b)",
-          "Tồn tại c thuộc (a,b) sao cho f'(c) = (f(b)-f(a))/(b-a)"
-        ],
-        "correctAnswer": "3"
-      },
-      {
-        "question": "Chuỗi Taylor dùng để làm gì?",
-        "options": [
-          "Xấp xỉ một hàm số bằng một đa thức",
-          "Giải phương trình vi phân",
-          "Tính tích phân xác định",
-          "Tính chu vi đường cong"
-        ],
-        "correctAnswer": "0"
-      },
-      {
-        "question": "Đạo hàm cấp 2 của hàm f(x) cho biết điều gì?",
-        "options": [
-          "Sự đồng biến, nghịch biến",
-          "Giao điểm với trục hoành",
-          "Độ lồi lõm của đồ thị",
-          "Tiệm cận của đồ thị"
-        ],
-        "correctAnswer": "2"
-      },
-      {
-        "question": "Tích phân xác định từ a đến b biểu thị điều gì?",
-        "options": [
-          "Tất cả các ý trên đều có thể đúng",
-          "Độ dài đường cong",
-          "Diện tích hình thang cong",
-          "Thể tích vật thể"
-        ],
-        "correctAnswer": "2"
-      },
-      {
-        "question": "Điểm cực đại của hàm số đạt được khi?",
-        "options": [
-          "f'(x) > 0",
-          "f'(x) = 0 và f''(x) > 0",
-          "f'(x) = 0 và f''(x) < 0",
-          "f''(x) = 0"
-        ],
-        "correctAnswer": "2"
-      },
-      {
-        "question": "Quy tắc L'Hôpital dùng để giải quyết vấn đề gì?",
-        "options": [
-          "Tìm đạo hàm hàm ẩn",
-          "Tính tích phân phức tạp",
-          "Tính giới hạn dạng vô định",
-          "Giải phương trình đại số"
-        ],
-        "correctAnswer": "2"
-      },
-      {
-        "question": "Đạo hàm của sin(x) là gì?",
-        "options": [
-          "cos(x)",
-          "-sin(x)",
-          "-cos(x)",
-          "tan(x)"
-        ],
-        "correctAnswer": "0"
-      },
-      {
-        "question": "Tích phân vô định của e^x là gì?",
-        "options": [
-          "ln(x)",
-          "x*e^(x-1)",
-          "e^x",
-          "e^x + C"
-        ],
-        "correctAnswer": "3"
-      },
-      {
-        "question": "Giới hạn của sin(x)/x khi x tiến tới 0 là?",
-        "options": [
-          "Không tồn tại",
-          "Vô cực",
-          "1",
-          "0"
-        ],
-        "correctAnswer": "2"
-      },
-      {
-        "question": "Đạo hàm của ln(x) là gì?",
-        "options": [
-          "1/x",
-          "e^x",
-          "x",
-          "ln(x)"
-        ],
-        "correctAnswer": "0"
-      },
-      {
-        "question": "Theo định lý Lagrange, nếu hàm liên tục trên [a,b] và khả đạo hàm trên (a,b) thì?",
-        "options": [
-          "f'(c) = 0",
-          "f(a) = f(b)",
-          "Tồn tại c thuộc (a,b) sao cho f'(c) = (f(b)-f(a))/(b-a)",
-          "f(x) là hàm hằng"
-        ],
-        "correctAnswer": "2"
-      },
-      {
-        "question": "Chuỗi Taylor dùng để làm gì?",
-        "options": [
-          "Tính chu vi đường cong",
-          "Tính tích phân xác định",
-          "Giải phương trình vi phân",
-          "Xấp xỉ một hàm số bằng một đa thức"
-        ],
-        "correctAnswer": "3"
-      },
-      {
-        "question": "Đạo hàm cấp 2 của hàm f(x) cho biết điều gì?",
-        "options": [
-          "Giao điểm với trục hoành",
-          "Tiệm cận của đồ thị",
-          "Sự đồng biến, nghịch biến",
-          "Độ lồi lõm của đồ thị"
-        ],
-        "correctAnswer": "3"
-      },
-      {
-        "question": "Tích phân xác định từ a đến b biểu thị điều gì?",
-        "options": [
-          "Tất cả các ý trên đều có thể đúng",
-          "Diện tích hình thang cong",
-          "Độ dài đường cong",
-          "Thể tích vật thể"
+          "manufacture",
+          "are manufactured",
+          "were manufactured",
+          "are manufacturing"
         ],
         "correctAnswer": "1"
       },
       {
-        "question": "Điểm cực đại của hàm số đạt được khi?",
+        "question": "The new bridge ______ by the end of next year.",
         "options": [
-          "f'(x) > 0",
-          "f'(x) = 0 và f''(x) > 0",
-          "f'(x) = 0 và f''(x) < 0",
-          "f''(x) = 0"
+          "will complete",
+          "will be completed",
+          "is completing",
+          "completed"
+        ],
+        "correctAnswer": "1"
+      },
+      {
+        "question": "My wallet ______ while I was riding the subway.",
+        "options": [
+          "stole",
+          "was stolen",
+          "is stolen",
+          "had stolen"
+        ],
+        "correctAnswer": "1"
+      },
+      {
+        "question": "Active: \"Someone cleaned the room yesterday.\" -> Passive: \"The room ______ yesterday.\"",
+        "options": [
+          "cleaned",
+          "was cleaned",
+          "is cleaned",
+          "has been cleaned"
+        ],
+        "correctAnswer": "1"
+      },
+      {
+        "question": "The report must ______ before Friday afternoon.",
+        "options": [
+          "submit",
+          "be submitted",
+          "have submitted",
+          "submitting"
+        ],
+        "correctAnswer": "1"
+      },
+      {
+        "question": "English ______ in many countries around the globe.",
+        "options": [
+          "speaks",
+          "is spoken",
+          "was spoken",
+          "is speaking"
+        ],
+        "correctAnswer": "1"
+      },
+      {
+        "question": "The windows ______ right now by the cleaning crew.",
+        "options": [
+          "are being cleaned",
+          "are cleaned",
+          "were cleaned",
+          "clean"
+        ],
+        "correctAnswer": "0"
+      },
+      {
+        "question": "All tickets ______ before we arrived at the counter.",
+        "options": [
+          "had sold",
+          "had been sold",
+          "have sold",
+          "were selling"
+        ],
+        "correctAnswer": "1"
+      },
+      {
+        "question": "This building ______ designed by a world-renowned architect.",
+        "options": [
+          "is",
+          "was",
+          "were",
+          "has"
+        ],
+        "correctAnswer": "1"
+      },
+      {
+        "question": "If it rains tomorrow, we ______ the picnic.",
+        "options": [
+          "cancel",
+          "will cancel",
+          "would cancel",
+          "cancelled"
+        ],
+        "correctAnswer": "1"
+      },
+      {
+        "question": "If I ______ a million dollars, I would travel around the world.",
+        "options": [
+          "have",
+          "had",
+          "would have",
+          "had had"
+        ],
+        "correctAnswer": "1"
+      },
+      {
+        "question": "If you heat ice, it ______ into water.",
+        "options": [
+          "melts",
+          "melted",
+          "would melt",
+          "will be melted"
+        ],
+        "correctAnswer": "0"
+      },
+      {
+        "question": "If she had studied harder, she ______ the entrance examination.",
+        "options": [
+          "passed",
+          "would pass",
+          "would have passed",
+          "will pass"
         ],
         "correctAnswer": "2"
       },
       {
-        "question": "Quy tắc L'Hôpital dùng để giải quyết vấn đề gì?",
+        "question": "If I were you, I ______ consult a doctor immediately.",
         "options": [
-          "Giải phương trình đại số",
-          "Tìm đạo hàm hàm ẩn",
-          "Tính giới hạn dạng vô định",
-          "Tính tích phân phức tạp"
+          "will",
+          "would",
+          "shall",
+          "am"
+        ],
+        "correctAnswer": "1"
+      },
+      {
+        "question": "Unless you work hard, you ______ achieve your goals.",
+        "options": [
+          "will",
+          "won't",
+          "wouldn't",
+          "can"
+        ],
+        "correctAnswer": "1"
+      },
+      {
+        "question": "If they ______ earlier, they wouldn't have missed their flight.",
+        "options": [
+          "leave",
+          "left",
+          "had left",
+          "have left"
         ],
         "correctAnswer": "2"
       },
       {
-        "question": "Đạo hàm của sin(x) là gì?",
+        "question": "What would you do if you ______ lost in a foreign city?",
         "options": [
-          "-sin(x)",
-          "cos(x)",
-          "-cos(x)",
-          "tan(x)"
+          "get",
+          "got",
+          "had got",
+          "will get"
         ],
         "correctAnswer": "1"
       },
       {
-        "question": "Tích phân vô định của e^x là gì?",
+        "question": "Water freezes if the temperature ______ below zero.",
         "options": [
-          "e^x",
-          "ln(x)",
-          "x*e^(x-1)",
-          "e^x + C"
-        ],
-        "correctAnswer": "3"
-      },
-      {
-        "question": "Giới hạn của sin(x)/x khi x tiến tới 0 là?",
-        "options": [
-          "0",
-          "Vô cực",
-          "Không tồn tại",
-          "1"
-        ],
-        "correctAnswer": "3"
-      },
-      {
-        "question": "Đạo hàm của ln(x) là gì?",
-        "options": [
-          "ln(x)",
-          "1/x",
-          "x",
-          "e^x"
-        ],
-        "correctAnswer": "1"
-      },
-      {
-        "question": "Theo định lý Lagrange, nếu hàm liên tục trên [a,b] và khả đạo hàm trên (a,b) thì?",
-        "options": [
-          "Tồn tại c thuộc (a,b) sao cho f'(c) = (f(b)-f(a))/(b-a)",
-          "f(x) là hàm hằng",
-          "f(a) = f(b)",
-          "f'(c) = 0"
+          "drops",
+          "dropped",
+          "will drop",
+          "would drop"
         ],
         "correctAnswer": "0"
       },
       {
-        "question": "Chuỗi Taylor dùng để làm gì?",
+        "question": "If he ______ me his phone number, I could have called him.",
         "options": [
-          "Xấp xỉ một hàm số bằng một đa thức",
-          "Tính tích phân xác định",
-          "Tính chu vi đường cong",
-          "Giải phương trình vi phân"
-        ],
-        "correctAnswer": "0"
-      },
-      {
-        "question": "Đạo hàm cấp 2 của hàm f(x) cho biết điều gì?",
-        "options": [
-          "Tiệm cận của đồ thị",
-          "Giao điểm với trục hoành",
-          "Sự đồng biến, nghịch biến",
-          "Độ lồi lõm của đồ thị"
-        ],
-        "correctAnswer": "3"
-      },
-      {
-        "question": "Tích phân xác định từ a đến b biểu thị điều gì?",
-        "options": [
-          "Tất cả các ý trên đều có thể đúng",
-          "Diện tích hình thang cong",
-          "Thể tích vật thể",
-          "Độ dài đường cong"
-        ],
-        "correctAnswer": "1"
-      },
-      {
-        "question": "Điểm cực đại của hàm số đạt được khi?",
-        "options": [
-          "f''(x) = 0",
-          "f'(x) = 0 và f''(x) > 0",
-          "f'(x) > 0",
-          "f'(x) = 0 và f''(x) < 0"
-        ],
-        "correctAnswer": "3"
-      },
-      {
-        "question": "Quy tắc L'Hôpital dùng để giải quyết vấn đề gì?",
-        "options": [
-          "Tính giới hạn dạng vô định",
-          "Tìm đạo hàm hàm ẩn",
-          "Tính tích phân phức tạp",
-          "Giải phương trình đại số"
-        ],
-        "correctAnswer": "0"
-      },
-      {
-        "question": "Đạo hàm của sin(x) là gì?",
-        "options": [
-          "tan(x)",
-          "-cos(x)",
-          "cos(x)",
-          "-sin(x)"
+          "gave",
+          "gives",
+          "had given",
+          "has given"
         ],
         "correctAnswer": "2"
       },
       {
-        "question": "Tích phân vô định của e^x là gì?",
+        "question": "The woman ______ lives next door is an English professor.",
         "options": [
-          "ln(x)",
-          "e^x + C",
-          "x*e^(x-1)",
-          "e^x"
+          "which",
+          "who",
+          "whom",
+          "whose"
         ],
         "correctAnswer": "1"
       },
       {
-        "question": "Giới hạn của sin(x)/x khi x tiến tới 0 là?",
+        "question": "The book ______ you lent me was absolutely fascinating.",
         "options": [
-          "Không tồn tại",
-          "0",
-          "Vô cực",
-          "1"
-        ],
-        "correctAnswer": "3"
-      },
-      {
-        "question": "Đạo hàm của ln(x) là gì?",
-        "options": [
-          "ln(x)",
-          "1/x",
-          "x",
-          "e^x"
+          "who",
+          "which",
+          "whom",
+          "whose"
         ],
         "correctAnswer": "1"
       },
       {
-        "question": "Theo định lý Lagrange, nếu hàm liên tục trên [a,b] và khả đạo hàm trên (a,b) thì?",
+        "question": "That is the boy ______ dog saved the little child.",
         "options": [
-          "Tồn tại c thuộc (a,b) sao cho f'(c) = (f(b)-f(a))/(b-a)",
-          "f(x) là hàm hằng",
-          "f(a) = f(b)",
-          "f'(c) = 0"
-        ],
-        "correctAnswer": "0"
-      },
-      {
-        "question": "Chuỗi Taylor dùng để làm gì?",
-        "options": [
-          "Xấp xỉ một hàm số bằng một đa thức",
-          "Tính chu vi đường cong",
-          "Tính tích phân xác định",
-          "Giải phương trình vi phân"
-        ],
-        "correctAnswer": "0"
-      },
-      {
-        "question": "Đạo hàm cấp 2 của hàm f(x) cho biết điều gì?",
-        "options": [
-          "Độ lồi lõm của đồ thị",
-          "Tiệm cận của đồ thị",
-          "Giao điểm với trục hoành",
-          "Sự đồng biến, nghịch biến"
-        ],
-        "correctAnswer": "0"
-      },
-      {
-        "question": "Tích phân xác định từ a đến b biểu thị điều gì?",
-        "options": [
-          "Diện tích hình thang cong",
-          "Tất cả các ý trên đều có thể đúng",
-          "Thể tích vật thể",
-          "Độ dài đường cong"
-        ],
-        "correctAnswer": "0"
-      },
-      {
-        "question": "Điểm cực đại của hàm số đạt được khi?",
-        "options": [
-          "f'(x) > 0",
-          "f'(x) = 0 và f''(x) > 0",
-          "f'(x) = 0 và f''(x) < 0",
-          "f''(x) = 0"
+          "who",
+          "whom",
+          "whose",
+          "which"
         ],
         "correctAnswer": "2"
       },
       {
-        "question": "Quy tắc L'Hôpital dùng để giải quyết vấn đề gì?",
+        "question": "This is the cozy coffee shop ______ we first met.",
         "options": [
-          "Tính tích phân phức tạp",
-          "Tìm đạo hàm hàm ẩn",
-          "Giải phương trình đại số",
-          "Tính giới hạn dạng vô định"
+          "which",
+          "where",
+          "when",
+          "that"
         ],
-        "correctAnswer": "3"
+        "correctAnswer": "1"
+      },
+      {
+        "question": "Sunday is the only day ______ I can sleep until noon.",
+        "options": [
+          "where",
+          "when",
+          "which",
+          "that"
+        ],
+        "correctAnswer": "1"
+      },
+      {
+        "question": "The student ______ won the essay contest received a scholarship.",
+        "options": [
+          "who",
+          "which",
+          "whom",
+          "whose"
+        ],
+        "correctAnswer": "0"
+      },
+      {
+        "question": "I met a girl ______ father is a pilot.",
+        "options": [
+          "who",
+          "whom",
+          "whose",
+          "which"
+        ],
+        "correctAnswer": "2"
+      },
+      {
+        "question": "The laptop, ______ was bought last month, has already broken down.",
+        "options": [
+          "that",
+          "which",
+          "what",
+          "who"
+        ],
+        "correctAnswer": "1"
+      },
+      {
+        "question": "Is there anyone ______ can help me carry these heavy books?",
+        "options": [
+          "which",
+          "who",
+          "whom",
+          "whose"
+        ],
+        "correctAnswer": "1"
+      },
+      {
+        "question": "The reason ______ he was absent remains unknown.",
+        "options": [
+          "which",
+          "why",
+          "where",
+          "how"
+        ],
+        "correctAnswer": "1"
+      },
+      {
+        "question": "Direct: \"I am studying.\" -> He said that he ______ studying.",
+        "options": [
+          "is",
+          "was",
+          "has been",
+          "will be"
+        ],
+        "correctAnswer": "1"
+      },
+      {
+        "question": "Could you please tell me where ______?",
+        "options": [
+          "is the library",
+          "the library is",
+          "was the library",
+          "the library was"
+        ],
+        "correctAnswer": "1"
+      },
+      {
+        "question": "She asked me if I ______ to Japan before.",
+        "options": [
+          "go",
+          "have gone",
+          "had been",
+          "will go"
+        ],
+        "correctAnswer": "2"
+      },
+      {
+        "question": "\"Do not open the door!\" -> The teacher told the students ______ open the door.",
+        "options": [
+          "to not",
+          "not to",
+          "don't",
+          "no to"
+        ],
+        "correctAnswer": "1"
+      },
+      {
+        "question": "He asked her what time the train ______.",
+        "options": [
+          "left",
+          "leave",
+          "leaves",
+          "is leaving"
+        ],
+        "correctAnswer": "0"
+      },
+      {
+        "question": "\"I will call you tomorrow.\" -> She said that she ______ call me the following day.",
+        "options": [
+          "will",
+          "would",
+          "shall",
+          "can"
+        ],
+        "correctAnswer": "1"
+      },
+      {
+        "question": "I wonder how much this camera ______.",
+        "options": [
+          "costs",
+          "does it cost",
+          "is it cost",
+          "costing"
+        ],
+        "correctAnswer": "0"
+      },
+      {
+        "question": "She promised that she ______ keep the secret safe.",
+        "options": [
+          "will",
+          "would",
+          "can",
+          "may"
+        ],
+        "correctAnswer": "1"
+      },
+      {
+        "question": "He inquired whether the flight ______ delayed.",
+        "options": [
+          "had been",
+          "has been",
+          "is",
+          "will be"
+        ],
+        "correctAnswer": "0"
+      },
+      {
+        "question": "The doctor advised him ______ more green vegetables.",
+        "options": [
+          "eat",
+          "to eat",
+          "eating",
+          "ate"
+        ],
+        "correctAnswer": "1"
+      },
+      {
+        "question": "______ it was pouring with rain, they decided to go hiking.",
+        "options": [
+          "Although",
+          "Despite",
+          "Because",
+          "In spite"
+        ],
+        "correctAnswer": "0"
+      },
+      {
+        "question": "She studied diligently; ______, she scored the highest marks in class.",
+        "options": [
+          "however",
+          "therefore",
+          "otherwise",
+          "nevertheless"
+        ],
+        "correctAnswer": "1"
+      },
+      {
+        "question": "______ his severe illness, he managed to complete the project.",
+        "options": [
+          "Although",
+          "Despite",
+          "Because",
+          "Even though"
+        ],
+        "correctAnswer": "1"
+      },
+      {
+        "question": "You can have ______ the strawberry cake or the chocolate pudding.",
+        "options": [
+          "neither",
+          "either",
+          "both",
+          "also"
+        ],
+        "correctAnswer": "1"
+      },
+      {
+        "question": "She neither called ______ sent any messages.",
+        "options": [
+          "or",
+          "nor",
+          "and",
+          "but"
+        ],
+        "correctAnswer": "1"
+      },
+      {
+        "question": "Please lock the gate ______ the dog doesn't run out.",
+        "options": [
+          "so that",
+          "because",
+          "although",
+          "unless"
+        ],
+        "correctAnswer": "0"
+      },
+      {
+        "question": "He is not only an outstanding athlete ______ an accomplished musician.",
+        "options": [
+          "and also",
+          "but also",
+          "as well as",
+          "or else"
+        ],
+        "correctAnswer": "1"
+      },
+      {
+        "question": "Wear your warm coat ______ you might catch a cold.",
+        "options": [
+          "so",
+          "otherwise",
+          "because",
+          "unless"
+        ],
+        "correctAnswer": "1"
+      },
+      {
+        "question": "______ he is wealthy, he lives a very modest and frugal life.",
+        "options": [
+          "Even though",
+          "Because",
+          "Since",
+          "Unless"
+        ],
+        "correctAnswer": "0"
+      },
+      {
+        "question": "We stayed at home ______ the stormy weather.",
+        "options": [
+          "because",
+          "because of",
+          "although",
+          "despite of"
+        ],
+        "correctAnswer": "1"
       }
     ],
-    "Geometry Realm": [
+    "Conversational Fluency": [
       {
-        "question": "Tổng các góc trong một tam giác phẳng là?",
+        "question": "How do you respond to \"Thank you so much for your help\"?",
         "options": [
-          "360 độ",
-          "90 độ",
-          "270 độ",
-          "180 độ"
-        ],
-        "correctAnswer": "3"
-      },
-      {
-        "question": "Công thức tính diện tích hình tròn là?",
-        "options": [
-          "4/3*pi*r^3",
-          "pi*d",
-          "pi*r^2",
-          "2*pi*r"
-        ],
-        "correctAnswer": "2"
-      },
-      {
-        "question": "Thể tích của một hình lập phương cạnh a là?",
-        "options": [
-          "a^2",
-          "3*a",
-          "6*a^2",
-          "a^3"
-        ],
-        "correctAnswer": "3"
-      },
-      {
-        "question": "Định lý Pythagoras áp dụng cho loại tam giác nào?",
-        "options": [
-          "Tam giác đều",
-          "Mọi tam giác",
-          "Tam giác vuông",
-          "Tam giác cân"
-        ],
-        "correctAnswer": "2"
-      },
-      {
-        "question": "Đường chéo của hình vuông cạnh a có độ dài là?",
-        "options": [
-          "a*sqrt(2)",
-          "a^2",
-          "2*a",
-          "a/2"
+          "You are welcome.",
+          "Never mind.",
+          "Yes, please.",
+          "It does not matter."
         ],
         "correctAnswer": "0"
       },
       {
-        "question": "Hình có 6 mặt đều là hình vuông gọi là gì?",
+        "question": "If someone says \"I passed my driving test!\", you say: ______",
         "options": [
-          "Hình lập phương",
-          "Hình hộp chữ nhật",
-          "Tứ diện đều",
-          "Bát diện đều"
-        ],
-        "correctAnswer": "0"
-      },
-      {
-        "question": "Khoảng cách giữa 2 điểm (x1, y1) và (x2, y2) là?",
-        "options": [
-          "x2*x1 + y2*y1",
-          "abs(x2-x1) + abs(y2-y1)",
-          "sqrt((x2-x1)^2 + (y2-y1)^2)",
-          "sqrt(x1^2 + y1^2)"
-        ],
-        "correctAnswer": "2"
-      },
-      {
-        "question": "Phương trình đường tròn tâm O(0,0) bán kính r là?",
-        "options": [
-          "x^2/a^2 + y^2/b^2 = 1",
-          "y = ax + b",
-          "x + y = r",
-          "x^2 + y^2 = r^2"
-        ],
-        "correctAnswer": "3"
-      },
-      {
-        "question": "Cos(0 độ) bằng bao nhiêu?",
-        "options": [
-          "-1",
-          "0.5",
-          "1",
-          "0"
-        ],
-        "correctAnswer": "2"
-      },
-      {
-        "question": "Hai đường thẳng có hệ số góc m1 và m2 vuông góc khi nào?",
-        "options": [
-          "m1 + m2 = 0",
-          "m1 = m2",
-          "m1 * m2 = 1",
-          "m1 * m2 = -1"
-        ],
-        "correctAnswer": "3"
-      },
-      {
-        "question": "Tổng các góc trong một tam giác phẳng là?",
-        "options": [
-          "180 độ",
-          "90 độ",
-          "360 độ",
-          "270 độ"
-        ],
-        "correctAnswer": "0"
-      },
-      {
-        "question": "Công thức tính diện tích hình tròn là?",
-        "options": [
-          "pi*r^2",
-          "4/3*pi*r^3",
-          "pi*d",
-          "2*pi*r"
-        ],
-        "correctAnswer": "0"
-      },
-      {
-        "question": "Thể tích của một hình lập phương cạnh a là?",
-        "options": [
-          "a^3",
-          "a^2",
-          "6*a^2",
-          "3*a"
-        ],
-        "correctAnswer": "0"
-      },
-      {
-        "question": "Định lý Pythagoras áp dụng cho loại tam giác nào?",
-        "options": [
-          "Tam giác vuông",
-          "Tam giác cân",
-          "Tam giác đều",
-          "Mọi tam giác"
-        ],
-        "correctAnswer": "0"
-      },
-      {
-        "question": "Đường chéo của hình vuông cạnh a có độ dài là?",
-        "options": [
-          "a^2",
-          "a/2",
-          "a*sqrt(2)",
-          "2*a"
-        ],
-        "correctAnswer": "2"
-      },
-      {
-        "question": "Hình có 6 mặt đều là hình vuông gọi là gì?",
-        "options": [
-          "Tứ diện đều",
-          "Bát diện đều",
-          "Hình lập phương",
-          "Hình hộp chữ nhật"
-        ],
-        "correctAnswer": "2"
-      },
-      {
-        "question": "Khoảng cách giữa 2 điểm (x1, y1) và (x2, y2) là?",
-        "options": [
-          "sqrt((x2-x1)^2 + (y2-y1)^2)",
-          "abs(x2-x1) + abs(y2-y1)",
-          "sqrt(x1^2 + y1^2)",
-          "x2*x1 + y2*y1"
-        ],
-        "correctAnswer": "0"
-      },
-      {
-        "question": "Phương trình đường tròn tâm O(0,0) bán kính r là?",
-        "options": [
-          "y = ax + b",
-          "x^2/a^2 + y^2/b^2 = 1",
-          "x + y = r",
-          "x^2 + y^2 = r^2"
-        ],
-        "correctAnswer": "3"
-      },
-      {
-        "question": "Cos(0 độ) bằng bao nhiêu?",
-        "options": [
-          "-1",
-          "0.5",
-          "1",
-          "0"
-        ],
-        "correctAnswer": "2"
-      },
-      {
-        "question": "Hai đường thẳng có hệ số góc m1 và m2 vuông góc khi nào?",
-        "options": [
-          "m1 * m2 = 1",
-          "m1 * m2 = -1",
-          "m1 = m2",
-          "m1 + m2 = 0"
+          "Good luck!",
+          "Congratulations!",
+          "Cheers!",
+          "Never mind!"
         ],
         "correctAnswer": "1"
       },
       {
-        "question": "Tổng các góc trong một tam giác phẳng là?",
+        "question": "Person A: \"Would you mind opening the window?\" -> Person B: \"______\"",
         "options": [
-          "360 độ",
-          "90 độ",
-          "270 độ",
-          "180 độ"
+          "Yes, of course.",
+          "Not at all, I'll do it now.",
+          "No, I mind.",
+          "Yes, I would."
         ],
-        "correctAnswer": "3"
+        "correctAnswer": "1"
       },
       {
-        "question": "Công thức tính diện tích hình tròn là?",
+        "question": "How do you politely decline an invitation?",
         "options": [
-          "pi*r^2",
-          "pi*d",
-          "4/3*pi*r^3",
-          "2*pi*r"
+          "No, I hate it.",
+          "I'd love to, but I have other plans.",
+          "Why would I go?",
+          "Never invite me again."
+        ],
+        "correctAnswer": "1"
+      },
+      {
+        "question": "Person A: \"How do you do?\" -> Person B: \"______\"",
+        "options": [
+          "I am fine, thank you.",
+          "How do you do?",
+          "Nice to see you.",
+          "I do well."
+        ],
+        "correctAnswer": "1"
+      },
+      {
+        "question": "Someone accidentally bumps into you and says \"I am so sorry!\" You reply: ______",
+        "options": [
+          "No problem at all.",
+          "You are bad.",
+          "Apologize again.",
+          "I don't care."
         ],
         "correctAnswer": "0"
       },
       {
-        "question": "Thể tích của một hình lập phương cạnh a là?",
+        "question": "Person A: \"Have a wonderful trip!\" -> Person B: \"______\"",
         "options": [
-          "6*a^2",
-          "3*a",
-          "a^2",
-          "a^3"
-        ],
-        "correctAnswer": "3"
-      },
-      {
-        "question": "Định lý Pythagoras áp dụng cho loại tam giác nào?",
-        "options": [
-          "Mọi tam giác",
-          "Tam giác vuông",
-          "Tam giác đều",
-          "Tam giác cân"
-        ],
-        "correctAnswer": "1"
-      },
-      {
-        "question": "Đường chéo của hình vuông cạnh a có độ dài là?",
-        "options": [
-          "a*sqrt(2)",
-          "2*a",
-          "a^2",
-          "a/2"
+          "You too, thank you!",
+          "The same to you trip.",
+          "Yes, I have.",
+          "No problem."
         ],
         "correctAnswer": "0"
       },
       {
-        "question": "Hình có 6 mặt đều là hình vuông gọi là gì?",
+        "question": "If a friend is about to take an exam, you wish them: ______",
         "options": [
-          "Hình hộp chữ nhật",
-          "Tứ diện đều",
-          "Bát diện đều",
-          "Hình lập phương"
-        ],
-        "correctAnswer": "3"
-      },
-      {
-        "question": "Khoảng cách giữa 2 điểm (x1, y1) và (x2, y2) là?",
-        "options": [
-          "sqrt(x1^2 + y1^2)",
-          "x2*x1 + y2*y1",
-          "abs(x2-x1) + abs(y2-y1)",
-          "sqrt((x2-x1)^2 + (y2-y1)^2)"
-        ],
-        "correctAnswer": "3"
-      },
-      {
-        "question": "Phương trình đường tròn tâm O(0,0) bán kính r là?",
-        "options": [
-          "y = ax + b",
-          "x^2 + y^2 = r^2",
-          "x + y = r",
-          "x^2/a^2 + y^2/b^2 = 1"
+          "Congratulations!",
+          "Good luck!",
+          "Rest in peace!",
+          "Cheers!"
         ],
         "correctAnswer": "1"
       },
       {
-        "question": "Cos(0 độ) bằng bao nhiêu?",
+        "question": "Person A: \"Could you pass me the salt, please?\" -> Person B: \"______\"",
         "options": [
-          "0",
-          "-1",
-          "0.5",
-          "1"
-        ],
-        "correctAnswer": "3"
-      },
-      {
-        "question": "Hai đường thẳng có hệ số góc m1 và m2 vuông góc khi nào?",
-        "options": [
-          "m1 = m2",
-          "m1 + m2 = 0",
-          "m1 * m2 = 1",
-          "m1 * m2 = -1"
-        ],
-        "correctAnswer": "3"
-      },
-      {
-        "question": "Tổng các góc trong một tam giác phẳng là?",
-        "options": [
-          "90 độ",
-          "270 độ",
-          "180 độ",
-          "360 độ"
-        ],
-        "correctAnswer": "2"
-      },
-      {
-        "question": "Công thức tính diện tích hình tròn là?",
-        "options": [
-          "pi*r^2",
-          "4/3*pi*r^3",
-          "2*pi*r",
-          "pi*d"
+          "Here you are.",
+          "Take it yourself.",
+          "Yes, I pass.",
+          "No need."
         ],
         "correctAnswer": "0"
       },
       {
-        "question": "Thể tích của một hình lập phương cạnh a là?",
+        "question": "When answering a telephone call in an office, you say: ______",
         "options": [
-          "6*a^2",
-          "a^2",
-          "a^3",
-          "3*a"
-        ],
-        "correctAnswer": "2"
-      },
-      {
-        "question": "Định lý Pythagoras áp dụng cho loại tam giác nào?",
-        "options": [
-          "Tam giác cân",
-          "Mọi tam giác",
-          "Tam giác vuông",
-          "Tam giác đều"
-        ],
-        "correctAnswer": "2"
-      },
-      {
-        "question": "Đường chéo của hình vuông cạnh a có độ dài là?",
-        "options": [
-          "a/2",
-          "a*sqrt(2)",
-          "a^2",
-          "2*a"
+          "Hello, who are you?",
+          "Good morning, ABC Company, how may I assist you?",
+          "What do you want?",
+          "Speak now."
         ],
         "correctAnswer": "1"
       },
       {
-        "question": "Hình có 6 mặt đều là hình vuông gọi là gì?",
+        "question": "I completely agree with your proposal. (Choose an equivalent phrase)",
         "options": [
-          "Hình hộp chữ nhật",
-          "Hình lập phương",
-          "Bát diện đều",
-          "Tứ diện đều"
-        ],
-        "correctAnswer": "1"
-      },
-      {
-        "question": "Khoảng cách giữa 2 điểm (x1, y1) và (x2, y2) là?",
-        "options": [
-          "sqrt(x1^2 + y1^2)",
-          "x2*x1 + y2*y1",
-          "sqrt((x2-x1)^2 + (y2-y1)^2)",
-          "abs(x2-x1) + abs(y2-y1)"
-        ],
-        "correctAnswer": "2"
-      },
-      {
-        "question": "Phương trình đường tròn tâm O(0,0) bán kính r là?",
-        "options": [
-          "x^2/a^2 + y^2/b^2 = 1",
-          "y = ax + b",
-          "x^2 + y^2 = r^2",
-          "x + y = r"
-        ],
-        "correctAnswer": "2"
-      },
-      {
-        "question": "Cos(0 độ) bằng bao nhiêu?",
-        "options": [
-          "0.5",
-          "-1",
-          "1",
-          "0"
-        ],
-        "correctAnswer": "2"
-      },
-      {
-        "question": "Hai đường thẳng có hệ số góc m1 và m2 vuông góc khi nào?",
-        "options": [
-          "m1 = m2",
-          "m1 * m2 = 1",
-          "m1 + m2 = 0",
-          "m1 * m2 = -1"
-        ],
-        "correctAnswer": "3"
-      },
-      {
-        "question": "Tổng các góc trong một tam giác phẳng là?",
-        "options": [
-          "360 độ",
-          "90 độ",
-          "270 độ",
-          "180 độ"
-        ],
-        "correctAnswer": "3"
-      },
-      {
-        "question": "Công thức tính diện tích hình tròn là?",
-        "options": [
-          "pi*d",
-          "2*pi*r",
-          "pi*r^2",
-          "4/3*pi*r^3"
-        ],
-        "correctAnswer": "2"
-      },
-      {
-        "question": "Thể tích của một hình lập phương cạnh a là?",
-        "options": [
-          "6*a^2",
-          "3*a",
-          "a^2",
-          "a^3"
-        ],
-        "correctAnswer": "3"
-      },
-      {
-        "question": "Định lý Pythagoras áp dụng cho loại tam giác nào?",
-        "options": [
-          "Tam giác vuông",
-          "Tam giác đều",
-          "Tam giác cân",
-          "Mọi tam giác"
+          "I couldn't agree more.",
+          "I agree less.",
+          "I don't see it.",
+          "I am in doubt."
         ],
         "correctAnswer": "0"
       },
       {
-        "question": "Đường chéo của hình vuông cạnh a có độ dài là?",
+        "question": "How do you politely disagree with someone in a meeting?",
         "options": [
-          "a*sqrt(2)",
-          "2*a",
-          "a^2",
-          "a/2"
+          "You are wrong.",
+          "I see your point, but consider another perspective.",
+          "That makes no sense.",
+          "Stop talking."
+        ],
+        "correctAnswer": "1"
+      },
+      {
+        "question": "Person A: \"This restaurant is fantastic!\" -> Person B: \"______! The food is superb.\"",
+        "options": [
+          "Absolutely",
+          "Doubtful",
+          "Hardly",
+          "Barely"
         ],
         "correctAnswer": "0"
       },
       {
-        "question": "Hình có 6 mặt đều là hình vuông gọi là gì?",
+        "question": "\"In my opinion\" can be naturally replaced by ______.",
         "options": [
-          "Hình hộp chữ nhật",
-          "Tứ diện đều",
-          "Bát diện đều",
-          "Hình lập phương"
-        ],
-        "correctAnswer": "3"
-      },
-      {
-        "question": "Khoảng cách giữa 2 điểm (x1, y1) và (x2, y2) là?",
-        "options": [
-          "sqrt((x2-x1)^2 + (y2-y1)^2)",
-          "sqrt(x1^2 + y1^2)",
-          "x2*x1 + y2*y1",
-          "abs(x2-x1) + abs(y2-y1)"
+          "From my perspective",
+          "As I think so",
+          "By my eye",
+          "In my minding"
         ],
         "correctAnswer": "0"
       },
       {
-        "question": "Phương trình đường tròn tâm O(0,0) bán kính r là?",
+        "question": "Person A: \"I think we need more practice.\" -> Person B: \"That's ______ what I was thinking!\"",
         "options": [
-          "y = ax + b",
-          "x^2/a^2 + y^2/b^2 = 1",
-          "x + y = r",
-          "x^2 + y^2 = r^2"
-        ],
-        "correctAnswer": "3"
-      },
-      {
-        "question": "Cos(0 độ) bằng bao nhiêu?",
-        "options": [
-          "0.5",
-          "0",
-          "-1",
-          "1"
-        ],
-        "correctAnswer": "3"
-      },
-      {
-        "question": "Hai đường thẳng có hệ số góc m1 và m2 vuông góc khi nào?",
-        "options": [
-          "m1 = m2",
-          "m1 * m2 = -1",
-          "m1 * m2 = 1",
-          "m1 + m2 = 0"
-        ],
-        "correctAnswer": "1"
-      }
-    ]
-  },
-  "Physics & Chemistry": {
-    "Mechanics Base": [
-      {
-        "question": "Đơn vị của lực trong hệ SI là gì?",
-        "options": [
-          "Watt (W)",
-          "Pascal (Pa)",
-          "Joule (J)",
-          "Newton (N)"
-        ],
-        "correctAnswer": "3"
-      },
-      {
-        "question": "Định luật I Newton còn được gọi là gì?",
-        "options": [
-          "Định luật bảo toàn động lượng",
-          "Định luật vạn vật hấp dẫn",
-          "Định luật bảo toàn năng lượng",
-          "Định luật quán tính"
-        ],
-        "correctAnswer": "3"
-      },
-      {
-        "question": "Công thức tính công cơ học là gì?",
-        "options": [
-          "A = P.t",
-          "A = m.g.h",
-          "A = m.a",
-          "A = F.s.cos(alpha)"
-        ],
-        "correctAnswer": "3"
-      },
-      {
-        "question": "Gia tốc trọng trường g trên Trái Đất xấp xỉ bao nhiêu?",
-        "options": [
-          "100 m/s^2",
-          "9.8 m/s^2",
-          "10 cm/s^2",
-          "3.14 m/s"
-        ],
-        "correctAnswer": "1"
-      },
-      {
-        "question": "Đơn vị của động năng là gì?",
-        "options": [
-          "Newton (N)",
-          "Joule (J)",
-          "Kg.m/s",
-          "Watt (W)"
-        ],
-        "correctAnswer": "1"
-      },
-      {
-        "question": "Mô men lực đặc trưng cho tác dụng gì của lực?",
-        "options": [
-          "Tác dụng cản trở chuyển động",
-          "Tác dụng làm quay",
-          "Tác dụng làm vật dịch chuyển",
-          "Tác dụng làm biến dạng"
-        ],
-        "correctAnswer": "1"
-      },
-      {
-        "question": "Khi ô tô phanh gấp, hành khách bị xô về phía trước là do?",
-        "options": [
-          "Lực hấp dẫn",
-          "Trọng lực",
-          "Lực ma sát",
-          "Quán tính"
-        ],
-        "correctAnswer": "3"
-      },
-      {
-        "question": "Gia tốc của một vật rơi tự do phụ thuộc vào?",
-        "options": [
-          "Hình dạng của vật",
-          "Không phụ thuộc khối lượng vật",
-          "Khối lượng của vật",
-          "Kích thước của vật"
-        ],
-        "correctAnswer": "1"
-      },
-      {
-        "question": "Động lượng p được tính bằng công thức nào?",
-        "options": [
-          "p = 1/2.m.v^2",
-          "p = F.t",
-          "p = m.v",
-          "p = m.a"
-        ],
-        "correctAnswer": "2"
-      },
-      {
-        "question": "Lực ma sát trượt luôn có hướng như thế nào?",
-        "options": [
-          "Hướng về tâm quỹ đạo",
-          "Cùng hướng chuyển động",
-          "Vuông góc với hướng chuyển động",
-          "Ngược hướng chuyển động"
-        ],
-        "correctAnswer": "3"
-      },
-      {
-        "question": "Đơn vị của lực trong hệ SI là gì?",
-        "options": [
-          "Pascal (Pa)",
-          "Watt (W)",
-          "Joule (J)",
-          "Newton (N)"
-        ],
-        "correctAnswer": "3"
-      },
-      {
-        "question": "Định luật I Newton còn được gọi là gì?",
-        "options": [
-          "Định luật bảo toàn động lượng",
-          "Định luật vạn vật hấp dẫn",
-          "Định luật quán tính",
-          "Định luật bảo toàn năng lượng"
-        ],
-        "correctAnswer": "2"
-      },
-      {
-        "question": "Công thức tính công cơ học là gì?",
-        "options": [
-          "A = F.s.cos(alpha)",
-          "A = m.g.h",
-          "A = P.t",
-          "A = m.a"
+          "exactly",
+          "roughly",
+          "narrowly",
+          "hardly"
         ],
         "correctAnswer": "0"
       },
       {
-        "question": "Gia tốc trọng trường g trên Trái Đất xấp xỉ bao nhiêu?",
+        "question": "If you are unsure and neutral about a topic, you say: ______",
         "options": [
-          "9.8 m/s^2",
-          "3.14 m/s",
-          "10 cm/s^2",
-          "100 m/s^2"
+          "I have mixed feelings about this.",
+          "I love it 100%.",
+          "I despise it.",
+          "I am totally sure."
         ],
         "correctAnswer": "0"
       },
       {
-        "question": "Đơn vị của động năng là gì?",
+        "question": "Person A: \"Learning English opens many career opportunities.\" -> Person B: \"No ______ about it!\"",
         "options": [
-          "Watt (W)",
-          "Joule (J)",
-          "Newton (N)",
-          "Kg.m/s"
-        ],
-        "correctAnswer": "1"
-      },
-      {
-        "question": "Mô men lực đặc trưng cho tác dụng gì của lực?",
-        "options": [
-          "Tác dụng làm quay",
-          "Tác dụng làm biến dạng",
-          "Tác dụng làm vật dịch chuyển",
-          "Tác dụng cản trở chuyển động"
+          "doubt",
+          "wonder",
+          "hesitate",
+          "argue"
         ],
         "correctAnswer": "0"
       },
       {
-        "question": "Khi ô tô phanh gấp, hành khách bị xô về phía trước là do?",
+        "question": "To ask for someone's opinion, you can say: ______",
         "options": [
-          "Lực ma sát",
-          "Lực hấp dẫn",
-          "Quán tính",
-          "Trọng lực"
-        ],
-        "correctAnswer": "2"
-      },
-      {
-        "question": "Gia tốc của một vật rơi tự do phụ thuộc vào?",
-        "options": [
-          "Không phụ thuộc khối lượng vật",
-          "Hình dạng của vật",
-          "Khối lượng của vật",
-          "Kích thước của vật"
+          "What is your take on this matter?",
+          "Do you have brain on this?",
+          "Speak your mind now!",
+          "Why don't you know?"
         ],
         "correctAnswer": "0"
       },
       {
-        "question": "Động lượng p được tính bằng công thức nào?",
+        "question": "\"I see what you mean, but...\" is used to: ______",
         "options": [
-          "p = 1/2.m.v^2",
-          "p = m.a",
-          "p = F.t",
-          "p = m.v"
+          "Completely agree",
+          "Partially agree before offering a counterpoint",
+          "Insult someone",
+          "End the conversation"
         ],
-        "correctAnswer": "3"
+        "correctAnswer": "1"
       },
       {
-        "question": "Lực ma sát trượt luôn có hướng như thế nào?",
+        "question": "\"You hit the nail on the head!\" means: ______",
         "options": [
-          "Hướng về tâm quỹ đạo",
-          "Cùng hướng chuyển động",
-          "Ngược hướng chuyển động",
-          "Vuông góc với hướng chuyển động"
+          "You made a big mistake.",
+          "You described the situation exactly right.",
+          "You hurt yourself.",
+          "You are building something."
         ],
-        "correctAnswer": "2"
+        "correctAnswer": "1"
       },
       {
-        "question": "Đơn vị của lực trong hệ SI là gì?",
+        "question": "At a restaurant, what do you say when you are ready to pay?",
         "options": [
-          "Joule (J)",
-          "Pascal (Pa)",
-          "Newton (N)",
-          "Watt (W)"
-        ],
-        "correctAnswer": "2"
-      },
-      {
-        "question": "Định luật I Newton còn được gọi là gì?",
-        "options": [
-          "Định luật bảo toàn năng lượng",
-          "Định luật bảo toàn động lượng",
-          "Định luật vạn vật hấp dẫn",
-          "Định luật quán tính"
-        ],
-        "correctAnswer": "3"
-      },
-      {
-        "question": "Công thức tính công cơ học là gì?",
-        "options": [
-          "A = m.g.h",
-          "A = m.a",
-          "A = P.t",
-          "A = F.s.cos(alpha)"
-        ],
-        "correctAnswer": "3"
-      },
-      {
-        "question": "Gia tốc trọng trường g trên Trái Đất xấp xỉ bao nhiêu?",
-        "options": [
-          "10 cm/s^2",
-          "3.14 m/s",
-          "9.8 m/s^2",
-          "100 m/s^2"
-        ],
-        "correctAnswer": "2"
-      },
-      {
-        "question": "Đơn vị của động năng là gì?",
-        "options": [
-          "Kg.m/s",
-          "Watt (W)",
-          "Joule (J)",
-          "Newton (N)"
-        ],
-        "correctAnswer": "2"
-      },
-      {
-        "question": "Mô men lực đặc trưng cho tác dụng gì của lực?",
-        "options": [
-          "Tác dụng làm vật dịch chuyển",
-          "Tác dụng làm biến dạng",
-          "Tác dụng làm quay",
-          "Tác dụng cản trở chuyển động"
-        ],
-        "correctAnswer": "2"
-      },
-      {
-        "question": "Khi ô tô phanh gấp, hành khách bị xô về phía trước là do?",
-        "options": [
-          "Quán tính",
-          "Trọng lực",
-          "Lực hấp dẫn",
-          "Lực ma sát"
+          "Could we have the bill, please?",
+          "Give me the check right now.",
+          "How much money I owe?",
+          "Take my money."
         ],
         "correctAnswer": "0"
       },
       {
-        "question": "Gia tốc của một vật rơi tự do phụ thuộc vào?",
+        "question": "In a clothing store: \"Do you have this jacket in a ______ size?\"",
         "options": [
-          "Kích thước của vật",
-          "Không phụ thuộc khối lượng vật",
-          "Hình dạng của vật",
-          "Khối lượng của vật"
-        ],
-        "correctAnswer": "1"
-      },
-      {
-        "question": "Động lượng p được tính bằng công thức nào?",
-        "options": [
-          "p = m.a",
-          "p = m.v",
-          "p = 1/2.m.v^2",
-          "p = F.t"
-        ],
-        "correctAnswer": "1"
-      },
-      {
-        "question": "Lực ma sát trượt luôn có hướng như thế nào?",
-        "options": [
-          "Hướng về tâm quỹ đạo",
-          "Vuông góc với hướng chuyển động",
-          "Ngược hướng chuyển động",
-          "Cùng hướng chuyển động"
-        ],
-        "correctAnswer": "2"
-      },
-      {
-        "question": "Đơn vị của lực trong hệ SI là gì?",
-        "options": [
-          "Watt (W)",
-          "Newton (N)",
-          "Pascal (Pa)",
-          "Joule (J)"
-        ],
-        "correctAnswer": "1"
-      },
-      {
-        "question": "Định luật I Newton còn được gọi là gì?",
-        "options": [
-          "Định luật bảo toàn động lượng",
-          "Định luật vạn vật hấp dẫn",
-          "Định luật bảo toàn năng lượng",
-          "Định luật quán tính"
-        ],
-        "correctAnswer": "3"
-      },
-      {
-        "question": "Công thức tính công cơ học là gì?",
-        "options": [
-          "A = m.a",
-          "A = F.s.cos(alpha)",
-          "A = P.t",
-          "A = m.g.h"
-        ],
-        "correctAnswer": "1"
-      },
-      {
-        "question": "Gia tốc trọng trường g trên Trái Đất xấp xỉ bao nhiêu?",
-        "options": [
-          "10 cm/s^2",
-          "100 m/s^2",
-          "9.8 m/s^2",
-          "3.14 m/s"
-        ],
-        "correctAnswer": "2"
-      },
-      {
-        "question": "Đơn vị của động năng là gì?",
-        "options": [
-          "Watt (W)",
-          "Kg.m/s",
-          "Newton (N)",
-          "Joule (J)"
-        ],
-        "correctAnswer": "3"
-      },
-      {
-        "question": "Mô men lực đặc trưng cho tác dụng gì của lực?",
-        "options": [
-          "Tác dụng làm biến dạng",
-          "Tác dụng làm vật dịch chuyển",
-          "Tác dụng cản trở chuyển động",
-          "Tác dụng làm quay"
-        ],
-        "correctAnswer": "3"
-      },
-      {
-        "question": "Khi ô tô phanh gấp, hành khách bị xô về phía trước là do?",
-        "options": [
-          "Lực hấp dẫn",
-          "Trọng lực",
-          "Lực ma sát",
-          "Quán tính"
-        ],
-        "correctAnswer": "3"
-      },
-      {
-        "question": "Gia tốc của một vật rơi tự do phụ thuộc vào?",
-        "options": [
-          "Khối lượng của vật",
-          "Hình dạng của vật",
-          "Không phụ thuộc khối lượng vật",
-          "Kích thước của vật"
-        ],
-        "correctAnswer": "2"
-      },
-      {
-        "question": "Động lượng p được tính bằng công thức nào?",
-        "options": [
-          "p = 1/2.m.v^2",
-          "p = m.v",
-          "p = m.a",
-          "p = F.t"
-        ],
-        "correctAnswer": "1"
-      },
-      {
-        "question": "Lực ma sát trượt luôn có hướng như thế nào?",
-        "options": [
-          "Cùng hướng chuyển động",
-          "Hướng về tâm quỹ đạo",
-          "Vuông góc với hướng chuyển động",
-          "Ngược hướng chuyển động"
-        ],
-        "correctAnswer": "3"
-      },
-      {
-        "question": "Đơn vị của lực trong hệ SI là gì?",
-        "options": [
-          "Joule (J)",
-          "Pascal (Pa)",
-          "Newton (N)",
-          "Watt (W)"
-        ],
-        "correctAnswer": "2"
-      },
-      {
-        "question": "Định luật I Newton còn được gọi là gì?",
-        "options": [
-          "Định luật bảo toàn động lượng",
-          "Định luật quán tính",
-          "Định luật vạn vật hấp dẫn",
-          "Định luật bảo toàn năng lượng"
-        ],
-        "correctAnswer": "1"
-      },
-      {
-        "question": "Công thức tính công cơ học là gì?",
-        "options": [
-          "A = F.s.cos(alpha)",
-          "A = P.t",
-          "A = m.g.h",
-          "A = m.a"
+          "medium",
+          "middle",
+          "half",
+          "average"
         ],
         "correctAnswer": "0"
       },
       {
-        "question": "Gia tốc trọng trường g trên Trái Đất xấp xỉ bao nhiêu?",
+        "question": "At hotel check-in: \"I have a ______ under the name of John Smith.\"",
         "options": [
-          "9.8 m/s^2",
-          "100 m/s^2",
-          "10 cm/s^2",
-          "3.14 m/s"
+          "reservation",
+          "appointment",
+          "invitation",
+          "ticket"
         ],
         "correctAnswer": "0"
       },
       {
-        "question": "Đơn vị của động năng là gì?",
+        "question": "Server: \"Are you ready to order?\" -> Customer: \"______\"",
         "options": [
-          "Newton (N)",
-          "Joule (J)",
-          "Watt (W)",
-          "Kg.m/s"
-        ],
-        "correctAnswer": "1"
-      },
-      {
-        "question": "Mô men lực đặc trưng cho tác dụng gì của lực?",
-        "options": [
-          "Tác dụng làm biến dạng",
-          "Tác dụng làm vật dịch chuyển",
-          "Tác dụng làm quay",
-          "Tác dụng cản trở chuyển động"
-        ],
-        "correctAnswer": "2"
-      },
-      {
-        "question": "Khi ô tô phanh gấp, hành khách bị xô về phía trước là do?",
-        "options": [
-          "Quán tính",
-          "Lực hấp dẫn",
-          "Trọng lực",
-          "Lực ma sát"
+          "Yes, I'd like the grilled salmon, please.",
+          "No, bring food.",
+          "Give me chicken.",
+          "I don't eat."
         ],
         "correctAnswer": "0"
       },
       {
-        "question": "Gia tốc của một vật rơi tự do phụ thuộc vào?",
+        "question": "Asking for directions: \"Excuse me, could you tell me how to ______ the central station?\"",
         "options": [
-          "Kích thước của vật",
-          "Hình dạng của vật",
-          "Không phụ thuộc khối lượng vật",
-          "Khối lượng của vật"
+          "get to",
+          "arrive in",
+          "reach to",
+          "come into"
         ],
-        "correctAnswer": "2"
+        "correctAnswer": "0"
       },
       {
-        "question": "Động lượng p được tính bằng công thức nào?",
+        "question": "At the airport: \"Is this the correct boarding ______ for flight VN320?\"",
         "options": [
-          "p = m.a",
-          "p = 1/2.m.v^2",
-          "p = m.v",
-          "p = F.t"
+          "gate",
+          "door",
+          "port",
+          "terminal"
         ],
-        "correctAnswer": "2"
+        "correctAnswer": "0"
       },
       {
-        "question": "Lực ma sát trượt luôn có hướng như thế nào?",
+        "question": "Shop assistant: \"May I help you?\" -> Customer: \"No thank you, I'm just ______.\"",
         "options": [
-          "Ngược hướng chuyển động",
-          "Cùng hướng chuyển động",
-          "Hướng về tâm quỹ đạo",
-          "Vuông góc với hướng chuyển động"
+          "browsing",
+          "buying",
+          "spending",
+          "wandering"
+        ],
+        "correctAnswer": "0"
+      },
+      {
+        "question": "Asking about prices: \"How much ______ this ceramic vase cost?\"",
+        "options": [
+          "does",
+          "is",
+          "do",
+          "has"
+        ],
+        "correctAnswer": "0"
+      },
+      {
+        "question": "In a taxi: \"Could you please ______ me off in front of the post office?\"",
+        "options": [
+          "drop",
+          "fall",
+          "throw",
+          "put"
+        ],
+        "correctAnswer": "0"
+      },
+      {
+        "question": "\"Is service included in the bill?\" asks whether ______ is included.",
+        "options": [
+          "the tip",
+          "the dessert",
+          "the tax",
+          "the appetizer"
+        ],
+        "correctAnswer": "0"
+      },
+      {
+        "question": "When you didn't hear what someone said, you say politely: ______",
+        "options": [
+          "Pardon me, could you repeat that?",
+          "What did you say?",
+          "Speak louder!",
+          "Huh?"
+        ],
+        "correctAnswer": "0"
+      },
+      {
+        "question": "To verify understanding: \"If I understand correctly, you are saying that ______?\"",
+        "options": [
+          "meaning",
+          "means",
+          "meant",
+          "mean"
+        ],
+        "correctAnswer": "0"
+      },
+      {
+        "question": "\"Could you speak a little slower, please?\" is used when: ______",
+        "options": [
+          "The speaker is too fast",
+          "The speaker is whispering",
+          "You are angry",
+          "You want them to stop"
+        ],
+        "correctAnswer": "0"
+      },
+      {
+        "question": "Person A gives complicated directions. Person B: \"Let me make sure I've got this ______.\"",
+        "options": [
+          "straight",
+          "line",
+          "direct",
+          "plain"
+        ],
+        "correctAnswer": "0"
+      },
+      {
+        "question": "\"What do you mean by that?\" asks for: ______",
+        "options": [
+          "A clearer explanation",
+          "A physical gift",
+          "An apology",
+          "Silence"
+        ],
+        "correctAnswer": "0"
+      },
+      {
+        "question": "When someone is speaking, nodding and saying \"I see\" shows: ______",
+        "options": [
+          "Active listening and comprehension",
+          "Boredom",
+          "Disagreement",
+          "Confusion"
+        ],
+        "correctAnswer": "0"
+      },
+      {
+        "question": "\"Could you give me a concrete example?\" asks for: ______",
+        "options": [
+          "A specific real-world instance",
+          "A piece of cement",
+          "A joke",
+          "A summary"
+        ],
+        "correctAnswer": "0"
+      },
+      {
+        "question": "To summarize a discussion: \"In a nutshell, our main conclusion is ______.\"",
+        "options": [
+          "briefly stated",
+          "nutty",
+          "complicated",
+          "hidden"
+        ],
+        "correctAnswer": "0"
+      },
+      {
+        "question": "\"I didn't quite catch that\" means: ______",
+        "options": [
+          "I did not hear or understand clearly.",
+          "I dropped the ball.",
+          "I missed the bus.",
+          "I am tired."
+        ],
+        "correctAnswer": "0"
+      },
+      {
+        "question": "\"Could you elaborate on that point?\" means: ______",
+        "options": [
+          "Please provide more details.",
+          "Please stop talking about it.",
+          "Please speak quieter.",
+          "Please translate it."
+        ],
+        "correctAnswer": "0"
+      },
+      {
+        "question": "Writing an email: \"I am writing to ______ about the scholarship opportunity.\"",
+        "options": [
+          "inquire",
+          "ask around",
+          "demand",
+          "shout"
+        ],
+        "correctAnswer": "0"
+      },
+      {
+        "question": "Sign-off for a formal business letter: \"Yours ______,\" (when name is known)",
+        "options": [
+          "sincerely",
+          "faithfully",
+          "cheers",
+          "warmly"
+        ],
+        "correctAnswer": "0"
+      },
+      {
+        "question": "\"I look forward to ______ from you soon.\"",
+        "options": [
+          "hearing",
+          "hear",
+          "heard",
+          "be heard"
+        ],
+        "correctAnswer": "0"
+      },
+      {
+        "question": "\"Please find ______ the requested documents.\"",
+        "options": [
+          "attached",
+          "enclosed",
+          "joined",
+          "Both A and B"
+        ],
+        "correctAnswer": "3"
+      },
+      {
+        "question": "\"We would be extremely grateful if you could ______ our request.\"",
+        "options": [
+          "consider",
+          "regard",
+          "look",
+          "think"
+        ],
+        "correctAnswer": "0"
+      },
+      {
+        "question": "In a meeting: \"I would like to hand the floor ______ Mr. Roberts.\"",
+        "options": [
+          "over to",
+          "into",
+          "upon",
+          "through"
+        ],
+        "correctAnswer": "0"
+      },
+      {
+        "question": "\"Thank you for taking the time to ______ me today for this interview.\"",
+        "options": [
+          "interview",
+          "meet with",
+          "consult",
+          "Both A and B"
+        ],
+        "correctAnswer": "3"
+      },
+      {
+        "question": "\"Due to unforeseen circumstances, we must ______ our meeting.\"",
+        "options": [
+          "reschedule",
+          "break",
+          "destroy",
+          "refuse"
+        ],
+        "correctAnswer": "0"
+      },
+      {
+        "question": "\"Should you have any questions, please do not ______ to contact us.\"",
+        "options": [
+          "hesitate",
+          "reluctant",
+          "refrain",
+          "delay"
+        ],
+        "correctAnswer": "0"
+      },
+      {
+        "question": "Formal appreciation: \"Your assistance in this matter is greatly ______.\"",
+        "options": [
+          "appreciated",
+          "welcomed",
+          "enjoyed",
+          "pleased"
         ],
         "correctAnswer": "0"
       }
     ],
-    "Thermo Field": [
+    "Academic & IELTS Mastery": [
       {
-        "question": "Nhiệt độ tuyệt đối (Kelvin) bằng nhiệt độ Celsius cộng thêm bao nhiêu?",
+        "question": "The rapid expansion of the digital economy has ______ unprecedented growth.",
         "options": [
-          "273.15",
-          "100",
-          "32",
-          "0"
+          "fostered",
+          "demolished",
+          "hindered",
+          "stagnated"
         ],
         "correctAnswer": "0"
       },
       {
-        "question": "Định luật bảo toàn và chuyển hóa năng lượng là nội dung của?",
+        "question": "Governments must implement ______ measures to curb greenhouse gas emissions.",
         "options": [
-          "Nguyên lý I Nhiệt động lực học",
-          "Định luật Boyle-Mariotte",
-          "Định luật Charles",
-          "Nguyên lý II Nhiệt động lực học"
+          "stringent",
+          "lenient",
+          "vague",
+          "feeble"
         ],
         "correctAnswer": "0"
       },
       {
-        "question": "Quá trình đẳng nhiệt là quá trình trong đó?",
+        "question": "The author's argument is based on a fundamentally ______ premise.",
         "options": [
-          "Áp suất không đổi",
-          "Thể tích không đổi",
-          "Nội năng không đổi",
-          "Nhiệt độ không đổi"
+          "flawed",
+          "perfect",
+          "intact",
+          "pristine"
         ],
-        "correctAnswer": "3"
+        "correctAnswer": "0"
       },
       {
-        "question": "Công thức phương trình trạng thái khí lý tưởng là gì?",
+        "question": "There is an ______ relationship between excessive screen time and sleep quality.",
         "options": [
-          "V/T = const",
-          "p = V/T",
-          "p.V = n.R.T",
-          "p.V = const"
+          "inverse",
+          "upright",
+          "identical",
+          "absent"
+        ],
+        "correctAnswer": "0"
+      },
+      {
+        "question": "The findings of the research study ______ previous scientific claims.",
+        "options": [
+          "corroborate",
+          "disprove",
+          "ignore",
+          "complicate"
+        ],
+        "correctAnswer": "0"
+      },
+      {
+        "question": "Technological advancements have made smartphones ______ in modern society.",
+        "options": [
+          "ubiquitous",
+          "scarce",
+          "obsolete",
+          "isolated"
+        ],
+        "correctAnswer": "0"
+      },
+      {
+        "question": "The company's financial crisis was exacerbated by ______ management decisions.",
+        "options": [
+          "imprudent",
+          "wise",
+          "judicious",
+          "calculated"
+        ],
+        "correctAnswer": "0"
+      },
+      {
+        "question": "Her dissertation provides a ______ analysis of renewable energy transitions.",
+        "options": [
+          "comprehensive",
+          "superficial",
+          "narrow",
+          "shallow"
+        ],
+        "correctAnswer": "0"
+      },
+      {
+        "question": "Poverty and poor education are closely ______ social issues.",
+        "options": [
+          "intertwined",
+          "detached",
+          "unrelated",
+          "separated"
+        ],
+        "correctAnswer": "0"
+      },
+      {
+        "question": "The proposal received ______ support from both political parties.",
+        "options": [
+          "unanimous",
+          "divided",
+          "conflicted",
+          "reluctant"
+        ],
+        "correctAnswer": "0"
+      },
+      {
+        "question": "Seldom ______ such a breathtaking display of northern lights.",
+        "options": [
+          "have I witnessed",
+          "I have witnessed",
+          "I witnessed",
+          "did I witnessed"
+        ],
+        "correctAnswer": "0"
+      },
+      {
+        "question": "Not only ______ the competition, but she also broke the national record.",
+        "options": [
+          "did she win",
+          "she won",
+          "she did win",
+          "has she win"
+        ],
+        "correctAnswer": "0"
+      },
+      {
+        "question": "Hardly had we stepped outside ______ the thunderstorm erupted.",
+        "options": [
+          "when",
+          "than",
+          "then",
+          "as"
+        ],
+        "correctAnswer": "0"
+      },
+      {
+        "question": "The dean insisted that every student ______ present at the assembly.",
+        "options": [
+          "be",
+          "is",
+          "was",
+          "are"
+        ],
+        "correctAnswer": "0"
+      },
+      {
+        "question": "It is imperative that strict safety protocols ______ adhered to at all times.",
+        "options": [
+          "be",
+          "are",
+          "were",
+          "being"
+        ],
+        "correctAnswer": "0"
+      },
+      {
+        "question": "No sooner had the keynote speaker begun ______ the microphone malfunctioned.",
+        "options": [
+          "than",
+          "when",
+          "then",
+          "before"
+        ],
+        "correctAnswer": "0"
+      },
+      {
+        "question": "Under no circumstances ______ staff members divulge confidential data.",
+        "options": [
+          "should",
+          "they should",
+          "would they",
+          "ought"
+        ],
+        "correctAnswer": "0"
+      },
+      {
+        "question": "Little ______ that his scientific discovery would change medicine forever.",
+        "options": [
+          "did he know",
+          "he knew",
+          "he had known",
+          "does he knew"
+        ],
+        "correctAnswer": "0"
+      },
+      {
+        "question": "Were I ______ in your shoes, I would reconsider the proposal.",
+        "options": [
+          "to be",
+          "am",
+          "was",
+          "been"
+        ],
+        "correctAnswer": "0"
+      },
+      {
+        "question": "Had they ______ about the hurricane warnings, they would have stayed home.",
+        "options": [
+          "known",
+          "knew",
+          "know",
+          "knowing"
+        ],
+        "correctAnswer": "0"
+      },
+      {
+        "question": "Find the error: \"She walked into the room [A], sat down [B], and begin [C] reading [D].\"",
+        "options": [
+          "A (walked)",
+          "B (sat)",
+          "C (begin - should be began)",
+          "D (reading)"
         ],
         "correctAnswer": "2"
       },
       {
-        "question": "Nhiệt lượng cần thiết để vật thay đổi nhiệt độ được tính bằng?",
+        "question": "Find the error: \"Neither the teacher nor the students was [A] aware [B] of the change [C] in the schedule [D].\"",
         "options": [
-          "Q = m.c.deltaT",
-          "Q = I^2.R.t",
-          "Q = m.lambda",
-          "Q = m.L"
+          "A (was - should be were)",
+          "B (aware)",
+          "C (change)",
+          "D (schedule)"
         ],
         "correctAnswer": "0"
       },
       {
-        "question": "Sự truyền nhiệt bằng cách bức xạ nhiệt có thể xảy ra trong môi trường nào?",
+        "question": "Find the error: \"The information provided by the agents were [A] misleading [B] and inaccurate [C] for travelers [D].\"",
         "options": [
-          "Chỉ trong chất lỏng và khí",
-          "Chỉ trong chất rắn",
-          "Cả chân không và môi trường vật chất",
-          "Chỉ trong chân không"
-        ],
-        "correctAnswer": "2"
-      },
-      {
-        "question": "Đơn vị của nhiệt dung riêng là gì?",
-        "options": [
-          "J/kg",
-          "W/(m.K)",
-          "J/K",
-          "J/(kg.K)"
-        ],
-        "correctAnswer": "3"
-      },
-      {
-        "question": "Nguyên lý II Nhiệt động lực học khẳng định điều gì?",
-        "options": [
-          "Nhiệt không thể tự truyền từ vật lạnh sang vật nóng hơn",
-          "Năng lượng luôn được bảo toàn",
-          "Độ không tuyệt đối có thể đạt được",
-          "Động cơ nhiệt có thể đạt hiệu suất 100%"
+          "A (were - information is uncountable, should be was)",
+          "B (misleading)",
+          "C (inaccurate)",
+          "D (travelers)"
         ],
         "correctAnswer": "0"
       },
       {
-        "question": "Hiệu suất của động cơ nhiệt Carnot phụ thuộc vào?",
+        "question": "Find the error: \"Despite of [A] the heavy snowfall [B], the commuter train [C] arrived on time [D].\"",
         "options": [
-          "Thời gian hoạt động",
-          "Cấu tạo động cơ",
-          "Bản chất tác nhân",
-          "Nhiệt độ nguồn nóng và nguồn lạnh"
-        ],
-        "correctAnswer": "3"
-      },
-      {
-        "question": "Chất lỏng bay hơi ở nhiệt độ nào?",
-        "options": [
-          "Chỉ ở nhiệt độ phòng",
-          "Ở mọi nhiệt độ",
-          "Chỉ ở trên 0 độ C",
-          "Chỉ ở nhiệt độ sôi"
-        ],
-        "correctAnswer": "1"
-      },
-      {
-        "question": "Nhiệt độ tuyệt đối (Kelvin) bằng nhiệt độ Celsius cộng thêm bao nhiêu?",
-        "options": [
-          "32",
-          "0",
-          "273.15",
-          "100"
-        ],
-        "correctAnswer": "2"
-      },
-      {
-        "question": "Định luật bảo toàn và chuyển hóa năng lượng là nội dung của?",
-        "options": [
-          "Nguyên lý I Nhiệt động lực học",
-          "Nguyên lý II Nhiệt động lực học",
-          "Định luật Boyle-Mariotte",
-          "Định luật Charles"
+          "A (Despite of - should be Despite or In spite of)",
+          "B (snowfall)",
+          "C (commuter train)",
+          "D (arrived)"
         ],
         "correctAnswer": "0"
       },
       {
-        "question": "Quá trình đẳng nhiệt là quá trình trong đó?",
+        "question": "Find the error: \"He is one of those individuals who always looks [A] after [B] the welfare [C] of others [D].\"",
         "options": [
-          "Nội năng không đổi",
-          "Áp suất không đổi",
-          "Nhiệt độ không đổi",
-          "Thể tích không đổi"
-        ],
-        "correctAnswer": "2"
-      },
-      {
-        "question": "Công thức phương trình trạng thái khí lý tưởng là gì?",
-        "options": [
-          "V/T = const",
-          "p = V/T",
-          "p.V = n.R.T",
-          "p.V = const"
-        ],
-        "correctAnswer": "2"
-      },
-      {
-        "question": "Nhiệt lượng cần thiết để vật thay đổi nhiệt độ được tính bằng?",
-        "options": [
-          "Q = m.L",
-          "Q = m.c.deltaT",
-          "Q = m.lambda",
-          "Q = I^2.R.t"
-        ],
-        "correctAnswer": "1"
-      },
-      {
-        "question": "Sự truyền nhiệt bằng cách bức xạ nhiệt có thể xảy ra trong môi trường nào?",
-        "options": [
-          "Chỉ trong chất lỏng và khí",
-          "Chỉ trong chân không",
-          "Chỉ trong chất rắn",
-          "Cả chân không và môi trường vật chất"
-        ],
-        "correctAnswer": "3"
-      },
-      {
-        "question": "Đơn vị của nhiệt dung riêng là gì?",
-        "options": [
-          "W/(m.K)",
-          "J/kg",
-          "J/K",
-          "J/(kg.K)"
-        ],
-        "correctAnswer": "3"
-      },
-      {
-        "question": "Nguyên lý II Nhiệt động lực học khẳng định điều gì?",
-        "options": [
-          "Năng lượng luôn được bảo toàn",
-          "Nhiệt không thể tự truyền từ vật lạnh sang vật nóng hơn",
-          "Độ không tuyệt đối có thể đạt được",
-          "Động cơ nhiệt có thể đạt hiệu suất 100%"
-        ],
-        "correctAnswer": "1"
-      },
-      {
-        "question": "Hiệu suất của động cơ nhiệt Carnot phụ thuộc vào?",
-        "options": [
-          "Bản chất tác nhân",
-          "Nhiệt độ nguồn nóng và nguồn lạnh",
-          "Thời gian hoạt động",
-          "Cấu tạo động cơ"
-        ],
-        "correctAnswer": "1"
-      },
-      {
-        "question": "Chất lỏng bay hơi ở nhiệt độ nào?",
-        "options": [
-          "Chỉ ở nhiệt độ sôi",
-          "Chỉ ở trên 0 độ C",
-          "Chỉ ở nhiệt độ phòng",
-          "Ở mọi nhiệt độ"
-        ],
-        "correctAnswer": "3"
-      },
-      {
-        "question": "Nhiệt độ tuyệt đối (Kelvin) bằng nhiệt độ Celsius cộng thêm bao nhiêu?",
-        "options": [
-          "273.15",
-          "32",
-          "100",
-          "0"
+          "A (looks - antecedent is individuals, should be look)",
+          "B (after)",
+          "C (welfare)",
+          "D (others)"
         ],
         "correctAnswer": "0"
       },
       {
-        "question": "Định luật bảo toàn và chuyển hóa năng lượng là nội dung của?",
+        "question": "Find the error: \"She is more smarter [A] than [B] any other student [C] in her class [D].\"",
         "options": [
-          "Nguyên lý II Nhiệt động lực học",
-          "Nguyên lý I Nhiệt động lực học",
-          "Định luật Charles",
-          "Định luật Boyle-Mariotte"
-        ],
-        "correctAnswer": "1"
-      },
-      {
-        "question": "Quá trình đẳng nhiệt là quá trình trong đó?",
-        "options": [
-          "Nhiệt độ không đổi",
-          "Áp suất không đổi",
-          "Thể tích không đổi",
-          "Nội năng không đổi"
+          "A (more smarter - double comparative, should be smarter)",
+          "B (than)",
+          "C (any other student)",
+          "D (in her class)"
         ],
         "correctAnswer": "0"
       },
       {
-        "question": "Công thức phương trình trạng thái khí lý tưởng là gì?",
+        "question": "Find the error: \"If he would have arrived [A] on time, he would not have missed [B] the introductory [C] lecture [D].\"",
         "options": [
-          "p = V/T",
-          "p.V = n.R.T",
-          "V/T = const",
-          "p.V = const"
-        ],
-        "correctAnswer": "1"
-      },
-      {
-        "question": "Nhiệt lượng cần thiết để vật thay đổi nhiệt độ được tính bằng?",
-        "options": [
-          "Q = m.L",
-          "Q = m.lambda",
-          "Q = m.c.deltaT",
-          "Q = I^2.R.t"
-        ],
-        "correctAnswer": "2"
-      },
-      {
-        "question": "Sự truyền nhiệt bằng cách bức xạ nhiệt có thể xảy ra trong môi trường nào?",
-        "options": [
-          "Chỉ trong chất lỏng và khí",
-          "Chỉ trong chân không",
-          "Cả chân không và môi trường vật chất",
-          "Chỉ trong chất rắn"
-        ],
-        "correctAnswer": "2"
-      },
-      {
-        "question": "Đơn vị của nhiệt dung riêng là gì?",
-        "options": [
-          "J/kg",
-          "W/(m.K)",
-          "J/(kg.K)",
-          "J/K"
-        ],
-        "correctAnswer": "2"
-      },
-      {
-        "question": "Nguyên lý II Nhiệt động lực học khẳng định điều gì?",
-        "options": [
-          "Năng lượng luôn được bảo toàn",
-          "Nhiệt không thể tự truyền từ vật lạnh sang vật nóng hơn",
-          "Động cơ nhiệt có thể đạt hiệu suất 100%",
-          "Độ không tuyệt đối có thể đạt được"
-        ],
-        "correctAnswer": "1"
-      },
-      {
-        "question": "Hiệu suất của động cơ nhiệt Carnot phụ thuộc vào?",
-        "options": [
-          "Bản chất tác nhân",
-          "Nhiệt độ nguồn nóng và nguồn lạnh",
-          "Cấu tạo động cơ",
-          "Thời gian hoạt động"
-        ],
-        "correctAnswer": "1"
-      },
-      {
-        "question": "Chất lỏng bay hơi ở nhiệt độ nào?",
-        "options": [
-          "Chỉ ở trên 0 độ C",
-          "Chỉ ở nhiệt độ sôi",
-          "Chỉ ở nhiệt độ phòng",
-          "Ở mọi nhiệt độ"
-        ],
-        "correctAnswer": "3"
-      },
-      {
-        "question": "Nhiệt độ tuyệt đối (Kelvin) bằng nhiệt độ Celsius cộng thêm bao nhiêu?",
-        "options": [
-          "100",
-          "0",
-          "32",
-          "273.15"
-        ],
-        "correctAnswer": "3"
-      },
-      {
-        "question": "Định luật bảo toàn và chuyển hóa năng lượng là nội dung của?",
-        "options": [
-          "Nguyên lý I Nhiệt động lực học",
-          "Định luật Charles",
-          "Nguyên lý II Nhiệt động lực học",
-          "Định luật Boyle-Mariotte"
+          "A (would have arrived - should be had arrived)",
+          "B (would not have missed)",
+          "C (introductory)",
+          "D (lecture)"
         ],
         "correctAnswer": "0"
       },
       {
-        "question": "Quá trình đẳng nhiệt là quá trình trong đó?",
+        "question": "Find the error: \"Each of the participants were [A] given [B] a commemorative certificate [C] of attendance [D].\"",
         "options": [
-          "Thể tích không đổi",
-          "Nội năng không đổi",
-          "Nhiệt độ không đổi",
-          "Áp suất không đổi"
-        ],
-        "correctAnswer": "2"
-      },
-      {
-        "question": "Công thức phương trình trạng thái khí lý tưởng là gì?",
-        "options": [
-          "V/T = const",
-          "p.V = n.R.T",
-          "p.V = const",
-          "p = V/T"
-        ],
-        "correctAnswer": "1"
-      },
-      {
-        "question": "Nhiệt lượng cần thiết để vật thay đổi nhiệt độ được tính bằng?",
-        "options": [
-          "Q = m.lambda",
-          "Q = m.L",
-          "Q = m.c.deltaT",
-          "Q = I^2.R.t"
-        ],
-        "correctAnswer": "2"
-      },
-      {
-        "question": "Sự truyền nhiệt bằng cách bức xạ nhiệt có thể xảy ra trong môi trường nào?",
-        "options": [
-          "Cả chân không và môi trường vật chất",
-          "Chỉ trong chất rắn",
-          "Chỉ trong chân không",
-          "Chỉ trong chất lỏng và khí"
+          "A (were - Each is singular, should be was)",
+          "B (given)",
+          "C (certificate)",
+          "D (attendance)"
         ],
         "correctAnswer": "0"
       },
       {
-        "question": "Đơn vị của nhiệt dung riêng là gì?",
+        "question": "Find the error: \"The number of endangered species are [A] increasing [B] at an alarming [C] rate [D].\"",
         "options": [
-          "J/(kg.K)",
-          "J/K",
-          "J/kg",
-          "W/(m.K)"
+          "A (are - The number of takes singular verb is)",
+          "B (increasing)",
+          "C (alarming)",
+          "D (rate)"
         ],
         "correctAnswer": "0"
       },
       {
-        "question": "Nguyên lý II Nhiệt động lực học khẳng định điều gì?",
+        "question": "Find the error: \"Scarcely the sun had risen [A] when [B] the rooster started [C] crowing loudly [D].\"",
         "options": [
-          "Độ không tuyệt đối có thể đạt được",
-          "Động cơ nhiệt có thể đạt hiệu suất 100%",
-          "Nhiệt không thể tự truyền từ vật lạnh sang vật nóng hơn",
-          "Năng lượng luôn được bảo toàn"
-        ],
-        "correctAnswer": "2"
-      },
-      {
-        "question": "Hiệu suất của động cơ nhiệt Carnot phụ thuộc vào?",
-        "options": [
-          "Bản chất tác nhân",
-          "Nhiệt độ nguồn nóng và nguồn lạnh",
-          "Thời gian hoạt động",
-          "Cấu tạo động cơ"
-        ],
-        "correctAnswer": "1"
-      },
-      {
-        "question": "Chất lỏng bay hơi ở nhiệt độ nào?",
-        "options": [
-          "Chỉ ở trên 0 độ C",
-          "Chỉ ở nhiệt độ phòng",
-          "Ở mọi nhiệt độ",
-          "Chỉ ở nhiệt độ sôi"
-        ],
-        "correctAnswer": "2"
-      },
-      {
-        "question": "Nhiệt độ tuyệt đối (Kelvin) bằng nhiệt độ Celsius cộng thêm bao nhiêu?",
-        "options": [
-          "273.15",
-          "100",
-          "32",
-          "0"
+          "A (Scarcely the sun had - requires inversion: Scarcely had the sun)",
+          "B (when)",
+          "C (started)",
+          "D (crowing)"
         ],
         "correctAnswer": "0"
       },
       {
-        "question": "Định luật bảo toàn và chuyển hóa năng lượng là nội dung của?",
+        "question": "\"Meticulous\" is closest in meaning to ______.",
         "options": [
-          "Định luật Boyle-Mariotte",
-          "Định luật Charles",
-          "Nguyên lý I Nhiệt động lực học",
-          "Nguyên lý II Nhiệt động lực học"
-        ],
-        "correctAnswer": "2"
-      },
-      {
-        "question": "Quá trình đẳng nhiệt là quá trình trong đó?",
-        "options": [
-          "Nội năng không đổi",
-          "Áp suất không đổi",
-          "Thể tích không đổi",
-          "Nhiệt độ không đổi"
-        ],
-        "correctAnswer": "3"
-      },
-      {
-        "question": "Công thức phương trình trạng thái khí lý tưởng là gì?",
-        "options": [
-          "p.V = n.R.T",
-          "p.V = const",
-          "p = V/T",
-          "V/T = const"
+          "extremely careful and precise",
+          "hasty and careless",
+          "aggressive",
+          "cowardly"
         ],
         "correctAnswer": "0"
       },
       {
-        "question": "Nhiệt lượng cần thiết để vật thay đổi nhiệt độ được tính bằng?",
+        "question": "An \"ambiguous\" statement is one that ______.",
         "options": [
-          "Q = m.lambda",
-          "Q = m.c.deltaT",
-          "Q = m.L",
-          "Q = I^2.R.t"
-        ],
-        "correctAnswer": "1"
-      },
-      {
-        "question": "Sự truyền nhiệt bằng cách bức xạ nhiệt có thể xảy ra trong môi trường nào?",
-        "options": [
-          "Chỉ trong chân không",
-          "Chỉ trong chất rắn",
-          "Chỉ trong chất lỏng và khí",
-          "Cả chân không và môi trường vật chất"
-        ],
-        "correctAnswer": "3"
-      },
-      {
-        "question": "Đơn vị của nhiệt dung riêng là gì?",
-        "options": [
-          "J/K",
-          "J/(kg.K)",
-          "W/(m.K)",
-          "J/kg"
-        ],
-        "correctAnswer": "1"
-      },
-      {
-        "question": "Nguyên lý II Nhiệt động lực học khẳng định điều gì?",
-        "options": [
-          "Động cơ nhiệt có thể đạt hiệu suất 100%",
-          "Nhiệt không thể tự truyền từ vật lạnh sang vật nóng hơn",
-          "Độ không tuyệt đối có thể đạt được",
-          "Năng lượng luôn được bảo toàn"
-        ],
-        "correctAnswer": "1"
-      },
-      {
-        "question": "Hiệu suất của động cơ nhiệt Carnot phụ thuộc vào?",
-        "options": [
-          "Nhiệt độ nguồn nóng và nguồn lạnh",
-          "Thời gian hoạt động",
-          "Bản chất tác nhân",
-          "Cấu tạo động cơ"
+          "has more than one possible meaning",
+          "is undeniably true",
+          "is offensive",
+          "is extremely short"
         ],
         "correctAnswer": "0"
       },
       {
-        "question": "Chất lỏng bay hơi ở nhiệt độ nào?",
+        "question": "\"Pragmatic\" approaches are focused primarily on ______.",
         "options": [
-          "Ở mọi nhiệt độ",
-          "Chỉ ở nhiệt độ sôi",
-          "Chỉ ở nhiệt độ phòng",
-          "Chỉ ở trên 0 độ C"
-        ],
-        "correctAnswer": "0"
-      }
-    ],
-    "Quantum Void": [
-      {
-        "question": "Ai là người đề xuất thuyết lượng tử ánh sáng (photon)?",
-        "options": [
-          "Albert Einstein",
-          "Niels Bohr",
-          "Max Planck",
-          "Isaac Newton"
+          "practical results and realism",
+          "untested theories",
+          "fantasy and idealism",
+          "superstition"
         ],
         "correctAnswer": "0"
       },
       {
-        "question": "Theo thuyết lượng tử, năng lượng của một photon tỷ lệ thuận với?",
+        "question": "A \"lucid\" explanation is ______.",
         "options": [
-          "Vận tốc ánh sáng",
-          "Bước sóng ánh sáng",
-          "Cường độ ánh sáng",
-          "Tần số ánh sáng"
-        ],
-        "correctAnswer": "3"
-      },
-      {
-        "question": "Nguyên lý bất định Heisenberg phát biểu rằng không thể xác định đồng thời chính xác điều gì của hạt vi mô?",
-        "options": [
-          "Cả A và C đều đúng",
-          "Khối lượng và vận tốc",
-          "Năng lượng và thời gian",
-          "Vị trí và động lượng"
-        ],
-        "correctAnswer": "3"
-      },
-      {
-        "question": "Hạt electron có điện tích là gì?",
-        "options": [
-          "Trung hòa",
-          "Có thể âm hoặc dương",
-          "Dương",
-          "Âm"
-        ],
-        "correctAnswer": "3"
-      },
-      {
-        "question": "Hiện tượng quang điện ngoài xảy ra khi?",
-        "options": [
-          "Kim loại bị nung nóng phát sáng",
-          "Ánh sáng chiếu vào kim loại làm bật electron ra",
-          "Electron hấp thụ nhiệt và bay ra",
-          "Hạt nhân bị phân hạch"
-        ],
-        "correctAnswer": "1"
-      },
-      {
-        "question": "Hạt cơ bản cấu tạo nên proton và neutron là gì?",
-        "options": [
-          "Quark",
-          "Lepton",
-          "Boson",
-          "Electron"
+          "clear and easy to understand",
+          "confusing and dark",
+          "irrelevant",
+          "extremely lengthy"
         ],
         "correctAnswer": "0"
       },
       {
-        "question": "Trong nguyên tử Bohr, khi electron chuyển từ quỹ đạo cao xuống quỹ đạo thấp, nó sẽ?",
+        "question": "\"Eloquent\" speakers are known for their ______ speech.",
         "options": [
-          "Phát ra một photon",
-          "Hấp thụ một photon",
-          "Trở thành proton",
-          "Không thay đổi năng lượng"
+          "persuasive and articulate",
+          "loud and offensive",
+          "quiet and shy",
+          "monotonous"
         ],
         "correctAnswer": "0"
       },
       {
-        "question": "Thí nghiệm giao thoa khe Young chứng minh tính chất gì của ánh sáng?",
+        "question": "To \"exacerbate\" a problem means to make it ______.",
         "options": [
-          "Tính chất hạt",
-          "Tính chất sóng",
-          "Tính chất lượng tử",
-          "Tính chất điện từ"
-        ],
-        "correctAnswer": "1"
-      },
-      {
-        "question": "Vận tốc ánh sáng trong chân không xấp xỉ bằng bao nhiêu?",
-        "options": [
-          "3x10^8 m/s",
-          "3x10^5 km/s",
-          "340 m/s",
-          "Cả A và B đều đúng"
+          "worse",
+          "better",
+          "resolved",
+          "invisible"
         ],
         "correctAnswer": "0"
       },
       {
-        "question": "Chất nào sau đây là chất bán dẫn tiêu biểu?",
+        "question": "\"Plausible\" theories are considered to be ______.",
         "options": [
-          "Silicon (Si)",
-          "Thủy tinh",
-          "Đồng (Cu)",
-          "Sắt (Fe)"
+          "reasonable and believable",
+          "completely impossible",
+          "humorous",
+          "disproven"
         ],
         "correctAnswer": "0"
       },
       {
-        "question": "Ai là người đề xuất thuyết lượng tử ánh sáng (photon)?",
+        "question": "An \"ephemeral\" pleasure is one that is ______.",
         "options": [
-          "Isaac Newton",
-          "Max Planck",
-          "Albert Einstein",
-          "Niels Bohr"
-        ],
-        "correctAnswer": "2"
-      },
-      {
-        "question": "Theo thuyết lượng tử, năng lượng của một photon tỷ lệ thuận với?",
-        "options": [
-          "Vận tốc ánh sáng",
-          "Bước sóng ánh sáng",
-          "Cường độ ánh sáng",
-          "Tần số ánh sáng"
-        ],
-        "correctAnswer": "3"
-      },
-      {
-        "question": "Nguyên lý bất định Heisenberg phát biểu rằng không thể xác định đồng thời chính xác điều gì của hạt vi mô?",
-        "options": [
-          "Năng lượng và thời gian",
-          "Cả A và C đều đúng",
-          "Vị trí và động lượng",
-          "Khối lượng và vận tốc"
-        ],
-        "correctAnswer": "2"
-      },
-      {
-        "question": "Hạt electron có điện tích là gì?",
-        "options": [
-          "Âm",
-          "Dương",
-          "Có thể âm hoặc dương",
-          "Trung hòa"
+          "fleeting and short-lived",
+          "eternal and everlasting",
+          "destructive",
+          "expensive"
         ],
         "correctAnswer": "0"
       },
       {
-        "question": "Hiện tượng quang điện ngoài xảy ra khi?",
+        "question": "\"Benevolent\" leaders are characterized by their ______.",
         "options": [
-          "Kim loại bị nung nóng phát sáng",
-          "Ánh sáng chiếu vào kim loại làm bật electron ra",
-          "Hạt nhân bị phân hạch",
-          "Electron hấp thụ nhiệt và bay ra"
-        ],
-        "correctAnswer": "1"
-      },
-      {
-        "question": "Hạt cơ bản cấu tạo nên proton và neutron là gì?",
-        "options": [
-          "Quark",
-          "Lepton",
-          "Electron",
-          "Boson"
+          "kindness and generosity",
+          "greed and selfishness",
+          "cruelty",
+          "indifference"
         ],
         "correctAnswer": "0"
       },
       {
-        "question": "Trong nguyên tử Bohr, khi electron chuyển từ quỹ đạo cao xuống quỹ đạo thấp, nó sẽ?",
+        "question": "To \"scrutinize\" a legal contract means to ______.",
         "options": [
-          "Hấp thụ một photon",
-          "Phát ra một photon",
-          "Không thay đổi năng lượng",
-          "Trở thành proton"
-        ],
-        "correctAnswer": "1"
-      },
-      {
-        "question": "Thí nghiệm giao thoa khe Young chứng minh tính chất gì của ánh sáng?",
-        "options": [
-          "Tính chất hạt",
-          "Tính chất lượng tử",
-          "Tính chất điện từ",
-          "Tính chất sóng"
-        ],
-        "correctAnswer": "3"
-      },
-      {
-        "question": "Vận tốc ánh sáng trong chân không xấp xỉ bằng bao nhiêu?",
-        "options": [
-          "340 m/s",
-          "3x10^5 km/s",
-          "3x10^8 m/s",
-          "Cả A và B đều đúng"
-        ],
-        "correctAnswer": "2"
-      },
-      {
-        "question": "Chất nào sau đây là chất bán dẫn tiêu biểu?",
-        "options": [
-          "Sắt (Fe)",
-          "Silicon (Si)",
-          "Thủy tinh",
-          "Đồng (Cu)"
-        ],
-        "correctAnswer": "1"
-      },
-      {
-        "question": "Ai là người đề xuất thuyết lượng tử ánh sáng (photon)?",
-        "options": [
-          "Isaac Newton",
-          "Albert Einstein",
-          "Niels Bohr",
-          "Max Planck"
-        ],
-        "correctAnswer": "1"
-      },
-      {
-        "question": "Theo thuyết lượng tử, năng lượng của một photon tỷ lệ thuận với?",
-        "options": [
-          "Bước sóng ánh sáng",
-          "Vận tốc ánh sáng",
-          "Tần số ánh sáng",
-          "Cường độ ánh sáng"
-        ],
-        "correctAnswer": "2"
-      },
-      {
-        "question": "Nguyên lý bất định Heisenberg phát biểu rằng không thể xác định đồng thời chính xác điều gì của hạt vi mô?",
-        "options": [
-          "Vị trí và động lượng",
-          "Cả A và C đều đúng",
-          "Năng lượng và thời gian",
-          "Khối lượng và vận tốc"
+          "examine it very carefully",
+          "sign it without reading",
+          "destroy it",
+          "lose it"
         ],
         "correctAnswer": "0"
       },
       {
-        "question": "Hạt electron có điện tích là gì?",
+        "question": "Which transition marker indicates a contrasting perspective?",
         "options": [
-          "Dương",
-          "Âm",
-          "Trung hòa",
-          "Có thể âm hoặc dương"
-        ],
-        "correctAnswer": "1"
-      },
-      {
-        "question": "Hiện tượng quang điện ngoài xảy ra khi?",
-        "options": [
-          "Ánh sáng chiếu vào kim loại làm bật electron ra",
-          "Electron hấp thụ nhiệt và bay ra",
-          "Hạt nhân bị phân hạch",
-          "Kim loại bị nung nóng phát sáng"
+          "Conversely",
+          "Furthermore",
+          "Moreover",
+          "Similarly"
         ],
         "correctAnswer": "0"
       },
       {
-        "question": "Hạt cơ bản cấu tạo nên proton và neutron là gì?",
+        "question": "\"To illustrate this point\" is used by authors to ______.",
         "options": [
-          "Boson",
-          "Lepton",
-          "Electron",
-          "Quark"
-        ],
-        "correctAnswer": "3"
-      },
-      {
-        "question": "Trong nguyên tử Bohr, khi electron chuyển từ quỹ đạo cao xuống quỹ đạo thấp, nó sẽ?",
-        "options": [
-          "Hấp thụ một photon",
-          "Trở thành proton",
-          "Không thay đổi năng lượng",
-          "Phát ra một photon"
-        ],
-        "correctAnswer": "3"
-      },
-      {
-        "question": "Thí nghiệm giao thoa khe Young chứng minh tính chất gì của ánh sáng?",
-        "options": [
-          "Tính chất sóng",
-          "Tính chất hạt",
-          "Tính chất điện từ",
-          "Tính chất lượng tử"
+          "provide a specific example",
+          "conclude the paper",
+          "contradict themselves",
+          "ask a question"
         ],
         "correctAnswer": "0"
       },
       {
-        "question": "Vận tốc ánh sáng trong chân không xấp xỉ bằng bao nhiêu?",
+        "question": "\"Notwithstanding\" is synonymous with ______.",
         "options": [
-          "340 m/s",
-          "3x10^5 km/s",
-          "Cả A và B đều đúng",
-          "3x10^8 m/s"
-        ],
-        "correctAnswer": "3"
-      },
-      {
-        "question": "Chất nào sau đây là chất bán dẫn tiêu biểu?",
-        "options": [
-          "Silicon (Si)",
-          "Đồng (Cu)",
-          "Sắt (Fe)",
-          "Thủy tinh"
+          "In spite of",
+          "Because of",
+          "In order to",
+          "As a consequence of"
         ],
         "correctAnswer": "0"
       },
       {
-        "question": "Ai là người đề xuất thuyết lượng tử ánh sáng (photon)?",
+        "question": "The phrase \"On the contrary\" is used to ______.",
         "options": [
-          "Niels Bohr",
-          "Isaac Newton",
-          "Max Planck",
-          "Albert Einstein"
-        ],
-        "correctAnswer": "3"
-      },
-      {
-        "question": "Theo thuyết lượng tử, năng lượng của một photon tỷ lệ thuận với?",
-        "options": [
-          "Tần số ánh sáng",
-          "Vận tốc ánh sáng",
-          "Cường độ ánh sáng",
-          "Bước sóng ánh sáng"
+          "emphasize the opposite of what was just stated",
+          "agree wholeheartedly",
+          "change to a completely unrelated subject",
+          "repeat the same idea"
         ],
         "correctAnswer": "0"
       },
       {
-        "question": "Nguyên lý bất định Heisenberg phát biểu rằng không thể xác định đồng thời chính xác điều gì của hạt vi mô?",
+        "question": "\"Hence\" and \"Consequently\" indicate ______.",
         "options": [
-          "Vị trí và động lượng",
-          "Năng lượng và thời gian",
-          "Khối lượng và vận tốc",
-          "Cả A và C đều đúng"
+          "a logical cause-and-effect relationship",
+          "an unexpected contradiction",
+          "an chronological sequence",
+          "an emotional outburst"
         ],
         "correctAnswer": "0"
       },
       {
-        "question": "Hạt electron có điện tích là gì?",
+        "question": "\"It is widely contended that...\" indicates that an opinion is ______.",
         "options": [
-          "Có thể âm hoặc dương",
-          "Dương",
-          "Âm",
-          "Trung hòa"
-        ],
-        "correctAnswer": "2"
-      },
-      {
-        "question": "Hiện tượng quang điện ngoài xảy ra khi?",
-        "options": [
-          "Ánh sáng chiếu vào kim loại làm bật electron ra",
-          "Kim loại bị nung nóng phát sáng",
-          "Hạt nhân bị phân hạch",
-          "Electron hấp thụ nhiệt và bay ra"
+          "argued or asserted by many experts",
+          "untrue and foolish",
+          "unheard of",
+          "proven by law"
         ],
         "correctAnswer": "0"
       },
       {
-        "question": "Hạt cơ bản cấu tạo nên proton và neutron là gì?",
+        "question": "What is the function of the transition \"Hitherto\"?",
         "options": [
-          "Electron",
-          "Boson",
-          "Lepton",
-          "Quark"
-        ],
-        "correctAnswer": "3"
-      },
-      {
-        "question": "Trong nguyên tử Bohr, khi electron chuyển từ quỹ đạo cao xuống quỹ đạo thấp, nó sẽ?",
-        "options": [
-          "Phát ra một photon",
-          "Không thay đổi năng lượng",
-          "Hấp thụ một photon",
-          "Trở thành proton"
+          "Up until this point in time",
+          "In the far future",
+          "On the other side",
+          "Without any doubt"
         ],
         "correctAnswer": "0"
       },
       {
-        "question": "Thí nghiệm giao thoa khe Young chứng minh tính chất gì của ánh sáng?",
+        "question": "\"In light of the recent statistical data,...\" means: ______",
         "options": [
-          "Tính chất điện từ",
-          "Tính chất lượng tử",
-          "Tính chất sóng",
-          "Tính chất hạt"
-        ],
-        "correctAnswer": "2"
-      },
-      {
-        "question": "Vận tốc ánh sáng trong chân không xấp xỉ bằng bao nhiêu?",
-        "options": [
-          "3x10^5 km/s",
-          "Cả A và B đều đúng",
-          "3x10^8 m/s",
-          "340 m/s"
-        ],
-        "correctAnswer": "2"
-      },
-      {
-        "question": "Chất nào sau đây là chất bán dẫn tiêu biểu?",
-        "options": [
-          "Thủy tinh",
-          "Silicon (Si)",
-          "Đồng (Cu)",
-          "Sắt (Fe)"
-        ],
-        "correctAnswer": "1"
-      },
-      {
-        "question": "Ai là người đề xuất thuyết lượng tử ánh sáng (photon)?",
-        "options": [
-          "Max Planck",
-          "Albert Einstein",
-          "Isaac Newton",
-          "Niels Bohr"
-        ],
-        "correctAnswer": "1"
-      },
-      {
-        "question": "Theo thuyết lượng tử, năng lượng của một photon tỷ lệ thuận với?",
-        "options": [
-          "Vận tốc ánh sáng",
-          "Bước sóng ánh sáng",
-          "Cường độ ánh sáng",
-          "Tần số ánh sáng"
-        ],
-        "correctAnswer": "3"
-      },
-      {
-        "question": "Nguyên lý bất định Heisenberg phát biểu rằng không thể xác định đồng thời chính xác điều gì của hạt vi mô?",
-        "options": [
-          "Vị trí và động lượng",
-          "Năng lượng và thời gian",
-          "Khối lượng và vận tốc",
-          "Cả A và C đều đúng"
+          "Considering the newly available information",
+          "Ignoring the numbers",
+          "Turning on the lamp",
+          "Because of darkness"
         ],
         "correctAnswer": "0"
       },
       {
-        "question": "Hạt electron có điện tích là gì?",
+        "question": "Which word expresses concession before stating a main point?",
         "options": [
-          "Trung hòa",
-          "Dương",
-          "Có thể âm hoặc dương",
-          "Âm"
-        ],
-        "correctAnswer": "3"
-      },
-      {
-        "question": "Hiện tượng quang điện ngoài xảy ra khi?",
-        "options": [
-          "Ánh sáng chiếu vào kim loại làm bật electron ra",
-          "Hạt nhân bị phân hạch",
-          "Kim loại bị nung nóng phát sáng",
-          "Electron hấp thụ nhiệt và bay ra"
+          "Granted that",
+          "Therefore",
+          "Consequently",
+          "Namely"
         ],
         "correctAnswer": "0"
       },
       {
-        "question": "Hạt cơ bản cấu tạo nên proton và neutron là gì?",
+        "question": "\"To recap\" at the end of a lecture means: ______",
         "options": [
-          "Quark",
-          "Boson",
-          "Lepton",
-          "Electron"
+          "To briefly summarize the key points",
+          "To retake the test",
+          "To ask for homework",
+          "To wear a hat"
         ],
         "correctAnswer": "0"
-      },
-      {
-        "question": "Trong nguyên tử Bohr, khi electron chuyển từ quỹ đạo cao xuống quỹ đạo thấp, nó sẽ?",
-        "options": [
-          "Hấp thụ một photon",
-          "Không thay đổi năng lượng",
-          "Trở thành proton",
-          "Phát ra một photon"
-        ],
-        "correctAnswer": "3"
-      },
-      {
-        "question": "Thí nghiệm giao thoa khe Young chứng minh tính chất gì của ánh sáng?",
-        "options": [
-          "Tính chất sóng",
-          "Tính chất hạt",
-          "Tính chất lượng tử",
-          "Tính chất điện từ"
-        ],
-        "correctAnswer": "0"
-      },
-      {
-        "question": "Vận tốc ánh sáng trong chân không xấp xỉ bằng bao nhiêu?",
-        "options": [
-          "Cả A và B đều đúng",
-          "3x10^5 km/s",
-          "3x10^8 m/s",
-          "340 m/s"
-        ],
-        "correctAnswer": "2"
-      },
-      {
-        "question": "Chất nào sau đây là chất bán dẫn tiêu biểu?",
-        "options": [
-          "Thủy tinh",
-          "Sắt (Fe)",
-          "Silicon (Si)",
-          "Đồng (Cu)"
-        ],
-        "correctAnswer": "2"
       }
     ]
   }
