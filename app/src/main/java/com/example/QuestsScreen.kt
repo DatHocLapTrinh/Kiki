@@ -31,6 +31,7 @@ import kotlinx.coroutines.delay
 
 import android.widget.Toast
 import androidx.compose.ui.platform.LocalContext
+import com.example.ui.WeakPointsClinicDialog
 import com.example.viewmodel.StudyViewModel
 
 data class QuestData(
@@ -58,9 +59,12 @@ fun QuestsScreen(viewModel: StudyViewModel) {
     val context = LocalContext.current
     val haptic = androidx.compose.ui.platform.LocalHapticFeedback.current
     val strings = LocalAppStrings.current
+    val isEnglish by viewModel.isEnglish.observeAsState(false)
     val currentUserId by viewModel.currentUserId.observeAsState(-1L)
     val dailyTasks by viewModel.dailyTasks.observeAsState(emptyList())
+    val weakPoints by viewModel.weakPoints.observeAsState(emptyList())
     val chestOpened by viewModel.isDailyChestOpened.observeAsState(false)
+    var showClinicDialog by remember { mutableStateOf(false) }
 
     LaunchedEffect(currentUserId) {
         if (currentUserId != -1L) viewModel.refreshDailyTasks()
@@ -140,6 +144,58 @@ fun QuestsScreen(viewModel: StudyViewModel) {
                 contentPadding = PaddingValues(start = 24.dp, end = 24.dp, top = 8.dp, bottom = 120.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
+                if (weakPoints.isNotEmpty()) {
+                    item(key = "weak_points_clinic_banner") {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clip(RoundedCornerShape(20.dp))
+                                .background(Brush.horizontalGradient(listOf(Color(0xFF2B1017), Color(0xFF1E1428))))
+                                .border(1.dp, Color(0x80FF6B6B), RoundedCornerShape(20.dp))
+                                .clickable {
+                                    haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.TextHandleMove)
+                                    showClinicDialog = true
+                                }
+                                .padding(16.dp)
+                        ) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.SpaceBetween
+                            ) {
+                                Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(1f)) {
+                                    Box(
+                                        modifier = Modifier
+                                            .size(44.dp)
+                                            .clip(CircleShape)
+                                            .background(Color(0x33FF6B6B)),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Icon(Icons.Default.Healing, contentDescription = null, tint = Color(0xFFFF6B6B), modifier = Modifier.size(22.dp))
+                                    }
+                                    Spacer(modifier = Modifier.width(12.dp))
+                                    Column {
+                                        Text(
+                                            text = if (isEnglish) "WEAK-POINT CLINIC 🏥" else "PHÒNG KHÁM LỖI SAI 🏥",
+                                            color = Color(0xFFFF6B6B),
+                                            fontSize = 11.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            letterSpacing = 1.sp
+                                        )
+                                        Text(
+                                            text = if (isEnglish) "${weakPoints.size} Mistakes Ready for Rehab (+Mana)" else "${weakPoints.size} Lỗi cần chữa lành (+Mana, XP)",
+                                            color = Color.White,
+                                            fontSize = 14.sp,
+                                            fontWeight = FontWeight.Bold
+                                        )
+                                    }
+                                }
+                                Icon(Icons.AutoMirrored.Filled.ArrowForward, contentDescription = null, tint = Color(0xFFFF6B6B), modifier = Modifier.size(20.dp))
+                            }
+                        }
+                    }
+                }
+
                 items(quests, key = { it.taskId }) { quest ->
                     QuestItemCard(
                         quest = quest,
@@ -152,6 +208,14 @@ fun QuestsScreen(viewModel: StudyViewModel) {
                 }
             }
         }
+    }
+
+    if (showClinicDialog) {
+        WeakPointsClinicDialog(
+            viewModel = viewModel,
+            isEnglish = isEnglish,
+            onDismiss = { showClinicDialog = false }
+        )
     }
 }
 

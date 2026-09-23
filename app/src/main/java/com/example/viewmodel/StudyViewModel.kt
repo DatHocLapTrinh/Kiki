@@ -29,6 +29,7 @@ import java.util.Locale
 import com.example.audio.TextToSpeechManager
 import com.example.audio.SoundEffectManager
 import com.example.sqlite.room.VocabularyEntity
+import com.example.sqlite.room.WeakPointEntity
 import javax.inject.Inject
 
 @HiltViewModel
@@ -40,7 +41,7 @@ class StudyViewModel @Inject constructor(
     @param:ApplicationContext private val appContext: Context
 ) : ViewModel() {
 
-    private val prefs = appContext.getSharedPreferences("StudyMentorAiSettings", Context.MODE_PRIVATE)
+    private val prefs = appContext.getSharedPreferences(SoundEffectManager.PREFS_NAME, Context.MODE_PRIVATE)
 
     // --- State ---
     private val _history = MutableLiveData<List<QAItem>>(emptyList())
@@ -109,6 +110,16 @@ class StudyViewModel @Inject constructor(
     private val _streak = MutableLiveData(0)
     val streak: LiveData<Int> = _streak
     fun setStreak(streak: Int) { _streak.value = streak }
+
+    private val _streakShields = MutableLiveData(1)
+    val streakShields: LiveData<Int> = _streakShields
+
+    private val _shieldUsedNotice = MutableLiveData(false)
+    val shieldUsedNotice: LiveData<Boolean> = _shieldUsedNotice
+    fun dismissShieldNotice() { _shieldUsedNotice.value = false }
+
+    private val _weakPoints = MutableLiveData<List<WeakPointEntity>>(emptyList())
+    val weakPoints: LiveData<List<WeakPointEntity>> = _weakPoints
 
     private val _avatarUri = MutableLiveData<String?>(null)
     val avatarUri: LiveData<String?> = _avatarUri
@@ -303,6 +314,14 @@ class StudyViewModel @Inject constructor(
                 if (results.isNotEmpty() && correctCount == results.size) {
                     recordDailyTaskProgress(userId, "PERFECT_SCORE", 1)
                 }
+
+                // Tự động gom các câu làm sai vào Kho Điểm Yếu (Smart Mistake Bank)
+                for (item in results) {
+                    if (item.selectedIndex != item.correctIndex) {
+                        repository.recordWeakPoint(userId, item.question, item.options, item.correctIndex)
+                    }
+                }
+                refreshWeakPoints()
                 refreshDailyTasks()
                 checkAndUpdateStreak(userId)
             }
@@ -338,6 +357,7 @@ class StudyViewModel @Inject constructor(
                     _rankTitle.value = calculateRankTitle(profile.totalXp)
                     _mana.value = profile.mana
                     _streak.value = profile.currentStreak
+                    _streakShields.value = profile.streakShields
                     _avatarUri.value = profile.avatarUri
                     _studyMotto.value = profile.studyMotto ?: ""
                 }
@@ -349,6 +369,7 @@ class StudyViewModel @Inject constructor(
                 refreshHistory(userId)
                 checkAndUpdateStreak(userId)
                 refreshVocabulary()
+                refreshWeakPoints()
             }
         }
     }
@@ -559,6 +580,8 @@ class StudyViewModel @Inject constructor(
             val todayStr = today()
             val lastDate = profile.lastActiveDate
             val currentStreak = profile.currentStreak
+            val shields = profile.streakShields
+            _streakShields.value = shields
 
             val newStreak = when {
                 lastDate == null -> 1
@@ -570,9 +593,17 @@ class StudyViewModel @Inject constructor(
                         val dToday = sdf.parse(todayStr)
                         if (dLast != null && dToday != null) {
                             val diffInDays = ((dToday.time - dLast.time) / (1000 * 60 * 60 * 24)).toInt()
-                            when (diffInDays) {
-                                1 -> currentStreak + 1
-                                0 -> currentStreak.coerceAtLeast(1)
+                            when {
+                                diffInDays == 1 -> currentStreak + 1
+                                diffInDays == 0 -> currentStreak.coerceAtLeast(1)
+                                shields > 0 -> {
+                                    // Bùa bảo vệ chuỗi ngày (Streak Shield) kích hoạt tự động!
+                                    val remainingShields = shields - 1
+                                    repository.updateStreakShields(userId, remainingShields)
+                                    _streakShields.value = remainingShields
+                                    _shieldUsedNotice.value = true
+                                    currentStreak.coerceAtLeast(1)
+                                }
                                 else -> 1
                             }
                         } else 1
@@ -583,6 +614,25 @@ class StudyViewModel @Inject constructor(
             }
             repository.updateStreak(userId, newStreak, todayStr)
             _streak.value = newStreak
+        }
+    }
+
+    fun refreshWeakPoints() {
+        val userId = _currentUserId.value ?: return
+        if (userId == -1L) return
+        viewModelScope.launch {
+            _weakPoints.value = repository.getWeakPoints(userId)
+        }
+    }
+
+    fun resolveWeakPoint(weakId: Long) {
+        viewModelScope.launch {
+            repository.deleteWeakPoint(weakId)
+            addXp(25)
+            val curMana = _mana.value ?: 20
+            setMana((curMana + 5).coerceAtMost(30))
+            soundEffectManager.playCorrect(3)
+            refreshWeakPoints()
         }
     }
 

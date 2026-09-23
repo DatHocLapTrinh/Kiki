@@ -48,6 +48,10 @@ fun SettingsDialog(
     val context = LocalContext.current
     val currentApiKey = viewModel?.userApiKey?.observeAsState("")?.value ?: ""
     val batterySaverEnabled = viewModel?.batterySaver?.observeAsState(false)?.value ?: false
+    val soundPrefs = remember {
+        context.getSharedPreferences(com.example.audio.SoundEffectManager.PREFS_NAME, android.content.Context.MODE_PRIVATE)
+    }
+    var soundEnabled by remember { mutableStateOf(soundPrefs.getBoolean("sound_enabled", true)) }
     var apiKeyInput by remember(currentApiKey) { mutableStateOf(currentApiKey) }
     var keyVisible by remember { mutableStateOf(false) }
 
@@ -212,7 +216,16 @@ fun SettingsDialog(
                     onChanged = { viewModel?.setBatterySaver(it) }
                 )
                 SettingsToggle("Nhạc nền (BGM)", Icons.Default.MusicNote, true)
-                SettingsToggle("Hiệu ứng âm thanh", Icons.AutoMirrored.Filled.VolumeUp, true)
+                SettingsToggle(
+                    title = "Hiệu ứng âm thanh",
+                    icon = Icons.AutoMirrored.Filled.VolumeUp,
+                    initialValue = soundEnabled,
+                    onChanged = { enabled ->
+                        soundEnabled = enabled
+                        soundPrefs.edit().putBoolean("sound_enabled", enabled).apply()
+                        viewModel?.soundEffectManager?.setSoundEnabled(enabled)
+                    }
+                )
                 SettingsToggle("Rung (Haptics)", Icons.Default.Vibration, true)
                 SettingsToggle("Nhắc nhở học tập", Icons.Default.Notifications, false)
 

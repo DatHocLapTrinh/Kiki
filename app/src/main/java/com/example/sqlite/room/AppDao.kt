@@ -121,5 +121,31 @@ interface AppDao {
 
     @Query("SELECT COUNT(*) FROM vocabulary_notes WHERE user_id = :userId AND word = :word")
     suspend fun isWordBookmarked(userId: Long, word: String): Int
+
+    @Query("UPDATE user_profiles SET streak_shields = :shields WHERE user_id = :userId")
+    suspend fun updateStreakShields(userId: Long, shields: Int): Int
+
+    // --- Weak Points (Smart Mistake Bank) ---
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertWeakPoint(point: WeakPointEntity): Long
+
+    @Query("SELECT * FROM weak_points WHERE user_id = :userId ORDER BY wrong_count DESC, last_failed_at DESC")
+    suspend fun getWeakPoints(userId: Long): List<WeakPointEntity>
+
+    @Query("SELECT * FROM weak_points WHERE user_id = :userId AND question = :question LIMIT 1")
+    suspend fun getWeakPointByQuestion(userId: Long, question: String): WeakPointEntity?
+
+    @Query("UPDATE weak_points SET wrong_count = wrong_count + 1, last_failed_at = :failedAt WHERE weak_id = :weakId")
+    suspend fun incrementWeakPointCount(weakId: Long, failedAt: String): Int
+
+    @Query("DELETE FROM weak_points WHERE weak_id = :weakId")
+    suspend fun deleteWeakPoint(weakId: Long): Int
+
+    @Query("DELETE FROM weak_points WHERE user_id = :userId")
+    suspend fun clearWeakPoints(userId: Long): Int
+
+    @Query("SELECT COUNT(*) FROM weak_points WHERE user_id = :userId")
+    suspend fun getWeakPointsCount(userId: Long): Int
 }
+
 

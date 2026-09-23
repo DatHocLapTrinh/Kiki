@@ -365,5 +365,41 @@ class DataRepository @Inject constructor(
     suspend fun isWordBookmarked(userId: Long, word: String): Boolean = withContext(Dispatchers.IO) {
         dao.isWordBookmarked(userId, word) > 0
     }
+
+    suspend fun updateStreakShields(userId: Long, shields: Int): Boolean = withContext(Dispatchers.IO) {
+        dao.updateStreakShields(userId, shields) > 0
+    }
+
+    suspend fun recordWeakPoint(userId: Long, question: String, options: List<String>, correctIndex: Int): Boolean = withContext(Dispatchers.IO) {
+        val now = SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault()).format(Date())
+        val existing = dao.getWeakPointByQuestion(userId, question)
+        if (existing != null) {
+            dao.incrementWeakPointCount(existing.weakId, now) > 0
+        } else {
+            val jsonArr = org.json.JSONArray(options)
+            val wp = WeakPointEntity(
+                userId = userId,
+                question = question,
+                optionsJson = jsonArr.toString(),
+                correctIndex = correctIndex,
+                wrongCount = 1,
+                lastFailedAt = now
+            )
+            dao.insertWeakPoint(wp) > 0
+        }
+    }
+
+    suspend fun getWeakPoints(userId: Long): List<WeakPointEntity> = withContext(Dispatchers.IO) {
+        dao.getWeakPoints(userId)
+    }
+
+    suspend fun deleteWeakPoint(weakId: Long): Boolean = withContext(Dispatchers.IO) {
+        dao.deleteWeakPoint(weakId) > 0
+    }
+
+    suspend fun clearWeakPoints(userId: Long): Boolean = withContext(Dispatchers.IO) {
+        dao.clearWeakPoints(userId) > 0
+    }
 }
+
 

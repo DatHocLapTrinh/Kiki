@@ -32,7 +32,15 @@ import androidx.compose.ui.unit.sp
 import android.widget.Toast
 import coil.compose.AsyncImage
 import com.example.model.QuestItem
+import com.example.ui.ConfettiEffect
 import com.example.viewmodel.StudyViewModel
+
+private data class ComboBadgeInfo(
+    val text: String,
+    val bg: Color,
+    val border: Color,
+    val bonusXp: Int
+)
 
 @Composable
 fun QuestScreen(viewModel: StudyViewModel, onFinish: () -> Unit) {
@@ -58,6 +66,8 @@ fun QuestScreen(viewModel: StudyViewModel, onFinish: () -> Unit) {
     var showExitDialog by remember { mutableStateOf(false) }
     var mascotSpeech by remember { mutableStateOf<String?>(null) }
     var isSavedToVault by remember(currentQuestion) { mutableStateOf(false) }
+    var consecutiveCorrect by remember { mutableIntStateOf(0) }
+    var showConfetti by remember { mutableStateOf(false) }
 
     // Map lưu câu trả lời bất biến của người dùng
     val userAnswers = remember { mutableStateMapOf<Int, Int>() }
@@ -247,7 +257,7 @@ fun QuestScreen(viewModel: StudyViewModel, onFinish: () -> Unit) {
                     Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.fillMaxWidth()) {
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
-                            modifier = Modifier.padding(bottom = 12.dp)
+                            modifier = Modifier.padding(bottom = 8.dp)
                         ) {
                             Text(
                                 text = "${strings.questPrefix}${qIdx + 1}: $chapterTitle",
@@ -261,7 +271,7 @@ fun QuestScreen(viewModel: StudyViewModel, onFinish: () -> Unit) {
                             IconButton(
                                 onClick = {
                                     haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                                    viewModel.ttsManager.speak(currentQ.question)
+                                    viewModel.ttsManager.speak(currentQ.question, isSlow = false)
                                 },
                                 modifier = Modifier
                                     .size(32.dp)
@@ -273,6 +283,46 @@ fun QuestScreen(viewModel: StudyViewModel, onFinish: () -> Unit) {
                                     contentDescription = "Speak Question",
                                     tint = if (isSpeaking) Color(0xFF51FAC1) else Color(0xFFFFD166),
                                     modifier = Modifier.size(18.dp)
+                                )
+                            }
+                            Spacer(modifier = Modifier.width(6.dp))
+                            // Nút nghe phát âm chậm ELSA Style 0.68x
+                            IconButton(
+                                onClick = {
+                                    haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                                    viewModel.ttsManager.speak(currentQ.question, isSlow = true)
+                                },
+                                modifier = Modifier
+                                    .size(32.dp)
+                                    .clip(CircleShape)
+                                    .background(Color(0x33FFB703))
+                            ) {
+                                Text("🐢", fontSize = 15.sp)
+                            }
+                        }
+
+                        // Badge chuỗi thắng liên tiếp (Combo Multiplier)
+                        if (consecutiveCorrect >= 2) {
+                            val badge = when (consecutiveCorrect) {
+                                2 -> ComboBadgeInfo("🔥 COMBO x2 (+20 XP)", Color(0x33FF9E00), Color(0xFFFF9E00), 20)
+                                3 -> ComboBadgeInfo("🔥 COMBO x3 (+30 XP)", Color(0x44FF5722), Color(0xFFFF5722), 30)
+                                4 -> ComboBadgeInfo("⚡ SIÊU COMBO x4 (+40 XP)", Color(0x44E040FB), Color(0xFFE040FB), 40)
+                                else -> ComboBadgeInfo("🌟 HUYỀN THOẠI x5 (+60 XP)", Color(0x44FFD700), Color(0xFFFFD700), 60)
+                            }
+                            Box(
+                                modifier = Modifier
+                                    .padding(bottom = 10.dp)
+                                    .clip(RoundedCornerShape(12.dp))
+                                    .background(badge.bg)
+                                    .border(1.dp, badge.border, RoundedCornerShape(12.dp))
+                                    .padding(horizontal = 14.dp, vertical = 5.dp)
+                            ) {
+                                Text(
+                                    text = badge.text,
+                                    color = Color.White,
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.ExtraBold,
+                                    letterSpacing = 1.sp
                                 )
                             }
                         }
@@ -360,9 +410,14 @@ fun QuestScreen(viewModel: StudyViewModel, onFinish: () -> Unit) {
                                         val isCorrect = selectedOption == currentQ.correctIndex
                                         isCurrentCorrect = isCorrect
                                         if (isCorrect) {
+                                            consecutiveCorrect++
                                             haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                                            viewModel.soundEffectManager.playCorrect()
+                                            viewModel.soundEffectManager.playCorrect(consecutiveCorrect)
+                                            if (consecutiveCorrect >= 3) {
+                                                showConfetti = true
+                                            }
                                         } else {
+                                            consecutiveCorrect = 0
                                             haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
                                             viewModel.soundEffectManager.playIncorrect()
                                         }
@@ -448,6 +503,22 @@ fun QuestScreen(viewModel: StudyViewModel, onFinish: () -> Unit) {
                     )
                 }
 
+                if (isCurrentCorrect && consecutiveCorrect >= 2) {
+                    val bonus = when (consecutiveCorrect) {
+                        2 -> "+20 XP"
+                        3 -> "+30 XP"
+                        4 -> "+40 XP"
+                        else -> "+60 XP (MAX)"
+                    }
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = if (isEnglish) "🔥 ${consecutiveCorrect}x Streak Combo! Bonus $bonus!" else "🔥 Combo ${consecutiveCorrect}x liên tiếp! Nhận thưởng $bonus!",
+                        color = Color(0xFFFFD166),
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+
                 if (!isCurrentCorrect) {
                     Spacer(modifier = Modifier.height(6.dp))
                     val correctText = currentQ.options.getOrNull(currentQ.correctIndex) ?: ""
@@ -463,14 +534,26 @@ fun QuestScreen(viewModel: StudyViewModel, onFinish: () -> Unit) {
                             fontWeight = FontWeight.SemiBold,
                             modifier = Modifier.weight(1f)
                         )
-                        IconButton(
-                            onClick = {
-                                haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                                viewModel.ttsManager.speak(correctText)
-                            },
-                            modifier = Modifier.size(32.dp)
-                        ) {
-                            Icon(Icons.AutoMirrored.Filled.VolumeUp, contentDescription = "Listen", tint = Color(0xFFFFD166), modifier = Modifier.size(20.dp))
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            IconButton(
+                                onClick = {
+                                    haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                                    viewModel.ttsManager.speak(correctText, isSlow = false)
+                                },
+                                modifier = Modifier.size(32.dp)
+                            ) {
+                                Icon(Icons.AutoMirrored.Filled.VolumeUp, contentDescription = "Listen", tint = Color(0xFFFFD166), modifier = Modifier.size(20.dp))
+                            }
+                            Spacer(modifier = Modifier.width(4.dp))
+                            IconButton(
+                                onClick = {
+                                    haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                                    viewModel.ttsManager.speak(correctText, isSlow = true)
+                                },
+                                modifier = Modifier.size(32.dp)
+                            ) {
+                                Text("🐢", fontSize = 15.sp)
+                            }
                         }
                     }
                 }
@@ -581,5 +664,11 @@ fun QuestScreen(viewModel: StudyViewModel, onFinish: () -> Unit) {
                 }
             )
         }
+
+        // Confetti Effect for milestone combos
+        ConfettiEffect(
+            visible = showConfetti,
+            onDismiss = { showConfetti = false }
+        )
     }
 }

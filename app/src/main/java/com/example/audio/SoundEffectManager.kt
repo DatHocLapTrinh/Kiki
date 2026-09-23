@@ -19,26 +19,49 @@ import kotlin.math.sin
 class SoundEffectManager @Inject constructor(
     @param:ApplicationContext private val context: Context
 ) {
+    companion object {
+        const val PREFS_NAME = "ai_study_mentor_prefs"
+        const val KEY_SOUND_ENABLED = "sound_enabled"
+    }
+
     private val prefs: SharedPreferences =
-        context.getSharedPreferences("ai_study_mentor_prefs", Context.MODE_PRIVATE)
+        context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
 
     private val sampleRate = 44100
     private val scope = CoroutineScope(Dispatchers.Default)
 
-    // Pre-rendered audio buffers
-    private val correctTrack: AudioTrack by lazy { createTrack(generateCorrectPcm()) }
+    // Pre-rendered combo tracks (pitch escalation)
+    private val comboTracks: List<AudioTrack> by lazy {
+        val baseFreqs = listOf(
+            523.25 to 783.99,   // Combo 1: C5 -> G5
+            587.33 to 880.00,   // Combo 2: D5 -> A5
+            659.25 to 987.77,   // Combo 3: E5 -> B5
+            698.46 to 1046.50,  // Combo 4: F5 -> C6
+            783.99 to 1174.66   // Combo 5+: G5 -> D6
+        )
+        baseFreqs.map { (f1, f2) -> createTrack(generatePitchPcm(f1, f2)) }
+    }
+
     private val incorrectTrack: AudioTrack by lazy { createTrack(generateIncorrectPcm()) }
     private val fanfareTrack: AudioTrack by lazy { createTrack(generateFanfarePcm()) }
     private val clickTrack: AudioTrack by lazy { createTrack(generateClickPcm()) }
 
-    private fun isSoundEnabled(): Boolean {
-        return prefs.getBoolean("sound_enabled", true)
+    fun isSoundEnabled(): Boolean {
+        return prefs.getBoolean(KEY_SOUND_ENABLED, true)
     }
 
-    fun playCorrect() {
+    fun setSoundEnabled(enabled: Boolean) {
+        prefs.edit().putBoolean(KEY_SOUND_ENABLED, enabled).apply()
+    }
+
+    /**
+     * Phát âm thanh đúng với cao độ tăng dần theo chuỗi Combo
+     */
+    fun playCorrect(combo: Int = 1) {
         if (!isSoundEnabled()) return
         scope.launch {
-            playTrack(correctTrack)
+            val trackIndex = (combo - 1).coerceIn(0, comboTracks.size - 1)
+            playTrack(comboTracks[trackIndex])
         }
     }
 
@@ -99,17 +122,16 @@ class SoundEffectManager @Inject constructor(
     }
 
     /**
-     * Âm thanh Ding vui tươi khi chọn đúng (2 nốt A5 -> E6 ngân dài dịu êm)
+     * Âm thanh Ding theo cao độ combo (2 nốt thăng hoa ngân dài dịu êm)
      */
-    private fun generateCorrectPcm(): ShortArray {
+    private fun generatePitchPcm(freq1: Double, freq2: Double): ShortArray {
         val duration = 0.32f
         val numSamples = (sampleRate * duration).toInt()
         val buffer = ShortArray(numSamples)
         for (i in 0 until numSamples) {
             val t = i.toFloat() / sampleRate
             val env = exp(-t * 8.5).toFloat()
-            // Nốt 1 (0 -> 120ms): 880Hz, Nốt 2 (100ms -> hết): 1318Hz
-            val freq = if (t < 0.10f) 880.0 else 1318.51
+            val freq = if (t < 0.10f) freq1 else freq2
             val sample = sin(2.0 * PI * freq * t) * 0.7 + sin(2.0 * PI * (freq * 2) * t) * 0.2
             buffer[i] = (sample * env * 32767 * 0.75).toInt().coerceIn(-32768, 32767).toShort()
         }

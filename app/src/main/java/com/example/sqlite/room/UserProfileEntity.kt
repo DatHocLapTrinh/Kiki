@@ -55,6 +55,10 @@ data class UserProfileEntity(
     var lastActiveDate: String? = null,
 
     @ColumnInfo(name = "study_motto")
-    var studyMotto: String? = null
+    var studyMotto: String? = null,
+
+    @ColumnInfo(name = "streak_shields")
+    var streakShields: Int = 1
 )
+
 

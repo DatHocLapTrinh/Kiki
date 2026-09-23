@@ -12,9 +12,10 @@ import androidx.room.RoomDatabase
         QuizAttemptEntity::class,
         DailyTaskEntity::class,
         AIQuestionEntity::class,
-        VocabularyEntity::class
+        VocabularyEntity::class,
+        WeakPointEntity::class
     ],
-    version = 2,
+    version = 3,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {

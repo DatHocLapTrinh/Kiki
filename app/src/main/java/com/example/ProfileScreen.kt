@@ -37,7 +37,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.audio.SoundEffectManager
 import com.example.ui.VocabularyVaultDialog
+import com.example.ui.WeakPointsClinicDialog
 import com.example.viewmodel.StudyViewModel
 
 fun resolveAvatarResource(avatarUri: String?): Int {
@@ -80,8 +82,12 @@ fun ProfileScreen(viewModel: StudyViewModel, onLogout: () -> Unit = {}) {
     val completedStages = journeyStages.count { it.state == JourneyStageState.COMPLETED }
     val progress = if (totalLessons == 0) 0f else completedLessons.toFloat() / totalLessons
 
+    val streakShields by viewModel.streakShields.observeAsState(2)
+    val weakPoints by viewModel.weakPoints.observeAsState(emptyList())
+    var showClinicDialog by remember { mutableStateOf(false) }
+
     val settings = remember(userId) {
-        context.getSharedPreferences("profile_settings_$userId", android.content.Context.MODE_PRIVATE)
+        context.getSharedPreferences(SoundEffectManager.PREFS_NAME, android.content.Context.MODE_PRIVATE)
     }
     val selectedLevel by viewModel.selectedLevel.observeAsState("Beginner")
     var soundEnabled by remember(userId) { mutableStateOf(settings.getBoolean("sound_enabled", true)) }
@@ -145,7 +151,7 @@ fun ProfileScreen(viewModel: StudyViewModel, onLogout: () -> Unit = {}) {
 
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                 ProfileStatCard(Modifier.weight(1f), strings.xpLabel, "$xp", Icons.Default.AutoAwesome, Color(0xFFFFD166))
-                ProfileStatCard(Modifier.weight(1f), isEnglishText("Chuỗi ngày", "Streak"), "$streak 🔥", Icons.Default.LocalFireDepartment, Color(0xFFFF9E00))
+                ProfileStatCard(Modifier.weight(1f), isEnglishText("Chuỗi ngày", "Streak"), "$streak 🔥 (🛡️ $streakShields)", Icons.Default.LocalFireDepartment, Color(0xFFFF9E00))
             }
             Spacer(modifier = Modifier.height(10.dp))
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
@@ -200,6 +206,56 @@ fun ProfileScreen(viewModel: StudyViewModel, onLogout: () -> Unit = {}) {
                         }
                     }
                     Icon(Icons.AutoMirrored.Filled.ArrowForward, contentDescription = null, tint = Color(0xFF51FAC1), modifier = Modifier.size(20.dp))
+                }
+            }
+            Spacer(modifier = Modifier.height(12.dp))
+
+            // Thẻ Phòng Khám Lỗi Sai (Smart Mistake Bank / Weak-point Clinic)
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(20.dp))
+                    .background(Brush.horizontalGradient(listOf(Color(0xFF260D15), Color(0xFF1E1428))))
+                    .border(1.dp, Color(0x66FF6B6B), RoundedCornerShape(20.dp))
+                    .clickable {
+                        haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.TextHandleMove)
+                        showClinicDialog = true
+                    }
+                    .padding(16.dp)
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Box(
+                            modifier = Modifier
+                                .size(46.dp)
+                                .clip(CircleShape)
+                                .background(Color(0x33FF6B6B)),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(Icons.Default.Healing, contentDescription = null, tint = Color(0xFFFF6B6B), modifier = Modifier.size(24.dp))
+                        }
+                        Spacer(modifier = Modifier.width(14.dp))
+                        Column {
+                            Text(
+                                text = if (isEnglish) "WEAK-POINT CLINIC" else "PHÒNG KHÁM LỖI SAI",
+                                color = Color(0xFFFF6B6B),
+                                fontSize = 10.sp,
+                                fontWeight = FontWeight.Bold,
+                                letterSpacing = 1.sp
+                            )
+                            Text(
+                                text = if (isEnglish) "${weakPoints.size} Mistakes Under Rehab" else "${weakPoints.size} Lỗi sai cần chữa lành (+Mana)",
+                                color = Color.White,
+                                fontSize = 14.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                    }
+                    Icon(Icons.AutoMirrored.Filled.ArrowForward, contentDescription = null, tint = Color(0xFFFF6B6B), modifier = Modifier.size(20.dp))
                 }
             }
             Spacer(modifier = Modifier.height(16.dp))
@@ -310,6 +366,14 @@ fun ProfileScreen(viewModel: StudyViewModel, onLogout: () -> Unit = {}) {
             viewModel = viewModel,
             isEnglish = isEnglish,
             onDismiss = { showVaultDialog = false }
+        )
+    }
+
+    if (showClinicDialog) {
+        WeakPointsClinicDialog(
+            viewModel = viewModel,
+            isEnglish = isEnglish,
+            onDismiss = { showClinicDialog = false }
         )
     }
 

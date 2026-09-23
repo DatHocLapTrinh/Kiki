@@ -57,7 +57,7 @@ class TextToSpeechManager @Inject constructor(
         }
     }
 
-    fun speak(text: String) {
+    fun speak(text: String, isSlow: Boolean = false) {
         if (text.isBlank()) return
         val cleanText = sanitizeTextForSpeech(text)
 
@@ -70,6 +70,10 @@ class TextToSpeechManager @Inject constructor(
         if (!isInitialized) {
             initTts()
         }
+
+        // Điều chỉnh tốc độ phát âm (chậm 0.68f cho người mới / luyện nghe âm đuôi, chuẩn 0.92f)
+        val rate = if (isSlow) 0.68f else 0.92f
+        tts?.setSpeechRate(rate)
 
         _currentSpeakingText.value = cleanText
         val utteranceId = UUID.randomUUID().toString()
