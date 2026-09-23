@@ -28,7 +28,7 @@ data class AppStrings(
     val profileReady: String = "Lộ trình học tiếng Anh cá nhân hóa của bạn đã sẵn sàng. Hãy đánh thức tiềm năng ngay!",
     val enterMap: String = "BẮT ĐẦU HỌC",
     // Auth
-    val emailMustEndWithGmail: String = "Email phải có đuôi @gmail.com",
+    val emailMustEndWithGmail: String = "Định dạng email không hợp lệ!",
     val emailExists: String = "Email đã tồn tại!",
     val regSuccess: String = "Đăng ký thành công!",
     val passwordReq: String = "Mật khẩu: 8 ký tự, 1 hoa, 1 thường, 1 số!",
@@ -138,6 +138,21 @@ data class AppStrings(
     val notifications: String = "Thông báo",
     val soundEffects: String = "Hiệu ứng âm thanh",
     
+    // Interactive & Gesture additions
+    val correctNotice: String = "Chính xác! Xuất sắc! 🎉",
+    val incorrectNotice: String = "Chưa chính xác! Cố lên nhé 💪",
+    val correctAnswerNotice: String = "Đáp án đúng là:",
+    val checkAnswer: String = "KIỂM TRA",
+    val continueLesson: String = "TIẾP TỤC",
+    val pauseLessonTitle: String = "Tạm dừng bài học?",
+    val pauseLessonDesc: String = "Tiến độ câu hỏi hiện tại sẽ không được lưu nếu bạn thoát.",
+    val resumeLesson: String = "HỌC TIẾP",
+    val exitLesson: String = "THOÁT",
+    val copiedToClipboard: String = "Đã sao chép vào bộ nhớ tạm!",
+    val selectLevelTitle: String = "Chọn Trình Độ Tiếng Anh",
+    val currentLevelLabel: String = "Trình độ hiện tại:",
+    val pullToRefresh: String = "Kéo xuống để làm mới...",
+    
     // AskScreen
     val askMentor: String = "Hỏi Gia Sư Kiki",
     val typeQuestion: String = "Nhập câu hỏi của bạn...",
@@ -213,7 +228,7 @@ val EnglishStrings = AppStrings(
     profileReady = "Your personalized English journey is ready. Awaken your potential now!",
     enterMap = "START LEARNING",
     
-    emailMustEndWithGmail = "Email must end with @gmail.com",
+    emailMustEndWithGmail = "Invalid email address format!",
     emailExists = "Email already exists!",
     regSuccess = "Registration successful!",
     passwordReq = "Password: 8 chars, 1 upper, 1 lower, 1 digit!",
@@ -315,6 +330,20 @@ val EnglishStrings = AppStrings(
     logout = "Logout",
     notifications = "Notifications",
     soundEffects = "Sound Effects",
+    
+    correctNotice = "Spot on! Excellent! 🎉",
+    incorrectNotice = "Not quite right! Keep going 💪",
+    correctAnswerNotice = "Correct answer is:",
+    checkAnswer = "CHECK ANSWER",
+    continueLesson = "CONTINUE",
+    pauseLessonTitle = "Pause Lesson?",
+    pauseLessonDesc = "Your current question progress will not be saved if you leave.",
+    resumeLesson = "RESUME",
+    exitLesson = "EXIT",
+    copiedToClipboard = "Copied to clipboard!",
+    selectLevelTitle = "Select English Level",
+    currentLevelLabel = "Current Level:",
+    pullToRefresh = "Pull down to refresh...",
     
     askMentor = "Ask Mentor Kiki",
     typeQuestion = "Type your question...",

@@ -62,15 +62,29 @@ fun RankScreen(viewModel: StudyViewModel) {
     )
 
     Box(modifier = Modifier.fillMaxSize()) {
+        val haptic = androidx.compose.ui.platform.LocalHapticFeedback.current
+
         Column(modifier = Modifier.fillMaxSize()) {
             // Header
             Row(
                 modifier = Modifier.fillMaxWidth().padding(top = 40.dp, start = 76.dp, end = 24.dp, bottom = 16.dp),
-                verticalAlignment = Alignment.CenterVertically
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                Icon(Icons.Default.EmojiEvents, contentDescription = null, tint = Color(0xFFFFD166), modifier = Modifier.size(28.dp))
-                Spacer(modifier = Modifier.width(12.dp))
-                Text(strings.rankedArena, color = Color.White, fontSize = 24.sp, fontWeight = FontWeight.ExtraBold)
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(Icons.Default.EmojiEvents, contentDescription = null, tint = Color(0xFFFFD166), modifier = Modifier.size(28.dp))
+                    Spacer(modifier = Modifier.width(12.dp))
+                    Text(strings.rankedArena, color = Color.White, fontSize = 24.sp, fontWeight = FontWeight.ExtraBold)
+                }
+
+                IconButton(
+                    onClick = {
+                        haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.TextHandleMove)
+                        viewModel.fetchLeaderboard()
+                    }
+                ) {
+                    Icon(Icons.Default.Refresh, contentDescription = "Refresh", tint = Color(0xFF51FAC1))
+                }
             }
 
             if (players.isEmpty()) {

@@ -92,4 +92,34 @@ interface AppDao {
 
     @Query("SELECT * FROM ai_questions WHERE user_id = :userId ORDER BY created_at DESC")
     suspend fun getAIHistory(userId: Long): List<AIQuestionEntity>
+
+    @Query("DELETE FROM ai_questions WHERE ai_question_id = :aiQuestionId")
+    suspend fun deleteAIQuestion(aiQuestionId: Long): Int
+
+    @Query("DELETE FROM ai_questions WHERE user_id = :userId")
+    suspend fun clearAIHistory(userId: Long): Int
+
+    // --- Streak & Profile Customization ---
+    @Query("UPDATE user_profiles SET current_streak = :streak, last_active_date = :lastActiveDate WHERE user_id = :userId")
+    suspend fun updateStreak(userId: Long, streak: Int, lastActiveDate: String): Int
+
+    @Query("UPDATE user_profiles SET display_name = :displayName, avatar_uri = :avatarUri, study_motto = :motto WHERE user_id = :userId")
+    suspend fun updateProfileInfo(userId: Long, displayName: String, avatarUri: String?, motto: String?): Int
+
+    // --- Vocabulary Notes & Bookmarks ---
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertVocabulary(vocab: VocabularyEntity): Long
+
+    @Query("SELECT * FROM vocabulary_notes WHERE user_id = :userId ORDER BY vocab_id DESC")
+    suspend fun getVocabularyList(userId: Long): List<VocabularyEntity>
+
+    @Query("UPDATE vocabulary_notes SET is_mastered = :isMastered WHERE vocab_id = :vocabId")
+    suspend fun updateVocabularyMastered(vocabId: Long, isMastered: Boolean): Int
+
+    @Query("DELETE FROM vocabulary_notes WHERE vocab_id = :vocabId")
+    suspend fun deleteVocabulary(vocabId: Long): Int
+
+    @Query("SELECT COUNT(*) FROM vocabulary_notes WHERE user_id = :userId AND word = :word")
+    suspend fun isWordBookmarked(userId: Long, word: String): Int
 }
+

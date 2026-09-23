@@ -97,7 +97,7 @@ fun IdentityContent(
                         onToggleAuth = { isSignUp = !isSignUp },
                         onSubmit = { name, email, pass ->
                             val normalizedEmail = email.trim().lowercase(Locale.ROOT)
-                            if (!normalizedEmail.endsWith("@gmail.com")) {
+                            if (!android.util.Patterns.EMAIL_ADDRESS.matcher(normalizedEmail).matches()) {
                                 Toast.makeText(context, strings.emailMustEndWithGmail, Toast.LENGTH_SHORT).show()
                                 return@AuthForm
                             }

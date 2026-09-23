@@ -240,6 +240,14 @@ class DataRepository @Inject constructor(
         }
     }
 
+    suspend fun deleteAIQuestion(aiQuestionId: Long): Boolean = withContext(Dispatchers.IO) {
+        dao.deleteAIQuestion(aiQuestionId) > 0
+    }
+
+    suspend fun clearAIHistory(userId: Long): Boolean = withContext(Dispatchers.IO) {
+        dao.clearAIHistory(userId) > 0
+    }
+
     suspend fun updateXP(userId: Long, xpGain: Int) = withContext(Dispatchers.IO) {
         dao.updateXP(userId, xpGain)
     }
@@ -321,4 +329,41 @@ class DataRepository @Inject constructor(
     suspend fun getLeaderboard(): List<UserProfileEntity> = withContext(Dispatchers.IO) {
         dao.getLeaderboard()
     }
+
+    suspend fun updateStreak(userId: Long, streak: Int, lastActiveDate: String): Boolean = withContext(Dispatchers.IO) {
+        dao.updateStreak(userId, streak, lastActiveDate) > 0
+    }
+
+    suspend fun updateProfileInfo(userId: Long, displayName: String, avatarUri: String?, motto: String?): Boolean = withContext(Dispatchers.IO) {
+        dao.updateProfileInfo(userId, displayName, avatarUri, motto) > 0
+    }
+
+    suspend fun insertVocabulary(userId: Long, word: String, phonetic: String, meaning: String, example: String): Long = withContext(Dispatchers.IO) {
+        val vocab = VocabularyEntity(
+            userId = userId,
+            word = word,
+            phonetic = phonetic,
+            meaning = meaning,
+            example = example,
+            createdAt = SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault()).format(Date())
+        )
+        dao.insertVocabulary(vocab)
+    }
+
+    suspend fun getVocabularyList(userId: Long): List<VocabularyEntity> = withContext(Dispatchers.IO) {
+        dao.getVocabularyList(userId)
+    }
+
+    suspend fun toggleVocabularyMastered(vocabId: Long, isMastered: Boolean): Boolean = withContext(Dispatchers.IO) {
+        dao.updateVocabularyMastered(vocabId, isMastered) > 0
+    }
+
+    suspend fun deleteVocabulary(vocabId: Long): Boolean = withContext(Dispatchers.IO) {
+        dao.deleteVocabulary(vocabId) > 0
+    }
+
+    suspend fun isWordBookmarked(userId: Long, word: String): Boolean = withContext(Dispatchers.IO) {
+        dao.isWordBookmarked(userId, word) > 0
+    }
 }
+

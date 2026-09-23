@@ -26,12 +26,17 @@ import java.io.ByteArrayOutputStream
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import com.example.audio.TextToSpeechManager
+import com.example.audio.SoundEffectManager
+import com.example.sqlite.room.VocabularyEntity
 import javax.inject.Inject
 
 @HiltViewModel
 class StudyViewModel @Inject constructor(
     val repository: DataRepository,
     private val groqApiService: GroqApiService,
+    val ttsManager: TextToSpeechManager,
+    val soundEffectManager: SoundEffectManager,
     @param:ApplicationContext private val appContext: Context
 ) : ViewModel() {
 
@@ -105,6 +110,15 @@ class StudyViewModel @Inject constructor(
     val streak: LiveData<Int> = _streak
     fun setStreak(streak: Int) { _streak.value = streak }
 
+    private val _avatarUri = MutableLiveData<String?>(null)
+    val avatarUri: LiveData<String?> = _avatarUri
+
+    private val _studyMotto = MutableLiveData<String>("")
+    val studyMotto: LiveData<String> = _studyMotto
+
+    private val _vocabularyList = MutableLiveData<List<VocabularyEntity>>(emptyList())
+    val vocabularyList: LiveData<List<VocabularyEntity>> = _vocabularyList
+
     private val _mana = MutableLiveData(20)
     val mana: LiveData<Int> = _mana
     fun setMana(mana: Int) { _mana.value = mana }
@@ -140,6 +154,39 @@ class StudyViewModel @Inject constructor(
     fun setPreferences(level: String, subject: String) {
         _selectedLevel.value = level
         _selectedSubject.value = if (subject.isBlank() || subject != "English") "English" else subject
+        val userId = _currentUserId.value
+        if (userId != null && userId != -1L) {
+            prefs.edit().putString("learning_level_$userId", level).apply()
+        }
+    }
+
+    fun updateLearningLevel(level: String) {
+        _selectedLevel.value = level
+        val userId = _currentUserId.value
+        if (userId != null && userId != -1L) {
+            prefs.edit().putString("learning_level_$userId", level).apply()
+        }
+        refreshChapters()
+    }
+
+    private val _isRefreshing = MutableLiveData(false)
+    val isRefreshing: LiveData<Boolean> = _isRefreshing
+
+    fun refreshAll() {
+        _isRefreshing.value = true
+        viewModelScope.launch {
+            try {
+                refreshChapters()
+                fetchLeaderboard()
+                refreshDailyTasks()
+                val userId = _currentUserId.value
+                if (userId != null && userId != -1L) {
+                    refreshHistory(userId)
+                }
+            } finally {
+                _isRefreshing.value = false
+            }
+        }
     }
 
     private val _availableChapters = MutableLiveData<List<String>>(emptyList())
@@ -257,6 +304,7 @@ class StudyViewModel @Inject constructor(
                     recordDailyTaskProgress(userId, "PERFECT_SCORE", 1)
                 }
                 refreshDailyTasks()
+                checkAndUpdateStreak(userId)
             }
 
             val prompt = buildString {
@@ -290,9 +338,17 @@ class StudyViewModel @Inject constructor(
                     _rankTitle.value = calculateRankTitle(profile.totalXp)
                     _mana.value = profile.mana
                     _streak.value = profile.currentStreak
+                    _avatarUri.value = profile.avatarUri
+                    _studyMotto.value = profile.studyMotto ?: ""
                 }
+                val savedLevel = prefs.getString("learning_level_$userId", _selectedLevel.value ?: "Beginner") ?: "Beginner"
+                _selectedLevel.value = savedLevel
+                refreshChapters()
                 fetchLeaderboard()
                 refreshDailyTasks()
+                refreshHistory(userId)
+                checkAndUpdateStreak(userId)
+                refreshVocabulary()
             }
         }
     }
@@ -344,6 +400,7 @@ class StudyViewModel @Inject constructor(
             if (allClaimed && repository.claimDailyChest(userId, date)) {
                 addXp(500)
                 _dailyChestOpened.value = true
+                soundEffectManager.playFanfare()
                 refreshDailyTasks()
             }
         }
@@ -476,16 +533,104 @@ class StudyViewModel @Inject constructor(
     }
 
     fun addXp(amount: Int) {
+        val oldLevel = _level.value ?: 1
         val newXp = (_xp.value ?: 0) + amount
+        val newLevel = (newXp / 100) + 1
         _xp.value = newXp
-        _level.value = (newXp / 100) + 1
+        _level.value = newLevel
         _rankTitle.value = calculateRankTitle(newXp)
+
+        if (newLevel > oldLevel) {
+            soundEffectManager.playFanfare()
+        }
 
         val userId = _currentUserId.value
         if (userId != null && userId != -1L) {
             viewModelScope.launch {
                 repository.updateXP(userId, amount)
                 fetchLeaderboard()
+            }
+        }
+    }
+
+    fun checkAndUpdateStreak(userId: Long) {
+        viewModelScope.launch {
+            val profile = repository.getUserProfile(userId) ?: return@launch
+            val todayStr = today()
+            val lastDate = profile.lastActiveDate
+            val currentStreak = profile.currentStreak
+
+            val newStreak = when {
+                lastDate == null -> 1
+                lastDate == todayStr -> currentStreak.coerceAtLeast(1)
+                else -> {
+                    val sdf = SimpleDateFormat("yyyy-MM-dd", Locale.US)
+                    try {
+                        val dLast = sdf.parse(lastDate)
+                        val dToday = sdf.parse(todayStr)
+                        if (dLast != null && dToday != null) {
+                            val diffInDays = ((dToday.time - dLast.time) / (1000 * 60 * 60 * 24)).toInt()
+                            when (diffInDays) {
+                                1 -> currentStreak + 1
+                                0 -> currentStreak.coerceAtLeast(1)
+                                else -> 1
+                            }
+                        } else 1
+                    } catch (_: Exception) {
+                        1
+                    }
+                }
+            }
+            repository.updateStreak(userId, newStreak, todayStr)
+            _streak.value = newStreak
+        }
+    }
+
+    fun updateProfile(displayName: String, avatarUri: String?, motto: String?) {
+        val userId = _currentUserId.value ?: return
+        if (userId == -1L) return
+        viewModelScope.launch {
+            repository.updateProfileInfo(userId, displayName.trim(), avatarUri, motto?.trim())
+            _userName.value = displayName.trim()
+            _avatarUri.value = avatarUri
+            _studyMotto.value = motto?.trim() ?: ""
+            fetchLeaderboard()
+        }
+    }
+
+    fun refreshVocabulary() {
+        val userId = _currentUserId.value ?: return
+        if (userId == -1L) return
+        viewModelScope.launch {
+            _vocabularyList.value = repository.getVocabularyList(userId)
+        }
+    }
+
+    fun saveWord(word: String, phonetic: String = "", meaning: String, example: String = "") {
+        val userId = _currentUserId.value ?: return
+        if (userId == -1L) return
+        viewModelScope.launch {
+            repository.insertVocabulary(userId, word.trim(), phonetic.trim(), meaning.trim(), example.trim())
+            refreshVocabulary()
+        }
+    }
+
+    fun toggleVocabMastered(vocabId: Long, isMastered: Boolean) {
+        viewModelScope.launch {
+            repository.toggleVocabularyMastered(vocabId, isMastered)
+            val userId = _currentUserId.value
+            if (userId != null && userId != -1L) {
+                _vocabularyList.value = repository.getVocabularyList(userId)
+            }
+        }
+    }
+
+    fun deleteVocab(vocabId: Long) {
+        viewModelScope.launch {
+            repository.deleteVocabulary(vocabId)
+            val userId = _currentUserId.value
+            if (userId != null && userId != -1L) {
+                _vocabularyList.value = repository.getVocabularyList(userId)
             }
         }
     }
@@ -565,5 +710,34 @@ class StudyViewModel @Inject constructor(
             e.printStackTrace()
             null
         }
+    }
+    fun deleteAIQuestion(questionId: Long) {
+        viewModelScope.launch {
+            val userId = _currentUserId.value
+            if (userId != null && userId != -1L) {
+                repository.deleteAIQuestion(questionId)
+                refreshHistory(userId)
+            } else {
+                val current = _history.value ?: emptyList()
+                _history.value = current.filter { it.id.toLong() != questionId }
+            }
+        }
+    }
+
+    fun clearAIHistory() {
+        viewModelScope.launch {
+            val userId = _currentUserId.value
+            if (userId != null && userId != -1L) {
+                repository.clearAIHistory(userId)
+                _history.value = emptyList()
+            } else {
+                _history.value = emptyList()
+            }
+        }
+    }
+
+    override fun onCleared() {
+        super.onCleared()
+        ttsManager.stop()
     }
 }

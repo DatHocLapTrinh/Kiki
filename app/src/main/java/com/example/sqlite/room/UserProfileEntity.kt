@@ -49,5 +49,12 @@ data class UserProfileEntity(
     var reminderTime: String? = null,
 
     @ColumnInfo(name = "notifications_enabled")
-    var notificationsEnabled: Int = 1
+    var notificationsEnabled: Int = 1,
+
+    @ColumnInfo(name = "last_active_date")
+    var lastActiveDate: String? = null,
+
+    @ColumnInfo(name = "study_motto")
+    var studyMotto: String? = null
 )
+

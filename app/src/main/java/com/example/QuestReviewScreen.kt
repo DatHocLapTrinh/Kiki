@@ -14,6 +14,9 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.automirrored.filled.VolumeUp
+import androidx.compose.material.icons.filled.BookmarkBorder
+import androidx.compose.material.icons.filled.Psychology
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.livedata.observeAsState
@@ -24,6 +27,10 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import android.widget.Toast
 import com.example.viewmodel.StudyViewModel
 
 
@@ -32,9 +39,23 @@ import com.example.viewmodel.StudyViewModel
 fun QuestReviewScreen(viewModel: StudyViewModel, onBack: () -> Unit) {
     val results by viewModel.lastQuestResults.observeAsState(emptyList())
     val analysis by viewModel.questAnalysis.observeAsState()
+    val isEnglish by viewModel.isEnglish.observeAsState(false)
+    val context = LocalContext.current
+    val haptic = LocalHapticFeedback.current
     
     val totalQuestions = results.size
     val correctCount = results.count { it.selectedIndex == it.correctIndex }
+    val wrongCount = totalQuestions - correctCount
+    var filterMode by remember { mutableStateOf("ALL") } // "ALL", "MISTAKES", "CORRECT"
+
+    val indexedResults = remember(results) { results.mapIndexed { idx, item -> idx to item } }
+    val displayedList = remember(indexedResults, filterMode) {
+        when (filterMode) {
+            "MISTAKES" -> indexedResults.filter { it.second.selectedIndex != it.second.correctIndex }
+            "CORRECT" -> indexedResults.filter { it.second.selectedIndex == it.second.correctIndex }
+            else -> indexedResults
+        }
+    }
     val strings = LocalAppStrings.current
     
     Scaffold(
@@ -152,18 +173,73 @@ fun QuestReviewScreen(viewModel: StudyViewModel, onBack: () -> Unit) {
                     }
                 }
                 
-                Spacer(modifier = Modifier.height(32.dp))
+                Spacer(modifier = Modifier.height(28.dp))
                 
-                Text(
-                    strings.questionDetails,
-                    color = Color.White,
-                    fontSize = 18.sp,
-                    fontWeight = FontWeight.Bold,
-                    modifier = Modifier.padding(bottom = 16.dp)
-                )
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        strings.questionDetails,
+                        color = Color.White,
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+
+                // Filter Chips phân loại câu hỏi
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    FilterChip(
+                        selected = filterMode == "ALL",
+                        onClick = {
+                            haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                            filterMode = "ALL"
+                        },
+                        label = { Text(if (isEnglish) "All ($totalQuestions)" else "Tất cả ($totalQuestions)") },
+                        colors = FilterChipDefaults.filterChipColors(
+                            selectedContainerColor = Color(0xFF51FAC1),
+                            selectedLabelColor = Color(0xFF0B0615),
+                            containerColor = Color(0x1AFFFFFF),
+                            labelColor = Color.White
+                        )
+                    )
+                    FilterChip(
+                        selected = filterMode == "MISTAKES",
+                        onClick = {
+                            haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                            filterMode = "MISTAKES"
+                        },
+                        label = { Text(if (isEnglish) "Mistakes ($wrongCount)" else "Câu sai ($wrongCount)") },
+                        colors = FilterChipDefaults.filterChipColors(
+                            selectedContainerColor = Color(0xFFFF5252),
+                            selectedLabelColor = Color.White,
+                            containerColor = Color(0x1AFFFFFF),
+                            labelColor = Color(0xFFFF7A7A)
+                        )
+                    )
+                    FilterChip(
+                        selected = filterMode == "CORRECT",
+                        onClick = {
+                            haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                            filterMode = "CORRECT"
+                        },
+                        label = { Text(if (isEnglish) "Correct ($correctCount)" else "Câu đúng ($correctCount)") },
+                        colors = FilterChipDefaults.filterChipColors(
+                            selectedContainerColor = Color(0xFF22C55E),
+                            selectedLabelColor = Color.White,
+                            containerColor = Color(0x1AFFFFFF),
+                            labelColor = Color(0xFF51FAC1)
+                        )
+                    )
+                }
             }
 
-            itemsIndexed(results) { index, item ->
+            items(displayedList.size, key = { displayedList[it].first }) { listIdx ->
+                val (originalIndex, item) = displayedList[listIdx]
                 val isCorrect = item.selectedIndex == item.correctIndex
                 val hasAnswered = item.selectedIndex != -1
                 
@@ -180,17 +256,51 @@ fun QuestReviewScreen(viewModel: StudyViewModel, onBack: () -> Unit) {
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.Top
+                            verticalAlignment = Alignment.CenterVertically
                         ) {
                             Text(
-                                "${strings.questionLabel}${index + 1}",
+                                "${strings.questionLabel}${originalIndex + 1}",
                                 color = if (isCorrect) Color(0xFF51FAC1) else if (!hasAnswered) Color(0xCCFFFFFF) else Color(0xFFFF5252),
                                 fontWeight = FontWeight.Bold
                             )
-                            if (isCorrect) {
-                                Icon(Icons.Default.Check, contentDescription = "Correct", tint = Color(0xFF51FAC1), modifier = Modifier.size(20.dp))
-                            } else if (hasAnswered) {
-                                Icon(Icons.Default.Close, contentDescription = "Incorrect", tint = Color(0xFFFF5252), modifier = Modifier.size(20.dp))
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                // Nút phát âm TTS
+                                IconButton(
+                                    onClick = {
+                                        haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                                        viewModel.ttsManager.speak(item.question)
+                                    },
+                                    modifier = Modifier.size(32.dp)
+                                ) {
+                                    Icon(Icons.AutoMirrored.Filled.VolumeUp, contentDescription = "Listen", tint = Color(0xFF51FAC1), modifier = Modifier.size(18.dp))
+                                }
+
+                                // Nút lưu vào Sổ tay từ vựng
+                                IconButton(
+                                    onClick = {
+                                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                        val correctText = item.options.getOrNull(item.correctIndex) ?: ""
+                                        viewModel.saveWord(
+                                            word = item.question,
+                                            meaning = correctText,
+                                            example = "Answer: $correctText"
+                                        )
+                                        Toast.makeText(
+                                            context,
+                                            if (isEnglish) "Bookmarked to Vocabulary Vault! ⭐" else "Đã lưu câu hỏi vào Sổ tay từ vựng! ⭐",
+                                            Toast.LENGTH_SHORT
+                                        ).show()
+                                    },
+                                    modifier = Modifier.size(32.dp)
+                                ) {
+                                    Icon(Icons.Default.BookmarkBorder, contentDescription = "Bookmark", tint = Color(0xFFFFD166), modifier = Modifier.size(18.dp))
+                                }
+
+                                if (isCorrect) {
+                                    Icon(Icons.Default.Check, contentDescription = "Correct", tint = Color(0xFF51FAC1), modifier = Modifier.size(20.dp))
+                                } else if (hasAnswered) {
+                                    Icon(Icons.Default.Close, contentDescription = "Incorrect", tint = Color(0xFFFF5252), modifier = Modifier.size(20.dp))
+                                }
                             }
                         }
                         
@@ -221,6 +331,38 @@ fun QuestReviewScreen(viewModel: StudyViewModel, onBack: () -> Unit) {
                                     color = Color(0xFF51FAC1),
                                     fontSize = 14.sp,
                                     fontWeight = FontWeight.Bold
+                                )
+                            }
+
+                            Spacer(modifier = Modifier.height(10.dp))
+
+                            // Nút hỏi Kiki phân tích sâu bằng AI
+                            OutlinedButton(
+                                onClick = {
+                                    haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                                    val correctText = item.options.getOrNull(item.correctIndex) ?: ""
+                                    viewModel.askQuestion(
+                                        context,
+                                        "Giải thích chi tiết vì sao câu: \"${item.question}\" lại có đáp án đúng là \"$correctText\". Phân tích từ vựng và quy tắc ngữ pháp liên quan.",
+                                        null
+                                    )
+                                    Toast.makeText(
+                                        context,
+                                        if (isEnglish) "Kiki is analyzing in the Ask AI tab!" else "Kiki đang giải thích câu này tại tab Hỏi Kiki AI!",
+                                        Toast.LENGTH_SHORT
+                                    ).show()
+                                },
+                                modifier = Modifier.fillMaxWidth().height(38.dp),
+                                shape = RoundedCornerShape(12.dp),
+                                colors = ButtonDefaults.outlinedButtonColors(contentColor = Color(0xFF51FAC1)),
+                                border = androidx.compose.foundation.BorderStroke(1.dp, Color(0x4451FAC1))
+                            ) {
+                                Icon(Icons.Default.Psychology, contentDescription = null, modifier = Modifier.size(16.dp))
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text(
+                                    text = if (isEnglish) "Deep explain with Kiki AI" else "Hỏi Kiki AI giải thích chi tiết câu này",
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.SemiBold
                                 )
                             }
                         }

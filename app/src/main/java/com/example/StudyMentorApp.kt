@@ -137,7 +137,12 @@ fun StudyMentorApp() {
                     AuthStep.ONBOARDING -> {
                         OnboardingScreen(viewModel, onFinish = {
                             viewModel.addXp(50)
-                            viewModel.setStreak(1)
+                            val userId = viewModel.currentUserId.value ?: -1L
+                            if (userId != -1L) {
+                                viewModel.checkAndUpdateStreak(userId)
+                            } else {
+                                viewModel.setStreak(1)
+                            }
                             hasCompletedOnboarding = true
                             authStep = AuthStep.LOGGED_IN
                         })
@@ -416,7 +421,15 @@ fun MainNavigation(viewModel: StudyViewModel, onLogout: () -> Unit) {
         }
     ) {
         Box(modifier = Modifier.fillMaxSize()) {
-            NavHost(navController = navController, startDestination = "map", modifier = Modifier.fillMaxSize()) {
+            NavHost(
+                navController = navController,
+                startDestination = "map",
+                modifier = Modifier.fillMaxSize(),
+                enterTransition = { fadeIn(tween(260)) + slideIntoContainer(AnimatedContentTransitionScope.SlideDirection.Start, tween(260)) },
+                exitTransition = { fadeOut(tween(260)) + slideOutOfContainer(AnimatedContentTransitionScope.SlideDirection.Start, tween(260)) },
+                popEnterTransition = { fadeIn(tween(260)) + slideIntoContainer(AnimatedContentTransitionScope.SlideDirection.End, tween(260)) },
+                popExitTransition = { fadeOut(tween(260)) + slideOutOfContainer(AnimatedContentTransitionScope.SlideDirection.End, tween(260)) }
+            ) {
                 composable("map") {
                     JourneyMapScreen(
                         viewModel = viewModel,

@@ -11,9 +11,10 @@ import androidx.room.RoomDatabase
         QuestionEntity::class,
         QuizAttemptEntity::class,
         DailyTaskEntity::class,
-        AIQuestionEntity::class
+        AIQuestionEntity::class,
+        VocabularyEntity::class
     ],
-    version = 1,
+    version = 2,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
