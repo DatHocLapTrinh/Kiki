@@ -14,7 +14,7 @@ android {
   compileSdk = 36
 
   defaultConfig {
-    applicationId = "com.aistudio.kikihihi.magic"
+    applicationId = "com.dathoclaptrinh.kiki"
     minSdk = 24
     targetSdk = 36
     versionCode = 1
