@@ -12,7 +12,12 @@
           "package_name": "com.dathoclaptrinh.kiki"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "670207795249-hp9si8n41dqkd0hsbant7krer5mpmu9d.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyCWObAMotj0QaLbkkgB0lyyVIrRrYlgYnY"

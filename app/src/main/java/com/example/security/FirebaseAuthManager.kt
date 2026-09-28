@@ -49,18 +49,15 @@ class FirebaseAuthManager @Inject constructor(
 
     suspend fun signInWithGoogle(activityContext: Context): GoogleAuthResult {
         return try {
-            // Lấy default_web_client_id tự động sinh bởi google-services plugin
+            // Lấy default_web_client_id tự động sinh bởi google-services plugin hoặc dùng Web Client ID cấu hình sẵn
             val resId = appContext.resources.getIdentifier("default_web_client_id", "string", appContext.packageName)
-            val serverClientId = if (resId != 0) {
+            val dynamicClientId = if (resId != 0) {
                 try { appContext.getString(resId) } catch (_: Exception) { "" }
             } else {
                 ""
             }
-
-            if (serverClientId.isBlank()) {
-                return GoogleAuthResult.Error(
-                    "Chưa tìm thấy Web Client ID. Bạn hãy vào Firebase Console -> Authentication -> Sign-in method -> Bật Google, sau đó tải lại google-services.json vào thư mục app/ nhé."
-                )
+            val serverClientId = dynamicClientId.ifBlank {
+                "670207795249-hp9si8n41dqkd0hsbant7krer5mpmu9d.apps.googleusercontent.com"
             }
 
             val googleIdOption = GetGoogleIdOption.Builder()
