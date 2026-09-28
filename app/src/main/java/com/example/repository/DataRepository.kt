@@ -194,6 +194,40 @@ class DataRepository @Inject constructor(
         dao.getUserIdByEmail(normalizedEmail) ?: -1L
     }
 
+    suspend fun getOrCreateSocialUser(
+        email: String,
+        displayName: String?,
+        photoUrl: String?
+    ): Long = withContext(Dispatchers.IO) {
+        val normalizedEmail = email.trim().lowercase(Locale.ROOT)
+        var userId = dao.getUserIdByEmail(normalizedEmail) ?: -1L
+        if (userId == -1L) {
+            val user = UserEntity(
+                email = normalizedEmail,
+                passwordHash = PasswordHasher.hash("social_auth_${System.currentTimeMillis()}"),
+                createdAt = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.US).format(Date())
+            )
+            userId = dao.insertUser(user)
+            if (userId != -1L) {
+                val profile = UserProfileEntity(
+                    userId = userId,
+                    displayName = displayName?.takeIf { it.isNotBlank() } ?: "Kiki Scholar",
+                    avatarUri = photoUrl,
+                    studyMotto = "Chinh phục tri thức tiếng Anh cùng Kiki!"
+                )
+                dao.insertUserProfile(profile)
+            }
+        } else {
+            val existing = dao.getUserProfile(userId)
+            if (existing != null) {
+                val updatedName = displayName?.takeIf { it.isNotBlank() } ?: existing.displayName
+                val updatedAvatar = photoUrl?.takeIf { it.isNotBlank() } ?: existing.avatarUri
+                dao.updateProfileInfo(userId, updatedName, updatedAvatar, existing.studyMotto)
+            }
+        }
+        userId
+    }
+
     suspend fun getUserProfile(userId: Long): UserProfileEntity? = withContext(Dispatchers.IO) {
         dao.getUserProfile(userId)
     }

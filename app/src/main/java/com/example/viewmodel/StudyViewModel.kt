@@ -28,6 +28,8 @@ import java.util.Date
 import java.util.Locale
 import com.example.audio.TextToSpeechManager
 import com.example.audio.SoundEffectManager
+import com.example.security.FirebaseAuthManager
+import com.example.security.GoogleAuthResult
 import com.example.sqlite.room.VocabularyEntity
 import com.example.sqlite.room.WeakPointEntity
 import javax.inject.Inject
@@ -38,6 +40,7 @@ class StudyViewModel @Inject constructor(
     private val groqApiService: GroqApiService,
     val ttsManager: TextToSpeechManager,
     val soundEffectManager: SoundEffectManager,
+    val authManager: FirebaseAuthManager,
     @param:ApplicationContext private val appContext: Context
 ) : ViewModel() {
 
@@ -340,6 +343,86 @@ class StudyViewModel @Inject constructor(
 
             val analysis = fetchAnswerFromGroq(context, prompt, null)
             _questAnalysis.value = analysis
+        }
+    }
+
+    private val _isAuthLoading = MutableLiveData(false)
+    val isAuthLoading: LiveData<Boolean> = _isAuthLoading
+
+    fun signInWithGoogle(
+        activityContext: Context,
+        onSuccess: () -> Unit,
+        onError: (String) -> Unit
+    ) {
+        _isAuthLoading.value = true
+        viewModelScope.launch {
+            try {
+                when (val result = authManager.signInWithGoogle(activityContext)) {
+                    is GoogleAuthResult.Success -> {
+                        val userId = repository.getOrCreateSocialUser(
+                            email = result.email,
+                            displayName = result.displayName,
+                            photoUrl = result.photoUrl
+                        )
+                        if (userId != -1L) {
+                            onLoginSuccess(result.email)
+                            _isAuthLoading.value = false
+                            onSuccess()
+                        } else {
+                            _isAuthLoading.value = false
+                            onError("Không thể đồng bộ dữ liệu tài khoản Google.")
+                        }
+                    }
+                    is GoogleAuthResult.Cancelled -> {
+                        _isAuthLoading.value = false
+                    }
+                    is GoogleAuthResult.Error -> {
+                        _isAuthLoading.value = false
+                        onError(result.message)
+                    }
+                }
+            } catch (e: Exception) {
+                _isAuthLoading.value = false
+                onError(e.localizedMessage ?: "Lỗi xác thực Google.")
+            }
+        }
+    }
+
+    fun signInAsGuest(
+        onSuccess: () -> Unit,
+        onError: (String) -> Unit
+    ) {
+        _isAuthLoading.value = true
+        viewModelScope.launch {
+            try {
+                when (val result = authManager.signInAnonymously()) {
+                    is GoogleAuthResult.Success -> {
+                        val userId = repository.getOrCreateSocialUser(
+                            email = result.email,
+                            displayName = result.displayName ?: "Kiki Explorer",
+                            photoUrl = result.photoUrl
+                        )
+                        if (userId != -1L) {
+                            onLoginSuccess(result.email)
+                            _isAuthLoading.value = false
+                            onSuccess()
+                        } else {
+                            _isAuthLoading.value = false
+                            onError("Không thể tạo phiên khám phá khách.")
+                        }
+                    }
+                    is GoogleAuthResult.Cancelled -> {
+                        _isAuthLoading.value = false
+                    }
+                    is GoogleAuthResult.Error -> {
+                        _isAuthLoading.value = false
+                        onError(result.message)
+                    }
+                }
+            } catch (e: Exception) {
+                _isAuthLoading.value = false
+                onError(e.localizedMessage ?: "Lỗi tạo phiên khách.")
+            }
         }
     }
 
@@ -686,8 +769,11 @@ class StudyViewModel @Inject constructor(
     }
 
     fun logout() {
+        authManager.signOut()
         _currentUserId.value = -1L
         _userName.value = "Adventurer"
+        _avatarUri.value = null
+        _studyMotto.value = ""
         _history.value = emptyList()
         _dailyTasks.value = emptyList()
         _dailyChestOpened.value = false

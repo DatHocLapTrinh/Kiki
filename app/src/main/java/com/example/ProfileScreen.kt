@@ -31,12 +31,14 @@ import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import coil.compose.AsyncImage
 import com.example.audio.SoundEffectManager
 import com.example.ui.VocabularyVaultDialog
 import com.example.ui.WeakPointsClinicDialog
@@ -522,11 +524,20 @@ private fun ProfileIdentityCard(
                         .border(3.dp, Color(0xFFFFD166), CircleShape)
                         .padding(4.dp)
                 ) {
-                    Image(
-                        painter = painterResource(resolveAvatarResource(avatarUri)),
-                        contentDescription = "Avatar",
-                        modifier = Modifier.fillMaxSize().clip(CircleShape)
-                    )
+                    if (avatarUri != null && (avatarUri.startsWith("http://") || avatarUri.startsWith("https://") || avatarUri.startsWith("content://"))) {
+                        AsyncImage(
+                            model = avatarUri,
+                            contentDescription = "Avatar",
+                            modifier = Modifier.fillMaxSize().clip(CircleShape),
+                            contentScale = ContentScale.Crop
+                        )
+                    } else {
+                        Image(
+                            painter = painterResource(resolveAvatarResource(avatarUri)),
+                            contentDescription = "Avatar",
+                            modifier = Modifier.fillMaxSize().clip(CircleShape)
+                        )
+                    }
                 }
                 Box(
                     modifier = Modifier
@@ -633,6 +644,47 @@ fun EditProfileDialog(
                     fontSize = 12.sp,
                     fontWeight = FontWeight.Bold
                 )
+
+                if (currentAvatar != null && (currentAvatar.startsWith("http://") || currentAvatar.startsWith("https://"))) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(12.dp))
+                            .background(if (selectedAvatar == currentAvatar) Color(0x3351FAC1) else Color(0x14FFFFFF))
+                            .border(1.dp, if (selectedAvatar == currentAvatar) Color(0xFF51FAC1) else Color(0x26FFFFFF), RoundedCornerShape(12.dp))
+                            .clickable { selectedAvatar = currentAvatar }
+                            .padding(8.dp)
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(40.dp)
+                                .clip(CircleShape)
+                                .border(2.dp, if (selectedAvatar == currentAvatar) Color(0xFF51FAC1) else Color(0x33FFFFFF), CircleShape)
+                        ) {
+                            AsyncImage(
+                                model = currentAvatar,
+                                contentDescription = "Google Avatar",
+                                modifier = Modifier.fillMaxSize().clip(CircleShape),
+                                contentScale = ContentScale.Crop
+                            )
+                        }
+                        Spacer(modifier = Modifier.width(10.dp))
+                        Column {
+                            Text(
+                                text = if (isEnglish) "Google Profile Picture" else "Ảnh đại diện Google",
+                                color = Color.White,
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                            Text(
+                                text = if (selectedAvatar == currentAvatar) (if (isEnglish) "Selected" else "Đang chọn") else (if (isEnglish) "Tap to select" else "Chạm để dùng lại"),
+                                color = if (selectedAvatar == currentAvatar) Color(0xFF51FAC1) else Color(0x88FFFFFF),
+                                fontSize = 10.sp
+                            )
+                        }
+                    }
+                }
 
                 Row(
                     modifier = Modifier.fillMaxWidth(),
