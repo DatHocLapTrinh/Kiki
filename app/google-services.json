@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "670207795249",
+    "project_id": "kiki-study-mentor",
+    "storage_bucket": "kiki-study-mentor.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:670207795249:android:e237d41dc9f48e996e7510",
+        "android_client_info": {
+          "package_name": "com.dathoclaptrinh.kiki"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCWObAMotj0QaLbkkgB0lyyVIrRrYlgYnY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
