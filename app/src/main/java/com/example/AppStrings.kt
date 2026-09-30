@@ -165,6 +165,12 @@ data class AppStrings(
     val today: String = "Hôm nay",
     val thisWeek: String = "Tuần này",
     val allTime: String = "Tất cả",
+    val yourRank: String = "Hạng của bạn",
+    val you: String = "Bạn",
+    val leadingRank: String = "Đang dẫn đầu Bảng Vàng! 👑",
+    val rankUpNeed: String = "Cần thêm +{xp} XP để lên hạng #{nextRank}",
+    val saveToVault: String = "Lưu vào sổ tay từ vựng",
+    val savedToVault: String = "Đã lưu vào Sổ tay ⭐",
     
     // Misc
     val menuLabel: String = "Mở menu",
@@ -355,6 +361,12 @@ val EnglishStrings = AppStrings(
     today = "Today",
     thisWeek = "This Week",
     allTime = "All Time",
+    yourRank = "Your Standing",
+    you = "You",
+    leadingRank = "Leading the Leaderboard! 👑",
+    rankUpNeed = "Need +{xp} XP to reach #{nextRank}",
+    saveToVault = "Save to Vocabulary Vault",
+    savedToVault = "Saved to Vault ⭐",
 
     menuLabel = "Open menu",
     menuTitle = "Navigation",

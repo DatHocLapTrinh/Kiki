@@ -6,8 +6,11 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.*
 import androidx.compose.material.icons.filled.*
@@ -226,414 +229,571 @@ fun QuestScreen(viewModel: StudyViewModel, onFinish: () -> Unit) {
                                 fontSize = 13.sp,
                                 modifier = Modifier.weight(1f)
                             )
-                            Spacer(modifier = Modifier.width(6.dp))
                             Icon(Icons.Default.Close, contentDescription = "Close", tint = Color(0x88FFFFFF), modifier = Modifier.size(14.dp))
                         }
                     }
                 }
             }
 
-            Spacer(modifier = Modifier.weight(1f))
+            // Scrollable Question Card Area
+            Column(
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxWidth()
+                    .verticalScroll(rememberScrollState()),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Spacer(modifier = Modifier.height(16.dp))
 
-            // Card câu hỏi chính
-            AnimatedContent(
-                targetState = currentQuestion,
-                transitionSpec = {
-                    (slideInHorizontally { width -> width } + fadeIn()).togetherWith(
-                        slideOutHorizontally { width -> -width } + fadeOut()
-                    )
-                },
-                label = "question_transition"
-            ) { qIdx ->
-                val currentQ = questions[qIdx]
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth(0.95f)
-                        .offset(y = floatAnim.dp)
-                        .clip(RoundedCornerShape(32.dp))
-                        .background(Color(0x14FFFFFF))
-                        .border(1.dp, Color(0x26FFFFFF), RoundedCornerShape(32.dp))
-                        .padding(horizontal = 20.dp, vertical = 24.dp),
-                    contentAlignment = Alignment.TopCenter
-                ) {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.fillMaxWidth()) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            modifier = Modifier.padding(bottom = 8.dp)
-                        ) {
-                            Text(
-                                text = "${strings.questPrefix}${qIdx + 1}: $chapterTitle",
-                                color = Color(0xFF27E0A9),
-                                fontSize = 12.sp,
-                                fontWeight = FontWeight.Bold,
-                                letterSpacing = 1.sp
-                            )
-                            Spacer(modifier = Modifier.width(8.dp))
-                            // Nút nghe phát âm tiếng Anh
-                            IconButton(
-                                onClick = {
-                                    haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                                    viewModel.ttsManager.speak(currentQ.question, isSlow = false)
-                                },
-                                modifier = Modifier
-                                    .size(32.dp)
-                                    .clip(CircleShape)
-                                    .background(Color(0x3351FAC1))
-                            ) {
-                                Icon(
-                                    imageVector = if (isSpeaking) Icons.Default.GraphicEq else Icons.AutoMirrored.Filled.VolumeUp,
-                                    contentDescription = "Speak Question",
-                                    tint = if (isSpeaking) Color(0xFF51FAC1) else Color(0xFFFFD166),
-                                    modifier = Modifier.size(18.dp)
-                                )
-                            }
-                            Spacer(modifier = Modifier.width(6.dp))
-                            // Nút nghe phát âm chậm ELSA Style 0.68x
-                            IconButton(
-                                onClick = {
-                                    haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                                    viewModel.ttsManager.speak(currentQ.question, isSlow = true)
-                                },
-                                modifier = Modifier
-                                    .size(32.dp)
-                                    .clip(CircleShape)
-                                    .background(Color(0x33FFB703))
-                            ) {
-                                Text("🐢", fontSize = 15.sp)
-                            }
-                        }
-
-                        // Badge chuỗi thắng liên tiếp (Combo Multiplier)
-                        if (consecutiveCorrect >= 2) {
-                            val badge = when (consecutiveCorrect) {
-                                2 -> ComboBadgeInfo("🔥 COMBO x2 (+20 XP)", Color(0x33FF9E00), Color(0xFFFF9E00), 20)
-                                3 -> ComboBadgeInfo("🔥 COMBO x3 (+30 XP)", Color(0x44FF5722), Color(0xFFFF5722), 30)
-                                4 -> ComboBadgeInfo("⚡ SIÊU COMBO x4 (+40 XP)", Color(0x44E040FB), Color(0xFFE040FB), 40)
-                                else -> ComboBadgeInfo("🌟 HUYỀN THOẠI x5 (+60 XP)", Color(0x44FFD700), Color(0xFFFFD700), 60)
-                            }
-                            Box(
-                                modifier = Modifier
-                                    .padding(bottom = 10.dp)
-                                    .clip(RoundedCornerShape(12.dp))
-                                    .background(badge.bg)
-                                    .border(1.dp, badge.border, RoundedCornerShape(12.dp))
-                                    .padding(horizontal = 14.dp, vertical = 5.dp)
+                // Card câu hỏi chính
+                AnimatedContent(
+                    targetState = currentQuestion,
+                    transitionSpec = {
+                        (slideInHorizontally { width -> width } + fadeIn()).togetherWith(
+                            slideOutHorizontally { width -> -width } + fadeOut()
+                        )
+                    },
+                    label = "question_transition"
+                ) { qIdx ->
+                    val currentQ = questions[qIdx]
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth(0.95f)
+                            .offset(y = floatAnim.dp)
+                            .clip(RoundedCornerShape(32.dp))
+                            .background(Color(0x14FFFFFF))
+                            .border(1.dp, Color(0x26FFFFFF), RoundedCornerShape(32.dp))
+                            .padding(horizontal = 20.dp, vertical = 24.dp),
+                        contentAlignment = Alignment.TopCenter
+                    ) {
+                        Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.fillMaxWidth()) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                modifier = Modifier.padding(bottom = 8.dp)
                             ) {
                                 Text(
-                                    text = badge.text,
-                                    color = Color.White,
+                                    text = "${strings.questPrefix}${qIdx + 1}: $chapterTitle",
+                                    color = Color(0xFF27E0A9),
                                     fontSize = 12.sp,
-                                    fontWeight = FontWeight.ExtraBold,
+                                    fontWeight = FontWeight.Bold,
                                     letterSpacing = 1.sp
                                 )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                // Nút nghe phát âm tiếng Anh
+                                IconButton(
+                                    onClick = {
+                                        haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                                        viewModel.ttsManager.speak(currentQ.question, isSlow = false)
+                                    },
+                                    modifier = Modifier
+                                        .size(32.dp)
+                                        .clip(CircleShape)
+                                        .background(Color(0x3351FAC1))
+                                ) {
+                                    Icon(
+                                        imageVector = if (isSpeaking) Icons.Default.GraphicEq else Icons.AutoMirrored.Filled.VolumeUp,
+                                        contentDescription = "Speak Question",
+                                        tint = if (isSpeaking) Color(0xFF51FAC1) else Color(0xFFFFD166),
+                                        modifier = Modifier.size(18.dp)
+                                    )
+                                }
+                                Spacer(modifier = Modifier.width(6.dp))
+                                // Nút nghe phát âm chậm ELSA Style 0.68x
+                                IconButton(
+                                    onClick = {
+                                        haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                                        viewModel.ttsManager.speak(currentQ.question, isSlow = true)
+                                    },
+                                    modifier = Modifier
+                                        .size(32.dp)
+                                        .clip(CircleShape)
+                                        .background(Color(0x33FFB703))
+                                ) {
+                                    Text("🐢", fontSize = 15.sp)
+                                }
+                            }
+
+                            // Badge chuỗi thắng liên tiếp (Combo Multiplier)
+                            if (consecutiveCorrect >= 2) {
+                                val badge = when (consecutiveCorrect) {
+                                    2 -> ComboBadgeInfo("🔥 COMBO x2 (+20 XP)", Color(0x33FF9E00), Color(0xFFFF9E00), 20)
+                                    3 -> ComboBadgeInfo("🔥 COMBO x3 (+30 XP)", Color(0x44FF5722), Color(0xFFFF5722), 30)
+                                    4 -> ComboBadgeInfo("⚡ SIÊU COMBO x4 (+40 XP)", Color(0x44E040FB), Color(0xFFE040FB), 40)
+                                    else -> ComboBadgeInfo("🌟 HUYỀN THOẠI x5 (+60 XP)", Color(0x44FFD700), Color(0xFFFFD700), 60)
+                                }
+                                Box(
+                                    modifier = Modifier
+                                        .padding(bottom = 10.dp)
+                                        .clip(RoundedCornerShape(12.dp))
+                                        .background(badge.bg)
+                                        .border(1.dp, badge.border, RoundedCornerShape(12.dp))
+                                        .padding(horizontal = 14.dp, vertical = 5.dp)
+                                ) {
+                                    Text(
+                                        text = badge.text,
+                                        color = Color.White,
+                                        fontSize = 12.sp,
+                                        fontWeight = FontWeight.ExtraBold,
+                                        letterSpacing = 1.sp
+                                    )
+                                }
+                            }
+
+                            Text(
+                                text = currentQ.question,
+                                color = Color.White,
+                                fontSize = 24.sp,
+                                fontWeight = FontWeight.Bold,
+                                textAlign = TextAlign.Center,
+                                lineHeight = 32.sp,
+                                modifier = Modifier.padding(bottom = 24.dp)
+                            )
+
+                            val options = currentQ.options
+                            val labels = listOf("A", "B", "C", "D")
+
+                            options.forEachIndexed { index, text ->
+                                val isSelected = selectedOption == index
+                                val isCorrectAnswer = index == currentQ.correctIndex
+
+                                val targetAlpha = if (isChecked && !isSelected && !isCorrectAnswer) 0.45f else 1f
+
+                                val (optionBg, optionBorder, optionTextColor) = when {
+                                    isChecked && isCorrectAnswer -> Triple(Color(0x3322C55E), Color(0xFF22C55E), Color(0xFF51FAC1))
+                                    isChecked && isSelected && !isCorrectAnswer -> Triple(Color(0x33EF4444), Color(0xFFEF4444), Color(0xFFFF7A7A))
+                                    isSelected -> Triple(Color(0x2651FAC1), Color(0xFF51FAC1), Color.White)
+                                    else -> Triple(Color(0x0DFFFFFF), Color(0x26FFFFFF), Color(0xCCFFFFFF))
+                                }
+
+                                val animatedBorderColor by animateColorAsState(targetValue = optionBorder, animationSpec = tween(250), label = "border_color")
+                                val animatedBgColor by animateColorAsState(targetValue = optionBg, animationSpec = tween(250), label = "bg_color")
+                                val animatedScale by animateFloatAsState(targetValue = if (isSelected) 1.02f else 1f, animationSpec = spring(stiffness = Spring.StiffnessMediumLow), label = "option_scale")
+
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(bottom = 12.dp)
+                                        .graphicsLayer {
+                                            scaleX = animatedScale
+                                            scaleY = animatedScale
+                                            alpha = targetAlpha
+                                        }
+                                        .clip(CircleShape)
+                                        .background(animatedBgColor)
+                                        .border(
+                                            width = if (isSelected || (isChecked && isCorrectAnswer)) 2.dp else 1.dp,
+                                            color = animatedBorderColor,
+                                            shape = CircleShape
+                                        )
+                                        .clickable(enabled = !isChecked) {
+                                            haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                                            selectedOption = index
+                                        }
+                                        .padding(horizontal = 20.dp, vertical = 14.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.SpaceBetween
+                                ) {
+                                    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(1f)) {
+                                        val badgeBg = when {
+                                            isChecked && isCorrectAnswer -> Color(0xFF22C55E)
+                                            isChecked && isSelected && !isCorrectAnswer -> Color(0xFFEF4444)
+                                            isSelected -> Color(0xFF51FAC1)
+                                            else -> Color(0x1AFFFFFF)
+                                        }
+                                        val badgeTextColor = if (isSelected && !isChecked) Color(0xFF0F172A) else Color.White
+
+                                        Box(
+                                            modifier = Modifier
+                                                .size(32.dp)
+                                                .clip(CircleShape)
+                                                .background(badgeBg)
+                                                .border(1.dp, animatedBorderColor, CircleShape),
+                                            contentAlignment = Alignment.Center
+                                        ) {
+                                            Text(
+                                                labels[index],
+                                                color = badgeTextColor,
+                                                fontWeight = FontWeight.ExtraBold,
+                                                fontSize = 14.sp
+                                            )
+                                        }
+                                        Spacer(modifier = Modifier.width(14.dp))
+                                        Text(
+                                            text = text,
+                                            color = optionTextColor,
+                                            fontSize = 16.sp,
+                                            fontWeight = if (isSelected || (isChecked && isCorrectAnswer)) FontWeight.Bold else FontWeight.Normal
+                                        )
+                                    }
+
+                                    if (isChecked && isCorrectAnswer) {
+                                        Icon(Icons.Default.CheckCircle, contentDescription = null, tint = Color(0xFF22C55E), modifier = Modifier.size(24.dp))
+                                    } else if (isChecked && isSelected && !isCorrectAnswer) {
+                                        Icon(Icons.Default.Cancel, contentDescription = null, tint = Color(0xFFEF4444), modifier = Modifier.size(24.dp))
+                                    } else if (isSelected) {
+                                        Icon(Icons.Default.Diamond, contentDescription = null, tint = Color(0xFF51FAC1), modifier = Modifier.size(20.dp))
+                                    }
+                                }
                             }
                         }
+                    }
+                }
 
-                        Text(
-                            text = currentQ.question,
-                            color = Color.White,
-                            fontSize = 24.sp,
-                            fontWeight = FontWeight.Bold,
-                            textAlign = TextAlign.Center,
-                            lineHeight = 32.sp,
-                            modifier = Modifier.padding(bottom = 24.dp)
-                        )
+                // Spacing to keep content clear above the sticky bottom dock
+                Spacer(modifier = Modifier.height(160.dp))
+            }
+        }
 
-                        val options = currentQ.options
-                        val labels = listOf("A", "B", "C", "D")
-
-                        options.forEachIndexed { index, text ->
-                            val isSelected = selectedOption == index
-                            val isCorrectAnswer = index == currentQ.correctIndex
-
-                            // Màu sắc hiển thị sau khi bấm Kiểm tra
-                            val (optionBg, optionBorder, optionTextColor) = when {
-                                isChecked && isCorrectAnswer -> Triple(Color(0x3322C55E), Color(0xFF22C55E), Color(0xFF51FAC1))
-                                isChecked && isSelected && !isCorrectAnswer -> Triple(Color(0x33EF4444), Color(0xFFEF4444), Color(0xFFFF7A7A))
-                                isSelected -> Triple(Color(0x2600F5D4), Color(0xFF00F5D4), Color.White)
-                                else -> Triple(Color(0x0DFFFFFF), Color(0x1AFFFFFF), Color(0xCCFFFFFF))
+        // Duolingo-style Unified Sticky Bottom Dock
+        Box(
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .fillMaxWidth()
+                .navigationBarsPadding()
+        ) {
+            AnimatedContent(
+                targetState = isChecked,
+                transitionSpec = {
+                    (slideInVertically { height -> height } + fadeIn()).togetherWith(
+                        slideOutVertically { height -> height } + fadeOut()
+                    )
+                },
+                label = "bottom_dock_state"
+            ) { checked ->
+                if (!checked) {
+                    // Pre-check Action Bar: Skip button + Check button
+                    Surface(
+                        modifier = Modifier.fillMaxWidth(),
+                        color = Color(0xF212111E),
+                        shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
+                        border = androidx.compose.foundation.BorderStroke(1.dp, Color(0x3351FAC1))
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 20.dp, vertical = 16.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            TextButton(
+                                onClick = {
+                                    haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                                    showExitDialog = true
+                                },
+                                modifier = Modifier.padding(end = 12.dp)
+                            ) {
+                                Icon(
+                                    Icons.AutoMirrored.Filled.HelpOutline,
+                                    contentDescription = null,
+                                    tint = Color(0x99FFFFFF),
+                                    modifier = Modifier.size(16.dp)
+                                )
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text(
+                                    strings.skipQuest,
+                                    color = Color(0x99FFFFFF),
+                                    fontSize = 13.sp,
+                                    fontWeight = FontWeight.Bold
+                                )
                             }
 
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(bottom = 12.dp)
-                                    .clip(CircleShape)
-                                    .background(optionBg)
-                                    .border(width = if (isSelected || (isChecked && isCorrectAnswer)) 2.dp else 1.dp, color = optionBorder, shape = CircleShape)
-                                    .clickable(enabled = !isChecked) {
+                            val isEnabled = selectedOption != -1
+                            Button(
+                                onClick = {
+                                    val currentQ = questions[currentQuestion]
+                                    isChecked = true
+                                    val isCorrect = selectedOption == currentQ.correctIndex
+                                    isCurrentCorrect = isCorrect
+                                    if (isCorrect) {
+                                        consecutiveCorrect++
+                                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                        viewModel.soundEffectManager.playCorrect(consecutiveCorrect)
+                                        if (consecutiveCorrect >= 3) {
+                                            showConfetti = true
+                                        }
+                                    } else {
+                                        consecutiveCorrect = 0
                                         haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                                        selectedOption = index
+                                        viewModel.soundEffectManager.playIncorrect()
                                     }
-                                    .padding(horizontal = 20.dp, vertical = 14.dp),
+                                },
+                                enabled = isEnabled,
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .height(52.dp),
+                                shape = RoundedCornerShape(16.dp),
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = Color.Transparent,
+                                    disabledContainerColor = Color(0x1AFFFFFF),
+                                    contentColor = Color(0xFF0F172A),
+                                    disabledContentColor = Color(0x44FFFFFF)
+                                ),
+                                contentPadding = PaddingValues(0.dp)
+                            ) {
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxSize()
+                                        .background(
+                                            if (isEnabled) Brush.horizontalGradient(
+                                                listOf(Color(0xFF51FAC1), Color(0xFF22C55E))
+                                            ) else Brush.horizontalGradient(
+                                                listOf(Color(0x1AFFFFFF), Color(0x1AFFFFFF))
+                                            ),
+                                            shape = RoundedCornerShape(16.dp)
+                                        ),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        Text(
+                                            strings.checkAnswer,
+                                            fontWeight = FontWeight.ExtraBold,
+                                            fontSize = 16.sp,
+                                            letterSpacing = 1.sp,
+                                            color = if (isEnabled) Color(0xFF0F172A) else Color(0x44FFFFFF)
+                                        )
+                                        Spacer(modifier = Modifier.width(8.dp))
+                                        Icon(
+                                            Icons.Default.Bolt,
+                                            contentDescription = null,
+                                            tint = if (isEnabled) Color(0xFF0F172A) else Color(0x44FFFFFF),
+                                            modifier = Modifier.size(20.dp)
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
+                } else {
+                    // Post-check Sheet (Celebratory Correct or Guided Review Incorrect)
+                    val currentQ = questions[currentQuestion]
+                    val bannerBg = if (isCurrentCorrect) Brush.verticalGradient(
+                        listOf(Color(0xF50D3320), Color(0xF5051810))
+                    ) else Brush.verticalGradient(
+                        listOf(Color(0xF53D1219), Color(0xF51E070B))
+                    )
+                    val bannerBorder = if (isCurrentCorrect) Color(0xFF22C55E) else Color(0xFFEF4444)
+                    val iconTint = if (isCurrentCorrect) Color(0xFF51FAC1) else Color(0xFFFF6B6B)
+
+                    Surface(
+                        modifier = Modifier.fillMaxWidth(),
+                        color = Color.Transparent,
+                        shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
+                        border = androidx.compose.foundation.BorderStroke(1.5.dp, bannerBorder)
+                    ) {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .background(bannerBg)
+                                .padding(horizontal = 24.dp, vertical = 20.dp)
+                        ) {
+                            // Header row: Icon + Notice + Combo Tag
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
                                 verticalAlignment = Alignment.CenterVertically,
                                 horizontalArrangement = Arrangement.SpaceBetween
                             ) {
-                                Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(1f)) {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    modifier = Modifier.weight(1f)
+                                ) {
                                     Box(
                                         modifier = Modifier
-                                            .size(32.dp)
+                                            .size(40.dp)
                                             .clip(CircleShape)
-                                            .background(Color(0x0DFFFFFF))
-                                            .border(1.dp, optionBorder, CircleShape),
+                                            .background(if (isCurrentCorrect) Color(0x3322C55E) else Color(0x33EF4444)),
                                         contentAlignment = Alignment.Center
                                     ) {
-                                        Text(labels[index], color = optionTextColor, fontWeight = FontWeight.Bold)
+                                        Icon(
+                                            imageVector = if (isCurrentCorrect) Icons.Default.CheckCircle else Icons.Default.Cancel,
+                                            contentDescription = null,
+                                            tint = iconTint,
+                                            modifier = Modifier.size(28.dp)
+                                        )
                                     }
-                                    Spacer(modifier = Modifier.width(14.dp))
-                                    Text(text, color = optionTextColor, fontSize = 16.sp)
+                                    Spacer(modifier = Modifier.width(12.dp))
+                                    Text(
+                                        text = if (isCurrentCorrect) strings.correctNotice else strings.incorrectNotice,
+                                        color = Color.White,
+                                        fontSize = 18.sp,
+                                        fontWeight = FontWeight.ExtraBold
+                                    )
                                 }
 
-                                if (isChecked && isCorrectAnswer) {
-                                    Icon(Icons.Default.CheckCircle, contentDescription = null, tint = Color(0xFF22C55E), modifier = Modifier.size(22.dp))
-                                } else if (isChecked && isSelected && !isCorrectAnswer) {
-                                    Icon(Icons.Default.Cancel, contentDescription = null, tint = Color(0xFFEF4444), modifier = Modifier.size(22.dp))
-                                } else if (isSelected) {
-                                    Icon(Icons.Default.Diamond, contentDescription = null, tint = Color(0xFF27E0A9), modifier = Modifier.size(20.dp))
+                                if (isCurrentCorrect && consecutiveCorrect >= 2) {
+                                    val bonus = when (consecutiveCorrect) {
+                                        2 -> "+20 XP"
+                                        3 -> "+30 XP"
+                                        4 -> "+40 XP"
+                                        else -> "+60 XP"
+                                    }
+                                    Box(
+                                        modifier = Modifier
+                                            .clip(RoundedCornerShape(12.dp))
+                                            .background(Color(0x33FFD166))
+                                            .border(1.dp, Color(0xFFFFD166), RoundedCornerShape(12.dp))
+                                            .padding(horizontal = 10.dp, vertical = 4.dp)
+                                    ) {
+                                        Text(
+                                            text = "🔥 ${consecutiveCorrect}x ($bonus)",
+                                            color = Color(0xFFFFD166),
+                                            fontSize = 12.sp,
+                                            fontWeight = FontWeight.ExtraBold
+                                        )
+                                    }
                                 }
                             }
-                        }
 
-                        Spacer(modifier = Modifier.height(14.dp))
-
-                        // Nút hành động: KIỂM TRA (khi chưa check)
-                        if (!isChecked) {
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxWidth(0.85f)
-                                    .height(52.dp)
-                                    .clip(CircleShape)
-                                    .background(
-                                        if (selectedOption != -1) Brush.linearGradient(listOf(Color(0xFFEAB308), Color(0xFF22C55E)))
-                                        else Brush.linearGradient(listOf(Color(0x44EAB308), Color(0x4422C55E)))
-                                    )
-                                    .clickable(enabled = selectedOption != -1) {
-                                        isChecked = true
-                                        val isCorrect = selectedOption == currentQ.correctIndex
-                                        isCurrentCorrect = isCorrect
-                                        if (isCorrect) {
-                                            consecutiveCorrect++
-                                            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                                            viewModel.soundEffectManager.playCorrect(consecutiveCorrect)
-                                            if (consecutiveCorrect >= 3) {
-                                                showConfetti = true
-                                            }
-                                        } else {
-                                            consecutiveCorrect = 0
-                                            haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                                            viewModel.soundEffectManager.playIncorrect()
+                            // If incorrect: reveal correct answer with TTS audio + 1-tap save to vault
+                            if (!isCurrentCorrect) {
+                                Spacer(modifier = Modifier.height(12.dp))
+                                val correctText = currentQ.options.getOrNull(currentQ.correctIndex) ?: ""
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .clip(RoundedCornerShape(16.dp))
+                                        .background(Color(0x26FFD166))
+                                        .border(1.dp, Color(0x4DFFD166), RoundedCornerShape(16.dp))
+                                        .padding(horizontal = 14.dp, vertical = 10.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.SpaceBetween
+                                ) {
+                                    Column(modifier = Modifier.weight(1f)) {
+                                        Text(
+                                            text = strings.correctAnswerNotice,
+                                            color = Color(0xB3FFFFFF),
+                                            fontSize = 12.sp,
+                                            fontWeight = FontWeight.Medium
+                                        )
+                                        Text(
+                                            text = correctText,
+                                            color = Color(0xFFFFD166),
+                                            fontSize = 16.sp,
+                                            fontWeight = FontWeight.Bold
+                                        )
+                                    }
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        IconButton(
+                                            onClick = {
+                                                haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                                                viewModel.ttsManager.speak(correctText, isSlow = false)
+                                            },
+                                            modifier = Modifier.size(36.dp)
+                                        ) {
+                                            Icon(
+                                                Icons.AutoMirrored.Filled.VolumeUp,
+                                                contentDescription = "Speak Normal",
+                                                tint = Color(0xFFFFD166),
+                                                modifier = Modifier.size(20.dp)
+                                            )
                                         }
-                                    },
-                                contentAlignment = Alignment.Center
+                                        Spacer(modifier = Modifier.width(4.dp))
+                                        IconButton(
+                                            onClick = {
+                                                haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                                                viewModel.ttsManager.speak(correctText, isSlow = true)
+                                            },
+                                            modifier = Modifier.size(36.dp)
+                                        ) {
+                                            Text("🐢", fontSize = 16.sp)
+                                        }
+                                    }
+                                }
+
+                                // 1-tap save to vault button
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(top = 8.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.End
+                                ) {
+                                    TextButton(
+                                        onClick = {
+                                            if (!isSavedToVault) {
+                                                isSavedToVault = true
+                                                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                                viewModel.saveWord(
+                                                    word = currentQ.question,
+                                                    meaning = correctText,
+                                                    example = "Answer: $correctText"
+                                                )
+                                                Toast.makeText(
+                                                    context,
+                                                    if (isEnglish) "Saved to Vocabulary Vault! ⭐" else "Đã lưu vào Sổ tay từ vựng! ⭐",
+                                                    Toast.LENGTH_SHORT
+                                                ).show()
+                                            }
+                                        }
+                                    ) {
+                                        Icon(
+                                            imageVector = if (isSavedToVault) Icons.Default.BookmarkAdded else Icons.Default.BookmarkBorder,
+                                            contentDescription = "Save to vault",
+                                            tint = Color(0xFF51FAC1),
+                                            modifier = Modifier.size(18.dp)
+                                        )
+                                        Spacer(modifier = Modifier.width(6.dp))
+                                        Text(
+                                            text = if (isSavedToVault) strings.savedToVault else strings.saveToVault,
+                                            color = Color(0xFF51FAC1),
+                                            fontSize = 13.sp,
+                                            fontWeight = FontWeight.Bold
+                                        )
+                                    }
+                                }
+                            }
+
+                            Spacer(modifier = Modifier.height(14.dp))
+
+                            // Nút TIẾP TỤC (Continue)
+                            Button(
+                                onClick = {
+                                    haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                                    userAnswers[currentQuestion] = selectedOption
+                                    if (currentQuestion < totalQuestions - 1) {
+                                        currentQuestion++
+                                        selectedOption = -1
+                                        isChecked = false
+                                        isSavedToVault = false
+                                    } else {
+                                        val finalResults = questions.mapIndexed { idx, item ->
+                                            val copy = QuestItem(item.question, item.options, item.correctIndex)
+                                            copy.selectedIndex = userAnswers[idx] ?: -1
+                                            copy
+                                        }
+                                        viewModel.completeCurrentLesson()
+                                        viewModel.analyzeQuestResults(context, finalResults)
+                                        onFinish()
+                                    }
+                                },
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(52.dp),
+                                shape = RoundedCornerShape(16.dp),
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = if (isCurrentCorrect) Color(0xFF22C55E) else Color(0xFFEF4444),
+                                    contentColor = Color.White
+                                )
                             ) {
-                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.Center
+                                ) {
                                     Text(
-                                        strings.checkAnswer,
-                                        color = if (selectedOption != -1) Color(0xFF1A1A2E) else Color(0x661A1A2E),
+                                        strings.continueLesson,
                                         fontWeight = FontWeight.ExtraBold,
+                                        fontSize = 16.sp,
                                         letterSpacing = 1.sp
                                     )
                                     Spacer(modifier = Modifier.width(8.dp))
                                     Icon(
-                                        Icons.Default.Bolt,
+                                        Icons.AutoMirrored.Filled.ArrowForward,
                                         contentDescription = null,
-                                        tint = if (selectedOption != -1) Color(0xFF1A1A2E) else Color(0x661A1A2E)
+                                        modifier = Modifier.size(20.dp)
                                     )
                                 }
                             }
                         }
                     }
-                }
-            }
-
-            Spacer(modifier = Modifier.weight(1f))
-
-            // Footer bỏ qua
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(bottom = 24.dp),
-                horizontalArrangement = Arrangement.Center,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Row(
-                    modifier = Modifier
-                        .clickable { showExitDialog = true }
-                        .padding(8.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Icon(Icons.AutoMirrored.Filled.HelpOutline, contentDescription = null, tint = Color(0x99FFFFFF), modifier = Modifier.size(16.dp))
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(strings.skipQuest, color = Color(0x99FFFFFF), fontSize = 12.sp, fontWeight = FontWeight.Bold)
-                }
-            }
-        }
-
-        // Instant Feedback Bottom Sheet / Banner khi vừa kiểm tra đáp án
-        AnimatedVisibility(
-            visible = isChecked,
-            enter = slideInVertically(initialOffsetY = { it }) + fadeIn(),
-            exit = slideOutVertically(targetOffsetY = { it }) + fadeOut(),
-            modifier = Modifier.align(Alignment.BottomCenter)
-        ) {
-            val currentQ = questions[currentQuestion]
-            val bannerBg = if (isCurrentCorrect) Color(0xF00D3320) else Color(0xF0401015)
-            val bannerBorder = if (isCurrentCorrect) Color(0xFF22C55E) else Color(0xFFEF4444)
-            val iconTint = if (isCurrentCorrect) Color(0xFF51FAC1) else Color(0xFFFF7A7A)
-
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clip(RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp))
-                    .background(bannerBg)
-                    .border(1.5.dp, bannerBorder, RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp))
-                    .padding(horizontal = 24.dp, vertical = 20.dp)
-            ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(
-                        imageVector = if (isCurrentCorrect) Icons.Default.CheckCircle else Icons.Default.Cancel,
-                        contentDescription = null,
-                        tint = iconTint,
-                        modifier = Modifier.size(28.dp)
-                    )
-                    Spacer(modifier = Modifier.width(12.dp))
-                    Text(
-                        text = if (isCurrentCorrect) strings.correctNotice else strings.incorrectNotice,
-                        color = Color.White,
-                        fontSize = 18.sp,
-                        fontWeight = FontWeight.ExtraBold
-                    )
-                }
-
-                if (isCurrentCorrect && consecutiveCorrect >= 2) {
-                    val bonus = when (consecutiveCorrect) {
-                        2 -> "+20 XP"
-                        3 -> "+30 XP"
-                        4 -> "+40 XP"
-                        else -> "+60 XP (MAX)"
-                    }
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Text(
-                        text = if (isEnglish) "🔥 ${consecutiveCorrect}x Streak Combo! Bonus $bonus!" else "🔥 Combo ${consecutiveCorrect}x liên tiếp! Nhận thưởng $bonus!",
-                        color = Color(0xFFFFD166),
-                        fontSize = 13.sp,
-                        fontWeight = FontWeight.Bold
-                    )
-                }
-
-                if (!isCurrentCorrect) {
-                    Spacer(modifier = Modifier.height(6.dp))
-                    val correctText = currentQ.options.getOrNull(currentQ.correctIndex) ?: ""
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.SpaceBetween
-                    ) {
-                        Text(
-                            text = "${strings.correctAnswerNotice} $correctText",
-                            color = Color(0xFFFFD166),
-                            fontSize = 15.sp,
-                            fontWeight = FontWeight.SemiBold,
-                            modifier = Modifier.weight(1f)
-                        )
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            IconButton(
-                                onClick = {
-                                    haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                                    viewModel.ttsManager.speak(correctText, isSlow = false)
-                                },
-                                modifier = Modifier.size(32.dp)
-                            ) {
-                                Icon(Icons.AutoMirrored.Filled.VolumeUp, contentDescription = "Listen", tint = Color(0xFFFFD166), modifier = Modifier.size(20.dp))
-                            }
-                            Spacer(modifier = Modifier.width(4.dp))
-                            IconButton(
-                                onClick = {
-                                    haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                                    viewModel.ttsManager.speak(correctText, isSlow = true)
-                                },
-                                modifier = Modifier.size(32.dp)
-                            ) {
-                                Text("🐢", fontSize = 15.sp)
-                            }
-                        }
-                    }
-                }
-
-                // Nút lưu vào Sổ tay từ vựng
-                Row(
-                    modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.End
-                ) {
-                    TextButton(
-                        onClick = {
-                            if (!isSavedToVault) {
-                                isSavedToVault = true
-                                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                                val correctText = currentQ.options.getOrNull(currentQ.correctIndex) ?: ""
-                                viewModel.saveWord(
-                                    word = currentQ.question,
-                                    meaning = correctText,
-                                    example = "Answer: $correctText"
-                                )
-                                Toast.makeText(
-                                    context,
-                                    if (isEnglish) "Saved to Vocabulary Vault! ⭐" else "Đã lưu vào Sổ tay từ vựng! ⭐",
-                                    Toast.LENGTH_SHORT
-                                ).show()
-                            }
-                        }
-                    ) {
-                        Icon(
-                            imageVector = if (isSavedToVault) Icons.Default.BookmarkAdded else Icons.Default.BookmarkBorder,
-                            contentDescription = "Save to vault",
-                            tint = Color(0xFF51FAC1),
-                            modifier = Modifier.size(18.dp)
-                        )
-                        Spacer(modifier = Modifier.width(6.dp))
-                        Text(
-                            text = if (isSavedToVault) (if (isEnglish) "Saved ⭐" else "Đã lưu ⭐") else (if (isEnglish) "Bookmark question" else "Lưu vào sổ tay"),
-                            color = Color(0xFF51FAC1),
-                            fontSize = 13.sp,
-                            fontWeight = FontWeight.Bold
-                        )
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(10.dp))
-
-                // Nút TIẾP TỤC
-                Button(
-                    onClick = {
-                        haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                        userAnswers[currentQuestion] = selectedOption
-                        if (currentQuestion < totalQuestions - 1) {
-                            currentQuestion++
-                            selectedOption = -1
-                            isChecked = false
-                        } else {
-                            // Cập nhật câu trả lời đã chọn vào danh sách kết quả bất biến
-                            val finalResults = questions.mapIndexed { idx, item ->
-                                val copy = QuestItem(item.question, item.options, item.correctIndex)
-                                copy.selectedIndex = userAnswers[idx] ?: -1
-                                copy
-                            }
-                            viewModel.completeCurrentLesson()
-                            viewModel.analyzeQuestResults(context, finalResults)
-                            onFinish()
-                        }
-                    },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(50.dp),
-                    shape = CircleShape,
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = if (isCurrentCorrect) Color(0xFF22C55E) else Color(0xFFEF4444),
-                        contentColor = Color.White
-                    )
-                ) {
-                    Text(strings.continueLesson, fontWeight = FontWeight.Bold, fontSize = 16.sp)
                 }
             }
         }
