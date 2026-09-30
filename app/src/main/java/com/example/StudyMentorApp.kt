@@ -407,6 +407,7 @@ fun MainNavigation(viewModel: StudyViewModel, onLogout: () -> Unit) {
                 JourneyMapScreen(
                     viewModel = viewModel,
                     onStartQuest = { navController.navigate("progression_map") },
+                    onStartActiveLesson = { navController.navigate("quest_active") },
                     onLogout = onLogout,
                     onViewStats = { navController.navigate("profile") { launchSingleTop = true } }
                 )
@@ -475,7 +476,7 @@ fun FloatingNavBar(navController: androidx.navigation.NavHostController, modifie
         verticalAlignment = Alignment.CenterVertically
     ) {
         NavItem("map", Icons.Default.Map, strings.navMap, currentRoute, navController)
-        NavItem("quests", Icons.AutoMirrored.Filled.MenuBook, strings.navLearn, currentRoute, navController)
+        NavItem("quests", Icons.Default.TaskAlt, strings.navLearn, currentRoute, navController)
         NavItem("ask", Icons.Default.ChatBubbleOutline, strings.navTutor, currentRoute, navController)
         NavItem("rank", Icons.Default.EmojiEvents, strings.navRank, currentRoute, navController)
         NavItem("profile", Icons.Default.Person, strings.navProfile, currentRoute, navController)

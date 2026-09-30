@@ -138,8 +138,8 @@ fun QuestScreen(viewModel: StudyViewModel, onFinish: () -> Unit) {
                         )
                     }
                     Text(
-                        text = "${strings.manaLevel}${currentQuestion + 1}/$totalQuestions",
-                        color = Color(0xFF27E0A9),
+                        text = "${if (isEnglish) "Question" else "Câu"} ${currentQuestion + 1}/$totalQuestions",
+                        color = Color(0xFF51FAC1),
                         fontSize = 12.sp,
                         fontWeight = FontWeight.Bold,
                         letterSpacing = 1.sp,

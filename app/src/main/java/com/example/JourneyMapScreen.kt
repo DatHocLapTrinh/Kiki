@@ -48,6 +48,7 @@ import com.example.viewmodel.StudyViewModel
 fun JourneyMapScreen(
     viewModel: StudyViewModel,
     onStartQuest: () -> Unit = {},
+    onStartActiveLesson: () -> Unit = {},
     onLogout: () -> Unit = {},
     onViewStats: () -> Unit = {}
 ) {
@@ -55,6 +56,8 @@ fun JourneyMapScreen(
     val scrollState = rememberScrollState()
     val userName by viewModel.userName.observeAsState("Adventurer")
     val isEnglish by viewModel.isEnglish.observeAsState(false)
+    val currentNode by viewModel.currentNode.observeAsState(1)
+    val currentChapterTitle by viewModel.currentChapterTitle.observeAsState("English Fundamentals")
     val availableChapters by viewModel.availableChapters.observeAsState(emptyList())
     val chapterProgress by viewModel.chapterProgress.observeAsState(emptyList())
     val chaptersLoading by viewModel.chaptersLoading.observeAsState(false)
@@ -102,7 +105,26 @@ fun JourneyMapScreen(
                 onViewStats = onViewStats,
                 strings = strings
             )
-            Spacer(modifier = Modifier.height(28.dp))
+            Spacer(modifier = Modifier.height(16.dp))
+
+            if (stages.isNotEmpty()) {
+                HeroResumeCard(
+                    chapterTitle = currentChapterTitle,
+                    currentLessonIndex = currentNode.coerceIn(1, 5),
+                    isEnglish = isEnglish,
+                    onResumeLesson = {
+                        val currentStage = stages.getOrNull(currentStageIndex) ?: stages.firstOrNull()
+                        if (currentStage != null) {
+                            viewModel.selectChapterByTitle(currentStage.title, currentStage.sequence)
+                        }
+                        viewModel.startLesson((currentNode - 1).coerceAtLeast(0))
+                        onStartActiveLesson()
+                    }
+                )
+                Spacer(modifier = Modifier.height(24.dp))
+            } else {
+                Spacer(modifier = Modifier.height(12.dp))
+            }
 
             if (stages.isEmpty()) {
                 Box(modifier = Modifier.fillMaxWidth().height(420.dp), contentAlignment = Alignment.Center) {
@@ -252,6 +274,104 @@ private fun JourneySummarySection(
                 Spacer(modifier = Modifier.height(5.dp))
                 Text(strings.viewStats, color = Color.White, fontSize = 11.sp, textAlign = TextAlign.Center, fontWeight = FontWeight.SemiBold)
                 Icon(Icons.Default.ChevronRight, contentDescription = null, tint = Color(0xFFB7A7D9), modifier = Modifier.size(18.dp))
+            }
+        }
+    }
+}
+
+@Composable
+private fun HeroResumeCard(
+    chapterTitle: String,
+    currentLessonIndex: Int,
+    isEnglish: Boolean,
+    onResumeLesson: () -> Unit
+) {
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 22.dp)
+            .clip(RoundedCornerShape(22.dp))
+            .background(
+                Brush.linearGradient(
+                    listOf(Color(0xFF1B1238), Color(0xFF0C243B))
+                )
+            )
+            .border(
+                1.5.dp,
+                Brush.horizontalGradient(listOf(Color(0xFF51FAC1), Color(0xFF7E5CFF))),
+                RoundedCornerShape(22.dp)
+            )
+            .clickable(onClick = onResumeLesson)
+            .padding(horizontal = 18.dp, vertical = 14.dp)
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(1f)) {
+                Box(
+                    modifier = Modifier
+                        .size(46.dp)
+                        .clip(CircleShape)
+                        .background(Color(0x3351FAC1))
+                        .border(1.dp, Color(0x6651FAC1), CircleShape),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        Icons.Default.PlayArrow,
+                        contentDescription = null,
+                        tint = Color(0xFF51FAC1),
+                        modifier = Modifier.size(26.dp)
+                    )
+                }
+                Spacer(modifier = Modifier.width(14.dp))
+                Column {
+                    Text(
+                        text = if (isEnglish) "CONTINUE LEARNING" else "TIẾP TỤC HỌC NGAY",
+                        color = Color(0xFF51FAC1),
+                        fontSize = 10.sp,
+                        fontWeight = FontWeight.Bold,
+                        letterSpacing = 1.2.sp
+                    )
+                    Text(
+                        text = chapterTitle,
+                        color = Color.White,
+                        fontSize = 15.sp,
+                        fontWeight = FontWeight.ExtraBold,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                    Text(
+                        text = if (isEnglish) "Lesson $currentLessonIndex/5 ready to start" else "Bài $currentLessonIndex/5 đang chờ bạn",
+                        color = Color(0xB3FFFFFF),
+                        fontSize = 11.sp
+                    )
+                }
+            }
+            Spacer(modifier = Modifier.width(10.dp))
+            Box(
+                modifier = Modifier
+                    .clip(RoundedCornerShape(16.dp))
+                    .background(Brush.horizontalGradient(listOf(Color(0xFF51FAC1), Color(0xFF2DD4BF))))
+                    .padding(horizontal = 14.dp, vertical = 10.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        text = if (isEnglish) "START" else "HỌC",
+                        color = Color(0xFF0D0A1A),
+                        fontWeight = FontWeight.Black,
+                        fontSize = 12.sp
+                    )
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Icon(
+                        Icons.AutoMirrored.Filled.ArrowForward,
+                        contentDescription = null,
+                        tint = Color(0xFF0D0A1A),
+                        modifier = Modifier.size(15.dp)
+                    )
+                }
             }
         }
     }

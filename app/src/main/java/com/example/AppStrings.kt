@@ -4,7 +4,7 @@ import androidx.compose.runtime.staticCompositionLocalOf
 
 data class AppStrings(
     // IntroScreen
-    val awakenMagic: String = "ĐÁNH THỨC SỨC MẠNH",
+    val awakenMagic: String = "KHÁM PHÁ TIỀM NĂNG",
     val igniteJourney: String = "BẮT ĐẦU HÀNH TRÌNH",
     val introTitle1: String = "Học Tập Thông Minh",
     val introDesc1: String = "Khám phá chân trời kiến thức mới với AI",
@@ -47,8 +47,8 @@ data class AppStrings(
     val noChaptersFound: String = "Không tìm thấy chương nào cho cấp độ của bạn. Vui lòng thử lại!",
     val manaLabel: String = "MANA",
     // RankRevealScreen
-    val destinyRevealed: String = "ĐỊNH MỆNH ĐÃ HÉ LỘ!",
-    val crystalKnight: String = "Hiệp Sĩ\nPha Lê",
+    val destinyRevealed: String = "XUẤT SẮC HOÀN THÀNH!",
+    val crystalKnight: String = "Chinh Phục\nXuất Sắc",
     val levelAchieved: String = "Bạn đã hoàn thành bài học xuất sắc và mở khóa chặng tiếp theo!",
     val startingManaAwarded: String = "+50 XP & Mở Khóa Chặng Mới!",
     val checkAIAnalysis: String = "XEM PHÂN TÍCH AI",
@@ -72,9 +72,9 @@ data class AppStrings(
     val chestOpenedMsg: String = "Đã mở rương! +500 XP",
     
     // QuestScreen
-    val manaLevel: String = "NĂNG LƯỢNG",
-    val questPrefix: String = "THỬ THÁCH #",
-    val castSpell: String = "TRẢ LỜI",
+    val manaLevel: String = "Câu ",
+    val questPrefix: String = "CÂU HỎI #",
+    val castSpell: String = "KIỂM TRA",
     val skipQuest: String = "BỎ QUA",
     val life: String = "MẠNG",
     val loading: String = "Đang tải...",
@@ -119,9 +119,9 @@ data class AppStrings(
     val quizWrong: String = "Sai! Đáp án đúng: ",
     val quizResult: String = "Kết quả: ",
     val quizClose: String = "Đóng",
-    val kikiDecodingMagic: String = "Kiki đang giải mã phép thuật",
-    val summonMagic: String = "Triệu Hồi Phép Thuật",
-    val summonMagicDesc: String = "Nhập câu hỏi hoặc chụp ảnh sách ma thuật để Cố Vấn AI giúp bạn giải mã ngay lập tức!",
+    val kikiDecodingMagic: String = "Kiki đang giải đáp",
+    val summonMagic: String = "Hỏi Đáp Cùng Kiki AI",
+    val summonMagicDesc: String = "Nhập câu hỏi hoặc chọn câu hỏi gợi ý để Gia Sư Kiki AI hỗ trợ bạn ngay lập tức!",
     val castingQuestion: String = "Đang đặt câu hỏi...",
     
     // RankScreen
@@ -185,7 +185,7 @@ data class AppStrings(
     val openReward: String = "XEM PHẦN THƯỞNG",
     val starsLabel: String = "SAO",
     val navMap: String = "Bản đồ",
-    val navLearn: String = "Học",
+    val navLearn: String = "Nhiệm vụ",
     val navTutor: String = "Gia sư",
     val navRank: String = "Xếp hạng",
     val navProfile: String = "Hồ sơ",
@@ -205,7 +205,7 @@ data class AppStrings(
 val VietnameseStrings = AppStrings()
 
 val EnglishStrings = AppStrings(
-    awakenMagic = "AWAKEN YOUR MAGIC",
+    awakenMagic = "AWAKEN YOUR POTENTIAL",
     igniteJourney = "IGNITE JOURNEY",
     introTitle1 = "Smart Learning",
     introDesc1 = "Discover new horizons of knowledge with AI",
@@ -246,8 +246,8 @@ val EnglishStrings = AppStrings(
     
     noChaptersFound = "No chapters found for your level. Try another preference!",
     manaLabel = "MANA",
-    destinyRevealed = "DESTINY REVEALED!",
-    crystalKnight = "Crystal\nKnight",
+    destinyRevealed = "LESSON COMPLETED!",
+    crystalKnight = "Mastery\nAchieved",
     levelAchieved = "You successfully mastered the lesson and unlocked the next stage!",
     startingManaAwarded = "+50 XP & Next Stage Reward!",
     checkAIAnalysis = "CHECK AI ANALYSIS",
@@ -270,9 +270,9 @@ val EnglishStrings = AppStrings(
     noActiveQuests = "No active quests today",
     chestOpenedMsg = "Chest opened! +500 XP",
     
-    manaLevel = "MANA LEVEL",
-    questPrefix = "QUEST #",
-    castSpell = "CAST SPELL",
+    manaLevel = "Question ",
+    questPrefix = "QUESTION #",
+    castSpell = "CHECK",
     skipQuest = "SKIP QUEST",
     life = "LIFE",
     loading = "Loading...",
@@ -314,9 +314,9 @@ val EnglishStrings = AppStrings(
     quizWrong = "Wrong! Answer: ",
     quizResult = "Result: ",
     quizClose = "Close",
-    kikiDecodingMagic = "Kiki is decoding magic",
-    summonMagic = "Summon Magic",
-    summonMagicDesc = "Enter a problem or take a photo of a magic book so AI Mentor can help you decode it instantly!",
+    kikiDecodingMagic = "Kiki is analyzing",
+    summonMagic = "Ask Kiki AI",
+    summonMagicDesc = "Type your question or choose a prompt to get instant smart guidance from Kiki AI!",
     castingQuestion = "Casting question...",
     
     rankedArena = "Ranked Arena",
@@ -374,7 +374,7 @@ val EnglishStrings = AppStrings(
     openReward = "VIEW REWARD",
     starsLabel = "STARS",
     navMap = "Map",
-    navLearn = "Learn",
+    navLearn = "Quests",
     navTutor = "Tutor",
     navRank = "Rank",
     navProfile = "Profile",
