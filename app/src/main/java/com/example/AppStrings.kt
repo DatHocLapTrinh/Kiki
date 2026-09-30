@@ -45,7 +45,7 @@ data class AppStrings(
     val dontHaveAccount: String = "Chưa có tài khoản? Đăng ký",
     // MainMapScreen
     val noChaptersFound: String = "Không tìm thấy chương nào cho cấp độ của bạn. Vui lòng thử lại!",
-    val manaLabel: String = "MANA",
+    val manaLabel: String = "NĂNG LƯỢNG",
     // RankRevealScreen
     val destinyRevealed: String = "XUẤT SẮC HOÀN THÀNH!",
     val crystalKnight: String = "Chinh Phục\nXuất Sắc",
@@ -251,7 +251,7 @@ val EnglishStrings = AppStrings(
     dontHaveAccount = "Don't have an account? Sign Up",
     
     noChaptersFound = "No chapters found for your level. Try another preference!",
-    manaLabel = "MANA",
+    manaLabel = "ENERGY",
     destinyRevealed = "LESSON COMPLETED!",
     crystalKnight = "Mastery\nAchieved",
     levelAchieved = "You successfully mastered the lesson and unlocked the next stage!",

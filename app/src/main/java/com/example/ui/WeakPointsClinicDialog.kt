@@ -109,7 +109,7 @@ fun WeakPointsClinicDialog(
                                     letterSpacing = 1.sp
                                 )
                                 Text(
-                                    text = if (isEnglish) "${weakPoints.size} Mistakes Under Rehab" else "${weakPoints.size} Lỗ hổng cần phục hồi",
+                                    text = if (isEnglish) "${weakPoints.size} Mistakes to Review" else "${weakPoints.size} Lỗi sai cần củng cố",
                                     color = Color.White,
                                     fontSize = 17.sp,
                                     fontWeight = FontWeight.ExtraBold
@@ -149,7 +149,7 @@ fun WeakPointsClinicDialog(
                             contentAlignment = Alignment.Center
                         ) {
                             Text(
-                                text = if (isEnglish) "⚡ Rehab Quiz" else "⚡ Trắc Nghiệm Chữa Lành",
+                                text = if (isEnglish) "⚡ Practice Quiz" else "⚡ Trắc Nghiệm Củng Cố",
                                 color = if (selectedTab == 0) Color(0xFF0F172A) else Color(0x99FFFFFF),
                                 fontWeight = FontWeight.Bold,
                                 fontSize = 13.sp
@@ -207,7 +207,7 @@ fun WeakPointsClinicDialog(
                                 }
                                 Spacer(modifier = Modifier.height(18.dp))
                                 Text(
-                                    text = if (isEnglish) "100% Health Status!" else "Sức Khỏe Kiến Thức Tuyệt Đối!",
+                                    text = if (isEnglish) "100% Mastery Status!" else "Đã Nắm Vững Toàn Bộ!",
                                     color = Color.White,
                                     fontSize = 18.sp,
                                     fontWeight = FontWeight.Bold,
@@ -216,9 +216,9 @@ fun WeakPointsClinicDialog(
                                 Spacer(modifier = Modifier.height(8.dp))
                                 Text(
                                     text = if (isEnglish)
-                                        "You have mastered all challenged questions! No mistakes left in your clinic. Keep conquering quests!"
+                                        "You have mastered all challenged questions! No mistakes left in your review bank. Keep conquering quests!"
                                     else
-                                        "Bạn đã nắm vững toàn bộ kiến thức! Không có lỗi sai nào cần chữa lành. Tiếp tục làm nhiệm vụ để tích lũy XP nhé!",
+                                        "Bạn đã nắm vững toàn bộ kiến thức! Không có câu hỏi nào cần ôn lại. Tiếp tục làm nhiệm vụ để tích lũy XP nhé!",
                                     color = Color(0x99FFFFFF),
                                     fontSize = 14.sp,
                                     textAlign = TextAlign.Center,
@@ -501,7 +501,7 @@ private fun ClinicRehabQuizView(
                 )
             ) {
                 Text(
-                    text = if (isEnglish) "Check & Heal (+Mana, +25 XP)" else "Kiểm Tra & Phục Hồi (+Mana, +25 XP)",
+                    text = if (isEnglish) "Check & Overcome (+25 XP)" else "Kiểm Tra & Khắc Phục (+25 XP)",
                     color = Color.White,
                     fontWeight = FontWeight.Bold,
                     fontSize = 15.sp
@@ -528,7 +528,7 @@ private fun ClinicRehabQuizView(
                         colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF22C55E))
                     ) {
                         Text(
-                            text = if (isEnglish) "Healed! Next (+25 XP) ✨" else "Đã Chữa Lành! (+25 XP) ✨",
+                            text = if (isEnglish) "Mastered! Next (+25 XP) ✨" else "Đã Nắm Vững! (+25 XP) ✨",
                             fontWeight = FontWeight.Bold,
                             color = Color.White
                         )
@@ -678,7 +678,7 @@ private fun ClinicRecordsListView(
                             Icon(Icons.Default.Check, contentDescription = null, modifier = Modifier.size(16.dp))
                             Spacer(modifier = Modifier.width(6.dp))
                             Text(
-                                text = if (isEnglish) "Mark Healed (+Mana)" else "Đã Hiểu (+Mana)",
+                                text = if (isEnglish) "Mark Mastered (+25 XP)" else "Đã Nắm Vững (+25 XP)",
                                 fontSize = 12.sp,
                                 fontWeight = FontWeight.Bold
                             )

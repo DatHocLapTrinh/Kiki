@@ -226,7 +226,7 @@ fun QuestsScreen(viewModel: StudyViewModel) {
                                             letterSpacing = 1.sp
                                         )
                                         Text(
-                                            text = if (isEnglish) "${weakPoints.size} Mistakes Ready for Rehab (+Mana)" else "${weakPoints.size} Lỗi cần chữa lành (+Mana, XP)",
+                                            text = if (isEnglish) "${weakPoints.size} Mistakes Ready to Review (+XP)" else "${weakPoints.size} Lỗi sai cần củng cố (+XP)",
                                             color = Color.White,
                                             fontSize = 14.sp,
                                             fontWeight = FontWeight.Bold

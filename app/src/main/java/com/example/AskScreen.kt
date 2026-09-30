@@ -189,7 +189,7 @@ fun AskScreen(viewModel: StudyViewModel) {
                 LazyColumn(
                     state = listState,
                     modifier = Modifier.fillMaxSize(),
-                    contentPadding = PaddingValues(bottom = 160.dp),
+                    contentPadding = PaddingValues(top = 8.dp, bottom = 16.dp),
                     reverseLayout = false
                 ) {
                     // Toàn bộ lịch sử chat - cũ nhất trên, mới nhất dưới
@@ -392,7 +392,7 @@ fun AskScreen(viewModel: StudyViewModel) {
                     },
                     modifier = Modifier
                         .align(Alignment.BottomEnd)
-                        .padding(bottom = 80.dp, end = 8.dp)
+                        .padding(bottom = 16.dp, end = 8.dp)
                         .size(42.dp),
                     shape = CircleShape,
                     containerColor = Color(0xFF51FAC1),
@@ -403,7 +403,7 @@ fun AskScreen(viewModel: StudyViewModel) {
             }
         }
 
-        SpellInputBar(
+        AskInputBar(
             text = text,
             onTextChange = { text = it },
             selectedImageUri = selectedImageUri,
@@ -676,7 +676,7 @@ fun QuickActionButton(text: String, icon: androidx.compose.ui.graphics.vector.Im
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-fun SpellInputBar(
+fun AskInputBar(
     text: String,
     onTextChange: (String) -> Unit,
     selectedImageUri: Uri?,

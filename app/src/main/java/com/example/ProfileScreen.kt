@@ -261,7 +261,7 @@ fun ProfileScreen(viewModel: StudyViewModel, onLogout: () -> Unit = {}) {
                                 letterSpacing = 1.sp
                             )
                             Text(
-                                text = if (isEnglish) "${weakPoints.size} Mistakes Under Rehab" else "${weakPoints.size} Lỗi sai cần chữa lành (+Mana)",
+                                text = if (isEnglish) "${weakPoints.size} Mistakes to Review" else "${weakPoints.size} Lỗi sai cần củng cố (+XP)",
                                 color = Color.White,
                                 fontSize = 14.sp,
                                 fontWeight = FontWeight.Bold
