@@ -369,7 +369,7 @@ class StudyViewModel @Inject constructor(
                             photoUrl = result.photoUrl
                         )
                         if (userId != -1L) {
-                            onLoginSuccess(result.email)
+                            loadUserData(result.email)
                             _isAuthLoading.value = false
                             onSuccess()
                         } else {
@@ -407,7 +407,7 @@ class StudyViewModel @Inject constructor(
                             photoUrl = result.photoUrl
                         )
                         if (userId != -1L) {
-                            onLoginSuccess(result.email)
+                            loadUserData(result.email)
                             _isAuthLoading.value = false
                             onSuccess()
                         } else {
@@ -430,40 +430,83 @@ class StudyViewModel @Inject constructor(
         }
     }
 
+    fun getLastLoggedInEmail(): String? {
+        return prefs.getString("last_logged_in_email", null)
+    }
+
+    fun isUserOnboardingCompleted(userId: Long): Boolean {
+        if (userId <= 0) return false
+        // 1. Kiểm tra cờ trong SharedPreferences
+        if (prefs.getBoolean("onboarding_completed_$userId", false)) return true
+        // 2. Kiểm tra nếu đã có cấp độ học được lưu
+        val savedLevel = prefs.getString("learning_level_$userId", null)
+        if (!savedLevel.isNullOrBlank()) {
+            prefs.edit().putBoolean("onboarding_completed_$userId", true).apply()
+            return true
+        }
+        // 3. Kiểm tra nếu đã có điểm XP (> 0 tức là đã từng học/làm bài)
+        if ((_xp.value ?: 0) > 0) {
+            prefs.edit().putBoolean("onboarding_completed_$userId", true).apply()
+            return true
+        }
+        return false
+    }
+
+    fun completeOnboarding(userId: Long, level: String) {
+        setPreferences(level, "English")
+        if (userId > 0) {
+            prefs.edit().putBoolean("onboarding_completed_$userId", true).apply()
+            firestoreSyncManager.syncUserProfile(userId)
+        }
+    }
+
+    suspend fun loadUserData(email: String): Long {
+        val userId = repository.getUserIdByEmail(email)
+        if (userId != -1L) {
+            prefs.edit().putString("last_logged_in_email", email).apply()
+
+            // Khôi phục dữ liệu từ Cloud nếu có bản sao mới hơn
+            firestoreSyncManager.restoreProgressFromCloud(userId)
+
+            _currentUserId.value = userId
+            _history.value = emptyList()
+            val profile = repository.getUserProfile(userId)
+            if (profile != null) {
+                _userName.value = profile.displayName
+                _xp.value = profile.totalXp
+                _level.value = (profile.totalXp / 100) + 1
+                _rankTitle.value = calculateRankTitle(profile.totalXp)
+                _mana.value = profile.mana
+                _streak.value = profile.currentStreak
+                _streakShields.value = profile.streakShields
+                _avatarUri.value = profile.avatarUri
+                _studyMotto.value = profile.studyMotto ?: ""
+            }
+            val savedLevel = prefs.getString("learning_level_$userId", _selectedLevel.value ?: "Beginner") ?: "Beginner"
+            _selectedLevel.value = savedLevel
+
+            // Nếu user đã có XP hoặc đã lưu level, tự động đánh dấu đã hoàn thành onboarding
+            if ((profile?.totalXp ?: 0) > 0 || !prefs.getString("learning_level_$userId", null).isNullOrBlank()) {
+                prefs.edit().putBoolean("onboarding_completed_$userId", true).apply()
+            }
+
+            refreshChapters()
+            fetchLeaderboard()
+            refreshDailyTasks()
+            refreshHistory(userId)
+            checkAndUpdateStreak(userId)
+            refreshVocabulary()
+            refreshWeakPoints()
+
+            // Tự động đồng bộ toàn bộ dữ liệu lên Cloud Firestore ngầm
+            firestoreSyncManager.syncAllToCloud(userId)
+        }
+        return userId
+    }
+
     fun onLoginSuccess(email: String) {
         viewModelScope.launch {
-            val userId = repository.getUserIdByEmail(email)
-            if (userId != -1L) {
-                // Khôi phục dữ liệu từ Cloud nếu có bản sao mới hơn
-                firestoreSyncManager.restoreProgressFromCloud(userId)
-
-                _currentUserId.value = userId
-                _history.value = emptyList()
-                val profile = repository.getUserProfile(userId)
-                if (profile != null) {
-                    _userName.value = profile.displayName
-                    _xp.value = profile.totalXp
-                    _level.value = (profile.totalXp / 100) + 1
-                    _rankTitle.value = calculateRankTitle(profile.totalXp)
-                    _mana.value = profile.mana
-                    _streak.value = profile.currentStreak
-                    _streakShields.value = profile.streakShields
-                    _avatarUri.value = profile.avatarUri
-                    _studyMotto.value = profile.studyMotto ?: ""
-                }
-                val savedLevel = prefs.getString("learning_level_$userId", _selectedLevel.value ?: "Beginner") ?: "Beginner"
-                _selectedLevel.value = savedLevel
-                refreshChapters()
-                fetchLeaderboard()
-                refreshDailyTasks()
-                refreshHistory(userId)
-                checkAndUpdateStreak(userId)
-                refreshVocabulary()
-                refreshWeakPoints()
-
-                // Tự động đồng bộ toàn bộ dữ liệu lên Cloud Firestore ngầm
-                firestoreSyncManager.syncAllToCloud(userId)
-            }
+            loadUserData(email)
         }
     }
 
@@ -784,6 +827,7 @@ class StudyViewModel @Inject constructor(
 
     fun logout() {
         authManager.signOut()
+        prefs.edit().remove("last_logged_in_email").apply()
         _currentUserId.value = -1L
         _userName.value = "Adventurer"
         _avatarUri.value = null

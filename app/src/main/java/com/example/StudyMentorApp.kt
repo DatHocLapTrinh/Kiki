@@ -60,7 +60,6 @@ fun StudyMentorApp() {
     val viewModel: StudyViewModel = androidx.hilt.navigation.compose.hiltViewModel()
 
     var authStep by remember { mutableStateOf(AuthStep.SPLASH) }
-    var hasCompletedOnboarding by remember { mutableStateOf(false) }
 
     var targetX by remember { mutableStateOf<Float?>(null) }
     var targetY by remember { mutableStateOf<Float?>(null) }
@@ -116,7 +115,27 @@ fun StudyMentorApp() {
                             currentX = currentX,
                             currentY = currentY,
                             onBurst = onBurst,
-                            onIgnite = { authStep = AuthStep.IDENTITY }
+                            onIgnite = {
+                                val currentUser = viewModel.authManager.getCurrentUser()
+                                val lastEmail = viewModel.getLastLoggedInEmail()
+                                val targetEmail = currentUser?.email ?: lastEmail
+                                if (!targetEmail.isNullOrBlank()) {
+                                    scope.launch {
+                                        isWarping = true
+                                        val userId = viewModel.loadUserData(targetEmail)
+                                        delay(800)
+                                        isWarping = false
+                                        if (userId != -1L) {
+                                            val isCompleted = viewModel.isUserOnboardingCompleted(userId)
+                                            authStep = if (!isCompleted) AuthStep.ONBOARDING else AuthStep.LOGGED_IN
+                                        } else {
+                                            authStep = AuthStep.IDENTITY
+                                        }
+                                    }
+                                } else {
+                                    authStep = AuthStep.IDENTITY
+                                }
+                            }
                         )
                     }
                     AuthStep.IDENTITY -> {
@@ -127,9 +146,11 @@ fun StudyMentorApp() {
                             onLoginSuccess = { 
                                 scope.launch {
                                     isWarping = true
-                                    delay(1500)
+                                    delay(1000)
                                     isWarping = false
-                                    authStep = if (!hasCompletedOnboarding) AuthStep.ONBOARDING else AuthStep.LOGGED_IN
+                                    val userId = viewModel.currentUserId.value ?: -1L
+                                    val isCompleted = viewModel.isUserOnboardingCompleted(userId)
+                                    authStep = if (!isCompleted) AuthStep.ONBOARDING else AuthStep.LOGGED_IN
                                 }
                             }
                         )
@@ -143,7 +164,7 @@ fun StudyMentorApp() {
                             } else {
                                 viewModel.setStreak(1)
                             }
-                            hasCompletedOnboarding = true
+                            viewModel.completeOnboarding(userId, viewModel.selectedLevel.value ?: "Beginner")
                             authStep = AuthStep.LOGGED_IN
                         })
                     }
@@ -151,7 +172,6 @@ fun StudyMentorApp() {
                         MainNavigation(viewModel, onLogout = {
                             viewModel.logout()
                             authStep = AuthStep.SPLASH
-                            hasCompletedOnboarding = false
                         })
                     }
                 }

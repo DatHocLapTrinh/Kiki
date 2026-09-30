@@ -249,7 +249,7 @@ fun IdentityContent(
                                         coroutineScope.launch {
                                             val user = viewModel.repository.login(normalizedEmail, pass)
                                             if (user != null) {
-                                                viewModel.onLoginSuccess(normalizedEmail)
+                                                viewModel.loadUserData(normalizedEmail)
                                                 onLoginSuccess()
                                             } else {
                                                 Toast.makeText(context, strings.incorrectLogin, Toast.LENGTH_SHORT).show()
