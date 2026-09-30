@@ -182,7 +182,8 @@ fun AskScreen(viewModel: StudyViewModel) {
                     onSelectPrompt = { prompt ->
                         haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
                         text = prompt
-                    }
+                    },
+                    isImeVisible = isImeVisible
                 )
             } else {
                 LazyColumn(
@@ -427,7 +428,8 @@ fun AskScreen(viewModel: StudyViewModel) {
                 haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
                 text = prompt
             },
-            hasHistory = history.isNotEmpty()
+            hasHistory = history.isNotEmpty(),
+            isImeVisible = isImeVisible
         )
     }
 
@@ -468,10 +470,9 @@ fun AskScreen(viewModel: StudyViewModel) {
 @Composable
 fun EmptyAskState(
     quickPrompts: List<String> = emptyList(),
-    onSelectPrompt: (String) -> Unit = {}
+    onSelectPrompt: (String) -> Unit = {},
+    isImeVisible: Boolean = false
 ) {
-    val isImeVisible = WindowInsets.isImeVisible
-
     if (isImeVisible) {
         Column(
             modifier = Modifier
@@ -686,16 +687,15 @@ fun SpellInputBar(
     isGenerating: Boolean,
     quickPrompts: List<String>,
     onSelectPrompt: (String) -> Unit,
-    hasHistory: Boolean = false
+    hasHistory: Boolean = false,
+    isImeVisible: Boolean = false
 ) {
-    val isImeVisible = WindowInsets.isImeVisible
-
     Column(
         modifier = Modifier
             .fillMaxWidth()
             .then(
                 if (isImeVisible) {
-                    Modifier.padding(bottom = 8.dp)
+                    Modifier.padding(bottom = 10.dp)
                 } else {
                     Modifier
                         .navigationBarsPadding()
