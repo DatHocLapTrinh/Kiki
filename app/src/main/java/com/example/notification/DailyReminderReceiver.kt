@@ -24,7 +24,19 @@ class DailyReminderReceiver : BroadcastReceiver() {
         val action = intent.action
         Log.d(TAG, "DailyReminderReceiver nhận broadcast với action: $action")
 
-        // 1. Nếu thiết bị vừa khởi động lại (Reboot) hoặc App vừa được cập nhật -> Lên lịch lại
+        // 1. Nếu đây là yêu cầu bắn thông báo thử nghiệm (Test tức thì / Hẹn giờ 5s)
+        if (intent.getBooleanExtra("is_test", false)) {
+            Log.d(TAG, "Kích hoạt thông báo thử nghiệm từ người dùng.")
+            KikiNotificationManager.showFcmNotification(
+                context = context,
+                title = "🔥 Kiki: Bắn thử thông báo thành công!",
+                body = "Hệ thống thông báo đẩy và đồng hồ báo thức ngầm đang hoạt động hoàn hảo trên máy bạn!",
+                channelId = KikiNotificationManager.CHANNEL_STREAK
+            )
+            return
+        }
+
+        // 2. Nếu thiết bị vừa khởi động lại (Reboot) hoặc App vừa được cập nhật -> Lên lịch lại
         if (action == Intent.ACTION_BOOT_COMPLETED || action == Intent.ACTION_MY_PACKAGE_REPLACED) {
             val prefs = context.getSharedPreferences(SoundEffectManager.PREFS_NAME, Context.MODE_PRIVATE)
             val enabled = prefs.getBoolean("notifications_enabled", true)

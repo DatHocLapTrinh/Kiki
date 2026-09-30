@@ -94,4 +94,41 @@ object KikiDailyReminderScheduler {
             Log.d(TAG, "Đã hủy lịch nhắc nhở hàng ngày.")
         }
     }
+
+    /**
+     * Bắn thông báo thử nghiệm sau [delaySeconds] giây (Mặc định 5s)
+     * Dùng để test việc nhận thông báo khi người dùng ẩn app hoặc khóa màn hình
+     */
+    fun scheduleTestReminder(context: Context, delaySeconds: Int = 5) {
+        val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as? AlarmManager ?: return
+        val intent = Intent(context, DailyReminderReceiver::class.java).apply {
+            putExtra("is_test", true)
+        }
+        val pendingIntent = PendingIntent.getBroadcast(
+            context,
+            3002,
+            intent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+        val triggerTime = System.currentTimeMillis() + (delaySeconds * 1000L)
+
+        try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                alarmManager.setExactAndAllowWhileIdle(
+                    AlarmManager.RTC_WAKEUP,
+                    triggerTime,
+                    pendingIntent
+                )
+            } else {
+                alarmManager.set(
+                    AlarmManager.RTC_WAKEUP,
+                    triggerTime,
+                    pendingIntent
+                )
+            }
+            Log.d(TAG, "Đã lên lịch bắn thông báo thử nghiệm sau $delaySeconds giây")
+        } catch (e: Exception) {
+            Log.w(TAG, "Không thể đặt lịch test: ${e.message}")
+        }
+    }
 }

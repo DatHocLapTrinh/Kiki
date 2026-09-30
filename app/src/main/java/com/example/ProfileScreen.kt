@@ -38,7 +38,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import android.widget.Toast
 import com.example.notification.KikiDailyReminderScheduler
+import com.example.notification.KikiNotificationManager
 import coil.compose.AsyncImage
 import com.example.audio.SoundEffectManager
 import com.example.ui.VocabularyVaultDialog
@@ -99,6 +101,7 @@ fun ProfileScreen(viewModel: StudyViewModel, onLogout: () -> Unit = {}) {
     var showLevelDialog by remember { mutableStateOf(false) }
     var showEditProfileDialog by remember { mutableStateOf(false) }
     var showVaultDialog by remember { mutableStateOf(false) }
+    var showTestNotificationDialog by remember { mutableStateOf(false) }
     val haptic = androidx.compose.ui.platform.LocalHapticFeedback.current
 
     LaunchedEffect(userId) {
@@ -317,6 +320,25 @@ fun ProfileScreen(viewModel: StudyViewModel, onLogout: () -> Unit = {}) {
             OutlinedButton(
                 onClick = {
                     haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.TextHandleMove)
+                    showTestNotificationDialog = true
+                },
+                modifier = Modifier.fillMaxWidth().height(52.dp),
+                shape = RoundedCornerShape(18.dp),
+                colors = ButtonDefaults.outlinedButtonColors(contentColor = Color(0xFFFFB300)),
+                border = androidx.compose.foundation.BorderStroke(1.dp, Color(0x66FFB300))
+            ) {
+                Icon(Icons.Default.NotificationsActive, contentDescription = null, modifier = Modifier.size(20.dp))
+                Spacer(modifier = Modifier.width(10.dp))
+                Text(
+                    text = if (isEnglish) "Test Push Notification 🔔" else "Bắn thử thông báo đẩy 🔔",
+                    fontWeight = FontWeight.Bold
+                )
+            }
+            Spacer(modifier = Modifier.height(12.dp))
+
+            OutlinedButton(
+                onClick = {
+                    haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.TextHandleMove)
                     showLogoutDialog = true
                 },
                 modifier = Modifier.fillMaxWidth().height(54.dp),
@@ -382,6 +404,32 @@ fun ProfileScreen(viewModel: StudyViewModel, onLogout: () -> Unit = {}) {
             viewModel = viewModel,
             isEnglish = isEnglish,
             onDismiss = { showClinicDialog = false }
+        )
+    }
+
+    if (showTestNotificationDialog) {
+        TestNotificationDialog(
+            isEnglish = isEnglish,
+            onDismiss = { showTestNotificationDialog = false },
+            onInstantTest = {
+                showTestNotificationDialog = false
+                val testStreak = if (streak > 0) streak else 3
+                KikiNotificationManager.showStreakReminderNotification(context, testStreak)
+                Toast.makeText(
+                    context,
+                    if (isEnglish) "Notification sent! Swipe down to view." else "Đã phát thông báo! Hãy vuốt thanh trạng thái xuống để xem.",
+                    Toast.LENGTH_LONG
+                ).show()
+            },
+            onDelayTest = {
+                showTestNotificationDialog = false
+                KikiDailyReminderScheduler.scheduleTestReminder(context, delaySeconds = 5)
+                Toast.makeText(
+                    context,
+                    if (isEnglish) "Timer set for 5s! Press Home button to test in background." else "Đã hẹn 5 giây! Hãy ấn nút Home ra ngoài để thử nghiệm.",
+                    Toast.LENGTH_LONG
+                ).show()
+            }
         )
     }
 
@@ -1066,3 +1114,118 @@ fun LevelSelectionDialog(
         }
     )
 }
+
+@Composable
+fun TestNotificationDialog(
+    isEnglish: Boolean,
+    onDismiss: () -> Unit,
+    onInstantTest: () -> Unit,
+    onDelayTest: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        containerColor = Color(0xFF14142B),
+        shape = RoundedCornerShape(24.dp),
+        title = {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(
+                    Icons.Default.NotificationsActive,
+                    contentDescription = null,
+                    tint = Color(0xFFFFD166),
+                    modifier = Modifier.size(24.dp)
+                )
+                Spacer(modifier = Modifier.width(10.dp))
+                Text(
+                    text = if (isEnglish) "Test Push Notification" else "Bắn Thử Thông Báo 🔔",
+                    color = Color.White,
+                    fontWeight = FontWeight.ExtraBold,
+                    fontSize = 18.sp
+                )
+            }
+        },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Text(
+                    text = if (isEnglish)
+                        "Choose a test mode to verify push notifications and background alarms:"
+                    else
+                        "Chọn hình thức thử nghiệm để kiểm tra chuông thông báo và báo thức ngầm:",
+                    color = Color(0xCCFFFFFF),
+                    fontSize = 13.sp
+                )
+
+                // Option 1: Instant Notification
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(16.dp))
+                        .background(Color(0x22FFB300))
+                        .border(1.dp, Color(0x66FFB300), RoundedCornerShape(16.dp))
+                        .clickable { onInstantTest() }
+                        .padding(horizontal = 14.dp, vertical = 12.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(
+                        Icons.Default.NotificationsActive,
+                        contentDescription = null,
+                        tint = Color(0xFFFFB300),
+                        modifier = Modifier.size(24.dp)
+                    )
+                    Spacer(modifier = Modifier.width(12.dp))
+                    Column {
+                        Text(
+                            text = if (isEnglish) "Instant Notification" else "Bắn thông báo tức thì 🚀",
+                            color = Color(0xFFFFB300),
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 14.sp
+                        )
+                        Text(
+                            text = if (isEnglish) "Display notification banner right now" else "Rung và hiện ngay trên thanh thông báo",
+                            color = Color(0x99FFFFFF),
+                            fontSize = 11.sp
+                        )
+                    }
+                }
+
+                // Option 2: Delay 5 seconds
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(16.dp))
+                        .background(Color(0x2251FAC1))
+                        .border(1.dp, Color(0x6651FAC1), RoundedCornerShape(16.dp))
+                        .clickable { onDelayTest() }
+                        .padding(horizontal = 14.dp, vertical = 12.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(
+                        Icons.Default.Schedule,
+                        contentDescription = null,
+                        tint = Color(0xFF51FAC1),
+                        modifier = Modifier.size(24.dp)
+                    )
+                    Spacer(modifier = Modifier.width(12.dp))
+                    Column {
+                        Text(
+                            text = if (isEnglish) "Schedule After 5 Seconds" else "Hẹn giờ sau 5 giây ⏱️",
+                            color = Color(0xFF51FAC1),
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 14.sp
+                        )
+                        Text(
+                            text = if (isEnglish) "Press Home & test receiving when app is minimized" else "Bấm xong ấn Home ra ngoài để thử khi ẩn app",
+                            color = Color(0x99FFFFFF),
+                            fontSize = 11.sp
+                        )
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onDismiss) {
+                Text(if (isEnglish) "Close" else "Đóng", color = Color(0xFF8E8EA0))
+            }
+        }
+    )
+}
+
