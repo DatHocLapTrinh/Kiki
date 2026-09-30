@@ -97,6 +97,7 @@ fun ProfileScreen(viewModel: StudyViewModel, onLogout: () -> Unit = {}) {
     val selectedLevel by viewModel.selectedLevel.observeAsState("Beginner")
     var soundEnabled by remember(userId) { mutableStateOf(settings.getBoolean("sound_enabled", true)) }
     var notificationsEnabled by remember(userId) { mutableStateOf(settings.getBoolean("notifications_enabled", true)) }
+    var showSettingsSheet by remember { mutableStateOf(false) }
     var showLogoutDialog by remember { mutableStateOf(false) }
     var showLevelDialog by remember { mutableStateOf(false) }
     var showEditProfileDialog by remember { mutableStateOf(false) }
@@ -135,7 +136,15 @@ fun ProfileScreen(viewModel: StudyViewModel, onLogout: () -> Unit = {}) {
                 .padding(bottom = 116.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            ProfileHeader(userName = userName, earnedStars = earnedStars, isEnglish = isEnglish)
+            ProfileHeader(
+                userName = userName,
+                earnedStars = earnedStars,
+                isEnglish = isEnglish,
+                onSettingsClick = {
+                    haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.TextHandleMove)
+                    showSettingsSheet = true
+                }
+            )
             Spacer(modifier = Modifier.height(16.dp))
 
             ProfileIdentityCard(
@@ -282,74 +291,37 @@ fun ProfileScreen(viewModel: StudyViewModel, onLogout: () -> Unit = {}) {
                 allStagesCompleted = journeyStages.isNotEmpty() && journeyStages.all { it.state == JourneyStageState.COMPLETED },
                 isEnglish = isEnglish
             )
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(20.dp))
 
-            ProfileSettingsCard(
-                strings = strings,
-                isEnglish = isEnglish,
-                selectedLevel = selectedLevel,
-                soundEnabled = soundEnabled,
-                notificationsEnabled = notificationsEnabled,
-                onSelectLevelClick = {
-                    haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.TextHandleMove)
-                    showLevelDialog = true
-                },
-                onLanguageChanged = {
-                    haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.TextHandleMove)
-                    settings.edit().putBoolean("english", it).apply()
-                    viewModel.setEnglish(it)
-                },
-                onSoundChanged = {
-                    haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.TextHandleMove)
-                    soundEnabled = it
-                    settings.edit().putBoolean("sound_enabled", it).apply()
-                },
-                onNotificationsChanged = {
-                    haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.TextHandleMove)
-                    notificationsEnabled = it
-                    settings.edit().putBoolean("notifications_enabled", it).apply()
-                    if (it) {
-                        KikiDailyReminderScheduler.scheduleDailyReminder(context)
-                    } else {
-                        KikiDailyReminderScheduler.cancelDailyReminder(context)
+            // Phím tắt cài đặt & tài khoản tinh tế ở đáy trang
+            Row(
+                modifier = Modifier
+                    .clip(RoundedCornerShape(16.dp))
+                    .background(Color(0x14FFFFFF))
+                    .border(1.dp, Color(0x3351FAC1), RoundedCornerShape(16.dp))
+                    .clickable {
+                        haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.TextHandleMove)
+                        showSettingsSheet = true
                     }
-                }
-            )
-            Spacer(modifier = Modifier.height(16.dp))
-
-            OutlinedButton(
-                onClick = {
-                    haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.TextHandleMove)
-                    showTestNotificationDialog = true
-                },
-                modifier = Modifier.fillMaxWidth().height(52.dp),
-                shape = RoundedCornerShape(18.dp),
-                colors = ButtonDefaults.outlinedButtonColors(contentColor = Color(0xFFFFB300)),
-                border = androidx.compose.foundation.BorderStroke(1.dp, Color(0x66FFB300))
+                    .padding(horizontal = 18.dp, vertical = 11.dp),
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Icon(Icons.Default.NotificationsActive, contentDescription = null, modifier = Modifier.size(20.dp))
-                Spacer(modifier = Modifier.width(10.dp))
+                Icon(Icons.Default.Settings, contentDescription = null, tint = Color(0xFF51FAC1), modifier = Modifier.size(17.dp))
+                Spacer(modifier = Modifier.width(8.dp))
                 Text(
-                    text = if (isEnglish) "Test Push Notification 🔔" else "Bắn thử thông báo đẩy 🔔",
-                    fontWeight = FontWeight.Bold
+                    text = if (isEnglish) "Settings & Account Management" else "Cài đặt & Quản lý tài khoản",
+                    color = Color(0xCCFFFFFF),
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Medium
                 )
             }
-            Spacer(modifier = Modifier.height(12.dp))
 
-            OutlinedButton(
-                onClick = {
-                    haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.TextHandleMove)
-                    showLogoutDialog = true
-                },
-                modifier = Modifier.fillMaxWidth().height(54.dp),
-                shape = RoundedCornerShape(18.dp),
-                colors = ButtonDefaults.outlinedButtonColors(contentColor = Color(0xFFFF6B7A)),
-                border = androidx.compose.foundation.BorderStroke(1.dp, Color(0x996B3047))
-            ) {
-                Icon(Icons.AutoMirrored.Filled.Logout, contentDescription = null, modifier = Modifier.size(19.dp))
-                Spacer(modifier = Modifier.width(10.dp))
-                Text(strings.logout, fontWeight = FontWeight.Bold)
-            }
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = "Kiki Learning Ecosystem",
+                color = Color(0x33FFFFFF),
+                fontSize = 11.sp
+            )
         }
     }
 
@@ -451,6 +423,51 @@ fun ProfileScreen(viewModel: StudyViewModel, onLogout: () -> Unit = {}) {
             }
         )
     }
+
+    if (showSettingsSheet) {
+        ProfileSettingsBottomSheet(
+            strings = strings,
+            isEnglish = isEnglish,
+            selectedLevel = selectedLevel,
+            soundEnabled = soundEnabled,
+            notificationsEnabled = notificationsEnabled,
+            onDismiss = { showSettingsSheet = false },
+            onSelectLevelClick = {
+                haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.TextHandleMove)
+                showLevelDialog = true
+            },
+            onLanguageChanged = {
+                haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.TextHandleMove)
+                settings.edit().putBoolean("english", it).apply()
+                viewModel.setEnglish(it)
+            },
+            onSoundChanged = {
+                haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.TextHandleMove)
+                soundEnabled = it
+                settings.edit().putBoolean("sound_enabled", it).apply()
+            },
+            onNotificationsChanged = {
+                haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.TextHandleMove)
+                notificationsEnabled = it
+                settings.edit().putBoolean("notifications_enabled", it).apply()
+                if (it) {
+                    KikiDailyReminderScheduler.scheduleDailyReminder(context)
+                } else {
+                    KikiDailyReminderScheduler.cancelDailyReminder(context)
+                }
+            },
+            onTestNotificationClick = {
+                haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.TextHandleMove)
+                showSettingsSheet = false
+                showTestNotificationDialog = true
+            },
+            onLogoutClick = {
+                haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.TextHandleMove)
+                showSettingsSheet = false
+                showLogoutDialog = true
+            }
+        )
+    }
 }
 
 @Composable
@@ -496,7 +513,12 @@ fun GalaxyEffectOverlay(modifier: Modifier = Modifier) {
 }
 
 @Composable
-private fun ProfileHeader(userName: String, earnedStars: Int, isEnglish: Boolean) {
+private fun ProfileHeader(
+    userName: String,
+    earnedStars: Int,
+    isEnglish: Boolean,
+    onSettingsClick: () -> Unit
+) {
     Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
         Column(modifier = Modifier.weight(1f)) {
             Text(
@@ -506,27 +528,67 @@ private fun ProfileHeader(userName: String, earnedStars: Int, isEnglish: Boolean
                 fontWeight = FontWeight.Bold,
                 letterSpacing = 1.2.sp
             )
-            Text(userName, color = Color.White, fontSize = 26.sp, fontWeight = FontWeight.Black)
+            Text(
+                text = userName,
+                color = Color.White,
+                fontSize = 24.sp,
+                fontWeight = FontWeight.Black,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
             Text(
                 if (isEnglish) "Keep learning, keep growing" else "Tiếp tục học hỏi và phát triển",
                 color = Color(0xB3FFFFFF),
                 fontSize = 11.sp
             )
         }
-        Box(
-            modifier = Modifier
-                .width(74.dp)
-                .height(68.dp)
-                .clip(RoundedCornerShape(18.dp))
-                .background(Color(0x66191438))
-                .border(1.dp, Color(0x995C3DA0), RoundedCornerShape(18.dp))
-                .padding(vertical = 7.dp),
-            contentAlignment = Alignment.Center
+        Spacer(modifier = Modifier.width(10.dp))
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                Icon(Icons.Default.Star, contentDescription = null, tint = Color(0xFFFFD166), modifier = Modifier.size(19.dp))
-                Text("$earnedStars", color = Color.White, fontSize = 17.sp, fontWeight = FontWeight.ExtraBold)
-                Text(if (isEnglish) "STARS" else "SAO", color = Color(0xCCFFFFFF), fontSize = 8.sp)
+            // Star Badge Box
+            Box(
+                modifier = Modifier
+                    .height(58.dp)
+                    .clip(RoundedCornerShape(16.dp))
+                    .background(Color(0x66191438))
+                    .border(1.dp, Color(0x995C3DA0), RoundedCornerShape(16.dp))
+                    .padding(horizontal = 12.dp, vertical = 6.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Icon(Icons.Default.Star, contentDescription = null, tint = Color(0xFFFFD166), modifier = Modifier.size(18.dp))
+                    Text("$earnedStars", color = Color.White, fontSize = 15.sp, fontWeight = FontWeight.ExtraBold)
+                    Text(if (isEnglish) "STARS" else "SAO", color = Color(0xCCFFFFFF), fontSize = 8.sp)
+                }
+            }
+
+            // Quick Settings Action Button
+            Box(
+                modifier = Modifier
+                    .size(58.dp)
+                    .clip(RoundedCornerShape(16.dp))
+                    .background(Color(0x66191438))
+                    .border(1.dp, Color(0x995C3DA0), RoundedCornerShape(16.dp))
+                    .clickable(onClick = onSettingsClick),
+                contentAlignment = Alignment.Center
+            ) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Icon(
+                        Icons.Default.Settings,
+                        contentDescription = if (isEnglish) "Settings" else "Cài đặt",
+                        tint = Color(0xFF51FAC1),
+                        modifier = Modifier.size(20.dp)
+                    )
+                    Spacer(modifier = Modifier.height(2.dp))
+                    Text(
+                        if (isEnglish) "SETTINGS" else "CÀI ĐẶT",
+                        color = Color(0xFF51FAC1),
+                        fontSize = 8.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
             }
         }
     }
@@ -930,61 +992,189 @@ private fun ProfileAchievements(
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun ProfileSettingsCard(
+private fun ProfileSettingsBottomSheet(
     strings: AppStrings,
     isEnglish: Boolean,
     selectedLevel: String,
     soundEnabled: Boolean,
     notificationsEnabled: Boolean,
+    onDismiss: () -> Unit,
     onSelectLevelClick: () -> Unit,
     onLanguageChanged: (Boolean) -> Unit,
     onSoundChanged: (Boolean) -> Unit,
-    onNotificationsChanged: (Boolean) -> Unit
+    onNotificationsChanged: (Boolean) -> Unit,
+    onTestNotificationClick: () -> Unit,
+    onLogoutClick: () -> Unit
 ) {
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(22.dp))
-            .background(Brush.linearGradient(listOf(Color(0xA81B1238), Color(0x950A1F32))))
-            .border(1.dp, Color(0x665B39A2), RoundedCornerShape(22.dp))
-            .padding(15.dp)
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        containerColor = Color(0xFF130E26),
+        scrimColor = Color.Black.copy(alpha = 0.7f),
+        shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
+        dragHandle = {
+            BottomSheetDefaults.DragHandle(color = Color(0x6651FAC1))
+        }
     ) {
-        Box(
+        Column(
             modifier = Modifier
-                .align(Alignment.TopStart)
-                .offset(x = 120.dp, y = (-50).dp)
-                .size(180.dp)
-                .blur(42.dp)
-                .background(Color(0x443D0B78), CircleShape)
-        )
-        Box(
-            modifier = Modifier
-                .align(Alignment.BottomEnd)
-                .offset(x = 60.dp, y = 40.dp)
-                .size(160.dp)
-                .blur(45.dp)
-                .background(Color(0x3330A5C8), CircleShape)
-        )
-        GalaxyEffectOverlay(modifier = Modifier.matchParentSize())
-        Column {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(Icons.Default.Settings, contentDescription = null, tint = Color(0xFF51FAC1), modifier = Modifier.size(19.dp))
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(if (isEnglish) "Settings" else strings.settingsTitle, color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.Bold)
+                .fillMaxWidth()
+                .padding(horizontal = 20.dp)
+                .padding(bottom = 32.dp)
+                .navigationBarsPadding()
+                .verticalScroll(rememberScrollState())
+        ) {
+            // Header
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Box(
+                        modifier = Modifier
+                            .size(40.dp)
+                            .clip(CircleShape)
+                            .background(Color(0x3351FAC1)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(Icons.Default.Settings, contentDescription = null, tint = Color(0xFF51FAC1), modifier = Modifier.size(22.dp))
+                    }
+                    Spacer(modifier = Modifier.width(12.dp))
+                    Column {
+                        Text(
+                            text = if (isEnglish) "Settings & Preferences" else "Cài Đặt & Cấu Hình",
+                            color = Color.White,
+                            fontSize = 17.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Text(
+                            text = if (isEnglish) "Personalize your study experience" else "Tùy chỉnh trải nghiệm học tập của bạn",
+                            color = Color(0x88FFFFFF),
+                            fontSize = 11.sp
+                        )
+                    }
+                }
+                IconButton(
+                    onClick = onDismiss,
+                    modifier = Modifier
+                        .size(34.dp)
+                        .clip(CircleShape)
+                        .background(Color(0x1AFFFFFF))
+                ) {
+                    Icon(Icons.Default.Close, contentDescription = "Close", tint = Color.White, modifier = Modifier.size(18.dp))
+                }
             }
-            Spacer(modifier = Modifier.height(14.dp))
-            ProfileLevelSelectionRow(
-                title = strings.selectLevelTitle,
-                currentLevel = selectedLevel,
-                onClick = onSelectLevelClick
+
+            Spacer(modifier = Modifier.height(18.dp))
+
+            // Section 1: Study & Language
+            Text(
+                text = if (isEnglish) "LEARNING & LANGUAGE" else "HỌC TẬP & NGÔN NGỮ",
+                color = Color(0xFF51FAC1),
+                fontSize = 11.sp,
+                fontWeight = FontWeight.Bold,
+                letterSpacing = 1.sp
             )
+            Spacer(modifier = Modifier.height(8.dp))
+
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(20.dp))
+                    .background(Color(0x76181434))
+                    .border(1.dp, Color(0x555C3DA0), RoundedCornerShape(20.dp))
+                    .padding(14.dp)
+            ) {
+                Column {
+                    ProfileLevelSelectionRow(
+                        title = strings.selectLevelTitle,
+                        currentLevel = selectedLevel,
+                        onClick = onSelectLevelClick
+                    )
+                    HorizontalDivider(modifier = Modifier.padding(vertical = 10.dp), color = Color(0x1FFFFFFF))
+                    ProfileSettingRow(strings.languageLabel, Icons.Default.Language, isEnglish, onLanguageChanged)
+                }
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // Section 2: Preferences
+            Text(
+                text = if (isEnglish) "EXPERIENCE & REMINDERS" else "TRẢI NGHIỆM & NHẮC NHỞ",
+                color = Color(0xFF51FAC1),
+                fontSize = 11.sp,
+                fontWeight = FontWeight.Bold,
+                letterSpacing = 1.sp
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(20.dp))
+                    .background(Color(0x76181434))
+                    .border(1.dp, Color(0x555C3DA0), RoundedCornerShape(20.dp))
+                    .padding(14.dp)
+            ) {
+                Column {
+                    ProfileSettingRow(strings.soundEffects, Icons.AutoMirrored.Filled.VolumeUp, soundEnabled, onSoundChanged)
+                    Spacer(modifier = Modifier.height(10.dp))
+                    ProfileSettingRow(strings.notifications, Icons.Default.Notifications, notificationsEnabled, onNotificationsChanged)
+                }
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // Section 3: Utilities & Account
+            Text(
+                text = if (isEnglish) "UTILITIES & ACCOUNT" else "TIỆN ÍCH & TÀI KHOẢN",
+                color = Color(0xFF51FAC1),
+                fontSize = 11.sp,
+                fontWeight = FontWeight.Bold,
+                letterSpacing = 1.sp
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+
+            OutlinedButton(
+                onClick = onTestNotificationClick,
+                modifier = Modifier.fillMaxWidth().height(48.dp),
+                shape = RoundedCornerShape(16.dp),
+                colors = ButtonDefaults.outlinedButtonColors(contentColor = Color(0xFFFFB300)),
+                border = androidx.compose.foundation.BorderStroke(1.dp, Color(0x55FFB300))
+            ) {
+                Icon(Icons.Default.NotificationsActive, contentDescription = null, modifier = Modifier.size(18.dp))
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = if (isEnglish) "Test Push Notification 🔔" else "Bắn thử thông báo đẩy 🔔",
+                    fontWeight = FontWeight.SemiBold,
+                    fontSize = 13.sp
+                )
+            }
+
             Spacer(modifier = Modifier.height(10.dp))
-            ProfileSettingRow(strings.languageLabel, Icons.Default.Language, isEnglish, onLanguageChanged)
-            Spacer(modifier = Modifier.height(8.dp))
-            ProfileSettingRow(strings.soundEffects, Icons.AutoMirrored.Filled.VolumeUp, soundEnabled, onSoundChanged)
-            Spacer(modifier = Modifier.height(8.dp))
-            ProfileSettingRow(strings.notifications, Icons.Default.Notifications, notificationsEnabled, onNotificationsChanged)
+
+            OutlinedButton(
+                onClick = onLogoutClick,
+                modifier = Modifier.fillMaxWidth().height(48.dp),
+                shape = RoundedCornerShape(16.dp),
+                colors = ButtonDefaults.outlinedButtonColors(contentColor = Color(0xFFFF6B7A)),
+                border = androidx.compose.foundation.BorderStroke(1.dp, Color(0x666B3047))
+            ) {
+                Icon(Icons.AutoMirrored.Filled.Logout, contentDescription = null, modifier = Modifier.size(18.dp))
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(strings.logout, fontWeight = FontWeight.SemiBold, fontSize = 13.sp)
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            Text(
+                text = "Kiki Smart Learning • v1.0 Cosmic Edition",
+                color = Color(0x44FFFFFF),
+                fontSize = 10.sp,
+                modifier = Modifier.align(Alignment.CenterHorizontally)
+            )
         }
     }
 }
