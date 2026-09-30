@@ -26,6 +26,9 @@ interface AppDao {
     @Query("SELECT * FROM user_profiles WHERE user_id = :userId LIMIT 1")
     suspend fun getUserProfile(userId: Long): UserProfileEntity?
 
+    @Query("SELECT * FROM user_profiles LIMIT 1")
+    suspend fun getAnyUserProfile(): UserProfileEntity?
+
     @Query("UPDATE user_profiles SET total_xp = total_xp + :xpGain WHERE user_id = :userId")
     suspend fun updateXP(userId: Long, xpGain: Int)
 

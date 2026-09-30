@@ -56,7 +56,10 @@ class FirestoreSyncManager @Inject constructor(
                 val profile = repository.getUserProfile(userId) ?: return@launch
                 val firebaseUser = authManager.getCurrentUser() ?: return@launch
 
-                val userDoc = hashMapOf(
+                val prefs = appContext.getSharedPreferences(com.example.audio.SoundEffectManager.PREFS_NAME, Context.MODE_PRIVATE)
+                val fcmToken = prefs.getString(com.example.notification.KikiFirebaseMessagingService.PREF_FCM_TOKEN, null)
+
+                val userDoc = hashMapOf<String, Any>(
                     "uid" to firebaseUser.uid,
                     "email" to (firebaseUser.email ?: ""),
                     "displayName" to profile.displayName,
@@ -70,6 +73,10 @@ class FirestoreSyncManager @Inject constructor(
                     "lastActiveDate" to (profile.lastActiveDate ?: ""),
                     "updatedAt" to Timestamp.now()
                 )
+
+                if (!fcmToken.isNullOrEmpty()) {
+                    userDoc["fcmToken"] = fcmToken
+                }
 
                 // 1. Lưu vào collection "users"
                 firestore.collection("users")
@@ -208,4 +215,28 @@ class FirestoreSyncManager @Inject constructor(
         }
         false
     }
+
+    /**
+     * Cập nhật FCM registration token của thiết bị người dùng lên Firestore
+     */
+    fun updateFcmToken(token: String) {
+        val user = authManager.getCurrentUser() ?: return
+        scope.launch {
+            try {
+                firestore.collection("users")
+                    .document(user.uid)
+                    .set(
+                        mapOf(
+                            "fcmToken" to token,
+                            "fcmUpdatedAt" to Timestamp.now()
+                        ),
+                        SetOptions.merge()
+                    )
+                Log.d(TAG, "Đã đồng bộ FCM Token mới lên Firestore cho user ${user.uid}")
+            } catch (e: Exception) {
+                Log.w(TAG, "Lỗi đồng bộ FCM token: ${e.message}")
+            }
+        }
+    }
 }
+

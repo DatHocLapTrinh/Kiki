@@ -38,6 +38,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.notification.KikiDailyReminderScheduler
 import coil.compose.AsyncImage
 import com.example.audio.SoundEffectManager
 import com.example.ui.VocabularyVaultDialog
@@ -304,6 +305,11 @@ fun ProfileScreen(viewModel: StudyViewModel, onLogout: () -> Unit = {}) {
                     haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.TextHandleMove)
                     notificationsEnabled = it
                     settings.edit().putBoolean("notifications_enabled", it).apply()
+                    if (it) {
+                        KikiDailyReminderScheduler.scheduleDailyReminder(context)
+                    } else {
+                        KikiDailyReminderScheduler.cancelDailyReminder(context)
+                    }
                 }
             )
             Spacer(modifier = Modifier.height(16.dp))
