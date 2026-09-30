@@ -25,6 +25,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.delay
@@ -94,10 +95,16 @@ fun QuestsScreen(viewModel: StudyViewModel) {
     val completedAndClaimedQuests = quests.count { it.isClaimed }
     val progress = if (totalQuests > 0) completedAndClaimedQuests.toFloat() / totalQuests else 0f
 
-    Column(modifier = Modifier.fillMaxSize()) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .statusBarsPadding()
+    ) {
         // Top Bar
         Row(
-            modifier = Modifier.fillMaxWidth().padding(top = 40.dp, start = 76.dp, end = 24.dp, bottom = 16.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(top = 10.dp, start = 72.dp, end = 20.dp, bottom = 12.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
@@ -133,15 +140,51 @@ fun QuestsScreen(viewModel: StudyViewModel) {
         // Quests List
         if (quests.isEmpty()) {
             Box(
-                modifier = Modifier.fillMaxSize(),
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(32.dp),
                 contentAlignment = Alignment.Center
             ) {
-                Text(strings.noActiveQuests, color = Color(0xB3FFFFFF), fontSize = 16.sp)
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(76.dp)
+                            .clip(CircleShape)
+                            .background(Color(0x2251FAC1))
+                            .border(1.5.dp, Color(0x6651FAC1), CircleShape),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            Icons.Default.Celebration,
+                            contentDescription = null,
+                            tint = Color(0xFF51FAC1),
+                            modifier = Modifier.size(38.dp)
+                        )
+                    }
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Text(
+                        text = if (isEnglish) "All quests completed for today! 🌟" else "Tuyệt vời! Bạn đã hoàn thành hết nhiệm vụ! 🌟",
+                        color = Color.White,
+                        fontSize = 17.sp,
+                        fontWeight = FontWeight.Bold,
+                        textAlign = TextAlign.Center
+                    )
+                    Spacer(modifier = Modifier.height(6.dp))
+                    Text(
+                        text = if (isEnglish) "Check back tomorrow for fresh daily rewards." else "Quay lại vào ngày mai để nhận thêm các nhiệm vụ và XP mới nhé.",
+                        color = Color(0x99FFFFFF),
+                        fontSize = 13.sp,
+                        textAlign = TextAlign.Center
+                    )
+                }
             }
         } else {
             LazyColumn(
                 modifier = Modifier.fillMaxSize(),
-                contentPadding = PaddingValues(start = 24.dp, end = 24.dp, top = 8.dp, bottom = 120.dp),
+                contentPadding = PaddingValues(start = 24.dp, end = 24.dp, top = 8.dp, bottom = 130.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
                 if (weakPoints.isNotEmpty()) {

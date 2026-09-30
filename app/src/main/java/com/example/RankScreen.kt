@@ -64,10 +64,16 @@ fun RankScreen(viewModel: StudyViewModel) {
     Box(modifier = Modifier.fillMaxSize()) {
         val haptic = androidx.compose.ui.platform.LocalHapticFeedback.current
 
-        Column(modifier = Modifier.fillMaxSize()) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .statusBarsPadding()
+        ) {
             // Header
             Row(
-                modifier = Modifier.fillMaxWidth().padding(top = 40.dp, start = 76.dp, end = 24.dp, bottom = 16.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 10.dp, start = 72.dp, end = 20.dp, bottom = 12.dp),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
@@ -88,8 +94,38 @@ fun RankScreen(viewModel: StudyViewModel) {
             }
 
             if (players.isEmpty()) {
-                Box(modifier = Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) {
-                    Text(strings.noRankings, color = Color(0xB3FFFFFF), modifier = Modifier.padding(32.dp))
+                Box(
+                    modifier = Modifier
+                        .weight(1f)
+                        .fillMaxWidth()
+                        .padding(32.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Box(
+                            modifier = Modifier
+                                .size(76.dp)
+                                .clip(CircleShape)
+                                .background(Color(0x22FFD166))
+                                .border(1.5.dp, Color(0x66FFD166), CircleShape),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(Icons.Default.EmojiEvents, contentDescription = null, tint = Color(0xFFFFD166), modifier = Modifier.size(38.dp))
+                        }
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Text(
+                            text = strings.noRankings,
+                            color = Color.White,
+                            fontSize = 17.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Spacer(modifier = Modifier.height(6.dp))
+                        Text(
+                            text = "Hãy học 1 bài ngay để trở thành người dẫn đầu!",
+                            color = Color(0x99FFFFFF),
+                            fontSize = 13.sp
+                        )
+                    }
                 }
             } else {
                 // Podium Top 3
@@ -99,13 +135,13 @@ fun RankScreen(viewModel: StudyViewModel) {
                     third = players.getOrNull(2) ?: RankPlayer(3, "-", strings.unranked, 0, "")
                 )
 
-                Spacer(modifier = Modifier.height(24.dp))
+                Spacer(modifier = Modifier.height(20.dp))
 
                 // Leaderboard List
                 LazyColumn(
                     modifier = Modifier.fillMaxWidth(),
-                    contentPadding = PaddingValues(start = 24.dp, end = 24.dp, bottom = 200.dp), // Extra padding for sticky bar & bottom nav
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                    contentPadding = PaddingValues(start = 20.dp, end = 20.dp, bottom = 180.dp), // Extra padding for sticky bar & bottom nav
+                    verticalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
                     itemsIndexed(
                         players.drop(3),
@@ -117,16 +153,17 @@ fun RankScreen(viewModel: StudyViewModel) {
             }
         }
 
-        // Sticky Bottom Bar for Current User
+        // Sticky Bottom Bar for Current User (Cleanly elevated above FloatingNavBar)
         Box(
             modifier = Modifier
                 .align(Alignment.BottomCenter)
-                .padding(bottom = 100.dp) // Avoid main BottomNavBar
+                .navigationBarsPadding()
+                .padding(bottom = 90.dp)
                 .fillMaxWidth()
                 .padding(horizontal = 16.dp)
                 .clip(RoundedCornerShape(20.dp))
-                .background(Brush.linearGradient(listOf(Color(0xE63C0A78), Color(0xE614141E))))
-                .border(2.dp, Color(0xFF51FAC1), RoundedCornerShape(20.dp))
+                .background(Brush.linearGradient(listOf(Color(0xF03C0A78), Color(0xF014141E))))
+                .border(1.5.dp, Color(0xFF51FAC1), RoundedCornerShape(20.dp))
         ) {
             RankListItem(player = currentUserRank, isSticky = true)
         }

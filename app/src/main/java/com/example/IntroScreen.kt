@@ -557,8 +557,9 @@ fun IntroContent(currentX: Float, currentY: Float, onBurst: (x: Float, y: Float)
         Box(
             modifier = Modifier
                 .fillMaxSize()
+                .navigationBarsPadding()
                 .padding(24.dp)
-                .padding(bottom = 32.dp)
+                .padding(bottom = 16.dp)
                 .graphicsLayer {
                     translationX = currentX * -20f
                     translationY = currentY * -20f

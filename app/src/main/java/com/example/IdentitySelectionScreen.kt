@@ -70,7 +70,9 @@ fun IdentityContent(
             modifier = Modifier
                 .fillMaxSize()
                 .verticalScroll(scrollState)
-                .padding(horizontal = 24.dp, vertical = 36.dp)
+                .statusBarsPadding()
+                .navigationBarsPadding()
+                .padding(horizontal = 24.dp, vertical = 24.dp)
                 .graphicsLayer {
                     translationX = currentX * -15f
                     translationY = currentY * -15f

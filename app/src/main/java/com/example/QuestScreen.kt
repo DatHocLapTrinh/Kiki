@@ -91,14 +91,16 @@ fun QuestScreen(viewModel: StudyViewModel, onFinish: () -> Unit) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(24.dp),
+                .statusBarsPadding()
+                .navigationBarsPadding()
+                .padding(horizontal = 20.dp, vertical = 8.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             // Thanh tiến độ & Linh vật
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(top = 28.dp),
+                    .padding(top = 4.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 // Nút đóng / thoát bài học

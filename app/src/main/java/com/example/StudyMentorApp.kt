@@ -19,6 +19,7 @@ import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -480,7 +481,13 @@ fun MainNavigation(viewModel: StudyViewModel, onLogout: () -> Unit) {
                 composable("profile") { ProfileScreen(viewModel, onLogout = onLogout) }
             }
 
-            FloatingNavBar(navController, Modifier.align(Alignment.BottomCenter).padding(bottom = 24.dp))
+            FloatingNavBar(
+                navController = navController,
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .navigationBarsPadding()
+                    .padding(bottom = 12.dp)
+            )
 
             if (showMenu) {
                 IconButton(
@@ -613,22 +620,34 @@ private fun AppNavigationDrawer(
     }
 }
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun FloatingNavBar(navController: androidx.navigation.NavHostController, modifier: Modifier = Modifier) {
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
     val strings = LocalAppStrings.current
+    val isImeVisible = WindowInsets.isImeVisible
 
-    if (currentRoute == "quest_active" || currentRoute == "rank_reveal" || currentRoute == "progression_map" || currentRoute == "quest_review") return
+    if (isImeVisible || currentRoute == "quest_active" || currentRoute == "rank_reveal" || currentRoute == "progression_map" || currentRoute == "quest_review") return
 
     Row(
         modifier = modifier
-            .fillMaxWidth(0.9f)
-            .height(82.dp)
-            .clip(RoundedCornerShape(32.dp))
-            .background(Color(0xE614141E))
-            .border(1.dp, Color(0x33FFFFFF), RoundedCornerShape(32.dp))
-            .padding(horizontal = 8.dp, vertical = 6.dp),
+            .fillMaxWidth(0.92f)
+            .height(72.dp)
+            .clip(RoundedCornerShape(28.dp))
+            .background(
+                Brush.verticalGradient(
+                    listOf(Color(0xF2181226), Color(0xF20F0B18))
+                )
+            )
+            .border(
+                1.5.dp,
+                Brush.verticalGradient(
+                    listOf(Color(0x6651FAC1), Color(0x22FFFFFF))
+                ),
+                RoundedCornerShape(28.dp)
+            )
+            .padding(horizontal = 8.dp, vertical = 4.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
@@ -649,24 +668,50 @@ fun NavItem(
     navController: androidx.navigation.NavHostController
 ) {
     val isSelected = currentRoute == route
-    val color = if (isSelected) Color(0xFF51FAC1) else Color(0x80FFFFFF)
+    val haptic = LocalHapticFeedback.current
+    val color = if (isSelected) Color(0xFF51FAC1) else Color(0x99FFFFFF)
+    val scale by animateFloatAsState(
+        targetValue = if (isSelected) 1.06f else 1f,
+        animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessMedium),
+        label = "nav_scale"
+    )
+
     Box(
         modifier = Modifier
-            .clip(RoundedCornerShape(22.dp))
-            .background(if (isSelected) Color(0x334EF3C5) else Color.Transparent)
+            .scale(scale)
+            .clip(RoundedCornerShape(20.dp))
+            .background(if (isSelected) Color(0x2E4EF3C5) else Color.Transparent)
+            .border(
+                width = if (isSelected) 1.dp else 0.dp,
+                color = if (isSelected) Color(0x4D51FAC1) else Color.Transparent,
+                shape = RoundedCornerShape(20.dp)
+            )
             .clickable {
+                haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
                 navController.navigate(route) {
                     popUpTo(navController.graph.startDestinationId) { saveState = true }
                     launchSingleTop = true
                     restoreState = true
                 }
             }
-            .padding(horizontal = 8.dp, vertical = 5.dp),
+            .padding(horizontal = 10.dp, vertical = 6.dp),
         contentAlignment = Alignment.Center
     ) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            Icon(icon, contentDescription = label, tint = color, modifier = Modifier.size(25.dp))
-            Text(label, color = color, fontSize = 10.sp, fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium)
+            Icon(
+                imageVector = icon,
+                contentDescription = label,
+                tint = color,
+                modifier = Modifier.size(24.dp)
+            )
+            Spacer(modifier = Modifier.height(2.dp))
+            Text(
+                text = label,
+                color = color,
+                fontSize = 11.sp,
+                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium
+            )
         }
     }
 }
+

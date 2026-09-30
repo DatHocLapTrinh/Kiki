@@ -112,10 +112,12 @@ fun RankRevealScreen(onEnterRealm: () -> Unit, onViewAnalysis: () -> Unit) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
+                .statusBarsPadding()
+                .navigationBarsPadding()
                 .padding(24.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Spacer(modifier = Modifier.height(64.dp))
+            Spacer(modifier = Modifier.height(24.dp))
 
             // Avatar Section
             Box(

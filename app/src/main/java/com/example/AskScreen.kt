@@ -85,9 +85,14 @@ fun AskScreen(viewModel: StudyViewModel) {
         }
     }
 
-    Column(modifier = Modifier.fillMaxSize().padding(top = 40.dp)) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .statusBarsPadding()
+            .imePadding()
+    ) {
         TopAppBar(
-            navigationIcon = { Spacer(modifier = Modifier.size(48.dp)) },
+            navigationIcon = { Spacer(modifier = Modifier.size(56.dp)) },
             title = {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(Icons.Default.AutoFixHigh, contentDescription = null, tint = Color(0xFFFFD166), modifier = Modifier.size(24.dp))
@@ -483,9 +488,21 @@ fun QuickActionButton(text: String, icon: androidx.compose.ui.graphics.vector.Im
     }
 }
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun SpellInputBar(text: String, onTextChange: (String) -> Unit, selectedImageUri: Uri?, onRemoveImage: () -> Unit, onPickImage: () -> Unit, onSend: () -> Unit, isGenerating: Boolean) {
-    Box(modifier = Modifier.fillMaxWidth().padding(16.dp).padding(bottom = 70.dp).clip(RoundedCornerShape(32.dp)).background(Color(0x6614141E)).border(1.dp, Color(0x4D51FAC1), RoundedCornerShape(32.dp))) {
+    val isImeVisible = WindowInsets.isImeVisible
+    val bottomPad = if (isImeVisible) 10.dp else 84.dp
+
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp)
+            .padding(top = 6.dp, bottom = bottomPad)
+            .clip(RoundedCornerShape(32.dp))
+            .background(Color(0xF0181428))
+            .border(1.5.dp, Color(0x6651FAC1), RoundedCornerShape(32.dp))
+    ) {
         Column(modifier = Modifier.padding(8.dp)) {
             if (selectedImageUri != null) {
                 Box(modifier = Modifier.padding(start = 12.dp, top = 8.dp, bottom = 8.dp)) {
