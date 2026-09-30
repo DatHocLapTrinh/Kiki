@@ -50,7 +50,7 @@ import com.example.viewmodel.StudyViewModel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
 fun AskScreen(viewModel: StudyViewModel) {
     var text by remember { mutableStateOf("") }
@@ -124,9 +124,17 @@ fun AskScreen(viewModel: StudyViewModel) {
         }
     }
 
+    val isImeVisible = WindowInsets.isImeVisible
+
     LaunchedEffect(history.size, isGenerating) {
         if (history.isNotEmpty()) {
             listState.animateScrollToItem(history.size)
+        }
+    }
+
+    LaunchedEffect(isImeVisible) {
+        if (isImeVisible && history.isNotEmpty()) {
+            listState.animateScrollToItem(history.size - 1)
         }
     }
 
@@ -418,7 +426,8 @@ fun AskScreen(viewModel: StudyViewModel) {
             onSelectPrompt = { prompt ->
                 haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
                 text = prompt
-            }
+            },
+            hasHistory = history.isNotEmpty()
         )
     }
 
@@ -455,79 +464,123 @@ fun AskScreen(viewModel: StudyViewModel) {
     }
 }
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun EmptyAskState(
     quickPrompts: List<String> = emptyList(),
     onSelectPrompt: (String) -> Unit = {}
 ) {
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(horizontal = 20.dp, vertical = 24.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
-    ) {
-        Box(
+    val isImeVisible = WindowInsets.isImeVisible
+
+    if (isImeVisible) {
+        Column(
             modifier = Modifier
-                .size(76.dp)
-                .clip(CircleShape)
-                .background(Color(0x2251FAC1))
-                .border(1.5.dp, Color(0x6651FAC1), CircleShape),
-            contentAlignment = Alignment.Center
+                .fillMaxSize()
+                .padding(horizontal = 24.dp, vertical = 12.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
         ) {
-            Icon(
-                imageVector = Icons.Default.AutoFixHigh,
-                contentDescription = null,
-                tint = Color(0xFF51FAC1),
-                modifier = Modifier.size(38.dp)
+            Box(
+                modifier = Modifier
+                    .size(46.dp)
+                    .clip(CircleShape)
+                    .background(Color(0x2251FAC1))
+                    .border(1.dp, Color(0x6651FAC1), CircleShape),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = Icons.Default.AutoFixHigh,
+                    contentDescription = null,
+                    tint = Color(0xFF51FAC1),
+                    modifier = Modifier.size(24.dp)
+                )
+            }
+            Spacer(modifier = Modifier.height(10.dp))
+            val strings = LocalAppStrings.current
+            Text(
+                text = strings.summonMagic,
+                color = Color.White,
+                fontSize = 17.sp,
+                fontWeight = FontWeight.Bold
+            )
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(
+                text = "Gõ câu hỏi hoặc nói vào micro để Kiki giải đáp...",
+                color = Color(0x99FFFFFF),
+                textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                fontSize = 12.sp
             )
         }
-        Spacer(modifier = Modifier.height(18.dp))
-        val strings = LocalAppStrings.current
-        Text(
-            text = strings.summonMagic,
-            color = Color.White,
-            fontSize = 20.sp,
-            fontWeight = FontWeight.ExtraBold
-        )
-        Spacer(modifier = Modifier.height(8.dp))
-        Text(
-            text = strings.summonMagicDesc,
-            color = Color(0x99FFFFFF),
-            textAlign = androidx.compose.ui.text.style.TextAlign.Center,
-            fontSize = 13.sp,
-            lineHeight = 20.sp
-        )
-        if (quickPrompts.isNotEmpty()) {
-            Spacer(modifier = Modifier.height(22.dp))
-            Column(
-                modifier = Modifier.fillMaxWidth(),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
+    } else {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(horizontal = 20.dp, vertical = 20.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(76.dp)
+                    .clip(CircleShape)
+                    .background(Color(0x2251FAC1))
+                    .border(1.5.dp, Color(0x6651FAC1), CircleShape),
+                contentAlignment = Alignment.Center
             ) {
-                quickPrompts.take(3).forEach { prompt ->
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clip(RoundedCornerShape(16.dp))
-                            .background(Color(0x2E1E1E38))
-                            .border(1.dp, Color(0x3351FAC1), RoundedCornerShape(16.dp))
-                            .clickable { onSelectPrompt(prompt) }
-                            .padding(horizontal = 14.dp, vertical = 11.dp)
-                    ) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(
-                                Icons.Default.Bolt,
-                                contentDescription = null,
-                                tint = Color(0xFFFFD166),
-                                modifier = Modifier.size(16.dp)
-                            )
-                            Spacer(modifier = Modifier.width(10.dp))
-                            Text(
-                                text = prompt,
-                                color = Color.White,
-                                fontSize = 13.sp,
-                                fontWeight = FontWeight.Medium
-                            )
+                Icon(
+                    imageVector = Icons.Default.AutoFixHigh,
+                    contentDescription = null,
+                    tint = Color(0xFF51FAC1),
+                    modifier = Modifier.size(38.dp)
+                )
+            }
+            Spacer(modifier = Modifier.height(18.dp))
+            val strings = LocalAppStrings.current
+            Text(
+                text = strings.summonMagic,
+                color = Color.White,
+                fontSize = 20.sp,
+                fontWeight = FontWeight.ExtraBold
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = strings.summonMagicDesc,
+                color = Color(0x99FFFFFF),
+                textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                fontSize = 13.sp,
+                lineHeight = 20.sp
+            )
+            if (quickPrompts.isNotEmpty()) {
+                Spacer(modifier = Modifier.height(20.dp))
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    quickPrompts.take(3).forEach { prompt ->
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clip(RoundedCornerShape(16.dp))
+                                .background(Color(0x2E1E1E38))
+                                .border(1.dp, Color(0x3351FAC1), RoundedCornerShape(16.dp))
+                                .clickable { onSelectPrompt(prompt) }
+                                .padding(horizontal = 14.dp, vertical = 11.dp)
+                        ) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Icon(
+                                    Icons.Default.Bolt,
+                                    contentDescription = null,
+                                    tint = Color(0xFFFFD166),
+                                    modifier = Modifier.size(16.dp)
+                                )
+                                Spacer(modifier = Modifier.width(10.dp))
+                                Text(
+                                    text = prompt,
+                                    color = Color.White,
+                                    fontSize = 13.sp,
+                                    fontWeight = FontWeight.Medium
+                                )
+                            }
                         }
                     }
                 }
@@ -632,22 +685,31 @@ fun SpellInputBar(
     onSend: () -> Unit,
     isGenerating: Boolean,
     quickPrompts: List<String>,
-    onSelectPrompt: (String) -> Unit
+    onSelectPrompt: (String) -> Unit,
+    hasHistory: Boolean = false
 ) {
     val isImeVisible = WindowInsets.isImeVisible
-    val bottomPad = if (isImeVisible) 10.dp else 98.dp
 
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(bottom = bottomPad)
+            .then(
+                if (isImeVisible) {
+                    Modifier.padding(bottom = 8.dp)
+                } else {
+                    Modifier
+                        .navigationBarsPadding()
+                        .padding(bottom = 100.dp)
+                }
+            )
     ) {
-        // Hàng gợi ý câu hỏi 1 chạm (chỉ hiện khi chưa mở bàn phím và ô nhập đang trống)
-        if (!isImeVisible && text.isBlank()) {
+        // Hàng gợi ý chỉ hiện khi ĐÃ CÓ LỊCH SỬ CHAT (để không bị trùng lặp với Empty State),
+        // khi chưa mở bàn phím và khi ô nhập đang trống
+        if (!isImeVisible && text.isBlank() && hasHistory) {
             LazyRow(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(bottom = 6.dp),
+                    .padding(bottom = 8.dp),
                 contentPadding = PaddingValues(horizontal = 16.dp),
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
