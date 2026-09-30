@@ -1,6 +1,9 @@
 package com.example
 
+import android.app.Activity
+import android.content.Intent
 import android.net.Uri
+import android.speech.RecognizerIntent
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -11,6 +14,7 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -60,6 +64,18 @@ fun AskScreen(viewModel: StudyViewModel) {
         contract = ActivityResultContracts.PickVisualMedia(),
         onResult = { uri -> selectedImageUri = uri }
     )
+
+    val speechRecognizerLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        if (result.resultCode == Activity.RESULT_OK) {
+            val spokenList = result.data?.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS)
+            val spokenText = spokenList?.firstOrNull()
+            if (!spokenText.isNullOrBlank()) {
+                text = if (text.isBlank()) spokenText else "$text $spokenText"
+            }
+        }
+    }
     
     val history by viewModel.history.observeAsState(emptyList())
     val isGenerating by viewModel.isGenerating().observeAsState(false)
@@ -71,6 +87,42 @@ fun AskScreen(viewModel: StudyViewModel) {
     var showClearConfirmDialog by remember { mutableStateOf(false) }
     val isSpeaking by viewModel.ttsManager.isSpeaking
     val isEnglish by viewModel.isEnglish.observeAsState(false)
+
+    val quickPrompts = remember(isEnglish) {
+        if (isEnglish) {
+            listOf(
+                "Explain Present Perfect tense in 1 min",
+                "Difference between 'Affect' and 'Effect'",
+                "Fix my grammar: 'She don't know nothing'",
+                "3 real-world idioms for everyday conversations"
+            )
+        } else {
+            listOf(
+                "Giải thích thì Hiện tại hoàn thành trong 1 phút",
+                "Phân biệt 'Affect' và 'Effect'",
+                "Sửa lỗi ngữ pháp câu này giúp tôi",
+                "3 thành ngữ tiếng Anh giao tiếp thông dụng"
+            )
+        }
+    }
+
+    val onVoiceClick: () -> Unit = {
+        haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+        try {
+            val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
+                putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
+                putExtra(RecognizerIntent.EXTRA_LANGUAGE, if (isEnglish) "en-US" else "vi-VN")
+                putExtra(RecognizerIntent.EXTRA_PROMPT, if (isEnglish) "Speak your question..." else "Nói câu hỏi của bạn...")
+            }
+            speechRecognizerLauncher.launch(intent)
+        } catch (e: Exception) {
+            Toast.makeText(
+                context,
+                if (isEnglish) "Voice input is not supported on this device" else "Thiết bị chưa hỗ trợ nhận diện giọng nói",
+                Toast.LENGTH_SHORT
+            ).show()
+        }
+    }
 
     LaunchedEffect(history.size, isGenerating) {
         if (history.isNotEmpty()) {
@@ -117,12 +169,18 @@ fun AskScreen(viewModel: StudyViewModel) {
 
         Box(modifier = Modifier.weight(1f).fillMaxWidth().padding(horizontal = 16.dp)) {
             if (history.isEmpty() && !isGenerating) {
-                EmptyAskState()
+                EmptyAskState(
+                    quickPrompts = quickPrompts,
+                    onSelectPrompt = { prompt ->
+                        haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                        text = prompt
+                    }
+                )
             } else {
                 LazyColumn(
                     state = listState,
                     modifier = Modifier.fillMaxSize(),
-                    contentPadding = PaddingValues(bottom = 120.dp),
+                    contentPadding = PaddingValues(bottom = 160.dp),
                     reverseLayout = false
                 ) {
                     // Toàn bộ lịch sử chat - cũ nhất trên, mới nhất dưới
@@ -345,6 +403,7 @@ fun AskScreen(viewModel: StudyViewModel) {
                 haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
                 photoPickerLauncher.launch(androidx.activity.result.PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
             },
+            onVoiceInput = onVoiceClick,
             onSend = {
                 if (!isGenerating && (text.isNotBlank() || selectedImageUri != null)) {
                     haptic.performHapticFeedback(HapticFeedbackType.LongPress)
@@ -354,7 +413,12 @@ fun AskScreen(viewModel: StudyViewModel) {
                     }
                 }
             },
-            isGenerating = isGenerating
+            isGenerating = isGenerating,
+            quickPrompts = quickPrompts,
+            onSelectPrompt = { prompt ->
+                haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                text = prompt
+            }
         )
     }
 
@@ -392,14 +456,83 @@ fun AskScreen(viewModel: StudyViewModel) {
 }
 
 @Composable
-fun EmptyAskState() {
-    Column(modifier = Modifier.fillMaxSize().padding(32.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
-        Icon(imageVector = Icons.Default.DocumentScanner, contentDescription = null, tint = Color(0x33FFFFFF), modifier = Modifier.size(100.dp))
-        Spacer(modifier = Modifier.height(24.dp))
+fun EmptyAskState(
+    quickPrompts: List<String> = emptyList(),
+    onSelectPrompt: (String) -> Unit = {}
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(horizontal = 20.dp, vertical = 24.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
+    ) {
+        Box(
+            modifier = Modifier
+                .size(76.dp)
+                .clip(CircleShape)
+                .background(Color(0x2251FAC1))
+                .border(1.5.dp, Color(0x6651FAC1), CircleShape),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(
+                imageVector = Icons.Default.AutoFixHigh,
+                contentDescription = null,
+                tint = Color(0xFF51FAC1),
+                modifier = Modifier.size(38.dp)
+            )
+        }
+        Spacer(modifier = Modifier.height(18.dp))
         val strings = LocalAppStrings.current
-        Text(strings.summonMagic, color = Color.White, fontSize = 22.sp, fontWeight = FontWeight.Bold)
+        Text(
+            text = strings.summonMagic,
+            color = Color.White,
+            fontSize = 20.sp,
+            fontWeight = FontWeight.ExtraBold
+        )
         Spacer(modifier = Modifier.height(8.dp))
-        Text(strings.summonMagicDesc, color = Color(0x80FFFFFF), textAlign = androidx.compose.ui.text.style.TextAlign.Center, fontSize = 14.sp)
+        Text(
+            text = strings.summonMagicDesc,
+            color = Color(0x99FFFFFF),
+            textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+            fontSize = 13.sp,
+            lineHeight = 20.sp
+        )
+        if (quickPrompts.isNotEmpty()) {
+            Spacer(modifier = Modifier.height(22.dp))
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                quickPrompts.take(3).forEach { prompt ->
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(16.dp))
+                            .background(Color(0x2E1E1E38))
+                            .border(1.dp, Color(0x3351FAC1), RoundedCornerShape(16.dp))
+                            .clickable { onSelectPrompt(prompt) }
+                            .padding(horizontal = 14.dp, vertical = 11.dp)
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(
+                                Icons.Default.Bolt,
+                                contentDescription = null,
+                                tint = Color(0xFFFFD166),
+                                modifier = Modifier.size(16.dp)
+                            )
+                            Spacer(modifier = Modifier.width(10.dp))
+                            Text(
+                                text = prompt,
+                                color = Color.White,
+                                fontSize = 13.sp,
+                                fontWeight = FontWeight.Medium
+                            )
+                        }
+                    }
+                }
+            }
+        }
     }
 }
 
@@ -489,47 +622,192 @@ fun QuickActionButton(text: String, icon: androidx.compose.ui.graphics.vector.Im
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-fun SpellInputBar(text: String, onTextChange: (String) -> Unit, selectedImageUri: Uri?, onRemoveImage: () -> Unit, onPickImage: () -> Unit, onSend: () -> Unit, isGenerating: Boolean) {
+fun SpellInputBar(
+    text: String,
+    onTextChange: (String) -> Unit,
+    selectedImageUri: Uri?,
+    onRemoveImage: () -> Unit,
+    onPickImage: () -> Unit,
+    onVoiceInput: () -> Unit,
+    onSend: () -> Unit,
+    isGenerating: Boolean,
+    quickPrompts: List<String>,
+    onSelectPrompt: (String) -> Unit
+) {
     val isImeVisible = WindowInsets.isImeVisible
-    val bottomPad = if (isImeVisible) 10.dp else 84.dp
+    val bottomPad = if (isImeVisible) 10.dp else 98.dp
 
-    Box(
+    Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp)
-            .padding(top = 6.dp, bottom = bottomPad)
-            .clip(RoundedCornerShape(32.dp))
-            .background(Color(0xF0181428))
-            .border(1.5.dp, Color(0x6651FAC1), RoundedCornerShape(32.dp))
+            .padding(bottom = bottomPad)
     ) {
-        Column(modifier = Modifier.padding(8.dp)) {
-            if (selectedImageUri != null) {
-                Box(modifier = Modifier.padding(start = 12.dp, top = 8.dp, bottom = 8.dp)) {
-                    AsyncImage(model = selectedImageUri, contentDescription = "Selected", modifier = Modifier.size(64.dp).clip(RoundedCornerShape(12.dp)).border(1.dp, Color(0xFF51FAC1), RoundedCornerShape(12.dp)), contentScale = ContentScale.Crop)
-                    IconButton(onClick = onRemoveImage, modifier = Modifier.align(Alignment.TopEnd).offset(x = 8.dp, y = (-8).dp).size(20.dp).background(Color.White, CircleShape).padding(2.dp)) {
-                        Icon(Icons.Default.Close, contentDescription = "Remove", tint = Color.Red)
+        // Hàng gợi ý câu hỏi 1 chạm (chỉ hiện khi chưa mở bàn phím và ô nhập đang trống)
+        if (!isImeVisible && text.isBlank()) {
+            LazyRow(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 6.dp),
+                contentPadding = PaddingValues(horizontal = 16.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                items(quickPrompts) { prompt ->
+                    Box(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(16.dp))
+                            .background(Color(0x3314142B))
+                            .border(1.dp, Color(0x4D51FAC1), RoundedCornerShape(16.dp))
+                            .clickable { onSelectPrompt(prompt) }
+                            .padding(horizontal = 12.dp, vertical = 7.dp)
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(
+                                Icons.Default.AutoAwesome,
+                                contentDescription = null,
+                                tint = Color(0xFFFFD166),
+                                modifier = Modifier.size(13.dp)
+                            )
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text(
+                                text = prompt,
+                                color = Color(0xEEFFFFFF),
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Medium
+                            )
+                        }
                     }
                 }
             }
-            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(horizontal = 4.dp)) {
-                IconButton(onClick = onPickImage) { Icon(Icons.Default.CenterFocusStrong, contentDescription = "Camera", tint = Color(0xFF51FAC1)) }
-                val strings = LocalAppStrings.current
-                OutlinedTextField(
-                    value = text,
-                    onValueChange = onTextChange,
-                    placeholder = { Text(strings.castingQuestion, color = Color(0x80FFFFFF)) },
-                    modifier = Modifier.weight(1f),
-                    shape = RoundedCornerShape(24.dp),
-                    colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = Color.Transparent, unfocusedBorderColor = Color.Transparent, focusedTextColor = Color.White, unfocusedTextColor = Color.White, cursorColor = Color(0xFF51FAC1)),
-                    maxLines = 3,
-                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Send),
-                    keyboardActions = KeyboardActions(onSend = { onSend() })
+        }
+
+        // Khung nhập câu hỏi chính
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp)
+                .clip(RoundedCornerShape(30.dp))
+                .background(
+                    Brush.verticalGradient(
+                        listOf(Color(0xF5181428), Color(0xF5100C1C))
+                    )
                 )
-                val canSend = !isGenerating && (text.isNotBlank() || selectedImageUri != null)
-                val sendBtnColor = if (canSend) Color(0xFFFF9E00) else Color(0x33FFFFFF)
-                val sendIconColor = if (canSend) Color(0xFF0F0C29) else Color(0x80FFFFFF)
-                IconButton(onClick = onSend, enabled = canSend, modifier = Modifier.background(sendBtnColor, CircleShape)) {
-                    Icon(Icons.AutoMirrored.Filled.Send, contentDescription = "Send", tint = sendIconColor)
+                .border(1.5.dp, Color(0x6651FAC1), RoundedCornerShape(30.dp))
+        ) {
+            Column(modifier = Modifier.padding(horizontal = 6.dp, vertical = 6.dp)) {
+                if (selectedImageUri != null) {
+                    Box(modifier = Modifier.padding(start = 12.dp, top = 6.dp, bottom = 6.dp)) {
+                        AsyncImage(
+                            model = selectedImageUri,
+                            contentDescription = "Selected",
+                            modifier = Modifier
+                                .size(64.dp)
+                                .clip(RoundedCornerShape(12.dp))
+                                .border(1.dp, Color(0xFF51FAC1), RoundedCornerShape(12.dp)),
+                            contentScale = ContentScale.Crop
+                        )
+                        IconButton(
+                            onClick = onRemoveImage,
+                            modifier = Modifier
+                                .align(Alignment.TopEnd)
+                                .offset(x = 6.dp, y = (-6).dp)
+                                .size(22.dp)
+                                .background(Color(0xCC000000), CircleShape)
+                                .border(1.dp, Color.White, CircleShape)
+                                .padding(2.dp)
+                        ) {
+                            Icon(Icons.Default.Close, contentDescription = "Remove", tint = Color.White, modifier = Modifier.size(14.dp))
+                        }
+                    }
+                }
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.padding(horizontal = 2.dp)
+                ) {
+                    // Nút chọn ảnh / camera
+                    IconButton(
+                        onClick = onPickImage,
+                        modifier = Modifier.size(38.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.CenterFocusStrong,
+                            contentDescription = "Camera",
+                            tint = Color(0xFF51FAC1),
+                            modifier = Modifier.size(20.dp)
+                        )
+                    }
+
+                    // Nút nói câu hỏi (Microphone Dictation)
+                    IconButton(
+                        onClick = onVoiceInput,
+                        modifier = Modifier.size(38.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Mic,
+                            contentDescription = "Voice Input",
+                            tint = Color(0xFFFFD166),
+                            modifier = Modifier.size(22.dp)
+                        )
+                    }
+
+                    val strings = LocalAppStrings.current
+                    OutlinedTextField(
+                        value = text,
+                        onValueChange = onTextChange,
+                        placeholder = {
+                            Text(
+                                text = strings.castingQuestion,
+                                color = Color(0x80FFFFFF),
+                                fontSize = 14.sp
+                            )
+                        },
+                        modifier = Modifier.weight(1f),
+                        shape = RoundedCornerShape(20.dp),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = Color.Transparent,
+                            unfocusedBorderColor = Color.Transparent,
+                            focusedTextColor = Color.White,
+                            unfocusedTextColor = Color.White,
+                            cursorColor = Color(0xFF51FAC1)
+                        ),
+                        maxLines = 3,
+                        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Send),
+                        keyboardActions = KeyboardActions(onSend = { onSend() })
+                    )
+
+                    // Nút xóa chữ nhanh nếu đang có text
+                    if (text.isNotBlank()) {
+                        IconButton(
+                            onClick = { onTextChange("") },
+                            modifier = Modifier.size(28.dp)
+                        ) {
+                            Icon(
+                                Icons.Default.Close,
+                                contentDescription = "Clear",
+                                tint = Color(0x66FFFFFF),
+                                modifier = Modifier.size(16.dp)
+                            )
+                        }
+                        Spacer(modifier = Modifier.width(4.dp))
+                    }
+
+                    val canSend = !isGenerating && (text.isNotBlank() || selectedImageUri != null)
+                    val sendBtnColor = if (canSend) Brush.linearGradient(listOf(Color(0xFFFF9E00), Color(0xFFFF5400))) else Brush.linearGradient(listOf(Color(0x33FFFFFF), Color(0x22FFFFFF)))
+                    val sendIconColor = if (canSend) Color.White else Color(0x80FFFFFF)
+                    Box(
+                        modifier = Modifier
+                            .size(40.dp)
+                            .clip(CircleShape)
+                            .background(sendBtnColor)
+                            .clickable(enabled = canSend, onClick = onSend),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.Send,
+                            contentDescription = "Send",
+                            tint = sendIconColor,
+                            modifier = Modifier.size(18.dp)
+                        )
+                    }
                 }
             }
         }
