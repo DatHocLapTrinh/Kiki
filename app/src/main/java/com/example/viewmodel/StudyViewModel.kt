@@ -30,6 +30,7 @@ import com.example.audio.TextToSpeechManager
 import com.example.audio.SoundEffectManager
 import com.example.security.FirebaseAuthManager
 import com.example.security.GoogleAuthResult
+import com.example.sync.FirestoreSyncManager
 import com.example.sqlite.room.VocabularyEntity
 import com.example.sqlite.room.WeakPointEntity
 import javax.inject.Inject
@@ -41,6 +42,7 @@ class StudyViewModel @Inject constructor(
     val ttsManager: TextToSpeechManager,
     val soundEffectManager: SoundEffectManager,
     val authManager: FirebaseAuthManager,
+    val firestoreSyncManager: FirestoreSyncManager,
     @param:ApplicationContext private val appContext: Context
 ) : ViewModel() {
 
@@ -327,6 +329,8 @@ class StudyViewModel @Inject constructor(
                 refreshWeakPoints()
                 refreshDailyTasks()
                 checkAndUpdateStreak(userId)
+                firestoreSyncManager.syncUserProfile(userId)
+                firestoreSyncManager.syncWeakPoints(userId)
             }
 
             val prompt = buildString {
@@ -430,6 +434,9 @@ class StudyViewModel @Inject constructor(
         viewModelScope.launch {
             val userId = repository.getUserIdByEmail(email)
             if (userId != -1L) {
+                // Khôi phục dữ liệu từ Cloud nếu có bản sao mới hơn
+                firestoreSyncManager.restoreProgressFromCloud(userId)
+
                 _currentUserId.value = userId
                 _history.value = emptyList()
                 val profile = repository.getUserProfile(userId)
@@ -453,6 +460,9 @@ class StudyViewModel @Inject constructor(
                 checkAndUpdateStreak(userId)
                 refreshVocabulary()
                 refreshWeakPoints()
+
+                // Tự động đồng bộ toàn bộ dữ liệu lên Cloud Firestore ngầm
+                firestoreSyncManager.syncAllToCloud(userId)
             }
         }
     }
@@ -533,6 +543,7 @@ class StudyViewModel @Inject constructor(
                     _xp.value = newXp
                     _level.value = (newXp / 100) + 1
                     _rankTitle.value = calculateRankTitle(newXp)
+                    firestoreSyncManager.syncUserProfile(userId)
                 } else {
                     val current = _history.value ?: emptyList()
                     val updated = mutableListOf(QAItem(0, question, imageUri?.toString(), answer))
@@ -653,6 +664,7 @@ class StudyViewModel @Inject constructor(
             viewModelScope.launch {
                 repository.updateXP(userId, amount)
                 fetchLeaderboard()
+                firestoreSyncManager.syncUserProfile(userId)
             }
         }
     }
@@ -728,6 +740,7 @@ class StudyViewModel @Inject constructor(
             _avatarUri.value = avatarUri
             _studyMotto.value = motto?.trim() ?: ""
             fetchLeaderboard()
+            firestoreSyncManager.syncUserProfile(userId)
         }
     }
 
@@ -745,6 +758,7 @@ class StudyViewModel @Inject constructor(
         viewModelScope.launch {
             repository.insertVocabulary(userId, word.trim(), phonetic.trim(), meaning.trim(), example.trim())
             refreshVocabulary()
+            firestoreSyncManager.syncVocabulary(userId)
         }
     }
 
