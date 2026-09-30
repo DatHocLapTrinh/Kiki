@@ -82,7 +82,7 @@ fun JourneyMapScreen(
                 .fillMaxSize()
                 .verticalScroll(scrollState)
                 .statusBarsPadding()
-                .padding(top = 74.dp, bottom = 124.dp),
+                .padding(top = 12.dp, bottom = 124.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             JourneyTopBar(
@@ -141,38 +141,50 @@ private fun JourneyTopBar(
     strings: AppStrings
 ) {
     Row(
-        modifier = Modifier.fillMaxWidth().padding(horizontal = 22.dp),
-        verticalAlignment = Alignment.Top
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 20.dp, vertical = 4.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceBetween
     ) {
-        Spacer(modifier = Modifier.width(48.dp))
-        Column(
-            modifier = Modifier.weight(1f),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Text(strings.mapTitle, color = Color(0xFF51FAC1), fontSize = 13.sp, fontWeight = FontWeight.Bold)
+        Column(modifier = Modifier.weight(1f)) {
             Text(
-                if (isEnglish) "$userName's Adventure" else "Hành trình của $userName",
-                color = Color.White,
-                style = MaterialTheme.typography.headlineSmall,
-                fontWeight = FontWeight.ExtraBold,
-                textAlign = TextAlign.Center
+                text = strings.mapTitle,
+                color = Color(0xFF51FAC1),
+                fontSize = 11.sp,
+                fontWeight = FontWeight.Bold,
+                letterSpacing = 1.2.sp
             )
-            Text(strings.mapSubtitle, color = Color(0xCCFFFFFF), fontSize = 13.sp, textAlign = TextAlign.Center)
+            Text(
+                text = if (isEnglish) "$userName's Journey" else "Hành trình của $userName",
+                color = Color.White,
+                fontSize = 22.sp,
+                fontWeight = FontWeight.Black,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+            Text(
+                text = strings.mapSubtitle,
+                color = Color(0xB3FFFFFF),
+                fontSize = 12.sp
+            )
         }
+        Spacer(modifier = Modifier.width(12.dp))
         Box(
             modifier = Modifier
-                .width(86.dp)
-                .height(76.dp)
                 .clip(RoundedCornerShape(18.dp))
                 .background(Color(0x3314142C))
                 .border(1.dp, Color(0x995C2A9D), RoundedCornerShape(18.dp))
-                .padding(vertical = 8.dp),
+                .padding(horizontal = 14.dp, vertical = 10.dp),
             contentAlignment = Alignment.Center
         ) {
-            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                Icon(Icons.Default.Star, contentDescription = null, tint = Color(0xFFFFD166), modifier = Modifier.size(22.dp))
-                Text("$earnedStars", color = Color.White, fontSize = 20.sp, fontWeight = FontWeight.ExtraBold)
-                Text(strings.starsLabel, color = Color(0xCCFFFFFF), fontSize = 10.sp)
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(Icons.Default.Star, contentDescription = null, tint = Color(0xFFFFD166), modifier = Modifier.size(20.dp))
+                Spacer(modifier = Modifier.width(6.dp))
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text("$earnedStars", color = Color.White, fontSize = 18.sp, fontWeight = FontWeight.ExtraBold)
+                    Text(strings.starsLabel, color = Color(0xCCFFFFFF), fontSize = 9.sp, fontWeight = FontWeight.Bold)
+                }
             }
         }
     }

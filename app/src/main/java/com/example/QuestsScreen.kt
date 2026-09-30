@@ -104,7 +104,7 @@ fun QuestsScreen(viewModel: StudyViewModel) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(top = 10.dp, start = 72.dp, end = 20.dp, bottom = 12.dp),
+                .padding(horizontal = 20.dp, vertical = 10.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween
         ) {

@@ -92,7 +92,6 @@ fun AskScreen(viewModel: StudyViewModel) {
             .imePadding()
     ) {
         TopAppBar(
-            navigationIcon = { Spacer(modifier = Modifier.size(56.dp)) },
             title = {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(Icons.Default.AutoFixHigh, contentDescription = null, tint = Color(0xFFFFD166), modifier = Modifier.size(24.dp))

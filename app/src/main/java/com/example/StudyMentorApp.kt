@@ -393,230 +393,53 @@ fun OptionButton(text: String, isSelected: Boolean, onClick: () -> Unit) {
 fun MainNavigation(viewModel: StudyViewModel, onLogout: () -> Unit) {
     val navController = rememberNavController()
 
-    val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
-    val drawerScope = rememberCoroutineScope()
-    val navBackStackEntry by navController.currentBackStackEntryAsState()
-    val currentRoute = navBackStackEntry?.destination?.route
-    val userName by viewModel.userName.observeAsState("Adventurer")
-    val strings = LocalAppStrings.current
-    var showSettings by remember { mutableStateOf(false) }
-
-    val hiddenMenuRoutes = remember {
-        setOf("progression_map", "quest_active", "rank_reveal", "quest_review")
-    }
-    val showMenu = currentRoute !in hiddenMenuRoutes
-
-    fun navigateFromDrawer(route: String) {
-        drawerScope.launch {
-            drawerState.close()
-            navController.navigate(route) {
-                popUpTo(navController.graph.startDestinationId) { saveState = true }
-                launchSingleTop = true
-                restoreState = true
+    Box(modifier = Modifier.fillMaxSize()) {
+        NavHost(
+            navController = navController,
+            startDestination = "map",
+            modifier = Modifier.fillMaxSize(),
+            enterTransition = { fadeIn(tween(260)) + slideIntoContainer(AnimatedContentTransitionScope.SlideDirection.Start, tween(260)) },
+            exitTransition = { fadeOut(tween(260)) + slideOutOfContainer(AnimatedContentTransitionScope.SlideDirection.Start, tween(260)) },
+            popEnterTransition = { fadeIn(tween(260)) + slideIntoContainer(AnimatedContentTransitionScope.SlideDirection.End, tween(260)) },
+            popExitTransition = { fadeOut(tween(260)) + slideOutOfContainer(AnimatedContentTransitionScope.SlideDirection.End, tween(260)) }
+        ) {
+            composable("map") {
+                JourneyMapScreen(
+                    viewModel = viewModel,
+                    onStartQuest = { navController.navigate("progression_map") },
+                    onLogout = onLogout,
+                    onViewStats = { navController.navigate("profile") { launchSingleTop = true } }
+                )
             }
-        }
-    }
-
-    ModalNavigationDrawer(
-        drawerState = drawerState,
-        gesturesEnabled = showMenu,
-        drawerContent = {
-            AppNavigationDrawer(
-                userName = userName,
-                currentRoute = currentRoute,
-                strings = strings,
-                onNavigate = ::navigateFromDrawer,
-                onSettings = {
-                    drawerScope.launch {
-                        drawerState.close()
-                        showSettings = true
+            composable("progression_map") { ChapterJourneyMapScreen(viewModel, onBack = { navController.popBackStack() }, onStartQuest = { lessonIndex ->
+                viewModel.startLesson(lessonIndex)
+                navController.navigate("quest_active")
+            }) }
+            composable("quest_active") { QuestScreen(viewModel, onFinish = { navController.navigate("rank_reveal") }) }
+            composable("rank_reveal") { RankRevealScreen(
+                onEnterRealm = {
+                    navController.navigate("progression_map") {
+                        popUpTo("map")
                     }
                 },
-                onLogout = {
-                    drawerScope.launch {
-                        drawerState.close()
-                        onLogout()
-                    }
+                onViewAnalysis = {
+                    navController.navigate("quest_review")
                 }
-            )
+            ) }
+            composable("quest_review") { QuestReviewScreen(viewModel, onBack = { navController.popBackStack() }) }
+            composable("quests") { QuestsScreen(viewModel) }
+            composable("ask") { AskScreen(viewModel) }
+            composable("rank") { RankScreen(viewModel) }
+            composable("profile") { ProfileScreen(viewModel, onLogout = onLogout) }
         }
-    ) {
-        Box(modifier = Modifier.fillMaxSize()) {
-            NavHost(
-                navController = navController,
-                startDestination = "map",
-                modifier = Modifier.fillMaxSize(),
-                enterTransition = { fadeIn(tween(260)) + slideIntoContainer(AnimatedContentTransitionScope.SlideDirection.Start, tween(260)) },
-                exitTransition = { fadeOut(tween(260)) + slideOutOfContainer(AnimatedContentTransitionScope.SlideDirection.Start, tween(260)) },
-                popEnterTransition = { fadeIn(tween(260)) + slideIntoContainer(AnimatedContentTransitionScope.SlideDirection.End, tween(260)) },
-                popExitTransition = { fadeOut(tween(260)) + slideOutOfContainer(AnimatedContentTransitionScope.SlideDirection.End, tween(260)) }
-            ) {
-                composable("map") {
-                    JourneyMapScreen(
-                        viewModel = viewModel,
-                        onStartQuest = { navController.navigate("progression_map") },
-                        onLogout = onLogout,
-                        onViewStats = { navController.navigate("profile") { launchSingleTop = true } }
-                    )
-                }
-                composable("progression_map") { ChapterJourneyMapScreen(viewModel, onBack = { navController.popBackStack() }, onStartQuest = { lessonIndex ->
-                    viewModel.startLesson(lessonIndex)
-                    navController.navigate("quest_active")
-                }) }
-                composable("quest_active") { QuestScreen(viewModel, onFinish = { navController.navigate("rank_reveal") }) }
-                composable("rank_reveal") { RankRevealScreen(
-                    onEnterRealm = {
-                        navController.navigate("progression_map") {
-                            popUpTo("map")
-                        }
-                    },
-                    onViewAnalysis = {
-                        navController.navigate("quest_review")
-                    }
-                ) }
-                composable("quest_review") { QuestReviewScreen(viewModel, onBack = { navController.popBackStack() }) }
-                composable("quests") { QuestsScreen(viewModel) }
-                composable("ask") { AskScreen(viewModel) }
-                composable("rank") { RankScreen(viewModel) }
-                composable("profile") { ProfileScreen(viewModel, onLogout = onLogout) }
-            }
 
-            FloatingNavBar(
-                navController = navController,
-                modifier = Modifier
-                    .align(Alignment.BottomCenter)
-                    .navigationBarsPadding()
-                    .padding(bottom = 12.dp)
-            )
-
-            if (showMenu) {
-                IconButton(
-                    onClick = { drawerScope.launch { drawerState.open() } },
-                    modifier = Modifier
-                        .statusBarsPadding()
-                        .padding(start = 12.dp, top = 8.dp)
-                        .size(48.dp)
-                        .clip(CircleShape)
-                        .background(Color(0xCC14141E))
-                        .border(1.dp, Color(0x6651FAC1), CircleShape)
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Menu,
-                        contentDescription = strings.menuLabel,
-                        tint = Color(0xFF51FAC1)
-                    )
-                }
-            }
-
-            if (showSettings) {
-                SettingsDialog(
-                    viewModel = viewModel,
-                    onDismiss = { showSettings = false },
-                    onLogout = {
-                        showSettings = false
-                        onLogout()
-                    }
-                )
-            }
-        }
-    }
-}
-
-private data class AppDrawerItem(
-    val route: String,
-    val label: String,
-    val icon: ImageVector
-)
-
-@Composable
-private fun AppNavigationDrawer(
-    userName: String,
-    currentRoute: String?,
-    strings: AppStrings,
-    onNavigate: (String) -> Unit,
-    onSettings: () -> Unit,
-    onLogout: () -> Unit
-) {
-    val items = listOf(
-        AppDrawerItem("map", strings.menuMap, Icons.Default.Map),
-        AppDrawerItem("quests", strings.menuQuests, Icons.AutoMirrored.Filled.FormatListBulleted),
-        AppDrawerItem("ask", strings.menuAsk, Icons.Default.AutoFixHigh),
-        AppDrawerItem("rank", strings.menuRank, Icons.Default.EmojiEvents),
-        AppDrawerItem("profile", strings.menuProfile, Icons.Default.Person)
-    )
-
-    ModalDrawerSheet(
-        modifier = Modifier.width(312.dp),
-        drawerContainerColor = Color(0xFF151020),
-        drawerContentColor = Color.White
-    ) {
-        Column(modifier = Modifier.fillMaxHeight().padding(horizontal = 12.dp)) {
-            Column(modifier = Modifier.padding(start = 12.dp, end = 12.dp, top = 36.dp, bottom = 24.dp)) {
-                Box(
-                    modifier = Modifier
-                        .size(64.dp)
-                        .clip(CircleShape)
-                        .background(Brush.linearGradient(listOf(Color(0xFFFF9E00), Color(0xFF51FAC1))))
-                        .border(2.dp, Color(0x6651FAC1), CircleShape),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text("K", color = Color(0xFF151020), fontSize = 30.sp, fontWeight = FontWeight.Black)
-                }
-                Spacer(modifier = Modifier.height(12.dp))
-                Text("Kiki Hihi", color = Color.White, fontSize = 20.sp, fontWeight = FontWeight.ExtraBold)
-                Text(userName, color = Color(0xFF51FAC1), fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
-                Spacer(modifier = Modifier.height(8.dp))
-                Text(strings.menuTitle, color = Color(0x99FFFFFF), fontSize = 12.sp)
-            }
-
-            HorizontalDivider(color = Color(0x1FFFFFFF))
-            Spacer(modifier = Modifier.height(12.dp))
-
-            items.forEach { item ->
-                NavigationDrawerItem(
-                    label = { Text(item.label, fontWeight = FontWeight.SemiBold) },
-                    icon = { Icon(item.icon, contentDescription = null) },
-                    selected = currentRoute == item.route,
-                    onClick = { onNavigate(item.route) },
-                    shape = RoundedCornerShape(16.dp),
-                    modifier = Modifier.padding(vertical = 3.dp),
-                    colors = NavigationDrawerItemDefaults.colors(
-                        selectedContainerColor = Color(0x3351FAC1),
-                        selectedTextColor = Color(0xFF51FAC1),
-                        selectedIconColor = Color(0xFF51FAC1),
-                        unselectedTextColor = Color(0xE6FFFFFF),
-                        unselectedIconColor = Color(0xB3FFFFFF)
-                    )
-                )
-            }
-
-            Spacer(modifier = Modifier.weight(1f))
-
-            NavigationDrawerItem(
-                label = { Text(strings.menuSettings, fontWeight = FontWeight.SemiBold) },
-                icon = { Icon(Icons.Default.Settings, contentDescription = null) },
-                selected = false,
-                onClick = onSettings,
-                shape = RoundedCornerShape(16.dp),
-                modifier = Modifier.padding(vertical = 3.dp),
-                colors = NavigationDrawerItemDefaults.colors(
-                    unselectedTextColor = Color(0xE6FFFFFF),
-                    unselectedIconColor = Color(0xB3FFFFFF)
-                )
-            )
-            NavigationDrawerItem(
-                label = { Text(strings.menuLogout, fontWeight = FontWeight.SemiBold) },
-                icon = { Icon(Icons.AutoMirrored.Filled.Logout, contentDescription = null) },
-                selected = false,
-                onClick = onLogout,
-                shape = RoundedCornerShape(16.dp),
-                modifier = Modifier.padding(top = 3.dp, bottom = 20.dp),
-                colors = NavigationDrawerItemDefaults.colors(
-                    unselectedTextColor = Color(0xFFFF8080),
-                    unselectedIconColor = Color(0xFFFF4B4B)
-                )
-            )
-        }
+        FloatingNavBar(
+            navController = navController,
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .navigationBarsPadding()
+                .padding(bottom = 12.dp)
+        )
     }
 }
 
