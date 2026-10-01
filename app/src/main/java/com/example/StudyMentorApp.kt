@@ -417,16 +417,27 @@ fun MainNavigation(viewModel: StudyViewModel, onLogout: () -> Unit) {
                 navController.navigate("quest_active")
             }) }
             composable("quest_active") { QuestScreen(viewModel, onFinish = { navController.navigate("rank_reveal") }) }
-            composable("rank_reveal") { RankRevealScreen(
-                onEnterRealm = {
-                    navController.navigate("progression_map") {
-                        popUpTo("map")
+            composable("rank_reveal") {
+                RankRevealScreen(
+                    viewModel = viewModel,
+                    onEnterRealm = {
+                        navController.navigate("progression_map") {
+                            popUpTo("map")
+                        }
+                    },
+                    onViewAnalysis = {
+                        navController.navigate("quest_review")
+                    },
+                    onRetryLesson = {
+                        val currentChapter = viewModel.currentChapterTitle.value ?: ""
+                        val currentNode = viewModel.currentNode.value ?: 1
+                        viewModel.selectChapterByTitle(currentChapter, currentNode)
+                        navController.navigate("quest_active") {
+                            popUpTo("progression_map")
+                        }
                     }
-                },
-                onViewAnalysis = {
-                    navController.navigate("quest_review")
-                }
-            ) }
+                )
+            }
             composable("quest_review") { QuestReviewScreen(viewModel, onBack = { navController.popBackStack() }) }
             composable("quests") { QuestsScreen(viewModel) }
             composable("ask") { AskScreen(viewModel) }

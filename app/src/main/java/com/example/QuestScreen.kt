@@ -939,7 +939,12 @@ fun QuestScreen(viewModel: StudyViewModel, onFinish: () -> Unit) {
                                                 }
                                             }
                                         }
-                                        viewModel.completeCurrentLesson()
+                                        val correctCount = finalResults.count { it.selectedIndex == it.correctIndex }
+                                        val totalCount = finalResults.size
+                                        val isPassed = totalCount > 0 && (correctCount.toFloat() / totalCount >= 0.5f)
+                                        if (isPassed) {
+                                            viewModel.completeCurrentLesson()
+                                        }
                                         viewModel.analyzeQuestResults(context, finalResults)
                                         onFinish()
                                     }
