@@ -2,6 +2,7 @@ package com.example.ui
 
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -49,130 +50,138 @@ fun VocabularyVaultDialog(
 
     Dialog(
         onDismissRequest = onDismiss,
-        properties = DialogProperties(usePlatformDefaultWidth = false)
+        properties = DialogProperties(usePlatformDefaultWidth = false, decorFitsSystemWindows = false)
     ) {
         Surface(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(top = 24.dp),
+                .statusBarsPadding()
+                .padding(top = 16.dp),
             color = Color(0xFF0D0A1A),
             shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp)
         ) {
             Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(horizontal = 20.dp, vertical = 16.dp)
+                modifier = Modifier.fillMaxSize()
             ) {
-                // Header
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Box(
-                            modifier = Modifier
-                                .size(40.dp)
-                                .clip(CircleShape)
-                                .background(Color(0x3351FAC1)),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(Icons.Default.CollectionsBookmark, contentDescription = null, tint = Color(0xFF51FAC1), modifier = Modifier.size(22.dp))
-                        }
-                        Spacer(modifier = Modifier.width(12.dp))
-                        Column {
-                            Text(
-                                text = if (isEnglish) "VOCABULARY VAULT" else "SỔ TAY TỪ VỰNG",
-                                color = Color(0xFF51FAC1),
-                                fontSize = 11.sp,
-                                fontWeight = FontWeight.Bold,
-                                letterSpacing = 1.sp
-                            )
-                            Text(
-                                text = if (isEnglish) "Master & Flashcards" else "Ôn Tập & Ghi Nhớ Sâu",
-                                color = Color.White,
-                                fontSize = 18.sp,
-                                fontWeight = FontWeight.ExtraBold
-                            )
-                        }
-                    }
-
-                    Row {
-                        IconButton(
-                            onClick = {
-                                haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                                showAddDialog = true
-                            }
-                        ) {
-                            Icon(Icons.Default.AddCircle, contentDescription = "Add Word", tint = Color(0xFFFFD166), modifier = Modifier.size(26.dp))
-                        }
-                        IconButton(onClick = onDismiss) {
-                            Icon(Icons.Default.Close, contentDescription = "Close", tint = Color(0x99FFFFFF))
-                        }
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(16.dp))
-
-                // Tab Switcher
-                Row(
+                // Header & Tab Switcher (Horizontal padding)
+                Column(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .clip(RoundedCornerShape(14.dp))
-                        .background(Color(0x22FFFFFF))
-                        .padding(4.dp)
+                        .padding(start = 20.dp, end = 20.dp, top = 16.dp, bottom = 8.dp)
                 ) {
-                    val tab1Title = if (isEnglish) "🃏 Flashcards (${vocabularyList.size})" else "🃏 Luyện Flashcard (${vocabularyList.size})"
-                    val tab2Title = if (isEnglish) "📖 All Words" else "📖 Danh Sách Từ"
-
-                    Box(
-                        modifier = Modifier
-                            .weight(1f)
-                            .clip(RoundedCornerShape(10.dp))
-                            .background(if (selectedTab == 0) Color(0xFF51FAC1) else Color.Transparent)
-                            .clickable {
-                                haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                                selectedTab = 0
-                            }
-                            .padding(vertical = 10.dp),
-                        contentAlignment = Alignment.Center
+                    // Header
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Text(
-                            text = tab1Title,
-                            color = if (selectedTab == 0) Color(0xFF0D0A1A) else Color.White,
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 13.sp
-                        )
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Box(
+                                modifier = Modifier
+                                    .size(40.dp)
+                                    .clip(CircleShape)
+                                    .background(Color(0x3351FAC1)),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(Icons.Default.CollectionsBookmark, contentDescription = null, tint = Color(0xFF51FAC1), modifier = Modifier.size(22.dp))
+                            }
+                            Spacer(modifier = Modifier.width(12.dp))
+                            Column {
+                                Text(
+                                    text = if (isEnglish) "VOCABULARY VAULT" else "SỔ TAY TỪ VỰNG",
+                                    color = Color(0xFF51FAC1),
+                                    fontSize = 11.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    letterSpacing = 1.sp
+                                )
+                                Text(
+                                    text = if (isEnglish) "Master & Flashcards" else "Ôn Tập & Ghi Nhớ Sâu",
+                                    color = Color.White,
+                                    fontSize = 18.sp,
+                                    fontWeight = FontWeight.ExtraBold
+                                )
+                            }
+                        }
+
+                        Row {
+                            IconButton(
+                                onClick = {
+                                    haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                                    showAddDialog = true
+                                }
+                            ) {
+                                Icon(Icons.Default.AddCircle, contentDescription = "Add Word", tint = Color(0xFFFFD166), modifier = Modifier.size(26.dp))
+                            }
+                            IconButton(onClick = onDismiss) {
+                                Icon(Icons.Default.Close, contentDescription = "Close", tint = Color(0x99FFFFFF))
+                            }
+                        }
                     }
 
-                    Box(
+                    Spacer(modifier = Modifier.height(14.dp))
+
+                    // Tab Switcher
+                    Row(
                         modifier = Modifier
-                            .weight(1f)
-                            .clip(RoundedCornerShape(10.dp))
-                            .background(if (selectedTab == 1) Color(0xFF51FAC1) else Color.Transparent)
-                            .clickable {
-                                haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                                selectedTab = 1
-                            }
-                            .padding(vertical = 10.dp),
-                        contentAlignment = Alignment.Center
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(14.dp))
+                            .background(Color(0x22FFFFFF))
+                            .padding(4.dp)
                     ) {
-                        Text(
-                            text = tab2Title,
-                            color = if (selectedTab == 1) Color(0xFF0D0A1A) else Color.White,
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 13.sp
-                        )
+                        val tab1Title = if (isEnglish) "🃏 Flashcards (${vocabularyList.size})" else "🃏 Luyện Flashcard (${vocabularyList.size})"
+                        val tab2Title = if (isEnglish) "📖 All Words" else "📖 Danh Sách Từ"
+
+                        Box(
+                            modifier = Modifier
+                                .weight(1f)
+                                .clip(RoundedCornerShape(10.dp))
+                                .background(if (selectedTab == 0) Color(0xFF51FAC1) else Color.Transparent)
+                                .clickable {
+                                    haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                                    selectedTab = 0
+                                }
+                                .padding(vertical = 10.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = tab1Title,
+                                color = if (selectedTab == 0) Color(0xFF0D0A1A) else Color.White,
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 13.sp
+                            )
+                        }
+
+                        Box(
+                            modifier = Modifier
+                                .weight(1f)
+                                .clip(RoundedCornerShape(10.dp))
+                                .background(if (selectedTab == 1) Color(0xFF51FAC1) else Color.Transparent)
+                                .clickable {
+                                    haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                                    selectedTab = 1
+                                }
+                                .padding(vertical = 10.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = tab2Title,
+                                color = if (selectedTab == 1) Color(0xFF0D0A1A) else Color.White,
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 13.sp
+                            )
+                        }
                     }
                 }
 
-                Spacer(modifier = Modifier.height(18.dp))
-
-                // Content
-                if (vocabularyList.isEmpty()) {
-                    EmptyVaultState(isEnglish = isEnglish, onAddClick = { showAddDialog = true })
-                } else {
-                    if (selectedTab == 0) {
+                // Content Area with weight(1f)
+                Box(
+                    modifier = Modifier
+                        .weight(1f)
+                        .fillMaxWidth()
+                ) {
+                    if (vocabularyList.isEmpty()) {
+                        EmptyVaultState(isEnglish = isEnglish, onAddClick = { showAddDialog = true })
+                    } else if (selectedTab == 0) {
                         FlashcardDeckView(
                             items = vocabularyList,
                             viewModel = viewModel,
@@ -225,9 +234,16 @@ private fun FlashcardDeckView(
         modifier = Modifier.fillMaxSize(),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        // Counter & Progress
-        Row(
-            modifier = Modifier.fillMaxWidth(),
+        Column(
+            modifier = Modifier
+                .weight(1f)
+                .fillMaxWidth()
+                .padding(horizontal = 20.dp, vertical = 6.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            // Counter & Progress
+            Row(
+                modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
@@ -390,41 +406,86 @@ private fun FlashcardDeckView(
                 }
             }
         }
+    }
 
-        Spacer(modifier = Modifier.height(20.dp))
-
-        // Navigation Controls
-        Row(
-            modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
+        // Dedicated Elevated Bottom Dock
+        Surface(
+            color = Color(0xFF131024),
+            modifier = Modifier
+                .fillMaxWidth()
+                .border(
+                    BorderStroke(1.dp, Color(0x22FFFFFF)),
+                    RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp)
+                )
         ) {
-            OutlinedButton(
-                onClick = {
-                    haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                    if (currentIndex > 0) currentIndex--
-                },
-                enabled = currentIndex > 0,
-                shape = CircleShape,
-                colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.White)
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .navigationBarsPadding()
+                    .padding(start = 20.dp, end = 20.dp, top = 14.dp, bottom = 20.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Prev")
-                Spacer(modifier = Modifier.width(6.dp))
-                Text(if (isEnglish) "Previous" else "Trước")
-            }
+                OutlinedButton(
+                    onClick = {
+                        haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                        if (currentIndex > 0) currentIndex--
+                    },
+                    enabled = currentIndex > 0,
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(48.dp),
+                    shape = RoundedCornerShape(16.dp),
+                    border = BorderStroke(1.dp, if (currentIndex > 0) Color(0x6651FAC1) else Color(0x22FFFFFF)),
+                    colors = ButtonDefaults.outlinedButtonColors(
+                        contentColor = Color.White,
+                        disabledContentColor = Color(0x44FFFFFF)
+                    )
+                ) {
+                    Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Prev", modifier = Modifier.size(18.dp))
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text(if (isEnglish) "Previous" else "Trước", fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                }
 
-            Button(
-                onClick = {
-                    haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                    if (currentIndex < items.size - 1) currentIndex++
-                },
-                enabled = currentIndex < items.size - 1,
-                shape = CircleShape,
-                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF51FAC1), contentColor = Color(0xFF0D0A1A))
-            ) {
-                Text(if (isEnglish) "Next" else "Tiếp")
-                Spacer(modifier = Modifier.width(6.dp))
-                Icon(Icons.AutoMirrored.Filled.ArrowForward, contentDescription = "Next")
+                Spacer(modifier = Modifier.width(12.dp))
+
+                IconButton(
+                    onClick = {
+                        haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                        isFlipped = !isFlipped
+                    },
+                    modifier = Modifier
+                        .size(48.dp)
+                        .clip(CircleShape)
+                        .background(Color(0x2251FAC1))
+                        .border(1.dp, Color(0x6651FAC1), CircleShape)
+                ) {
+                    Icon(Icons.Default.Refresh, contentDescription = "Flip", tint = Color(0xFF51FAC1), modifier = Modifier.size(22.dp))
+                }
+
+                Spacer(modifier = Modifier.width(12.dp))
+
+                Button(
+                    onClick = {
+                        haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                        if (currentIndex < items.size - 1) currentIndex++
+                    },
+                    enabled = currentIndex < items.size - 1,
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(48.dp),
+                    shape = RoundedCornerShape(16.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = Color(0xFF51FAC1),
+                        contentColor = Color(0xFF0D0A1A),
+                        disabledContainerColor = Color(0x2251FAC1),
+                        disabledContentColor = Color(0x44FFFFFF)
+                    )
+                ) {
+                    Text(if (isEnglish) "Next" else "Tiếp", fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Icon(Icons.AutoMirrored.Filled.ArrowForward, contentDescription = "Next", modifier = Modifier.size(18.dp))
+                }
             }
         }
     }
@@ -439,9 +500,11 @@ private fun VocabularyListView(
     val haptic = LocalHapticFeedback.current
 
     LazyColumn(
-        modifier = Modifier.fillMaxSize(),
+        modifier = Modifier
+            .fillMaxSize()
+            .navigationBarsPadding(),
         verticalArrangement = Arrangement.spacedBy(12.dp),
-        contentPadding = PaddingValues(bottom = 24.dp)
+        contentPadding = PaddingValues(start = 20.dp, end = 20.dp, top = 8.dp, bottom = 36.dp)
     ) {
         items(items, key = { it.vocabId }) { item ->
             Box(

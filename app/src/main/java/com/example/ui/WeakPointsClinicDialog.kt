@@ -1,14 +1,17 @@
 package com.example.ui
 
 import androidx.compose.animation.*
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
@@ -63,191 +66,199 @@ fun WeakPointsClinicDialog(
 
     Dialog(
         onDismissRequest = onDismiss,
-        properties = DialogProperties(usePlatformDefaultWidth = false)
+        properties = DialogProperties(usePlatformDefaultWidth = false, decorFitsSystemWindows = false)
     ) {
         Surface(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(top = 24.dp),
+                .statusBarsPadding()
+                .padding(top = 16.dp),
             color = Color(0xFF0D0A14),
             shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp)
         ) {
             Box(modifier = Modifier.fillMaxSize()) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(horizontal = 20.dp, vertical = 16.dp)
-                ) {
-                    // Header
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Box(
-                                modifier = Modifier
-                                    .size(42.dp)
-                                    .clip(CircleShape)
-                                    .background(Color(0x33FF6B6B)),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Icon(
-                                    Icons.Default.Healing,
-                                    contentDescription = null,
-                                    tint = Color(0xFFFF6B6B),
-                                    modifier = Modifier.size(24.dp)
-                                )
-                            }
-                            Spacer(modifier = Modifier.width(12.dp))
-                            Column {
-                                Text(
-                                    text = if (isEnglish) "WEAK-POINT CLINIC" else "PHÒNG KHÁM LỖI SAI",
-                                    color = Color(0xFFFF6B6B),
-                                    fontSize = 11.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    letterSpacing = 1.sp
-                                )
-                                Text(
-                                    text = if (isEnglish) "${weakPoints.size} Mistakes to Review" else "${weakPoints.size} Lỗi sai cần củng cố",
-                                    color = Color.White,
-                                    fontSize = 17.sp,
-                                    fontWeight = FontWeight.ExtraBold
-                                )
-                            }
-                        }
-                        IconButton(
-                            onClick = {
-                                haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                                onDismiss()
-                            }
-                        ) {
-                            Icon(Icons.Default.Close, contentDescription = "Close", tint = Color.White)
-                        }
-                    }
-
-                    Spacer(modifier = Modifier.height(16.dp))
-
-                    // Tab Selector
-                    Row(
+                Column(modifier = Modifier.fillMaxSize()) {
+                    // Header & Tab Selector (Horizontal padding)
+                    Column(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .clip(RoundedCornerShape(14.dp))
-                            .background(Color(0x1AFFFFFF))
-                            .padding(4.dp)
+                            .padding(start = 20.dp, end = 20.dp, top = 16.dp, bottom = 8.dp)
                     ) {
-                        Box(
-                            modifier = Modifier
-                                .weight(1f)
-                                .clip(RoundedCornerShape(10.dp))
-                                .background(if (selectedTab == 0) Color(0xFF22C55E) else Color.Transparent)
-                                .clickable {
-                                    haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                                    selectedTab = 0
-                                }
-                                .padding(vertical = 10.dp),
-                            contentAlignment = Alignment.Center
+                        // Header
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Text(
-                                text = if (isEnglish) "⚡ Practice Quiz" else "⚡ Trắc Nghiệm Củng Cố",
-                                color = if (selectedTab == 0) Color(0xFF0F172A) else Color(0x99FFFFFF),
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 13.sp
-                            )
-                        }
-
-                        Box(
-                            modifier = Modifier
-                                .weight(1f)
-                                .clip(RoundedCornerShape(10.dp))
-                                .background(if (selectedTab == 1) Color(0xFF22C55E) else Color.Transparent)
-                                .clickable {
-                                    haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                                    selectedTab = 1
-                                }
-                                .padding(vertical = 10.dp),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Text(
-                                text = if (isEnglish) "📋 Records (${weakPoints.size})" else "📋 Hồ Sơ (${weakPoints.size})",
-                                color = if (selectedTab == 1) Color(0xFF0F172A) else Color(0x99FFFFFF),
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 13.sp
-                            )
-                        }
-                    }
-
-                    Spacer(modifier = Modifier.height(16.dp))
-
-                    if (weakPoints.isEmpty()) {
-                        // Empty State: 100% Knowledge Health
-                        Box(
-                            modifier = Modifier
-                                .weight(1f)
-                                .fillMaxWidth(),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Column(
-                                horizontalAlignment = Alignment.CenterHorizontally,
-                                modifier = Modifier.padding(24.dp)
-                            ) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
                                 Box(
                                     modifier = Modifier
-                                        .size(80.dp)
+                                        .size(42.dp)
                                         .clip(CircleShape)
-                                        .background(Color(0x2222C55E)),
+                                        .background(Color(0x33FF6B6B)),
                                     contentAlignment = Alignment.Center
                                 ) {
                                     Icon(
-                                        Icons.Default.Verified,
+                                        Icons.Default.Healing,
                                         contentDescription = null,
-                                        tint = Color(0xFF22C55E),
-                                        modifier = Modifier.size(44.dp)
+                                        tint = Color(0xFFFF6B6B),
+                                        modifier = Modifier.size(24.dp)
                                     )
                                 }
-                                Spacer(modifier = Modifier.height(18.dp))
+                                Spacer(modifier = Modifier.width(12.dp))
+                                Column {
+                                    Text(
+                                        text = if (isEnglish) "WEAK-POINT CLINIC" else "PHÒNG KHÁM LỖI SAI",
+                                        color = Color(0xFFFF6B6B),
+                                        fontSize = 11.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        letterSpacing = 1.sp
+                                    )
+                                    Text(
+                                        text = if (isEnglish) "${weakPoints.size} Mistakes to Review" else "${weakPoints.size} Lỗi sai cần củng cố",
+                                        color = Color.White,
+                                        fontSize = 17.sp,
+                                        fontWeight = FontWeight.ExtraBold
+                                    )
+                                }
+                            }
+                            IconButton(
+                                onClick = {
+                                    haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                                    onDismiss()
+                                }
+                            ) {
+                                Icon(Icons.Default.Close, contentDescription = "Close", tint = Color.White)
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.height(14.dp))
+
+                        // Tab Selector
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clip(RoundedCornerShape(14.dp))
+                                .background(Color(0x1AFFFFFF))
+                                .padding(4.dp)
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .clip(RoundedCornerShape(10.dp))
+                                    .background(if (selectedTab == 0) Color(0xFF22C55E) else Color.Transparent)
+                                    .clickable {
+                                        haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                                        selectedTab = 0
+                                    }
+                                    .padding(vertical = 10.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
                                 Text(
-                                    text = if (isEnglish) "100% Mastery Status!" else "Đã Nắm Vững Toàn Bộ!",
-                                    color = Color.White,
-                                    fontSize = 18.sp,
+                                    text = if (isEnglish) "⚡ Practice Quiz" else "⚡ Trắc Nghiệm Củng Cố",
+                                    color = if (selectedTab == 0) Color(0xFF0F172A) else Color(0x99FFFFFF),
                                     fontWeight = FontWeight.Bold,
-                                    textAlign = TextAlign.Center
+                                    fontSize = 13.sp
                                 )
-                                Spacer(modifier = Modifier.height(8.dp))
+                            }
+
+                            Box(
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .clip(RoundedCornerShape(10.dp))
+                                    .background(if (selectedTab == 1) Color(0xFF22C55E) else Color.Transparent)
+                                    .clickable {
+                                        haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                                        selectedTab = 1
+                                    }
+                                    .padding(vertical = 10.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
                                 Text(
-                                    text = if (isEnglish)
-                                        "You have mastered all challenged questions! No mistakes left in your review bank. Keep conquering quests!"
-                                    else
-                                        "Bạn đã nắm vững toàn bộ kiến thức! Không có câu hỏi nào cần ôn lại. Tiếp tục làm nhiệm vụ để tích lũy XP nhé!",
-                                    color = Color(0x99FFFFFF),
-                                    fontSize = 14.sp,
-                                    textAlign = TextAlign.Center,
-                                    lineHeight = 20.sp
+                                    text = if (isEnglish) "📋 Records (${weakPoints.size})" else "📋 Hồ Sơ (${weakPoints.size})",
+                                    color = if (selectedTab == 1) Color(0xFF0F172A) else Color(0x99FFFFFF),
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 13.sp
                                 )
                             }
                         }
-                    } else {
-                        if (selectedTab == 0) {
-                            // Rehab Quiz Mode
-                            ClinicRehabQuizView(
-                                weakPoints = weakPoints,
-                                viewModel = viewModel,
-                                isEnglish = isEnglish,
-                                onHealed = {
-                                    showConfetti = true
+                    }
+
+                    // Content Area (takes weight 1f)
+                    Box(
+                        modifier = Modifier
+                            .weight(1f)
+                            .fillMaxWidth()
+                    ) {
+                        if (weakPoints.isEmpty()) {
+                            // Empty State: 100% Knowledge Health
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxSize(),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Column(
+                                    horizontalAlignment = Alignment.CenterHorizontally,
+                                    modifier = Modifier.padding(24.dp)
+                                ) {
+                                    Box(
+                                        modifier = Modifier
+                                            .size(80.dp)
+                                            .clip(CircleShape)
+                                            .background(Color(0x2222C55E)),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Icon(
+                                            Icons.Default.Verified,
+                                            contentDescription = null,
+                                            tint = Color(0xFF22C55E),
+                                            modifier = Modifier.size(44.dp)
+                                        )
+                                    }
+                                    Spacer(modifier = Modifier.height(18.dp))
+                                    Text(
+                                        text = if (isEnglish) "100% Mastery Status!" else "Đã Nắm Vững Toàn Bộ!",
+                                        color = Color.White,
+                                        fontSize = 18.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        textAlign = TextAlign.Center
+                                    )
+                                    Spacer(modifier = Modifier.height(8.dp))
+                                    Text(
+                                        text = if (isEnglish)
+                                            "You have mastered all challenged questions! No mistakes left in your review bank. Keep conquering quests!"
+                                        else
+                                            "Bạn đã nắm vững toàn bộ kiến thức! Không có câu hỏi nào cần ôn lại. Tiếp tục làm nhiệm vụ để tích lũy XP nhé!",
+                                        color = Color(0x99FFFFFF),
+                                        fontSize = 14.sp,
+                                        textAlign = TextAlign.Center,
+                                        lineHeight = 20.sp
+                                    )
                                 }
-                            )
+                            }
                         } else {
-                            // Records List Mode
-                            ClinicRecordsListView(
-                                weakPoints = weakPoints,
-                                viewModel = viewModel,
-                                isEnglish = isEnglish,
-                                onHeal = { item ->
-                                    viewModel.resolveWeakPoint(item.weakId)
-                                    showConfetti = true
-                                }
-                            )
+                            if (selectedTab == 0) {
+                                // Rehab Quiz Mode
+                                ClinicRehabQuizView(
+                                    weakPoints = weakPoints,
+                                    viewModel = viewModel,
+                                    isEnglish = isEnglish,
+                                    onHealed = {
+                                        showConfetti = true
+                                    }
+                                )
+                            } else {
+                                // Records List Mode
+                                ClinicRecordsListView(
+                                    weakPoints = weakPoints,
+                                    viewModel = viewModel,
+                                    isEnglish = isEnglish,
+                                    onHeal = { item ->
+                                        viewModel.resolveWeakPoint(item.weakId)
+                                        showConfetti = true
+                                    }
+                                )
+                            }
                         }
                     }
                 }
@@ -284,60 +295,76 @@ private fun ClinicRehabQuizView(
     val correctIndex = item.correctIndex
     val labels = listOf("A", "B", "C", "D")
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(bottom = 12.dp)
-    ) {
-        // Question tracker
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
+    Column(modifier = Modifier.fillMaxSize()) {
+        // Scrollable Question & Options area
+        Column(
+            modifier = Modifier
+                .weight(1f)
+                .fillMaxWidth()
+                .verticalScroll(rememberScrollState())
+                .padding(horizontal = 20.dp, vertical = 8.dp)
         ) {
-            Text(
-                text = "${if (isEnglish) "Rehab Question" else "Câu hỏi phục hồi"} ${currentIndex + 1}/${weakPoints.size}",
-                color = Color(0xFFFF9E00),
-                fontWeight = FontWeight.Bold,
-                fontSize = 12.sp
-            )
-            Row {
-                IconButton(
-                    onClick = {
-                        if (currentIndex > 0) {
-                            currentIndex--
-                            isSubmitted = false
-                            selectedIndex = -1
-                        }
-                    },
-                    enabled = currentIndex > 0
+            // Question tracker & Navigation arrows (< >)
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Box(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(10.dp))
+                        .background(Color(0x26FF9E00))
+                        .padding(horizontal = 10.dp, vertical = 5.dp)
                 ) {
-                    Icon(
-                        Icons.AutoMirrored.Filled.ArrowBack,
-                        contentDescription = "Previous",
-                        tint = if (currentIndex > 0) Color.White else Color(0x33FFFFFF)
+                    Text(
+                        text = "${if (isEnglish) "Question" else "Câu hỏi"} ${currentIndex + 1}/${weakPoints.size}",
+                        color = Color(0xFFFF9E00),
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 12.sp
                     )
                 }
-                IconButton(
-                    onClick = {
-                        if (currentIndex < weakPoints.size - 1) {
-                            currentIndex++
-                            isSubmitted = false
-                            selectedIndex = -1
-                        }
-                    },
-                    enabled = currentIndex < weakPoints.size - 1
-                ) {
-                    Icon(
-                        Icons.AutoMirrored.Filled.ArrowForward,
-                        contentDescription = "Next",
-                        tint = if (currentIndex < weakPoints.size - 1) Color.White else Color(0x33FFFFFF)
-                    )
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    IconButton(
+                        onClick = {
+                            if (currentIndex > 0) {
+                                currentIndex--
+                                isSubmitted = false
+                                selectedIndex = -1
+                            }
+                        },
+                        enabled = currentIndex > 0,
+                        modifier = Modifier.size(36.dp)
+                    ) {
+                        Icon(
+                            Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = "Previous",
+                            tint = if (currentIndex > 0) Color.White else Color(0x33FFFFFF),
+                            modifier = Modifier.size(20.dp)
+                        )
+                    }
+                    Spacer(modifier = Modifier.width(6.dp))
+                    IconButton(
+                        onClick = {
+                            if (currentIndex < weakPoints.size - 1) {
+                                currentIndex++
+                                isSubmitted = false
+                                selectedIndex = -1
+                            }
+                        },
+                        enabled = currentIndex < weakPoints.size - 1,
+                        modifier = Modifier.size(36.dp)
+                    ) {
+                        Icon(
+                            Icons.AutoMirrored.Filled.ArrowForward,
+                            contentDescription = "Next",
+                            tint = if (currentIndex < weakPoints.size - 1) Color.White else Color(0x33FFFFFF),
+                            modifier = Modifier.size(20.dp)
+                        )
+                    }
                 }
             }
-        }
 
-        Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(10.dp))
 
         // Question Card with Audio & Slow 0.68x Audio
         Box(
@@ -471,90 +498,118 @@ private fun ClinicRehabQuizView(
             }
         }
 
-        // Action Buttons
-        if (!isSubmitted) {
-            Button(
-                onClick = {
-                    if (selectedIndex != -1) {
-                        isSubmitted = true
-                        val won = selectedIndex == correctIndex
-                        isCorrect = won
-                        if (won) {
-                            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                            viewModel.soundEffectManager.playCorrect(3)
-                            viewModel.resolveWeakPoint(item.weakId)
-                            onHealed()
-                        } else {
-                            haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                            viewModel.soundEffectManager.playIncorrect()
-                        }
-                    }
-                },
-                enabled = selectedIndex != -1,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(50.dp),
-                shape = CircleShape,
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFF22C55E),
-                    disabledContainerColor = Color(0x3322C55E)
-                )
-            ) {
-                Text(
-                    text = if (isEnglish) "Check & Overcome (+25 XP)" else "Kiểm Tra & Khắc Phục (+25 XP)",
-                    color = Color.White,
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 15.sp
-                )
-            }
-        } else {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(10.dp)
-            ) {
-                if (isCorrect) {
-                    Button(
-                        onClick = {
-                            isSubmitted = false
-                            selectedIndex = -1
-                            if (currentIndex >= weakPoints.size - 1) {
-                                currentIndex = (weakPoints.size - 2).coerceAtLeast(0)
+        Spacer(modifier = Modifier.height(16.dp))
+    }
+
+    // Dedicated Elevated Bottom Dock!
+    Surface(
+        color = Color(0xFF160E1E),
+        modifier = Modifier
+            .fillMaxWidth()
+            .border(
+                BorderStroke(1.dp, Color(0x26FFFFFF)),
+                RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp)
+            )
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .navigationBarsPadding()
+                .padding(start = 20.dp, end = 20.dp, top = 14.dp, bottom = 20.dp)
+        ) {
+            if (!isSubmitted) {
+                Button(
+                    onClick = {
+                        if (selectedIndex != -1) {
+                            isSubmitted = true
+                            val won = selectedIndex == correctIndex
+                            isCorrect = won
+                            if (won) {
+                                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                viewModel.soundEffectManager.playCorrect(3)
+                                viewModel.resolveWeakPoint(item.weakId)
+                                onHealed()
+                            } else {
+                                haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                                viewModel.soundEffectManager.playIncorrect()
                             }
-                        },
-                        modifier = Modifier
-                            .weight(1f)
-                            .height(50.dp),
-                        shape = CircleShape,
-                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF22C55E))
-                    ) {
-                        Text(
-                            text = if (isEnglish) "Mastered! Next (+25 XP) ✨" else "Đã Nắm Vững! (+25 XP) ✨",
-                            fontWeight = FontWeight.Bold,
-                            color = Color.White
-                        )
-                    }
-                } else {
-                    Button(
-                        onClick = {
-                            isSubmitted = false
-                            selectedIndex = -1
-                        },
-                        modifier = Modifier
-                            .weight(1f)
-                            .height(50.dp),
-                        shape = CircleShape,
-                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFEF4444))
-                    ) {
-                        Text(
-                            text = if (isEnglish) "Try Again" else "Thử Lại Ngay",
-                            fontWeight = FontWeight.Bold,
-                            color = Color.White
-                        )
+                        }
+                    },
+                    enabled = selectedIndex != -1,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(52.dp),
+                    shape = RoundedCornerShape(16.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = Color(0xFF22C55E),
+                        disabledContainerColor = Color(0x3322C55E)
+                    )
+                ) {
+                    Icon(Icons.Default.CheckCircle, contentDescription = null, modifier = Modifier.size(20.dp))
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = if (isEnglish) "Check & Overcome (+25 XP)" else "Kiểm Tra & Khắc Phục (+25 XP)",
+                        color = Color.White,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 15.sp
+                    )
+                }
+            } else {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    if (isCorrect) {
+                        Button(
+                            onClick = {
+                                isSubmitted = false
+                                selectedIndex = -1
+                                if (currentIndex >= weakPoints.size - 1) {
+                                    currentIndex = (weakPoints.size - 2).coerceAtLeast(0)
+                                }
+                            },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(52.dp),
+                            shape = RoundedCornerShape(16.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF22C55E))
+                        ) {
+                            Text(
+                                text = if (isEnglish) "Mastered! Next (+25 XP) ✨" else "Đã Nắm Vững! (+25 XP) ✨",
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 15.sp,
+                                color = Color.White
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Icon(Icons.AutoMirrored.Filled.ArrowForward, contentDescription = null, modifier = Modifier.size(20.dp))
+                        }
+                    } else {
+                        Button(
+                            onClick = {
+                                isSubmitted = false
+                                selectedIndex = -1
+                            },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(52.dp),
+                            shape = RoundedCornerShape(16.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFEF4444))
+                        ) {
+                            Icon(Icons.Default.Refresh, contentDescription = null, modifier = Modifier.size(20.dp))
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                text = if (isEnglish) "Try Again" else "Thử Lại Ngay",
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 15.sp,
+                                color = Color.White
+                            )
+                        }
                     }
                 }
             }
         }
     }
+}
 }
 
 @Composable
@@ -567,9 +622,11 @@ private fun ClinicRecordsListView(
     val haptic = LocalHapticFeedback.current
 
     LazyColumn(
-        modifier = Modifier.fillMaxSize(),
+        modifier = Modifier
+            .fillMaxSize()
+            .navigationBarsPadding(),
         verticalArrangement = Arrangement.spacedBy(12.dp),
-        contentPadding = PaddingValues(bottom = 24.dp)
+        contentPadding = PaddingValues(start = 20.dp, end = 20.dp, top = 8.dp, bottom = 36.dp)
     ) {
         items(weakPoints, key = { it.weakId }) { item ->
             val options = item.parseOptions()
