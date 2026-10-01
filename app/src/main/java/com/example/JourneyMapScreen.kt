@@ -117,7 +117,7 @@ fun JourneyMapScreen(
                         if (currentStage != null) {
                             viewModel.selectChapterByTitle(currentStage.title, currentStage.sequence)
                         }
-                        viewModel.startLesson((currentNode - 1).coerceAtLeast(0))
+                        viewModel.startLesson(currentNode.coerceIn(1, 5))
                         onStartActiveLesson()
                     }
                 )

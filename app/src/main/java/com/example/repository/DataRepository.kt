@@ -31,7 +31,7 @@ class DataRepository @Inject constructor(
         seedInitialData()
     }
 
-    private val vocabularyPairsBank = listOf(
+    val vocabularyPairsBank = listOf(
         MatchingPair(1, "give up", "từ bỏ"),
         MatchingPair(2, "turn off", "tắt (thiết bị)"),
         MatchingPair(3, "look after", "chăm sóc"),
@@ -163,6 +163,7 @@ class DataRepository @Inject constructor(
     }
 
     suspend fun getQuestionsByChapter(chapterId: Long): List<QuestItem> = withContext(Dispatchers.IO) {
+        ensureSeeded()
         val questions = dao.getQuestionsByChapter(chapterId)
         questions.mapIndexedNotNull { index, q ->
             try {

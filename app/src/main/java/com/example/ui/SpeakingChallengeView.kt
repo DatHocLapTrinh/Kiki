@@ -266,6 +266,40 @@ fun SpeakingChallengeView(
             )
         }
 
+        // Tùy chọn 'Không thể nói lúc này' khi ở nơi công cộng hoặc gặp sự cố micro
+        if (evaluationResult == null) {
+            Spacer(modifier = Modifier.height(14.dp))
+            TextButton(
+                onClick = {
+                    haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                    val skipped = PronunciationResult(
+                        targetSentence = targetSentence,
+                        spokenSentence = targetSentence,
+                        overallScore = 75,
+                        scoredWords = emptyList(),
+                        isPassed = true,
+                        feedbackMessage = if (isEnglish) "Skipped speaking for now! Practice speaking in a quiet setting." else "Đã tạm hoãn bài nói! Hãy luyện phát âm lại khi bạn ở nơi yên tĩnh nhé."
+                    )
+                    evaluationResult = skipped
+                    onEvaluationComplete(skipped)
+                }
+            ) {
+                Icon(
+                    Icons.Default.MicOff,
+                    contentDescription = null,
+                    tint = Color(0x99FFFFFF),
+                    modifier = Modifier.size(16.dp)
+                )
+                Spacer(modifier = Modifier.width(6.dp))
+                Text(
+                    text = if (isEnglish) "Can't speak right now" else "Không thể nói lúc này",
+                    color = Color(0x99FFFFFF),
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.Medium
+                )
+            }
+        }
+
         // Evaluation Result Section (ELSA Style Color-Coded Feedback)
         evaluationResult?.let { res ->
             Spacer(modifier = Modifier.height(20.dp))

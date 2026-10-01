@@ -194,4 +194,26 @@ class SoundEffectManager @Inject constructor(
         }
         return buffer
     }
+
+    /**
+     * Giải phóng an toàn các tài nguyên AudioTrack phần cứng
+     */
+    fun release() {
+        try {
+            comboTracks.forEach { track ->
+                if (track.playState == AudioTrack.PLAYSTATE_PLAYING) {
+                    track.stop()
+                }
+                track.release()
+            }
+            if (incorrectTrack.playState == AudioTrack.PLAYSTATE_PLAYING) incorrectTrack.stop()
+            incorrectTrack.release()
+            if (fanfareTrack.playState == AudioTrack.PLAYSTATE_PLAYING) fanfareTrack.stop()
+            fanfareTrack.release()
+            if (clickTrack.playState == AudioTrack.PLAYSTATE_PLAYING) clickTrack.stop()
+            clickTrack.release()
+        } catch (_: Exception) {
+            // Safe cleanup ignore
+        }
+    }
 }

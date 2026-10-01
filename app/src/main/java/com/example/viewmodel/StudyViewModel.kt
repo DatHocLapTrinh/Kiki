@@ -331,12 +331,39 @@ class StudyViewModel @Inject constructor(
     }
 
     fun startLesson(lessonIndex: Int) {
-        val startIndex = (lessonIndex - 1) * 10
-        val endIndex = (startIndex + 10).coerceAtMost(allChapterQuestions.size)
-        if (startIndex in 0 until allChapterQuestions.size) {
-            _questions.value = allChapterQuestions.subList(startIndex, endIndex)
+        val safeLesson = lessonIndex.coerceIn(1, 5)
+        val startIndex = (safeLesson - 1) * 10
+        if (allChapterQuestions.isNotEmpty()) {
+            val safeStart = if (startIndex in 0 until allChapterQuestions.size) startIndex else 0
+            val endIndex = (safeStart + 10).coerceAtMost(allChapterQuestions.size)
+            _questions.value = allChapterQuestions.subList(safeStart, endIndex)
         } else {
-            _questions.value = emptyList()
+            // Asynchronous fallback: đảm bảo nạp câu hỏi an toàn không bị kẹt spinner
+            viewModelScope.launch {
+                val currentTitle = _currentChapterTitle.value
+                val chapterId = if (!currentTitle.isNullOrBlank()) {
+                    repository.getChapterIdByTitle(currentTitle)
+                } else -1L
+
+                if (chapterId != -1L) {
+                    allChapterQuestions = repository.getQuestionsByChapter(chapterId)
+                } else {
+                    val defaultChapters = repository.getChaptersByPreference("Beginner", "English")
+                    val defaultTitle = defaultChapters.firstOrNull() ?: "English Fundamentals"
+                    val defId = repository.getChapterIdByTitle(defaultTitle)
+                    if (defId != -1L) {
+                        allChapterQuestions = repository.getQuestionsByChapter(defId)
+                    }
+                }
+
+                if (allChapterQuestions.isNotEmpty()) {
+                    val safeStart = if (startIndex in 0 until allChapterQuestions.size) startIndex else 0
+                    val endIndex = (safeStart + 10).coerceAtMost(allChapterQuestions.size)
+                    _questions.value = allChapterQuestions.subList(safeStart, endIndex)
+                } else {
+                    _questions.value = emptyList()
+                }
+            }
         }
     }
 
@@ -378,10 +405,10 @@ class StudyViewModel @Inject constructor(
                     recordDailyTaskProgress(userId, "PERFECT_SCORE", 1)
                 }
 
-                // Tự động gom các câu làm sai vào Kho Điểm Yếu (Smart Mistake Bank)
+                // Tự động gom các câu làm sai vào Kho Điểm Yếu (Smart Mistake Bank) với 4 phương án cân bằng
                 for (item in results) {
                     if (item.selectedIndex != item.correctIndex) {
-                        repository.recordWeakPoint(userId, item.question, item.options, item.correctIndex)
+                        recordAdaptedWeakPoint(userId, item)
                     }
                 }
                 refreshWeakPoints()
@@ -1017,9 +1044,102 @@ class StudyViewModel @Inject constructor(
         }
     }
 
+    private suspend fun recordAdaptedWeakPoint(userId: Long, item: QuestItem) {
+        when (item.type) {
+            QuestionType.SENTENCE_BUILDER -> {
+                val correctSentence = item.correctSentence
+                if (correctSentence.isNotBlank()) {
+                    val words = correctSentence.split(" ").filter { it.isNotBlank() }
+                    val d1 = if (words.size > 2) {
+                        words.toMutableList().apply {
+                            val temp = this[0]
+                            this[0] = this[1]
+                            this[1] = temp
+                        }.joinToString(" ")
+                    } else "$correctSentence not"
+                    val d2 = if (words.size > 3) {
+                        words.toMutableList().apply {
+                            val last = removeAt(size - 1)
+                            add(0, last)
+                        }.joinToString(" ")
+                    } else "$correctSentence already"
+                    val d3 = if (words.size > 1) {
+                        words.shuffled().joinToString(" ")
+                    } else "$correctSentence soon"
+
+                    val rawOptions = listOf(correctSentence, d1, d2, d3).distinct()
+                    val paddedOptions = if (rawOptions.size < 4) {
+                        rawOptions + listOf("None of the above", "Incorrect word order", "Incomplete phrase").take(4 - rawOptions.size)
+                    } else rawOptions.take(4)
+
+                    val shuffled = paddedOptions.shuffled()
+                    val newCorrectIdx = shuffled.indexOf(correctSentence).coerceAtLeast(0)
+                    val qPrompt = "Sắp xếp & chọn câu đúng ngữ pháp: \"${item.question}\""
+                    repository.recordWeakPoint(userId, qPrompt, shuffled, newCorrectIdx)
+                }
+            }
+            QuestionType.MATCHING_PAIRS -> {
+                val pair = item.matchingPairs.firstOrNull()
+                if (pair != null) {
+                    val correctMeaning = pair.vietnamese
+                    val otherMeanings = repository.vocabularyPairsBank
+                        .filter { it.vietnamese != correctMeaning }
+                        .map { it.vietnamese }
+                        .shuffled()
+                        .take(3)
+                    val allMeanings = (listOf(correctMeaning) + otherMeanings).distinct()
+                    val padded = if (allMeanings.size < 4) {
+                        allMeanings + listOf("không xác định", "nghĩa khác", "tất cả đều sai").take(4 - allMeanings.size)
+                    } else allMeanings.take(4)
+                    val shuffled = padded.shuffled()
+                    val newCorrectIdx = shuffled.indexOf(correctMeaning).coerceAtLeast(0)
+                    val qPrompt = "Từ vựng '${pair.english.replaceFirstChar { it.uppercase() }}' có nghĩa là gì?"
+                    repository.recordWeakPoint(userId, qPrompt, shuffled, newCorrectIdx)
+                }
+            }
+            QuestionType.SPEAKING_CHALLENGE -> {
+                val sentence = item.speakingSentence.ifEmpty { item.question }
+                if (sentence.isNotBlank()) {
+                    val words = sentence.split(" ")
+                    val d1 = if (words.size > 2) {
+                        words.mapIndexed { i, w -> if (i == 1) "${w}s" else w }.joinToString(" ")
+                    } else "$sentence too"
+                    val d2 = if (words.size > 2) {
+                        words.filterIndexed { i, _ -> i != words.size - 1 }.joinToString(" ")
+                    } else "$sentence well"
+                    val d3 = if (words.size > 3) {
+                        words.mapIndexed { i, w -> if (i == 2) "${w}ed" else w }.joinToString(" ")
+                    } else "$sentence now"
+
+                    val allOpts = listOf(sentence, d1, d2, d3).distinct()
+                    val padded = if (allOpts.size < 4) {
+                        allOpts + listOf("Incorrect grammar pattern", "Incomplete pronunciation", "Misplaced word").take(4 - allOpts.size)
+                    } else allOpts.take(4)
+
+                    val shuffled = padded.shuffled()
+                    val newCorrectIdx = shuffled.indexOf(sentence).coerceAtLeast(0)
+                    val qPrompt = "Luyện phát âm & chọn câu chuẩn: \"$sentence\""
+                    repository.recordWeakPoint(userId, qPrompt, shuffled, newCorrectIdx)
+                }
+            }
+            else -> {
+                if (item.options.size >= 4) {
+                    repository.recordWeakPoint(userId, item.question, item.options, item.correctIndex)
+                } else if (item.options.isNotEmpty()) {
+                    val correctText = item.options.getOrNull(item.correctIndex) ?: item.options.first()
+                    val distractors = listOf("All of the above", "None of the above", "Cannot be determined")
+                    val combined = (item.options + distractors).distinct().take(4).shuffled()
+                    val newIdx = combined.indexOf(correctText).coerceAtLeast(0)
+                    repository.recordWeakPoint(userId, item.question, combined, newIdx)
+                }
+            }
+        }
+    }
+
     override fun onCleared() {
         super.onCleared()
         ttsManager.stop()
         speechRecognitionManager.destroy()
+        soundEffectManager.release()
     }
 }
