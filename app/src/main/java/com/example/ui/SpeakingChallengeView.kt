@@ -179,7 +179,15 @@ fun SpeakingChallengeView(
             }
         }
 
-        Spacer(modifier = Modifier.height(18.dp))
+        Spacer(modifier = Modifier.height(14.dp))
+
+        // Intonation & Pitch Contour Visual Guide
+        IntonationContourGuide(
+            sentence = targetSentence,
+            isEnglish = isEnglish
+        )
+
+        Spacer(modifier = Modifier.height(14.dp))
 
         // Live Audio Waveform Visualizer
         AudioWaveformVisualizer(
@@ -417,57 +425,224 @@ fun SpeakingChallengeView(
 }
 
 @Composable
+private fun IntonationContourGuide(
+    sentence: String,
+    isEnglish: Boolean
+) {
+    val isQuestion = sentence.trim().endsWith("?")
+    val words = remember(sentence) { sentence.split("\\s+".toRegex()).filter { it.isNotBlank() } }
+
+    val functionWords = remember {
+        setOf("a", "an", "the", "in", "on", "at", "to", "for", "of", "with", "is", "am", "are", "was", "were", "it", "and", "or", "but")
+    }
+
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(16.dp))
+            .background(Color(0x1451FAC1))
+            .border(1.dp, Color(0x3351FAC1), RoundedCornerShape(16.dp))
+            .padding(horizontal = 14.dp, vertical = 10.dp)
+    ) {
+        Column {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        Icons.Default.GraphicEq,
+                        contentDescription = null,
+                        tint = Color(0xFF51FAC1),
+                        modifier = Modifier.size(14.dp)
+                    )
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text(
+                        text = if (isEnglish) "INTONATION & PITCH CONTOUR" else "NGỮ ĐIỆU & CAO ĐỘ (PITCH CONTOUR)",
+                        color = Color(0xFF51FAC1),
+                        fontSize = 10.sp,
+                        fontWeight = FontWeight.Bold,
+                        letterSpacing = 0.8.sp
+                    )
+                }
+
+                Text(
+                    text = if (isQuestion) (if (isEnglish) "Rising Tone ↗" else "Giọng lên cuối ↗") else (if (isEnglish) "Falling Tone ↘" else "Giọng hạ cuối ↘"),
+                    color = if (isQuestion) Color(0xFFFFD166) else Color(0xFF38BDF8),
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            androidx.compose.foundation.Canvas(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(34.dp)
+            ) {
+                val width = size.width
+                val height = size.height
+                if (words.isEmpty()) return@Canvas
+
+                val step = width / (words.size.coerceAtLeast(1) + 1)
+                val path = androidx.compose.ui.graphics.Path()
+
+                val points = words.mapIndexed { index, word ->
+                    val cleanWord = word.lowercase().filter { it.isLetter() }
+                    val isStressed = !functionWords.contains(cleanWord) && cleanWord.length >= 3
+                    val x = step * (index + 1)
+                    val y = when {
+                        index == words.size - 1 -> if (isQuestion) height * 0.22f else height * 0.82f
+                        isStressed -> height * 0.25f
+                        else -> height * 0.65f
+                    }
+                    androidx.compose.ui.geometry.Offset(x, y)
+                }
+
+                if (points.isNotEmpty()) {
+                    path.moveTo(0f, points.first().y)
+                    path.lineTo(points.first().x, points.first().y)
+
+                    for (i in 0 until points.size - 1) {
+                        val p0 = points[i]
+                        val p1 = points[i + 1]
+                        val cx = (p0.x + p1.x) / 2f
+                        path.cubicTo(cx, p0.y, cx, p1.y, p1.x, p1.y)
+                    }
+
+                    val lastP = points.last()
+                    path.lineTo(width, lastP.y)
+
+                    drawPath(
+                        path = path,
+                        brush = Brush.horizontalGradient(
+                            listOf(Color(0xFF51FAC1), Color(0xFFFFD166), Color(0xFFEC4899))
+                        ),
+                        style = androidx.compose.ui.graphics.drawscope.Stroke(
+                            width = 2.5.dp.toPx(),
+                            cap = androidx.compose.ui.graphics.StrokeCap.Round,
+                            join = androidx.compose.ui.graphics.StrokeJoin.Round
+                        )
+                    )
+
+                    points.forEachIndexed { i, pt ->
+                        val clean = words[i].lowercase().filter { it.isLetter() }
+                        val isStressed = !functionWords.contains(clean) && clean.length >= 3
+                        val nodeColor = if (isStressed) Color(0xFFFFD166) else Color(0xFF51FAC1)
+                        drawCircle(
+                            color = nodeColor,
+                            radius = if (isStressed) 4.dp.toPx() else 2.5.dp.toPx(),
+                            center = pt
+                        )
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(4.dp))
+
+            Text(
+                text = if (isEnglish) "Stress content words higher, then gently taper off." else "Nhấn giọng cao ở các từ quan trọng (chấm vàng) và hạ giọng tự nhiên.",
+                color = Color(0x99FFFFFF),
+                fontSize = 10.sp,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.fillMaxWidth()
+            )
+        }
+    }
+}
+
+@Composable
 private fun AudioWaveformVisualizer(
     isListening: Boolean,
     rmsDb: Float
 ) {
-    val barCount = 7
     val infiniteTransition = rememberInfiniteTransition(label = "waveform_anim")
+    val phase by infiniteTransition.animateFloat(
+        initialValue = 0f,
+        targetValue = 2f * Math.PI.toFloat(),
+        animationSpec = infiniteRepeatable(
+            animation = tween(1200, easing = LinearEasing),
+            repeatMode = RepeatMode.Restart
+        ),
+        label = "wave_phase"
+    )
 
-    Row(
+    val dbNormalized = (rmsDb / 10f).coerceIn(0.15f, 1.2f)
+
+    Box(
         modifier = Modifier
             .fillMaxWidth()
-            .height(38.dp),
-        horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally),
-        verticalAlignment = Alignment.CenterVertically
+            .height(48.dp)
+            .clip(RoundedCornerShape(16.dp))
+            .background(Color(0x1F0B0E14))
+            .border(1.dp, if (isListening) Color(0x6651FAC1) else Color(0x22FFFFFF), RoundedCornerShape(16.dp))
+            .padding(horizontal = 14.dp, vertical = 6.dp),
+        contentAlignment = Alignment.Center
     ) {
-        for (i in 0 until barCount) {
-            val phaseAnim by infiniteTransition.animateFloat(
-                initialValue = 0.3f,
-                targetValue = 1.0f,
-                animationSpec = infiniteRepeatable(
-                    animation = tween(400 + i * 80, easing = LinearEasing),
-                    repeatMode = RepeatMode.Reverse
-                ),
-                label = "bar_$i"
-            )
+        androidx.compose.foundation.Canvas(
+            modifier = Modifier
+                .fillMaxWidth()
+                .fillMaxHeight()
+        ) {
+            val width = size.width
+            val height = size.height
+            val midY = height / 2f
 
-            val baseHeight = if (isListening) {
-                val dbFactor = (rmsDb / 8f).coerceIn(0.2f, 1.2f)
-                (12.dp + (26.dp * phaseAnim * dbFactor))
-            } else {
-                6.dp
-            }
-
-            val animatedHeight by animateDpAsState(
-                targetValue = baseHeight,
-                animationSpec = spring(stiffness = Spring.StiffnessMediumLow),
-                label = "bar_height_$i"
-            )
-
-            Box(
-                modifier = Modifier
-                    .width(6.dp)
-                    .height(animatedHeight)
-                    .clip(CircleShape)
-                    .background(
-                        if (isListening) Brush.verticalGradient(
-                            listOf(Color(0xFF51FAC1), Color(0xFF22C55E))
-                        ) else Brush.verticalGradient(
-                            listOf(Color(0x33FFFFFF), Color(0x33FFFFFF))
-                        )
+            if (!isListening) {
+                // Ambient resting wave
+                val restingPath = androidx.compose.ui.graphics.Path()
+                restingPath.moveTo(0f, midY)
+                val bars = 24
+                val barSpacing = width / bars
+                for (i in 0..bars) {
+                    val x = i * barSpacing
+                    val y = midY + kotlin.math.sin(x * 0.05f + phase).toFloat() * 2.5.dp.toPx()
+                    restingPath.lineTo(x, y)
+                }
+                drawPath(
+                    path = restingPath,
+                    color = Color(0x44FFFFFF),
+                    style = androidx.compose.ui.graphics.drawscope.Stroke(
+                        width = 1.5.dp.toPx(),
+                        cap = androidx.compose.ui.graphics.StrokeCap.Round
                     )
-            )
+                )
+            } else {
+                // Multi-frequency Dynamic Neon Audio Spectrum
+                val barsCount = 24
+                val barWidth = 4.dp.toPx()
+                val totalBarsWidth = barsCount * barWidth
+                val availableSpace = width - totalBarsWidth
+                val spacing = availableSpace / (barsCount - 1).coerceAtLeast(1)
+
+                for (i in 0 until barsCount) {
+                    val normalizedIndex = i.toFloat() / barsCount
+                    val waveMod = kotlin.math.abs(
+                        kotlin.math.sin(normalizedIndex * Math.PI * 3 + phase).toFloat() * 0.6f +
+                        kotlin.math.cos(normalizedIndex * Math.PI * 2 - phase * 0.7f).toFloat() * 0.4f
+                    )
+                    val barHeight = (height * 0.15f + height * 0.75f * waveMod * dbNormalized).coerceIn(4.dp.toPx(), height * 0.9f)
+                    val x = i * (barWidth + spacing)
+                    val topY = midY - barHeight / 2f
+
+                    drawRoundRect(
+                        brush = Brush.verticalGradient(
+                            listOf(
+                                Color(0xFFEC4899),
+                                Color(0xFF51FAC1),
+                                Color(0xFF22C55E)
+                            ),
+                            startY = topY,
+                            endY = topY + barHeight
+                        ),
+                        topLeft = androidx.compose.ui.geometry.Offset(x, topY),
+                        size = androidx.compose.ui.geometry.Size(barWidth, barHeight),
+                        cornerRadius = androidx.compose.ui.geometry.CornerRadius(barWidth / 2f, barWidth / 2f)
+                    )
+                }
+            }
         }
     }
 }

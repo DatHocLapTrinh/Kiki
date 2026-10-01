@@ -44,6 +44,7 @@ fun VocabularyVaultDialog(
     onDismiss: () -> Unit
 ) {
     val vocabularyList by viewModel.vocabularyList.observeAsState(emptyList())
+    val dueVocabularyList by viewModel.dueVocabularyList.observeAsState(emptyList())
     val haptic = LocalHapticFeedback.current
     var selectedTab by remember { mutableIntStateOf(0) } // 0: Flashcard, 1: Danh sách
     var showAddDialog by remember { mutableStateOf(false) }
@@ -135,7 +136,11 @@ fun VocabularyVaultDialog(
                             .background(Color(0x22FFFFFF))
                             .padding(4.dp)
                     ) {
-                        val tab1Title = if (isEnglish) "🃏 Flashcards (${vocabularyList.size})" else "🃏 Luyện Flashcard (${vocabularyList.size})"
+                        val tab1Title = if (isEnglish) {
+                            "🃏 Flashcards (${vocabularyList.size})"
+                        } else {
+                            "🃏 Luyện Flashcard (${vocabularyList.size})"
+                        }
                         val tab2Title = if (isEnglish) "📖 All Words" else "📖 Danh Sách Từ"
 
                         Box(
@@ -191,6 +196,7 @@ fun VocabularyVaultDialog(
                     } else if (selectedTab == 0) {
                         FlashcardDeckView(
                             items = vocabularyList,
+                            dueItems = dueVocabularyList,
                             viewModel = viewModel,
                             isEnglish = isEnglish
                         )
@@ -222,21 +228,87 @@ fun VocabularyVaultDialog(
 @Composable
 private fun FlashcardDeckView(
     items: List<VocabularyEntity>,
+    dueItems: List<VocabularyEntity>,
     viewModel: StudyViewModel,
     isEnglish: Boolean
 ) {
-    var currentIndex by remember { mutableIntStateOf(0) }
-    var isFlipped by remember(currentIndex) { mutableStateOf(false) }
+    var filterDueOnly by remember(dueItems.size) { mutableStateOf(dueItems.isNotEmpty()) }
+    val activeItems = if (filterDueOnly && dueItems.isNotEmpty()) dueItems else items
+    var currentIndex by remember(filterDueOnly, activeItems.size) { mutableIntStateOf(0) }
+    var isFlipped by remember(currentIndex, filterDueOnly) { mutableStateOf(false) }
     val haptic = LocalHapticFeedback.current
 
-    val safeIndex = currentIndex.coerceIn(0, items.size - 1)
-    val currentItem = items[safeIndex]
+    if (filterDueOnly && dueItems.isEmpty()) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(24.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(70.dp)
+                        .clip(CircleShape)
+                        .background(Color(0x3322C55E))
+                        .border(1.5.dp, Color(0xFF22C55E), CircleShape),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(Icons.Default.CheckCircle, contentDescription = null, tint = Color(0xFF22C55E), modifier = Modifier.size(36.dp))
+                }
+                Spacer(modifier = Modifier.height(16.dp))
+                Text(
+                    text = if (isEnglish) "All reviews completed! 🎉" else "Hoàn thành ôn tập hôm nay! 🎉",
+                    color = Color.White,
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.Bold,
+                    textAlign = TextAlign.Center
+                )
+                Spacer(modifier = Modifier.height(6.dp))
+                Text(
+                    text = if (isEnglish) "You have no more due flashcards right now. Review all cards or add new ones!" else "Bạn đã ôn tập xong tất cả thẻ đến hạn. Xem lại toàn bộ kho từ nhé!",
+                    color = Color(0x99FFFFFF),
+                    fontSize = 13.sp,
+                    textAlign = TextAlign.Center
+                )
+                Spacer(modifier = Modifier.height(20.dp))
+                Button(
+                    onClick = { filterDueOnly = false },
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF51FAC1), contentColor = Color(0xFF0D0A1A)),
+                    shape = RoundedCornerShape(14.dp)
+                ) {
+                    Text(if (isEnglish) "Review All Words" else "Luyện toàn bộ thẻ từ", fontWeight = FontWeight.Bold)
+                }
+            }
+        }
+        return
+    }
+
+    val safeIndex = currentIndex.coerceIn(0, (activeItems.size - 1).coerceAtLeast(0))
+    val currentItem = activeItems.getOrNull(safeIndex) ?: return
 
     val rotation by animateFloatAsState(
         targetValue = if (isFlipped) 180f else 0f,
         animationSpec = tween(400),
         label = "card_flip"
     )
+
+    val handleSm2Feedback = { quality: Int ->
+        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+        if (quality >= 3) {
+            viewModel.soundEffectManager.playCorrect()
+        } else {
+            viewModel.soundEffectManager.playIncorrect()
+        }
+        viewModel.reviewVocabularySm2(currentItem, quality)
+        isFlipped = false
+        if (safeIndex < activeItems.size - 1) {
+            currentIndex++
+        }
+    }
 
     Column(
         modifier = Modifier.fillMaxSize(),
@@ -249,172 +321,253 @@ private fun FlashcardDeckView(
                 .padding(horizontal = 20.dp, vertical = 6.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            // Counter & Progress
+            // Mode Filter & Progress Bar
             Row(
                 modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text(
-                text = "${safeIndex + 1} / ${items.size}",
-                color = Color(0xFF51FAC1),
-                fontSize = 14.sp,
-                fontWeight = FontWeight.Bold
-            )
-            if (currentItem.isMastered) {
-                Box(
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(8.dp))
-                        .background(Color(0x3322C55E))
-                        .padding(horizontal = 8.dp, vertical = 4.dp)
-                ) {
-                    Text(
-                        text = if (isEnglish) "Mastered ⭐" else "Đã thuộc ⭐",
-                        color = Color(0xFF22C55E),
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.Bold
-                    )
-                }
-            }
-        }
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        // 3D Flip Card
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .weight(1f)
-                .graphicsLayer {
-                    rotationY = rotation
-                    cameraDistance = 12f * density
-                }
-                .clip(RoundedCornerShape(24.dp))
-                .background(
-                    if (rotation <= 90f) {
-                        Brush.linearGradient(listOf(Color(0xFF1B1633), Color(0xFF131026)))
-                    } else {
-                        Brush.linearGradient(listOf(Color(0xFF13242B), Color(0xFF0F1E19)))
-                    }
-                )
-                .border(
-                    1.5.dp,
-                    if (rotation <= 90f) Color(0x6651FAC1) else Color(0x6622C55E),
-                    RoundedCornerShape(24.dp)
-                )
-                .clickable {
-                    haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                    isFlipped = !isFlipped
-                }
-                .padding(24.dp),
-            contentAlignment = Alignment.Center
-        ) {
-            if (rotation <= 90f) {
-                // Mặt trước: Từ vựng & Phát âm
-                Column(
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.Center
-                ) {
-                    Text(
-                        text = if (isEnglish) "WORD / PHRASE" else "TỪ VỰNG / CÂU HỎI",
-                        color = Color(0x88FFFFFF),
-                        fontSize = 12.sp,
-                        letterSpacing = 1.sp
-                    )
-                    Spacer(modifier = Modifier.height(14.dp))
-                    Text(
-                        text = currentItem.word,
-                        color = Color.White,
-                        fontSize = 22.sp,
-                        fontWeight = FontWeight.ExtraBold,
-                        textAlign = TextAlign.Center
-                    )
-                    if (currentItem.phonetic.isNotBlank()) {
-                        Spacer(modifier = Modifier.height(8.dp))
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                // Sub-filter Chips: All vs Due
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Surface(
+                        shape = RoundedCornerShape(8.dp),
+                        color = if (!filterDueOnly) Color(0x3351FAC1) else Color(0x1AFFFFFF),
+                        border = BorderStroke(1.dp, if (!filterDueOnly) Color(0xFF51FAC1) else Color(0x33FFFFFF)),
+                        modifier = Modifier.clickable {
+                            filterDueOnly = false
+                            currentIndex = 0
+                            isFlipped = false
+                        }
+                    ) {
                         Text(
-                            text = "/${currentItem.phonetic}/",
-                            color = Color(0xFF51FAC1),
-                            fontSize = 15.sp,
-                            fontWeight = FontWeight.Medium
+                            text = if (isEnglish) "All (${items.size})" else "Tất cả (${items.size})",
+                            color = if (!filterDueOnly) Color(0xFF51FAC1) else Color(0x99FFFFFF),
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
                         )
                     }
 
-                    Spacer(modifier = Modifier.height(20.dp))
-
-                    IconButton(
-                        onClick = {
-                            viewModel.ttsManager.speak(currentItem.word)
-                        },
-                        modifier = Modifier
-                            .size(54.dp)
-                            .clip(CircleShape)
-                            .background(Color(0x3351FAC1))
+                    Surface(
+                        shape = RoundedCornerShape(8.dp),
+                        color = if (filterDueOnly) Color(0x33F59E0B) else Color(0x1AFFFFFF),
+                        border = BorderStroke(1.dp, if (filterDueOnly) Color(0xFFF59E0B) else Color(0x33FFFFFF)),
+                        modifier = Modifier.clickable {
+                            filterDueOnly = true
+                            currentIndex = 0
+                            isFlipped = false
+                        }
                     ) {
-                        Icon(Icons.AutoMirrored.Filled.VolumeUp, contentDescription = "Listen", tint = Color(0xFF51FAC1), modifier = Modifier.size(28.dp))
-                    }
-
-                    Spacer(modifier = Modifier.height(24.dp))
-                    Text(
-                        text = if (isEnglish) "Tap card to flip for meaning 🔄" else "Chạm vào thẻ để lật xem nghĩa 🔄",
-                        color = Color(0x66FFFFFF),
-                        fontSize = 12.sp
-                    )
-                }
-            } else {
-                // Mặt sau: Nghĩa tiếng Việt & Ví dụ (Cần lật lại text 180 độ để không bị ngược)
-                Column(
-                    modifier = Modifier.graphicsLayer { rotationY = 180f },
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.Center
-                ) {
-                    Text(
-                        text = if (isEnglish) "MEANING & CONTEXT" else "Ý NGHĨA & NGỮ CẢNH",
-                        color = Color(0xFF22C55E),
-                        fontSize = 12.sp,
-                        letterSpacing = 1.sp,
-                        fontWeight = FontWeight.Bold
-                    )
-                    Spacer(modifier = Modifier.height(14.dp))
-                    Text(
-                        text = currentItem.meaning,
-                        color = Color.White,
-                        fontSize = 20.sp,
-                        fontWeight = FontWeight.Bold,
-                        textAlign = TextAlign.Center
-                    )
-                    if (currentItem.example.isNotBlank()) {
-                        Spacer(modifier = Modifier.height(14.dp))
                         Text(
-                            text = "\"${currentItem.example}\"",
-                            color = Color(0xCCFFFFFF),
-                            fontSize = 14.sp,
+                            text = if (isEnglish) "🔥 Due (${dueItems.size})" else "🔥 Cần ôn (${dueItems.size})",
+                            color = if (filterDueOnly) Color(0xFFFFD166) else Color(0x99FFFFFF),
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                        )
+                    }
+                }
+
+                Text(
+                    text = "${safeIndex + 1} / ${activeItems.size}",
+                    color = Color(0xFF51FAC1),
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            // 3D Flip Card
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(1f)
+                    .graphicsLayer {
+                        rotationY = rotation
+                        cameraDistance = 12f * density
+                    }
+                    .clip(RoundedCornerShape(24.dp))
+                    .background(
+                        if (rotation <= 90f) {
+                            Brush.linearGradient(listOf(Color(0xFF1B1633), Color(0xFF131026)))
+                        } else {
+                            Brush.linearGradient(listOf(Color(0xFF13242B), Color(0xFF0F1E19)))
+                        }
+                    )
+                    .border(
+                        1.5.dp,
+                        if (rotation <= 90f) Color(0x6651FAC1) else Color(0x6622C55E),
+                        RoundedCornerShape(24.dp)
+                    )
+                    .clickable {
+                        haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                        isFlipped = !isFlipped
+                    }
+                    .padding(20.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                if (rotation <= 90f) {
+                    // Mặt trước: Từ vựng & Phát âm
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.Center
+                    ) {
+                        Text(
+                            text = if (isEnglish) "FLASHCARD (SM-2)" else "THẺ TỪ VỰNG (SM-2)",
+                            color = Color(0x88FFFFFF),
+                            fontSize = 11.sp,
+                            letterSpacing = 1.sp
+                        )
+                        Spacer(modifier = Modifier.height(12.dp))
+                        Text(
+                            text = currentItem.word,
+                            color = Color.White,
+                            fontSize = 24.sp,
+                            fontWeight = FontWeight.ExtraBold,
                             textAlign = TextAlign.Center
                         )
-                    }
+                        if (currentItem.phonetic.isNotBlank()) {
+                            Spacer(modifier = Modifier.height(6.dp))
+                            Text(
+                                text = "/${currentItem.phonetic}/",
+                                color = Color(0xFF51FAC1),
+                                fontSize = 15.sp,
+                                fontWeight = FontWeight.Medium
+                            )
+                        }
 
-                    Spacer(modifier = Modifier.height(24.dp))
+                        Spacer(modifier = Modifier.height(16.dp))
 
-                    Button(
-                        onClick = {
-                            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                            viewModel.toggleVocabMastered(currentItem.vocabId, !currentItem.isMastered)
-                        },
-                        shape = CircleShape,
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = if (currentItem.isMastered) Color(0x3322C55E) else Color(0xFF22C55E),
-                            contentColor = Color.White
-                        )
-                    ) {
-                        Icon(if (currentItem.isMastered) Icons.Default.Check else Icons.Default.Star, contentDescription = null, modifier = Modifier.size(18.dp))
-                        Spacer(modifier = Modifier.width(8.dp))
+                        IconButton(
+                            onClick = {
+                                viewModel.ttsManager.speak(currentItem.word)
+                            },
+                            modifier = Modifier
+                                .size(50.dp)
+                                .clip(CircleShape)
+                                .background(Color(0x3351FAC1))
+                        ) {
+                            Icon(Icons.AutoMirrored.Filled.VolumeUp, contentDescription = "Listen", tint = Color(0xFF51FAC1), modifier = Modifier.size(26.dp))
+                        }
+
+                        Spacer(modifier = Modifier.height(18.dp))
                         Text(
-                            text = if (currentItem.isMastered) (if (isEnglish) "Mastered" else "Đã thuộc") else (if (isEnglish) "Mark Mastered" else "Đánh dấu đã thuộc")
+                            text = if (isEnglish) "Tap card to flip for meaning & grade 🔄" else "Chạm để lật xem nghĩa & đánh giá 🔄",
+                            color = Color(0x66FFFFFF),
+                            fontSize = 12.sp
                         )
+                    }
+                } else {
+                    // Mặt sau: Nghĩa tiếng Việt, SM-2 Info & 4 Nút Đánh Giá
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .graphicsLayer { rotationY = 180f },
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.Center
+                    ) {
+                        Text(
+                            text = if (isEnglish) "MEANING & CONTEXT" else "Ý NGHĨA & NGỮ CẢNH",
+                            color = Color(0xFF22C55E),
+                            fontSize = 11.sp,
+                            letterSpacing = 1.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            text = currentItem.meaning,
+                            color = Color.White,
+                            fontSize = 19.sp,
+                            fontWeight = FontWeight.Bold,
+                            textAlign = TextAlign.Center
+                        )
+                        if (currentItem.example.isNotBlank()) {
+                            Spacer(modifier = Modifier.height(6.dp))
+                            Text(
+                                text = "\"${currentItem.example}\"",
+                                color = Color(0xCCFFFFFF),
+                                fontSize = 13.sp,
+                                textAlign = TextAlign.Center
+                            )
+                        }
+
+                        Spacer(modifier = Modifier.height(12.dp))
+
+                        // SM-2 Memory Stats Pill
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.Center,
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(8.dp))
+                                .background(Color(0x2251FAC1))
+                                .padding(horizontal = 8.dp, vertical = 3.dp)
+                        ) {
+                            Text(
+                                text = "Lv.${currentItem.repetitionLevel} • EF: ${String.format(java.util.Locale.US, "%.1f", currentItem.easinessFactor)}",
+                                color = Color(0xFF51FAC1),
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.Medium
+                            )
+                            if (currentItem.nextReviewDate.isNotBlank()) {
+                                Text(
+                                    text = " • ${currentItem.nextReviewDate}",
+                                    color = Color(0xAAFFFFFF),
+                                    fontSize = 11.sp
+                                )
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.height(14.dp))
+
+                        Text(
+                            text = if (isEnglish) "HOW WELL DID YOU REMEMBER?" else "BẠN NHỚ TỪ NÀY NHƯ THẾ NÀO?",
+                            color = Color(0x99FFFFFF),
+                            fontSize = 10.sp,
+                            fontWeight = FontWeight.Bold,
+                            letterSpacing = 0.5.sp
+                        )
+
+                        Spacer(modifier = Modifier.height(8.dp))
+
+                        // 4 SM-2 Feedback Buttons
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(6.dp)
+                        ) {
+                            Sm2GradeButton(
+                                title = if (isEnglish) "Again" else "Quên",
+                                subtitle = "< 1d",
+                                color = Color(0xFFEF4444),
+                                modifier = Modifier.weight(1f),
+                                onClick = { handleSm2Feedback(1) }
+                            )
+                            Sm2GradeButton(
+                                title = if (isEnglish) "Hard" else "Khó",
+                                subtitle = "1d",
+                                color = Color(0xFFF59E0B),
+                                modifier = Modifier.weight(1f),
+                                onClick = { handleSm2Feedback(3) }
+                            )
+                            Sm2GradeButton(
+                                title = if (isEnglish) "Good" else "Tốt",
+                                subtitle = "${(currentItem.intervalDays * 1.5f).toInt().coerceAtLeast(2)}d",
+                                color = Color(0xFF38BDF8),
+                                modifier = Modifier.weight(1f),
+                                onClick = { handleSm2Feedback(4) }
+                            )
+                            Sm2GradeButton(
+                                title = if (isEnglish) "Easy" else "Dễ",
+                                subtitle = "${(currentItem.intervalDays * 2.5f).toInt().coerceAtLeast(4)}d",
+                                color = Color(0xFF22C55E),
+                                modifier = Modifier.weight(1f),
+                                onClick = { handleSm2Feedback(5) }
+                            )
+                        }
                     }
                 }
             }
         }
-    }
 
         val navBarBottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
         val safeBottomPadding = if (navBarBottom > 0.dp) navBarBottom + 16.dp else 44.dp
@@ -432,19 +585,22 @@ private fun FlashcardDeckView(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(start = 20.dp, end = 20.dp, top = 16.dp, bottom = safeBottomPadding),
+                    .padding(start = 20.dp, end = 20.dp, top = 14.dp, bottom = safeBottomPadding),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 OutlinedButton(
                     onClick = {
                         haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                        if (currentIndex > 0) currentIndex--
+                        if (currentIndex > 0) {
+                            currentIndex--
+                            isFlipped = false
+                        }
                     },
                     enabled = currentIndex > 0,
                     modifier = Modifier
                         .weight(1f)
-                        .height(52.dp),
+                        .height(50.dp),
                     shape = RoundedCornerShape(16.dp),
                     border = BorderStroke(1.5.dp, if (currentIndex > 0) Color(0x8051FAC1) else Color(0x22FFFFFF)),
                     colors = ButtonDefaults.outlinedButtonColors(
@@ -455,7 +611,7 @@ private fun FlashcardDeckView(
                 ) {
                     Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Prev", modifier = Modifier.size(18.dp))
                     Spacer(modifier = Modifier.width(6.dp))
-                    Text(if (isEnglish) "Previous" else "Trước", fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                    Text(if (isEnglish) "Prev" else "Trước", fontWeight = FontWeight.Bold, fontSize = 13.sp)
                 }
 
                 Spacer(modifier = Modifier.width(12.dp))
@@ -466,7 +622,7 @@ private fun FlashcardDeckView(
                         isFlipped = !isFlipped
                     },
                     modifier = Modifier
-                        .size(52.dp)
+                        .size(50.dp)
                         .clip(CircleShape)
                         .background(Brush.linearGradient(listOf(Color(0x3351FAC1), Color(0x2222C55E))))
                         .border(1.5.dp, Color(0x8051FAC1), CircleShape)
@@ -479,12 +635,15 @@ private fun FlashcardDeckView(
                 Button(
                     onClick = {
                         haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                        if (currentIndex < items.size - 1) currentIndex++
+                        if (currentIndex < activeItems.size - 1) {
+                            currentIndex++
+                            isFlipped = false
+                        }
                     },
-                    enabled = currentIndex < items.size - 1,
+                    enabled = currentIndex < activeItems.size - 1,
                     modifier = Modifier
                         .weight(1f)
-                        .height(52.dp),
+                        .height(50.dp),
                     shape = RoundedCornerShape(16.dp),
                     colors = ButtonDefaults.buttonColors(
                         containerColor = Color(0xFF51FAC1),
@@ -493,11 +652,46 @@ private fun FlashcardDeckView(
                         disabledContentColor = Color(0x44FFFFFF)
                     )
                 ) {
-                    Text(if (isEnglish) "Next" else "Tiếp", fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                    Text(if (isEnglish) "Next" else "Tiếp", fontWeight = FontWeight.Bold, fontSize = 13.sp)
                     Spacer(modifier = Modifier.width(6.dp))
                     Icon(Icons.AutoMirrored.Filled.ArrowForward, contentDescription = "Next", modifier = Modifier.size(18.dp))
                 }
             }
+        }
+    }
+}
+
+@Composable
+private fun Sm2GradeButton(
+    title: String,
+    subtitle: String,
+    color: Color,
+    modifier: Modifier = Modifier,
+    onClick: () -> Unit
+) {
+    Box(
+        modifier = modifier
+            .clip(RoundedCornerShape(10.dp))
+            .background(color.copy(alpha = 0.15f))
+            .border(1.dp, color.copy(alpha = 0.6f), RoundedCornerShape(10.dp))
+            .clickable(onClick = onClick)
+            .padding(vertical = 8.dp, horizontal = 2.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            Text(
+                text = title,
+                color = color,
+                fontSize = 12.sp,
+                fontWeight = FontWeight.Bold
+            )
+            Spacer(modifier = Modifier.height(2.dp))
+            Text(
+                text = subtitle,
+                color = Color.White.copy(alpha = 0.8f),
+                fontSize = 10.sp,
+                fontWeight = FontWeight.Normal
+            )
         }
     }
 }
@@ -549,11 +743,43 @@ private fun VocabularyListView(
                             }
                         }
                         Spacer(modifier = Modifier.height(4.dp))
-                        Text(
-                            text = item.meaning,
-                            color = Color(0xFFFFD166),
-                            fontSize = 14.sp
-                        )
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text(
+                                text = item.meaning,
+                                color = Color(0xFFFFD166),
+                                fontSize = 14.sp
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            if (item.isMastered) {
+                                Box(
+                                    modifier = Modifier
+                                        .clip(RoundedCornerShape(6.dp))
+                                        .background(Color(0x3322C55E))
+                                        .padding(horizontal = 6.dp, vertical = 2.dp)
+                                ) {
+                                    Text(
+                                        text = if (isEnglish) "Mastered ⭐" else "Đã thuộc ⭐",
+                                        color = Color(0xFF22C55E),
+                                        fontSize = 10.sp,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                }
+                            } else {
+                                Box(
+                                    modifier = Modifier
+                                        .clip(RoundedCornerShape(6.dp))
+                                        .background(Color(0x2251FAC1))
+                                        .padding(horizontal = 6.dp, vertical = 2.dp)
+                                ) {
+                                    Text(
+                                        text = "Lv.${item.repetitionLevel} • ${item.intervalDays}d",
+                                        color = Color(0xFF51FAC1),
+                                        fontSize = 10.sp,
+                                        fontWeight = FontWeight.Medium
+                                    )
+                                }
+                            }
+                        }
                         if (item.example.isNotBlank()) {
                             Spacer(modifier = Modifier.height(2.dp))
                             Text(

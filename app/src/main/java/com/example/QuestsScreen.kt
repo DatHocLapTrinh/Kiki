@@ -66,6 +66,7 @@ fun QuestsScreen(viewModel: StudyViewModel) {
     val weakPoints by viewModel.weakPoints.observeAsState(emptyList())
     val chestOpened by viewModel.isDailyChestOpened.observeAsState(false)
     var showClinicDialog by remember { mutableStateOf(false) }
+    var showWordBlitzDialog by remember { mutableStateOf(false) }
 
     LaunchedEffect(currentUserId) {
         if (currentUserId != -1L) viewModel.refreshDailyTasks()
@@ -187,6 +188,57 @@ fun QuestsScreen(viewModel: StudyViewModel) {
                 contentPadding = PaddingValues(start = 24.dp, end = 24.dp, top = 8.dp, bottom = 130.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
+                // Word Blitz Speed Challenge Banner
+                item(key = "word_blitz_banner") {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(20.dp))
+                            .background(Brush.horizontalGradient(listOf(Color(0xFF2C1654), Color(0xFF131D38))))
+                            .border(1.dp, Brush.horizontalGradient(listOf(Color(0xFFFFD166), Color(0xFF51FAC1))), RoundedCornerShape(20.dp))
+                            .clickable {
+                                haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.TextHandleMove)
+                                showWordBlitzDialog = true
+                            }
+                            .padding(16.dp)
+                    ) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(1f)) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(44.dp)
+                                        .clip(CircleShape)
+                                        .background(Color(0x33FFD166)),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Icon(Icons.Default.Bolt, contentDescription = null, tint = Color(0xFFFFD166), modifier = Modifier.size(24.dp))
+                                }
+                                Spacer(modifier = Modifier.width(12.dp))
+                                Column {
+                                    Text(
+                                        text = if (isEnglish) "WORD BLITZ SPRINT ⚡" else "THỬ THÁCH TỐC ĐỘ 60S ⚡",
+                                        color = Color(0xFFFFD166),
+                                        fontSize = 11.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        letterSpacing = 1.sp
+                                    )
+                                    Text(
+                                        text = if (isEnglish) "60s Quick Fire Quiz & Combo XP Boost" else "Phản xạ từ vựng 60s & x3 Combo XP!",
+                                        color = Color.White,
+                                        fontSize = 14.sp,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                }
+                            }
+                            Icon(Icons.AutoMirrored.Filled.ArrowForward, contentDescription = null, tint = Color(0xFFFFD166), modifier = Modifier.size(20.dp))
+                        }
+                    }
+                }
+
                 if (weakPoints.isNotEmpty()) {
                     item(key = "weak_points_clinic_banner") {
                         Box(
@@ -195,11 +247,11 @@ fun QuestsScreen(viewModel: StudyViewModel) {
                                 .clip(RoundedCornerShape(20.dp))
                                 .background(Brush.horizontalGradient(listOf(Color(0xFF2B1017), Color(0xFF1E1428))))
                                 .border(1.dp, Color(0x80FF6B6B), RoundedCornerShape(20.dp))
-                                .clickable {
-                                    haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.TextHandleMove)
-                                    showClinicDialog = true
-                                }
-                                .padding(16.dp)
+                            .clickable {
+                                haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.TextHandleMove)
+                                showClinicDialog = true
+                            }
+                            .padding(16.dp)
                         ) {
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
@@ -258,6 +310,14 @@ fun QuestsScreen(viewModel: StudyViewModel) {
             viewModel = viewModel,
             isEnglish = isEnglish,
             onDismiss = { showClinicDialog = false }
+        )
+    }
+
+    if (showWordBlitzDialog) {
+        com.example.ui.WordBlitzDialog(
+            viewModel = viewModel,
+            isEnglish = isEnglish,
+            onDismiss = { showWordBlitzDialog = false }
         )
     }
 }

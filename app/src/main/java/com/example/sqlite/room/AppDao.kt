@@ -128,6 +128,12 @@ interface AppDao {
     @Query("SELECT COUNT(*) FROM vocabulary_notes WHERE user_id = :userId AND is_mastered = 1")
     suspend fun getMasteredVocabularyCount(userId: Long): Int
 
+    @Query("UPDATE vocabulary_notes SET repetition_level = :repetition, interval_days = :interval, easiness_factor = :easiness, next_review_date = :nextReview, is_mastered = :isMastered WHERE vocab_id = :vocabId")
+    suspend fun updateVocabularySm2(vocabId: Long, repetition: Int, interval: Int, easiness: Float, nextReview: String, isMastered: Boolean): Int
+
+    @Query("SELECT * FROM vocabulary_notes WHERE user_id = :userId AND (next_review_date <= :today OR next_review_date = '' OR next_review_date IS NULL) ORDER BY vocab_id ASC")
+    suspend fun getDueVocabularyList(userId: Long, today: String): List<VocabularyEntity>
+
     @Query("UPDATE user_profiles SET badges_json = :badgesJson WHERE user_id = :userId")
     suspend fun updateBadgesJson(userId: Long, badgesJson: String): Int
 

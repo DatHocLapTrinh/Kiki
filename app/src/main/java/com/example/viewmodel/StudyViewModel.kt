@@ -896,11 +896,15 @@ class StudyViewModel @Inject constructor(
         }
     }
 
+    private val _dueVocabularyList = MutableLiveData<List<VocabularyEntity>>(emptyList())
+    val dueVocabularyList: LiveData<List<VocabularyEntity>> = _dueVocabularyList
+
     fun refreshVocabulary() {
         val userId = _currentUserId.value ?: return
         if (userId == -1L) return
         viewModelScope.launch {
             _vocabularyList.value = repository.getVocabularyList(userId)
+            _dueVocabularyList.value = repository.getDueVocabularyList(userId)
         }
     }
 
@@ -914,12 +918,36 @@ class StudyViewModel @Inject constructor(
         }
     }
 
+    fun reviewVocabularySm2(entity: VocabularyEntity, quality: Int) {
+        viewModelScope.launch {
+            repository.processVocabularySm2Review(entity.vocabId, quality, entity)
+            val userId = _currentUserId.value
+            if (userId != null && userId != -1L) {
+                refreshVocabulary()
+                val masteredCount = repository.getMasteredVocabularyCount(userId)
+                _masteredVocabCount.value = masteredCount
+                if (masteredCount >= 30) {
+                    checkAndUnlockBadge(BadgeId.SUPER_MEMORY)
+                }
+                val xpGain = when (quality) {
+                    5 -> 25
+                    4 -> 20
+                    3 -> 15
+                    else -> 10
+                }
+                addXp(xpGain)
+                firestoreSyncManager.syncVocabulary(userId)
+            }
+        }
+    }
+
     fun toggleVocabMastered(vocabId: Long, isMastered: Boolean) {
         viewModelScope.launch {
             repository.toggleVocabularyMastered(vocabId, isMastered)
             val userId = _currentUserId.value
             if (userId != null && userId != -1L) {
                 _vocabularyList.value = repository.getVocabularyList(userId)
+                _dueVocabularyList.value = repository.getDueVocabularyList(userId)
                 val masteredCount = repository.getMasteredVocabularyCount(userId)
                 _masteredVocabCount.value = masteredCount
                 if (masteredCount >= 30) {

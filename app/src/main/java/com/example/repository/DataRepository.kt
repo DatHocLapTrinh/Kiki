@@ -503,6 +503,35 @@ class DataRepository @Inject constructor(
         dao.updateVocabularyMastered(vocabId, isMastered) > 0
     }
 
+    suspend fun processVocabularySm2Review(
+        vocabId: Long,
+        quality: Int,
+        currentEntity: VocabularyEntity
+    ): com.example.util.Sm2State = withContext(Dispatchers.IO) {
+        val currentState = com.example.util.Sm2State(
+            repetition = currentEntity.repetitionLevel,
+            intervalDays = currentEntity.intervalDays,
+            easinessFactor = currentEntity.easinessFactor,
+            nextReviewDate = currentEntity.nextReviewDate,
+            isMastered = currentEntity.isMastered
+        )
+        val newState = com.example.util.Sm2Algorithm.calculateNextReview(currentState, quality)
+        dao.updateVocabularySm2(
+            vocabId = vocabId,
+            repetition = newState.repetition,
+            interval = newState.intervalDays,
+            easiness = newState.easinessFactor,
+            nextReview = newState.nextReviewDate,
+            isMastered = newState.isMastered
+        )
+        newState
+    }
+
+    suspend fun getDueVocabularyList(userId: Long): List<VocabularyEntity> = withContext(Dispatchers.IO) {
+        val todayStr = SimpleDateFormat("yyyy-MM-dd", Locale.US).format(Date())
+        dao.getDueVocabularyList(userId, todayStr)
+    }
+
     suspend fun deleteVocabulary(vocabId: Long): Boolean = withContext(Dispatchers.IO) {
         dao.deleteVocabulary(vocabId) > 0
     }

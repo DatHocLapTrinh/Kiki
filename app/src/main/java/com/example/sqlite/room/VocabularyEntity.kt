@@ -42,5 +42,17 @@ data class VocabularyEntity(
     var isMastered: Boolean = false,
 
     @ColumnInfo(name = "created_at")
-    var createdAt: String = ""
+    var createdAt: String = "",
+
+    @ColumnInfo(name = "repetition_level")
+    var repetitionLevel: Int = 0,
+
+    @ColumnInfo(name = "interval_days")
+    var intervalDays: Int = 1,
+
+    @ColumnInfo(name = "easiness_factor")
+    var easinessFactor: Float = 2.5f,
+
+    @ColumnInfo(name = "next_review_date")
+    var nextReviewDate: String = ""
 )
