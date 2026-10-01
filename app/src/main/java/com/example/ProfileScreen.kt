@@ -35,13 +35,17 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import android.widget.Toast
+import com.example.audio.SoundEffectManager
+import com.example.model.AchievementBadge
+import com.example.model.AchievementRegistry
+import com.example.model.BadgeId
 import com.example.notification.KikiDailyReminderScheduler
 import coil.compose.AsyncImage
-import com.example.audio.SoundEffectManager
 import com.example.ui.VocabularyVaultDialog
 import com.example.ui.WeakPointsClinicDialog
 import com.example.viewmodel.StudyViewModel
@@ -88,6 +92,10 @@ fun ProfileScreen(viewModel: StudyViewModel, onLogout: () -> Unit = {}) {
 
     val streakShields by viewModel.streakShields.observeAsState(2)
     val weakPoints by viewModel.weakPoints.observeAsState(emptyList())
+    val unlockedBadgeIds by viewModel.unlockedBadgeIds.observeAsState(emptySet())
+    val curedWeakPoints by viewModel.curedWeakPointsCount.observeAsState(0)
+    val masteredVocabCount by viewModel.masteredVocabCount.observeAsState(0)
+    var selectedBadgeForDetail by remember { mutableStateOf<AchievementBadge?>(null) }
     var showClinicDialog by remember { mutableStateOf(false) }
 
     val settings = remember(userId) {
@@ -106,6 +114,20 @@ fun ProfileScreen(viewModel: StudyViewModel, onLogout: () -> Unit = {}) {
     LaunchedEffect(userId) {
         val savedLanguage = settings.getBoolean("english", false)
         if (savedLanguage != isEnglish) viewModel.setEnglish(savedLanguage)
+        if (userId != -1L) viewModel.refreshBadges(userId)
+    }
+
+    val allBadges = remember(unlockedBadgeIds, streak, curedWeakPoints, masteredVocabCount, completedLessons, journeyStages) {
+        AchievementRegistry.getAllBadges(
+            unlockedIds = unlockedBadgeIds,
+            streak = streak,
+            curedWeakPoints = curedWeakPoints,
+            masteredVocabCount = masteredVocabCount,
+            completedLessons = completedLessons,
+            hasNightOwl = unlockedBadgeIds.contains(BadgeId.NIGHT_OWL.id),
+            hasSpeakingAce = unlockedBadgeIds.contains(BadgeId.SPEAKING_ACE.id),
+            allStagesCompleted = journeyStages.isNotEmpty() && journeyStages.all { it.state == JourneyStageState.COMPLETED }
+        )
     }
 
     val xpInLevel = xp.mod(100)
@@ -284,10 +306,12 @@ fun ProfileScreen(viewModel: StudyViewModel, onLogout: () -> Unit = {}) {
             Spacer(modifier = Modifier.height(16.dp))
 
             ProfileAchievements(
-                completedLessons = completedLessons,
-                streak = streak,
-                allStagesCompleted = journeyStages.isNotEmpty() && journeyStages.all { it.state == JourneyStageState.COMPLETED },
-                isEnglish = isEnglish
+                allBadges = allBadges,
+                isEnglish = isEnglish,
+                onBadgeClick = { badge ->
+                    haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.TextHandleMove)
+                    selectedBadgeForDetail = badge
+                }
             )
         }
     }
@@ -343,6 +367,14 @@ fun ProfileScreen(viewModel: StudyViewModel, onLogout: () -> Unit = {}) {
             viewModel = viewModel,
             isEnglish = isEnglish,
             onDismiss = { showClinicDialog = false }
+        )
+    }
+
+    if (selectedBadgeForDetail != null) {
+        AchievementDetailDialog(
+            badge = selectedBadgeForDetail,
+            isEnglish = isEnglish,
+            onDismiss = { selectedBadgeForDetail = null }
         )
     }
 
@@ -885,47 +917,229 @@ private fun ProfileJourneyCard(
 
 @Composable
 private fun ProfileAchievements(
-    completedLessons: Int,
-    streak: Int,
-    allStagesCompleted: Boolean,
-    isEnglish: Boolean
+    allBadges: List<AchievementBadge>,
+    isEnglish: Boolean,
+    onBadgeClick: (AchievementBadge) -> Unit
 ) {
-    val badges = listOf(
-        Triple(Icons.Default.Flag, if (isEnglish) "First step" else "Bước đầu", completedLessons > 0),
-        Triple(Icons.Default.LocalFireDepartment, if (isEnglish) "On fire" else "Bền bỉ", streak >= 3),
-        Triple(Icons.Default.Diamond, if (isEnglish) "Mastery" else "Tinh thông", allStagesCompleted)
-    )
+    val unlockedCount = allBadges.count { it.isUnlocked }
     Box(
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(22.dp))
             .background(Color(0x7614142B))
             .border(1.dp, Color(0x665B39A2), RoundedCornerShape(22.dp))
-            .padding(15.dp)
+            .padding(16.dp)
     ) {
         Column {
-            Text(if (isEnglish) "Achievements" else "Thành tựu", color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.Bold)
-            Spacer(modifier = Modifier.height(12.dp))
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
-                badges.forEach { (icon, title, unlocked) ->
-                    Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.width(86.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        imageVector = Icons.Default.WorkspacePremium,
+                        contentDescription = null,
+                        tint = Color(0xFFFFD166),
+                        modifier = Modifier.size(20.dp)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = if (isEnglish) "Mastery Badges" else "Bộ Sưu Tập Thành Tựu",
+                        color = Color.White,
+                        fontSize = 15.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+                Box(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(Color(0x33FFD166))
+                        .border(1.dp, Color(0x66FFD166), RoundedCornerShape(12.dp))
+                        .padding(horizontal = 8.dp, vertical = 3.dp)
+                ) {
+                    Text(
+                        text = "$unlockedCount/${allBadges.size}",
+                        color = Color(0xFFFFD166),
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.ExtraBold
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(14.dp))
+
+            androidx.compose.foundation.lazy.LazyRow(
+                horizontalArrangement = Arrangement.spacedBy(14.dp),
+                contentPadding = PaddingValues(horizontal = 2.dp)
+            ) {
+                items(allBadges.size) { index ->
+                    val badge = allBadges[index]
+                    val icon = when (badge.iconKey) {
+                        "NIGHT_OWL" -> Icons.Default.Bedtime
+                        "CHIEF_DOCTOR" -> Icons.Default.Healing
+                        "SUPER_MEMORY" -> Icons.Default.Psychology
+                        "PERSISTENT_SCHOLAR" -> Icons.Default.LocalFireDepartment
+                        "FIRST_STEP" -> Icons.Default.Flag
+                        "SPEAKING_ACE" -> Icons.Default.RecordVoiceOver
+                        else -> Icons.Default.Diamond
+                    }
+
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        modifier = Modifier
+                            .width(82.dp)
+                            .clickable { onBadgeClick(badge) }
+                    ) {
                         Box(
                             modifier = Modifier
-                                .size(48.dp)
+                                .size(56.dp)
                                 .clip(CircleShape)
-                                .background(if (unlocked) Color(0x334EF3C5) else Color(0x221F1D2F))
-                                .border(1.dp, if (unlocked) Color(0xFF51FAC1) else Color(0x445E5876), CircleShape),
+                                .background(
+                                    if (badge.isUnlocked) Brush.radialGradient(
+                                        listOf(Color(0x44FFD166), Color(0x221F1D2F))
+                                    ) else Brush.radialGradient(
+                                        listOf(Color(0x221F1D2F), Color(0x111F1D2F))
+                                    )
+                                )
+                                .border(
+                                    1.5.dp,
+                                    if (badge.isUnlocked) Color(0xFFFFD166) else Color(0x445E5876),
+                                    CircleShape
+                                ),
                             contentAlignment = Alignment.Center
                         ) {
-                            Icon(icon, contentDescription = title, tint = if (unlocked) Color(0xFF51FAC1) else Color(0x667C748D), modifier = Modifier.size(23.dp))
+                            Icon(
+                                imageVector = icon,
+                                contentDescription = if (isEnglish) badge.titleEn else badge.titleVi,
+                                tint = if (badge.isUnlocked) Color(0xFFFFD166) else Color(0x667C748D),
+                                modifier = Modifier.size(26.dp)
+                            )
                         }
-                        Spacer(modifier = Modifier.height(5.dp))
-                        Text(title, color = if (unlocked) Color.White else Color(0x667C748D), fontSize = 9.sp, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
+
+                        Spacer(modifier = Modifier.height(6.dp))
+
+                        Text(
+                            text = if (isEnglish) badge.titleEn else badge.titleVi,
+                            color = if (badge.isUnlocked) Color.White else Color(0x667C748D),
+                            fontSize = 10.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            textAlign = TextAlign.Center
+                        )
+
+                        Text(
+                            text = if (badge.isUnlocked) (if (isEnglish) "Unlocked" else "Đã mở") else "${badge.currentProgress}/${badge.targetCount}",
+                            color = if (badge.isUnlocked) Color(0xFF51FAC1) else Color(0x99FFD166),
+                            fontSize = 9.sp,
+                            fontWeight = FontWeight.Medium,
+                            maxLines = 1
+                        )
                     }
                 }
             }
         }
     }
+}
+
+@Composable
+private fun AchievementDetailDialog(
+    badge: AchievementBadge?,
+    isEnglish: Boolean,
+    onDismiss: () -> Unit
+) {
+    if (badge == null) return
+    val icon = when (badge.iconKey) {
+        "NIGHT_OWL" -> Icons.Default.Bedtime
+        "CHIEF_DOCTOR" -> Icons.Default.Healing
+        "SUPER_MEMORY" -> Icons.Default.Psychology
+        "PERSISTENT_SCHOLAR" -> Icons.Default.LocalFireDepartment
+        "FIRST_STEP" -> Icons.Default.Flag
+        "SPEAKING_ACE" -> Icons.Default.RecordVoiceOver
+        else -> Icons.Default.Diamond
+    }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        containerColor = Color(0xFF141224),
+        title = {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Box(
+                    modifier = Modifier
+                        .size(44.dp)
+                        .clip(CircleShape)
+                        .background(if (badge.isUnlocked) Color(0x33FFD166) else Color(0x22444455))
+                        .border(1.dp, if (badge.isUnlocked) Color(0xFFFFD166) else Color(0x44888899), CircleShape),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = icon,
+                        contentDescription = null,
+                        tint = if (badge.isUnlocked) Color(0xFFFFD166) else Color(0x66888899),
+                        modifier = Modifier.size(24.dp)
+                    )
+                }
+                Spacer(modifier = Modifier.width(12.dp))
+                Column {
+                    Text(
+                        text = if (isEnglish) badge.titleEn else badge.titleVi,
+                        color = Color.White,
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Text(
+                        text = if (badge.isUnlocked) (if (isEnglish) "✨ Unlocked" else "✨ Đã mở khóa") else (if (isEnglish) "🔒 Locked" else "🔒 Chưa mở khóa"),
+                        color = if (badge.isUnlocked) Color(0xFF51FAC1) else Color(0xFFFF9E00),
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                }
+            }
+        },
+        text = {
+            Column {
+                Text(
+                    text = if (isEnglish) badge.descriptionEn else badge.descriptionVi,
+                    color = Color(0xFFDDDDDD),
+                    fontSize = 14.sp,
+                    lineHeight = 20.sp
+                )
+                Spacer(modifier = Modifier.height(16.dp))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Text(
+                        text = if (isEnglish) "Progress:" else "Tiến độ:",
+                        color = Color(0x99FFFFFF),
+                        fontSize = 12.sp
+                    )
+                    Text(
+                        text = "${badge.currentProgress} / ${badge.targetCount}",
+                        color = if (badge.isUnlocked) Color(0xFF51FAC1) else Color(0xFFFFD166),
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+                Spacer(modifier = Modifier.height(6.dp))
+                LinearProgressIndicator(
+                    progress = { badge.progressFraction },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(8.dp)
+                        .clip(RoundedCornerShape(4.dp)),
+                    color = if (badge.isUnlocked) Color(0xFF51FAC1) else Color(0xFFFFD166),
+                    trackColor = Color(0x33FFFFFF)
+                )
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onDismiss) {
+                Text(if (isEnglish) "Close" else "Đóng", color = Color(0xFF51FAC1), fontWeight = FontWeight.Bold)
+            }
+        }
+    )
 }
 
 @OptIn(ExperimentalMaterial3Api::class)

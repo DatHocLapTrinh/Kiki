@@ -544,6 +544,34 @@ class DataRepository @Inject constructor(
     suspend fun clearWeakPoints(userId: Long): Boolean = withContext(Dispatchers.IO) {
         dao.clearWeakPoints(userId) > 0
     }
+
+    suspend fun getMasteredVocabularyCount(userId: Long): Int = withContext(Dispatchers.IO) {
+        dao.getMasteredVocabularyCount(userId)
+    }
+
+    suspend fun getUnlockedBadgeIds(userId: Long): Set<String> = withContext(Dispatchers.IO) {
+        val json = dao.getBadgesJson(userId)
+        if (json.isNullOrBlank()) {
+            emptySet()
+        } else {
+            try {
+                val arr = org.json.JSONArray(json)
+                (0 until arr.length()).map { arr.getString(it) }.toSet()
+            } catch (e: Exception) {
+                emptySet()
+            }
+        }
+    }
+
+    suspend fun unlockBadge(userId: Long, badgeId: String): Boolean = withContext(Dispatchers.IO) {
+        val currentBadges = getUnlockedBadgeIds(userId).toMutableSet()
+        if (currentBadges.add(badgeId)) {
+            val jsonArray = org.json.JSONArray(currentBadges)
+            dao.updateBadgesJson(userId, jsonArray.toString()) > 0
+        } else {
+            false
+        }
+    }
 }
 
 

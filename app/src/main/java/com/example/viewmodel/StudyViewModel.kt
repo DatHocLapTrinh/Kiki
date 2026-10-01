@@ -10,9 +10,13 @@ import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.BuildConfig
+import com.example.model.AchievementBadge
+import com.example.model.AchievementRegistry
+import com.example.model.BadgeId
 import com.example.model.GroqModels
 import com.example.model.QAItem
 import com.example.model.QuestItem
+import com.example.model.QuestionType
 import com.example.network.GroqApiService
 import com.example.repository.DataRepository
 import com.example.sqlite.room.DailyTaskEntity
@@ -24,6 +28,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.ByteArrayOutputStream
 import java.text.SimpleDateFormat
+import java.util.Calendar
 import java.util.Date
 import java.util.Locale
 import com.example.audio.TextToSpeechManager
@@ -140,6 +145,57 @@ class StudyViewModel @Inject constructor(
     private val _mana = MutableLiveData(20)
     val mana: LiveData<Int> = _mana
     fun setMana(mana: Int) { _mana.value = mana }
+
+    private val _unlockedBadgeIds = MutableLiveData<Set<String>>(emptySet())
+    val unlockedBadgeIds: LiveData<Set<String>> = _unlockedBadgeIds
+
+    private val _curedWeakPointsCount = MutableLiveData(0)
+    val curedWeakPointsCount: LiveData<Int> = _curedWeakPointsCount
+
+    private val _masteredVocabCount = MutableLiveData(0)
+    val masteredVocabCount: LiveData<Int> = _masteredVocabCount
+
+    private val _newlyUnlockedBadge = MutableLiveData<AchievementBadge?>(null)
+    val newlyUnlockedBadge: LiveData<AchievementBadge?> = _newlyUnlockedBadge
+    fun dismissNewlyUnlockedBadge() { _newlyUnlockedBadge.value = null }
+
+    fun refreshBadges(userId: Long = _currentUserId.value ?: -1L) {
+        if (userId == -1L) return
+        viewModelScope.launch {
+            val badges = repository.getUnlockedBadgeIds(userId)
+            _unlockedBadgeIds.value = badges
+            val cured = prefs.getInt("cured_weak_points_count_$userId", 0)
+            _curedWeakPointsCount.value = cured
+            val mastered = repository.getMasteredVocabularyCount(userId)
+            _masteredVocabCount.value = mastered
+        }
+    }
+
+    fun checkAndUnlockBadge(badgeId: BadgeId) {
+        val userId = _currentUserId.value ?: return
+        if (userId == -1L) return
+        viewModelScope.launch {
+            val current = _unlockedBadgeIds.value ?: emptySet()
+            if (!current.contains(badgeId.id)) {
+                val success = repository.unlockBadge(userId, badgeId.id)
+                if (success) {
+                    val updated = current + badgeId.id
+                    _unlockedBadgeIds.value = updated
+                    firestoreSyncManager.syncUserProfile(userId)
+                    val all = AchievementRegistry.getAllBadges(
+                        unlockedIds = updated,
+                        streak = _streak.value ?: 0,
+                        curedWeakPoints = _curedWeakPointsCount.value ?: 0,
+                        masteredVocabCount = _masteredVocabCount.value ?: 0
+                    )
+                    val b = all.firstOrNull { it.id == badgeId.id }
+                    if (b != null) {
+                        _newlyUnlockedBadge.value = b
+                    }
+                }
+            }
+        }
+    }
 
     private val _currentNode = MutableLiveData(1)
     val currentNode: LiveData<Int> = _currentNode
@@ -333,6 +389,16 @@ class StudyViewModel @Inject constructor(
                 checkAndUpdateStreak(userId)
                 firestoreSyncManager.syncUserProfile(userId)
                 firestoreSyncManager.syncWeakPoints(userId)
+
+                // Kiểm tra mở khóa huy hiệu thành tựu
+                checkAndUnlockBadge(BadgeId.FIRST_STEP)
+                val hour = Calendar.getInstance().get(Calendar.HOUR_OF_DAY)
+                if (hour >= 22 || hour < 4) {
+                    checkAndUnlockBadge(BadgeId.NIGHT_OWL)
+                }
+                if (results.any { it.type == QuestionType.SPEAKING_CHALLENGE && (it.pronunciationScore ?: 0) >= 85 }) {
+                    checkAndUnlockBadge(BadgeId.SPEAKING_ACE)
+                }
             }
 
             val prompt = buildString {
@@ -499,6 +565,7 @@ class StudyViewModel @Inject constructor(
             checkAndUpdateStreak(userId)
             refreshVocabulary()
             refreshWeakPoints()
+            refreshBadges(userId)
 
             // Tự động đồng bộ toàn bộ dữ liệu lên Cloud Firestore ngầm
             firestoreSyncManager.syncAllToCloud(userId)
@@ -754,6 +821,9 @@ class StudyViewModel @Inject constructor(
             }
             repository.updateStreak(userId, newStreak, todayStr)
             _streak.value = newStreak
+            if (newStreak >= 7) {
+                checkAndUnlockBadge(BadgeId.PERSISTENT_SCHOLAR)
+            }
         }
     }
 
@@ -766,6 +836,8 @@ class StudyViewModel @Inject constructor(
     }
 
     fun resolveWeakPoint(weakId: Long) {
+        val userId = _currentUserId.value ?: return
+        if (userId == -1L) return
         viewModelScope.launch {
             repository.deleteWeakPoint(weakId)
             addXp(25)
@@ -773,6 +845,14 @@ class StudyViewModel @Inject constructor(
             setMana((curMana + 5).coerceAtMost(30))
             soundEffectManager.playCorrect(3)
             refreshWeakPoints()
+
+            // Cập nhật tiến độ Bác Sĩ Trưởng
+            val newCuredCount = prefs.getInt("cured_weak_points_count_$userId", 0) + 1
+            prefs.edit().putInt("cured_weak_points_count_$userId", newCuredCount).apply()
+            _curedWeakPointsCount.value = newCuredCount
+            if (newCuredCount >= 10) {
+                checkAndUnlockBadge(BadgeId.CHIEF_DOCTOR)
+            }
         }
     }
 
@@ -813,6 +893,11 @@ class StudyViewModel @Inject constructor(
             val userId = _currentUserId.value
             if (userId != null && userId != -1L) {
                 _vocabularyList.value = repository.getVocabularyList(userId)
+                val masteredCount = repository.getMasteredVocabularyCount(userId)
+                _masteredVocabCount.value = masteredCount
+                if (masteredCount >= 30) {
+                    checkAndUnlockBadge(BadgeId.SUPER_MEMORY)
+                }
             }
         }
     }

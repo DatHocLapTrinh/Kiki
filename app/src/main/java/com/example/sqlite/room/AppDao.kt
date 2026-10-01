@@ -125,6 +125,15 @@ interface AppDao {
     @Query("SELECT COUNT(*) FROM vocabulary_notes WHERE user_id = :userId AND word = :word")
     suspend fun isWordBookmarked(userId: Long, word: String): Int
 
+    @Query("SELECT COUNT(*) FROM vocabulary_notes WHERE user_id = :userId AND is_mastered = 1")
+    suspend fun getMasteredVocabularyCount(userId: Long): Int
+
+    @Query("UPDATE user_profiles SET badges_json = :badgesJson WHERE user_id = :userId")
+    suspend fun updateBadgesJson(userId: Long, badgesJson: String): Int
+
+    @Query("SELECT badges_json FROM user_profiles WHERE user_id = :userId")
+    suspend fun getBadgesJson(userId: Long): String?
+
     @Query("UPDATE user_profiles SET streak_shields = :shields WHERE user_id = :userId")
     suspend fun updateStreakShields(userId: Long, shields: Int): Int
 
