@@ -6,6 +6,12 @@ enum class QuestionType {
     MATCHING_PAIRS
 }
 
+data class MatchingPair(
+    val id: Int,
+    val english: String,
+    val vietnamese: String
+)
+
 data class QuestItem(
     val question: String,
     val options: List<String>,
@@ -14,5 +20,7 @@ data class QuestItem(
     val type: QuestionType = QuestionType.MULTIPLE_CHOICE,
     val sentenceTokens: List<String> = emptyList(),
     val correctSentence: String = "",
-    var userSentenceTokens: List<String> = emptyList()
+    var userSentenceTokens: List<String> = emptyList(),
+    val matchingPairs: List<MatchingPair> = emptyList()
 )
+

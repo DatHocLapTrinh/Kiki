@@ -37,6 +37,7 @@ import coil.compose.AsyncImage
 import com.example.model.QuestItem
 import com.example.model.QuestionType
 import com.example.ui.ConfettiEffect
+import com.example.ui.MatchingPairsView
 import com.example.ui.SentenceBuilderView
 import com.example.ui.safeBottomDockPadding
 import com.example.viewmodel.StudyViewModel
@@ -69,6 +70,8 @@ fun QuestScreen(viewModel: StudyViewModel, onFinish: () -> Unit) {
     var currentQuestion by remember { mutableIntStateOf(0) }
     var selectedOption by remember { mutableIntStateOf(-1) }
     var selectedTokenIndices by remember(currentQuestion) { mutableStateOf<List<Int>>(emptyList()) }
+    var isMatchingCompleted by remember(currentQuestion) { mutableStateOf(false) }
+    var matchingErrorCount by remember(currentQuestion) { mutableIntStateOf(0) }
     var isChecked by remember { mutableStateOf(false) }
     var isCurrentCorrect by remember { mutableStateOf(false) }
     var showExitDialog by remember { mutableStateOf(false) }
@@ -288,10 +291,10 @@ fun QuestScreen(viewModel: StudyViewModel, onFinish: () -> Unit) {
                                 IconButton(
                                     onClick = {
                                         haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                                        val textToSpeak = if (currentQ.type == QuestionType.SENTENCE_BUILDER) {
-                                            currentQ.correctSentence.ifEmpty { currentQ.question }
-                                        } else {
-                                            currentQ.question
+                                        val textToSpeak = when (currentQ.type) {
+                                            QuestionType.SENTENCE_BUILDER -> currentQ.correctSentence.ifEmpty { currentQ.question }
+                                            QuestionType.MATCHING_PAIRS -> currentQ.matchingPairs.joinToString(", ") { it.english }
+                                            else -> currentQ.question
                                         }
                                         viewModel.ttsManager.speak(textToSpeak, isSlow = false)
                                     },
@@ -312,10 +315,10 @@ fun QuestScreen(viewModel: StudyViewModel, onFinish: () -> Unit) {
                                 IconButton(
                                     onClick = {
                                         haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                                        val textToSpeak = if (currentQ.type == QuestionType.SENTENCE_BUILDER) {
-                                            currentQ.correctSentence.ifEmpty { currentQ.question }
-                                        } else {
-                                            currentQ.question
+                                        val textToSpeak = when (currentQ.type) {
+                                            QuestionType.SENTENCE_BUILDER -> currentQ.correctSentence.ifEmpty { currentQ.question }
+                                            QuestionType.MATCHING_PAIRS -> currentQ.matchingPairs.joinToString(", ") { it.english }
+                                            else -> currentQ.question
                                         }
                                         viewModel.ttsManager.speak(textToSpeak, isSlow = true)
                                     },
@@ -354,38 +357,59 @@ fun QuestScreen(viewModel: StudyViewModel, onFinish: () -> Unit) {
                                 }
                             }
 
-                            if (currentQ.type == QuestionType.SENTENCE_BUILDER) {
-                                SentenceBuilderView(
-                                    promptText = currentQ.question,
-                                    availableTokens = currentQ.sentenceTokens,
-                                    selectedTokenIndices = selectedTokenIndices,
-                                    isChecked = isChecked,
-                                    isCorrect = isCurrentCorrect,
-                                    isEnglish = isEnglish,
-                                    onTokenSelected = { tokenIdx ->
-                                        if (!selectedTokenIndices.contains(tokenIdx)) {
-                                            selectedTokenIndices = selectedTokenIndices + tokenIdx
+                            when (currentQ.type) {
+                                QuestionType.SENTENCE_BUILDER -> {
+                                    SentenceBuilderView(
+                                        promptText = currentQ.question,
+                                        availableTokens = currentQ.sentenceTokens,
+                                        selectedTokenIndices = selectedTokenIndices,
+                                        isChecked = isChecked,
+                                        isCorrect = isCurrentCorrect,
+                                        isEnglish = isEnglish,
+                                        onTokenSelected = { tokenIdx ->
+                                            if (!selectedTokenIndices.contains(tokenIdx)) {
+                                                selectedTokenIndices = selectedTokenIndices + tokenIdx
+                                            }
+                                        },
+                                        onTokenRemoved = { position ->
+                                            if (position in selectedTokenIndices.indices) {
+                                                selectedTokenIndices = selectedTokenIndices.filterIndexed { idx, _ -> idx != position }
+                                            }
+                                        },
+                                        onSpeakPrompt = {
+                                            viewModel.ttsManager.speak(currentQ.correctSentence.ifEmpty { currentQ.question })
                                         }
-                                    },
-                                    onTokenRemoved = { position ->
-                                        if (position in selectedTokenIndices.indices) {
-                                            selectedTokenIndices = selectedTokenIndices.filterIndexed { idx, _ -> idx != position }
+                                    )
+                                }
+                                QuestionType.MATCHING_PAIRS -> {
+                                    MatchingPairsView(
+                                        pairs = currentQ.matchingPairs,
+                                        isEnglish = isEnglish,
+                                        onSpeakWord = { word ->
+                                            viewModel.ttsManager.speak(word, isSlow = false)
+                                        },
+                                        onPairMatched = {
+                                            viewModel.soundEffectManager.playCorrect(consecutiveCorrect + 1)
+                                        },
+                                        onMismatch = {
+                                            viewModel.soundEffectManager.playIncorrect()
+                                        },
+                                        onAllMatched = { errors ->
+                                            isMatchingCompleted = true
+                                            matchingErrorCount = errors
                                         }
-                                    },
-                                    onSpeakPrompt = {
-                                        viewModel.ttsManager.speak(currentQ.correctSentence.ifEmpty { currentQ.question })
-                                    }
-                                )
-                            } else {
-                                Text(
-                                    text = currentQ.question,
-                                    color = Color.White,
-                                    fontSize = 24.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    textAlign = TextAlign.Center,
-                                    lineHeight = 32.sp,
-                                    modifier = Modifier.padding(bottom = 24.dp)
-                                )
+                                    )
+                                }
+                                else -> {
+                                    Text(
+                                        text = currentQ.question,
+                                        color = Color.White,
+                                        fontSize = 24.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        textAlign = TextAlign.Center,
+                                        lineHeight = 32.sp,
+                                        modifier = Modifier.padding(bottom = 24.dp)
+                                    )
 
                                 val options = currentQ.options
                                 val labels = listOf("A", "B", "C", "D")
@@ -475,6 +499,7 @@ fun QuestScreen(viewModel: StudyViewModel, onFinish: () -> Unit) {
                                 }
                             }
                         }
+                        }
                     }
                 }
 
@@ -536,26 +561,32 @@ fun QuestScreen(viewModel: StudyViewModel, onFinish: () -> Unit) {
                                 )
                             }
 
-                            val isCheckEnabled = if (questions[currentQuestion].type == QuestionType.SENTENCE_BUILDER) {
-                                selectedTokenIndices.isNotEmpty()
-                            } else {
-                                selectedOption != -1
+                            val isCheckEnabled = when (questions[currentQuestion].type) {
+                                QuestionType.SENTENCE_BUILDER -> selectedTokenIndices.isNotEmpty()
+                                QuestionType.MATCHING_PAIRS -> isMatchingCompleted
+                                else -> selectedOption != -1
                             }
                             Button(
                                 onClick = {
                                     val currentQ = questions[currentQuestion]
                                     isChecked = true
-                                    val isCorrect = if (currentQ.type == QuestionType.SENTENCE_BUILDER) {
-                                        val assembledWords = selectedTokenIndices.mapNotNull { currentQ.sentenceTokens.getOrNull(it) }
-                                        currentQ.userSentenceTokens = assembledWords
-                                        val assembledSentence = assembledWords.joinToString(" ")
-                                        fun normalize(s: String) = s.lowercase(Locale.ROOT)
-                                            .replace(Regex("[.,!?;:\"]"), "")
-                                            .replace(Regex("\\s+"), " ")
-                                            .trim()
-                                        normalize(assembledSentence) == normalize(currentQ.correctSentence)
-                                    } else {
-                                        selectedOption == currentQ.correctIndex
+                                    val isCorrect = when (currentQ.type) {
+                                        QuestionType.SENTENCE_BUILDER -> {
+                                            val assembledWords = selectedTokenIndices.mapNotNull { currentQ.sentenceTokens.getOrNull(it) }
+                                            currentQ.userSentenceTokens = assembledWords
+                                            val assembledSentence = assembledWords.joinToString(" ")
+                                            fun normalize(s: String) = s.lowercase(Locale.ROOT)
+                                                .replace(Regex("[.,!?;:\"]"), "")
+                                                .replace(Regex("\\s+"), " ")
+                                                .trim()
+                                            normalize(assembledSentence) == normalize(currentQ.correctSentence)
+                                        }
+                                        QuestionType.MATCHING_PAIRS -> {
+                                            matchingErrorCount <= 2
+                                        }
+                                        else -> {
+                                            selectedOption == currentQ.correctIndex
+                                        }
                                     }
                                     isCurrentCorrect = isCorrect
                                     if (isCorrect) {
@@ -701,10 +732,10 @@ fun QuestScreen(viewModel: StudyViewModel, onFinish: () -> Unit) {
                             // If incorrect: reveal correct answer with TTS audio + 1-tap save to vault
                             if (!isCurrentCorrect) {
                                 Spacer(modifier = Modifier.height(12.dp))
-                                val correctText = if (currentQ.type == QuestionType.SENTENCE_BUILDER) {
-                                    currentQ.correctSentence
-                                } else {
-                                    currentQ.options.getOrNull(currentQ.correctIndex) ?: ""
+                                val correctText = when (currentQ.type) {
+                                    QuestionType.SENTENCE_BUILDER -> currentQ.correctSentence
+                                    QuestionType.MATCHING_PAIRS -> currentQ.matchingPairs.joinToString("\n") { "• ${it.english} ↔ ${it.vietnamese}" }
+                                    else -> currentQ.options.getOrNull(currentQ.correctIndex) ?: ""
                                 }
                                 Row(
                                     modifier = Modifier
@@ -734,7 +765,11 @@ fun QuestScreen(viewModel: StudyViewModel, onFinish: () -> Unit) {
                                         IconButton(
                                             onClick = {
                                                 haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                                                viewModel.ttsManager.speak(correctText, isSlow = false)
+                                                val textToSpeak = when (currentQ.type) {
+                                                    QuestionType.MATCHING_PAIRS -> currentQ.matchingPairs.joinToString(", ") { it.english }
+                                                    else -> correctText
+                                                }
+                                                viewModel.ttsManager.speak(textToSpeak, isSlow = false)
                                             },
                                             modifier = Modifier.size(36.dp)
                                         ) {
@@ -749,7 +784,11 @@ fun QuestScreen(viewModel: StudyViewModel, onFinish: () -> Unit) {
                                         IconButton(
                                             onClick = {
                                                 haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                                                viewModel.ttsManager.speak(correctText, isSlow = true)
+                                                val textToSpeak = when (currentQ.type) {
+                                                    QuestionType.MATCHING_PAIRS -> currentQ.matchingPairs.joinToString(", ") { it.english }
+                                                    else -> correctText
+                                                }
+                                                viewModel.ttsManager.speak(textToSpeak, isSlow = true)
                                             },
                                             modifier = Modifier.size(36.dp)
                                         ) {
@@ -808,37 +847,58 @@ fun QuestScreen(viewModel: StudyViewModel, onFinish: () -> Unit) {
                                 onClick = {
                                     haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
                                     val activeQ = questions[currentQuestion]
-                                    if (activeQ.type == QuestionType.SENTENCE_BUILDER) {
-                                        userAnswers[currentQuestion] = if (isCurrentCorrect) 0 else -1
-                                    } else {
-                                        userAnswers[currentQuestion] = selectedOption
+                                    when (activeQ.type) {
+                                        QuestionType.SENTENCE_BUILDER, QuestionType.MATCHING_PAIRS -> {
+                                            userAnswers[currentQuestion] = if (isCurrentCorrect) 0 else -1
+                                        }
+                                        else -> {
+                                            userAnswers[currentQuestion] = selectedOption
+                                        }
                                     }
                                     if (currentQuestion < totalQuestions - 1) {
                                         currentQuestion++
                                         selectedOption = -1
                                         selectedTokenIndices = emptyList()
+                                        isMatchingCompleted = false
+                                        matchingErrorCount = 0
                                         isChecked = false
                                         isSavedToVault = false
                                     } else {
                                         val finalResults = questions.mapIndexed { idx, item ->
-                                            if (item.type == QuestionType.SENTENCE_BUILDER) {
-                                                val assembled = item.userSentenceTokens.joinToString(" ")
-                                                val isItemCorrect = userAnswers[idx] == 0
-                                                val copy = QuestItem(
-                                                    question = item.question,
-                                                    options = if (isItemCorrect) listOf(item.correctSentence) else listOf(item.correctSentence, assembled.ifEmpty { "Incomplete" }),
-                                                    correctIndex = 0,
-                                                    type = item.type,
-                                                    sentenceTokens = item.sentenceTokens,
-                                                    correctSentence = item.correctSentence,
-                                                    userSentenceTokens = item.userSentenceTokens
-                                                )
-                                                copy.selectedIndex = if (isItemCorrect) 0 else 1
-                                                copy
-                                            } else {
-                                                val copy = QuestItem(item.question, item.options, item.correctIndex)
-                                                copy.selectedIndex = userAnswers[idx] ?: -1
-                                                copy
+                                            when (item.type) {
+                                                QuestionType.SENTENCE_BUILDER -> {
+                                                    val assembled = item.userSentenceTokens.joinToString(" ")
+                                                    val isItemCorrect = userAnswers[idx] == 0
+                                                    val copy = QuestItem(
+                                                        question = item.question,
+                                                        options = if (isItemCorrect) listOf(item.correctSentence) else listOf(item.correctSentence, assembled.ifEmpty { "Incomplete" }),
+                                                        correctIndex = 0,
+                                                        type = item.type,
+                                                        sentenceTokens = item.sentenceTokens,
+                                                        correctSentence = item.correctSentence,
+                                                        userSentenceTokens = item.userSentenceTokens
+                                                    )
+                                                    copy.selectedIndex = if (isItemCorrect) 0 else 1
+                                                    copy
+                                                }
+                                                QuestionType.MATCHING_PAIRS -> {
+                                                    val isItemCorrect = userAnswers[idx] == 0
+                                                    val pairsSummary = item.matchingPairs.joinToString(", ") { "${it.english} = ${it.vietnamese}" }
+                                                    val copy = QuestItem(
+                                                        question = item.question,
+                                                        options = listOf(pairsSummary),
+                                                        correctIndex = 0,
+                                                        type = item.type,
+                                                        matchingPairs = item.matchingPairs
+                                                    )
+                                                    copy.selectedIndex = if (isItemCorrect) 0 else 1
+                                                    copy
+                                                }
+                                                else -> {
+                                                    val copy = QuestItem(item.question, item.options, item.correctIndex)
+                                                    copy.selectedIndex = userAnswers[idx] ?: -1
+                                                    copy
+                                                }
                                             }
                                         }
                                         viewModel.completeCurrentLesson()

@@ -1,6 +1,7 @@
 package com.example.repository
 
 import android.content.Context
+import com.example.model.MatchingPair
 import com.example.model.QAItem
 import com.example.model.QuestItem
 import com.example.model.QuestionType
@@ -29,6 +30,39 @@ class DataRepository @Inject constructor(
     private val seedJob = scope.launch {
         seedInitialData()
     }
+
+    private val vocabularyPairsBank = listOf(
+        MatchingPair(1, "give up", "từ bỏ"),
+        MatchingPair(2, "turn off", "tắt (thiết bị)"),
+        MatchingPair(3, "look after", "chăm sóc"),
+        MatchingPair(4, "call off", "hủy bỏ"),
+        MatchingPair(5, "run into", "tình cờ gặp"),
+        MatchingPair(6, "carry out", "tiến hành"),
+        MatchingPair(7, "break down", "hỏng hóc"),
+        MatchingPair(8, "come across", "bắt gặp"),
+        MatchingPair(9, "look forward to", "trông đợi"),
+        MatchingPair(10, "figure out", "tìm ra / hiểu ra"),
+        MatchingPair(11, "put off", "trì hoãn"),
+        MatchingPair(12, "get along", "hòa thuận"),
+        MatchingPair(13, "fluency", "sự lưu loát"),
+        MatchingPair(14, "enthusiastic", "nhiệt tình"),
+        MatchingPair(15, "essential", "thiết yếu"),
+        MatchingPair(16, "brilliant", "tài giỏi"),
+        MatchingPair(17, "opportunity", "cơ hội"),
+        MatchingPair(18, "challenge", "thử thách"),
+        MatchingPair(19, "confidence", "sự tự tin"),
+        MatchingPair(20, "perseverance", "sự kiên trì"),
+        MatchingPair(21, "accurate", "chính xác"),
+        MatchingPair(22, "efficient", "hiệu quả"),
+        MatchingPair(23, "creative", "sáng tạo"),
+        MatchingPair(24, "inspiration", "nguồn cảm hứng"),
+        MatchingPair(25, "determination", "lòng quyết tâm"),
+        MatchingPair(26, "achievement", "thành tựu"),
+        MatchingPair(27, "knowledge", "kiến thức"),
+        MatchingPair(28, "adventure", "cuộc phiêu lưu"),
+        MatchingPair(29, "pronunciation", "phát âm"),
+        MatchingPair(30, "vocabulary", "từ vựng")
+    )
 
     suspend fun ensureSeeded() {
         seedJob.join()
@@ -138,8 +172,22 @@ class DataRepository @Inject constructor(
                     options.add(array.getString(i))
                 }
                 val correctIdx = q.correctAnswer.toIntOrNull() ?: 0
+                val isExplicitMatching = q.questionType.equals("MATCHING_PAIRS", ignoreCase = true)
                 val isExplicitBuilder = q.questionType.equals("SENTENCE_BUILDER", ignoreCase = true)
                 val hasBlanks = q.questionText.contains(Regex("_{2,}"))
+
+                // Transform suitable questions (index % 7 == 6 or explicit type) into Matching Pairs
+                if (isExplicitMatching || index % 7 == 6) {
+                    val selectedPairs = vocabularyPairsBank.shuffled().take(4)
+                    val pairSummary = selectedPairs.joinToString(", ") { "${it.english} = ${it.vietnamese}" }
+                    return@mapIndexedNotNull QuestItem(
+                        question = "Ghép cặp các từ vựng tiếng Anh với nghĩa tiếng Việt tương ứng",
+                        options = listOf(pairSummary),
+                        correctIndex = 0,
+                        type = QuestionType.MATCHING_PAIRS,
+                        matchingPairs = selectedPairs
+                    )
+                }
 
                 // Transform suitable questions (every 3rd question or explicit type) into interactive Sentence Builder
                 val shouldBeSentenceBuilder = (isExplicitBuilder || (hasBlanks && index % 3 == 2))
