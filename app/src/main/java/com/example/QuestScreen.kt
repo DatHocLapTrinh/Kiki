@@ -449,7 +449,6 @@ fun QuestScreen(viewModel: StudyViewModel, onFinish: () -> Unit) {
             modifier = Modifier
                 .align(Alignment.BottomCenter)
                 .fillMaxWidth()
-                .navigationBarsPadding()
         ) {
             AnimatedContent(
                 targetState = isChecked,
@@ -471,7 +470,8 @@ fun QuestScreen(viewModel: StudyViewModel, onFinish: () -> Unit) {
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(horizontal = 20.dp, vertical = 16.dp),
+                                .navigationBarsPadding()
+                                .padding(start = 20.dp, end = 20.dp, top = 16.dp, bottom = 14.dp),
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.SpaceBetween
                         ) {
@@ -584,7 +584,8 @@ fun QuestScreen(viewModel: StudyViewModel, onFinish: () -> Unit) {
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .background(bannerBg)
-                                .padding(horizontal = 24.dp, vertical = 20.dp)
+                                .navigationBarsPadding()
+                                .padding(start = 24.dp, end = 24.dp, top = 20.dp, bottom = 16.dp)
                         ) {
                             // Header row: Icon + Notice + Combo Tag
                             Row(

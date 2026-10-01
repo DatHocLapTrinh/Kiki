@@ -437,7 +437,7 @@ private fun ClinicRehabQuizView(
 
         // Options List
         Column(
-            modifier = Modifier.weight(1f),
+            modifier = Modifier.fillMaxWidth(),
             verticalArrangement = Arrangement.spacedBy(10.dp)
         ) {
             options.forEachIndexed { index, optText ->
@@ -501,21 +501,23 @@ private fun ClinicRehabQuizView(
         Spacer(modifier = Modifier.height(16.dp))
     }
 
-    // Dedicated Elevated Bottom Dock!
+    val navBarBottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
+    val safeBottomPadding = if (navBarBottom > 0.dp) navBarBottom + 16.dp else 44.dp
+
+    // Dedicated Elevated Bottom Dock with guaranteed safe insets!
     Surface(
         color = Color(0xFF160E1E),
         modifier = Modifier
             .fillMaxWidth()
             .border(
-                BorderStroke(1.dp, Color(0x26FFFFFF)),
-                RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp)
+                BorderStroke(1.5.dp, Brush.horizontalGradient(listOf(Color(0x4DFF6B6B), Color(0x33FFFFFF), Color(0x4D22C55E)))),
+                RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp)
             )
     ) {
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .navigationBarsPadding()
-                .padding(start = 20.dp, end = 20.dp, top = 14.dp, bottom = 20.dp)
+                .padding(start = 20.dp, end = 20.dp, top = 16.dp, bottom = safeBottomPadding)
         ) {
             if (!isSubmitted) {
                 Button(
@@ -538,7 +540,7 @@ private fun ClinicRehabQuizView(
                     enabled = selectedIndex != -1,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(52.dp),
+                        .height(54.dp),
                     shape = RoundedCornerShape(16.dp),
                     colors = ButtonDefaults.buttonColors(
                         containerColor = Color(0xFF22C55E),
@@ -570,7 +572,7 @@ private fun ClinicRehabQuizView(
                             },
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .height(52.dp),
+                                .height(54.dp),
                             shape = RoundedCornerShape(16.dp),
                             colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF22C55E))
                         ) {
@@ -591,7 +593,7 @@ private fun ClinicRehabQuizView(
                             },
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .height(52.dp),
+                                .height(54.dp),
                             shape = RoundedCornerShape(16.dp),
                             colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFEF4444))
                         ) {
@@ -620,13 +622,13 @@ private fun ClinicRecordsListView(
     onHeal: (WeakPointEntity) -> Unit
 ) {
     val haptic = LocalHapticFeedback.current
+    val navBarBottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
+    val safeBottomPadding = if (navBarBottom > 0.dp) navBarBottom + 24.dp else 60.dp
 
     LazyColumn(
-        modifier = Modifier
-            .fillMaxSize()
-            .navigationBarsPadding(),
+        modifier = Modifier.fillMaxSize(),
         verticalArrangement = Arrangement.spacedBy(12.dp),
-        contentPadding = PaddingValues(start = 20.dp, end = 20.dp, top = 8.dp, bottom = 36.dp)
+        contentPadding = PaddingValues(start = 20.dp, end = 20.dp, top = 8.dp, bottom = safeBottomPadding)
     ) {
         items(weakPoints, key = { it.weakId }) { item ->
             val options = item.parseOptions()

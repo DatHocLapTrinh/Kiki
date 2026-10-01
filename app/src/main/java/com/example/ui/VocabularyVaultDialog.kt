@@ -408,21 +408,23 @@ private fun FlashcardDeckView(
         }
     }
 
-        // Dedicated Elevated Bottom Dock
+        val navBarBottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
+        val safeBottomPadding = if (navBarBottom > 0.dp) navBarBottom + 16.dp else 44.dp
+
+        // Dedicated Elevated Bottom Dock with guaranteed safe insets
         Surface(
-            color = Color(0xFF131024),
+            color = Color(0xFF140F24),
             modifier = Modifier
                 .fillMaxWidth()
                 .border(
-                    BorderStroke(1.dp, Color(0x22FFFFFF)),
-                    RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp)
+                    BorderStroke(1.5.dp, Brush.horizontalGradient(listOf(Color(0x4D51FAC1), Color(0x33FFFFFF), Color(0x4D51FAC1)))),
+                    RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp)
                 )
         ) {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .navigationBarsPadding()
-                    .padding(start = 20.dp, end = 20.dp, top = 14.dp, bottom = 20.dp),
+                    .padding(start = 20.dp, end = 20.dp, top = 16.dp, bottom = safeBottomPadding),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
@@ -434,10 +436,11 @@ private fun FlashcardDeckView(
                     enabled = currentIndex > 0,
                     modifier = Modifier
                         .weight(1f)
-                        .height(48.dp),
+                        .height(52.dp),
                     shape = RoundedCornerShape(16.dp),
-                    border = BorderStroke(1.dp, if (currentIndex > 0) Color(0x6651FAC1) else Color(0x22FFFFFF)),
+                    border = BorderStroke(1.5.dp, if (currentIndex > 0) Color(0x8051FAC1) else Color(0x22FFFFFF)),
                     colors = ButtonDefaults.outlinedButtonColors(
+                        containerColor = if (currentIndex > 0) Color(0x1F51FAC1) else Color(0x0FFFFFFF),
                         contentColor = Color.White,
                         disabledContentColor = Color(0x44FFFFFF)
                     )
@@ -455,12 +458,12 @@ private fun FlashcardDeckView(
                         isFlipped = !isFlipped
                     },
                     modifier = Modifier
-                        .size(48.dp)
+                        .size(52.dp)
                         .clip(CircleShape)
-                        .background(Color(0x2251FAC1))
-                        .border(1.dp, Color(0x6651FAC1), CircleShape)
+                        .background(Brush.linearGradient(listOf(Color(0x3351FAC1), Color(0x2222C55E))))
+                        .border(1.5.dp, Color(0x8051FAC1), CircleShape)
                 ) {
-                    Icon(Icons.Default.Refresh, contentDescription = "Flip", tint = Color(0xFF51FAC1), modifier = Modifier.size(22.dp))
+                    Icon(Icons.Default.Refresh, contentDescription = "Flip", tint = Color(0xFF51FAC1), modifier = Modifier.size(24.dp))
                 }
 
                 Spacer(modifier = Modifier.width(12.dp))
@@ -473,7 +476,7 @@ private fun FlashcardDeckView(
                     enabled = currentIndex < items.size - 1,
                     modifier = Modifier
                         .weight(1f)
-                        .height(48.dp),
+                        .height(52.dp),
                     shape = RoundedCornerShape(16.dp),
                     colors = ButtonDefaults.buttonColors(
                         containerColor = Color(0xFF51FAC1),
@@ -498,13 +501,13 @@ private fun VocabularyListView(
     isEnglish: Boolean
 ) {
     val haptic = LocalHapticFeedback.current
+    val navBarBottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
+    val safeBottomPadding = if (navBarBottom > 0.dp) navBarBottom + 24.dp else 60.dp
 
     LazyColumn(
-        modifier = Modifier
-            .fillMaxSize()
-            .navigationBarsPadding(),
+        modifier = Modifier.fillMaxSize(),
         verticalArrangement = Arrangement.spacedBy(12.dp),
-        contentPadding = PaddingValues(start = 20.dp, end = 20.dp, top = 8.dp, bottom = 36.dp)
+        contentPadding = PaddingValues(start = 20.dp, end = 20.dp, top = 8.dp, bottom = safeBottomPadding)
     ) {
         items(items, key = { it.vocabId }) { item ->
             Box(

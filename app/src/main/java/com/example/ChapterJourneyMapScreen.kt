@@ -93,7 +93,8 @@ fun ChapterJourneyMapScreen(
                 .fillMaxSize()
                 .verticalScroll(scrollState)
                 .statusBarsPadding()
-                .padding(top = 84.dp, bottom = 40.dp),
+                .navigationBarsPadding()
+                .padding(top = 84.dp, bottom = 48.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             ChapterProgressSummary(

@@ -77,7 +77,7 @@ fun QuestReviewScreen(viewModel: StudyViewModel, onBack: () -> Unit) {
                 .fillMaxSize()
                 .padding(padding)
                 .padding(horizontal = 16.dp),
-            contentPadding = PaddingValues(bottom = 32.dp)
+            contentPadding = PaddingValues(bottom = 56.dp)
         ) {
             item {
                 Row(
