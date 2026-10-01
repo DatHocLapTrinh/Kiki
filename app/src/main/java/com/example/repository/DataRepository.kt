@@ -172,9 +172,27 @@ class DataRepository @Inject constructor(
                     options.add(array.getString(i))
                 }
                 val correctIdx = q.correctAnswer.toIntOrNull() ?: 0
+                val isExplicitSpeaking = q.questionType.equals("SPEAKING_CHALLENGE", ignoreCase = true)
                 val isExplicitMatching = q.questionType.equals("MATCHING_PAIRS", ignoreCase = true)
                 val isExplicitBuilder = q.questionType.equals("SENTENCE_BUILDER", ignoreCase = true)
                 val hasBlanks = q.questionText.contains(Regex("_{2,}"))
+
+                // Transform suitable questions (index % 6 == 4 or explicit type) into Speaking Challenge
+                if (isExplicitSpeaking || (hasBlanks && index % 6 == 4)) {
+                    val correctWord = options.getOrNull(correctIdx) ?: ""
+                    val fullSentence = q.questionText.replace(Regex("_{2,}"), correctWord)
+                        .replace(Regex("\\s+"), " ")
+                        .trim()
+                    if (fullSentence.length in 8..95) {
+                        return@mapIndexedNotNull QuestItem(
+                            question = "Luyện nói câu tiếng Anh sau chuẩn bản xứ 🎙️",
+                            options = listOf(fullSentence),
+                            correctIndex = 0,
+                            type = QuestionType.SPEAKING_CHALLENGE,
+                            speakingSentence = fullSentence
+                        )
+                    }
+                }
 
                 // Transform suitable questions (index % 7 == 6 or explicit type) into Matching Pairs
                 if (isExplicitMatching || index % 7 == 6) {

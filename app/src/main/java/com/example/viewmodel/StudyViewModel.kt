@@ -28,6 +28,7 @@ import java.util.Date
 import java.util.Locale
 import com.example.audio.TextToSpeechManager
 import com.example.audio.SoundEffectManager
+import com.example.audio.SpeechRecognitionManager
 import com.example.security.FirebaseAuthManager
 import com.example.security.GoogleAuthResult
 import com.example.sync.FirestoreSyncManager
@@ -41,6 +42,7 @@ class StudyViewModel @Inject constructor(
     private val groqApiService: GroqApiService,
     val ttsManager: TextToSpeechManager,
     val soundEffectManager: SoundEffectManager,
+    val speechRecognitionManager: SpeechRecognitionManager,
     val authManager: FirebaseAuthManager,
     val firestoreSyncManager: FirestoreSyncManager,
     @param:ApplicationContext private val appContext: Context
@@ -933,5 +935,6 @@ class StudyViewModel @Inject constructor(
     override fun onCleared() {
         super.onCleared()
         ttsManager.stop()
+        speechRecognitionManager.destroy()
     }
 }

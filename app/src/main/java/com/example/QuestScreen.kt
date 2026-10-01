@@ -39,7 +39,9 @@ import com.example.model.QuestionType
 import com.example.ui.ConfettiEffect
 import com.example.ui.MatchingPairsView
 import com.example.ui.SentenceBuilderView
+import com.example.ui.SpeakingChallengeView
 import com.example.ui.safeBottomDockPadding
+import com.example.util.PronunciationResult
 import com.example.viewmodel.StudyViewModel
 import java.util.Locale
 
@@ -72,6 +74,7 @@ fun QuestScreen(viewModel: StudyViewModel, onFinish: () -> Unit) {
     var selectedTokenIndices by remember(currentQuestion) { mutableStateOf<List<Int>>(emptyList()) }
     var isMatchingCompleted by remember(currentQuestion) { mutableStateOf(false) }
     var matchingErrorCount by remember(currentQuestion) { mutableIntStateOf(0) }
+    var speakingResult by remember(currentQuestion) { mutableStateOf<PronunciationResult?>(null) }
     var isChecked by remember { mutableStateOf(false) }
     var isCurrentCorrect by remember { mutableStateOf(false) }
     var showExitDialog by remember { mutableStateOf(false) }
@@ -294,6 +297,7 @@ fun QuestScreen(viewModel: StudyViewModel, onFinish: () -> Unit) {
                                         val textToSpeak = when (currentQ.type) {
                                             QuestionType.SENTENCE_BUILDER -> currentQ.correctSentence.ifEmpty { currentQ.question }
                                             QuestionType.MATCHING_PAIRS -> currentQ.matchingPairs.joinToString(", ") { it.english }
+                                            QuestionType.SPEAKING_CHALLENGE -> currentQ.speakingSentence.ifEmpty { currentQ.question }
                                             else -> currentQ.question
                                         }
                                         viewModel.ttsManager.speak(textToSpeak, isSlow = false)
@@ -318,6 +322,7 @@ fun QuestScreen(viewModel: StudyViewModel, onFinish: () -> Unit) {
                                         val textToSpeak = when (currentQ.type) {
                                             QuestionType.SENTENCE_BUILDER -> currentQ.correctSentence.ifEmpty { currentQ.question }
                                             QuestionType.MATCHING_PAIRS -> currentQ.matchingPairs.joinToString(", ") { it.english }
+                                            QuestionType.SPEAKING_CHALLENGE -> currentQ.speakingSentence.ifEmpty { currentQ.question }
                                             else -> currentQ.question
                                         }
                                         viewModel.ttsManager.speak(textToSpeak, isSlow = true)
@@ -397,6 +402,23 @@ fun QuestScreen(viewModel: StudyViewModel, onFinish: () -> Unit) {
                                         onAllMatched = { errors ->
                                             isMatchingCompleted = true
                                             matchingErrorCount = errors
+                                        }
+                                    )
+                                }
+                                QuestionType.SPEAKING_CHALLENGE -> {
+                                    SpeakingChallengeView(
+                                        targetSentence = currentQ.speakingSentence.ifEmpty { currentQ.question },
+                                        isEnglish = isEnglish,
+                                        speechManager = viewModel.speechRecognitionManager,
+                                        onSpeakSentence = { isSlow ->
+                                            viewModel.ttsManager.speak(currentQ.speakingSentence.ifEmpty { currentQ.question }, isSlow = isSlow)
+                                        },
+                                        onSpeakWord = { word ->
+                                            viewModel.ttsManager.speak(word, isSlow = false)
+                                        },
+                                        onEvaluationComplete = { result ->
+                                            speakingResult = result
+                                            currentQ.pronunciationScore = result.overallScore
                                         }
                                     )
                                 }
@@ -564,6 +586,7 @@ fun QuestScreen(viewModel: StudyViewModel, onFinish: () -> Unit) {
                             val isCheckEnabled = when (questions[currentQuestion].type) {
                                 QuestionType.SENTENCE_BUILDER -> selectedTokenIndices.isNotEmpty()
                                 QuestionType.MATCHING_PAIRS -> isMatchingCompleted
+                                QuestionType.SPEAKING_CHALLENGE -> speakingResult != null
                                 else -> selectedOption != -1
                             }
                             Button(
@@ -583,6 +606,9 @@ fun QuestScreen(viewModel: StudyViewModel, onFinish: () -> Unit) {
                                         }
                                         QuestionType.MATCHING_PAIRS -> {
                                             matchingErrorCount <= 2
+                                        }
+                                        QuestionType.SPEAKING_CHALLENGE -> {
+                                            (speakingResult?.overallScore ?: 0) >= 70
                                         }
                                         else -> {
                                             selectedOption == currentQ.correctIndex
@@ -735,6 +761,7 @@ fun QuestScreen(viewModel: StudyViewModel, onFinish: () -> Unit) {
                                 val correctText = when (currentQ.type) {
                                     QuestionType.SENTENCE_BUILDER -> currentQ.correctSentence
                                     QuestionType.MATCHING_PAIRS -> currentQ.matchingPairs.joinToString("\n") { "• ${it.english} ↔ ${it.vietnamese}" }
+                                    QuestionType.SPEAKING_CHALLENGE -> currentQ.speakingSentence.ifEmpty { currentQ.question }
                                     else -> currentQ.options.getOrNull(currentQ.correctIndex) ?: ""
                                 }
                                 Row(
@@ -848,7 +875,7 @@ fun QuestScreen(viewModel: StudyViewModel, onFinish: () -> Unit) {
                                     haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
                                     val activeQ = questions[currentQuestion]
                                     when (activeQ.type) {
-                                        QuestionType.SENTENCE_BUILDER, QuestionType.MATCHING_PAIRS -> {
+                                        QuestionType.SENTENCE_BUILDER, QuestionType.MATCHING_PAIRS, QuestionType.SPEAKING_CHALLENGE -> {
                                             userAnswers[currentQuestion] = if (isCurrentCorrect) 0 else -1
                                         }
                                         else -> {
@@ -861,6 +888,7 @@ fun QuestScreen(viewModel: StudyViewModel, onFinish: () -> Unit) {
                                         selectedTokenIndices = emptyList()
                                         isMatchingCompleted = false
                                         matchingErrorCount = 0
+                                        speakingResult = null
                                         isChecked = false
                                         isSavedToVault = false
                                     } else {
@@ -890,6 +918,19 @@ fun QuestScreen(viewModel: StudyViewModel, onFinish: () -> Unit) {
                                                         correctIndex = 0,
                                                         type = item.type,
                                                         matchingPairs = item.matchingPairs
+                                                    )
+                                                    copy.selectedIndex = if (isItemCorrect) 0 else 1
+                                                    copy
+                                                }
+                                                QuestionType.SPEAKING_CHALLENGE -> {
+                                                    val isItemCorrect = userAnswers[idx] == 0
+                                                    val copy = QuestItem(
+                                                        question = item.question,
+                                                        options = listOf(item.speakingSentence),
+                                                        correctIndex = 0,
+                                                        type = item.type,
+                                                        speakingSentence = item.speakingSentence,
+                                                        pronunciationScore = item.pronunciationScore
                                                     )
                                                     copy.selectedIndex = if (isItemCorrect) 0 else 1
                                                     copy

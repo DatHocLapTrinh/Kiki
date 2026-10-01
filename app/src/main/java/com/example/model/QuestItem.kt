@@ -3,7 +3,8 @@ package com.example.model
 enum class QuestionType {
     MULTIPLE_CHOICE,
     SENTENCE_BUILDER,
-    MATCHING_PAIRS
+    MATCHING_PAIRS,
+    SPEAKING_CHALLENGE
 }
 
 data class MatchingPair(
@@ -21,6 +22,8 @@ data class QuestItem(
     val sentenceTokens: List<String> = emptyList(),
     val correctSentence: String = "",
     var userSentenceTokens: List<String> = emptyList(),
-    val matchingPairs: List<MatchingPair> = emptyList()
+    val matchingPairs: List<MatchingPair> = emptyList(),
+    val speakingSentence: String = "",
+    var pronunciationScore: Int = 0
 )
 
