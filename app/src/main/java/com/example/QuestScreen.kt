@@ -34,15 +34,20 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import android.widget.Toast
 import coil.compose.AsyncImage
+import com.example.model.MascotEmotion
+import com.example.model.MascotQuotes
 import com.example.model.QuestItem
 import com.example.model.QuestionType
 import com.example.ui.ConfettiEffect
 import com.example.ui.MatchingPairsView
 import com.example.ui.SentenceBuilderView
 import com.example.ui.SpeakingChallengeView
+import com.example.ui.mascot.LivingMascotView
+import com.example.ui.mascot.MascotSpeechBubble
 import com.example.ui.safeBottomDockPadding
 import com.example.util.PronunciationResult
 import com.example.viewmodel.StudyViewModel
+import kotlinx.coroutines.launch
 import java.util.Locale
 
 private data class ComboBadgeInfo(
@@ -61,6 +66,7 @@ fun QuestScreen(viewModel: StudyViewModel, onFinish: () -> Unit) {
     val questions by viewModel.questions.observeAsState(emptyList())
     val chapterTitle by viewModel.currentChapterTitle.observeAsState("English Fundamentals")
     val isSpeaking by viewModel.ttsManager.isSpeaking
+    val coroutineScope = rememberCoroutineScope()
 
     if (questions.isEmpty()) {
         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
@@ -82,6 +88,40 @@ fun QuestScreen(viewModel: StudyViewModel, onFinish: () -> Unit) {
     var isSavedToVault by remember(currentQuestion) { mutableStateOf(false) }
     var consecutiveCorrect by remember { mutableIntStateOf(0) }
     var showConfetti by remember { mutableStateOf(false) }
+    var isPetted by remember { mutableStateOf(false) }
+    var idleSeconds by remember(currentQuestion) { mutableIntStateOf(0) }
+
+    // Theo dõi thời gian suy nghĩ của người học
+    LaunchedEffect(currentQuestion, isChecked, selectedOption, selectedTokenIndices, isMatchingCompleted, speakingResult) {
+        idleSeconds = 0
+        if (!isChecked) {
+            while (true) {
+                kotlinx.coroutines.delay(1000)
+                idleSeconds++
+            }
+        }
+    }
+
+    val isListeningActive by viewModel.speechRecognitionManager.isListening
+
+    val currentEmotion = remember(
+        isPetted,
+        isChecked,
+        isCurrentCorrect,
+        consecutiveCorrect,
+        isListeningActive,
+        idleSeconds
+    ) {
+        when {
+            isPetted -> MascotEmotion.PETTED
+            isListeningActive -> MascotEmotion.LISTENING
+            isChecked && isCurrentCorrect && consecutiveCorrect >= 3 -> MascotEmotion.STREAK
+            isChecked && isCurrentCorrect -> MascotEmotion.CHEER
+            isChecked && !isCurrentCorrect -> MascotEmotion.EMPATHY
+            idleSeconds >= 14 -> MascotEmotion.THINKING
+            else -> MascotEmotion.IDLE
+        }
+    }
 
     // Map lưu câu trả lời bất biến của người dùng
     val userAnswers = remember { mutableStateMapOf<Int, Int>() }
@@ -161,90 +201,43 @@ fun QuestScreen(viewModel: StudyViewModel, onFinish: () -> Unit) {
                     )
                 }
 
-                Spacer(modifier = Modifier.width(16.dp))
+                Spacer(modifier = Modifier.width(12.dp))
 
-                // Avatar linh vật Kiki tương tác chạm
-                Box(
-                    modifier = Modifier
-                        .size(52.dp)
-                        .clip(CircleShape)
-                        .clickable {
-                            haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                            val quotes = if (isEnglish) listOf(
-                                "You've got this! Step by step to English fluency!",
-                                "Mistakes are proof that you're learning! Keep going!",
-                                "Every question makes your mind sharper!",
-                                "Kiki believes in your superpower!"
-                            ) else listOf(
-                                "Cố lên bạn ơi! Từng bước một sẽ nói tiếng Anh lưu loát!",
-                                "Lỗi sai là bước đệm để thành công! Tiếp tục nhé!",
-                                "Mỗi câu hỏi giúp phản xạ tiếng Anh của bạn nhạy bén hơn!",
-                                "Kiki luôn đồng hành và cổ vũ bạn hết mình!"
-                            )
-                            val q = quotes.random()
+                // Linh vật Kiki sống động tương tác cảm xúc
+                LivingMascotView(
+                    emotion = currentEmotion,
+                    size = 46.dp,
+                    onClick = {
+                        coroutineScope.launch {
+                            isPetted = true
+                            val quoteEmotion = when {
+                                isChecked && isCurrentCorrect && consecutiveCorrect >= 3 -> MascotEmotion.STREAK
+                                isChecked && isCurrentCorrect -> MascotEmotion.CHEER
+                                isChecked && !isCurrentCorrect -> MascotEmotion.EMPATHY
+                                currentEmotion == MascotEmotion.THINKING -> MascotEmotion.THINKING
+                                else -> MascotEmotion.PETTED
+                            }
+                            val q = MascotQuotes.getQuoteForEmotion(quoteEmotion, isEnglish, consecutiveCorrect)
                             mascotSpeech = q
                             viewModel.ttsManager.speak(q)
-                        },
-                    contentAlignment = Alignment.Center
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .matchParentSize()
-                            .scale(pulseAnim)
-                            .background(Brush.linearGradient(listOf(Color(0xFF785A00), Color(0xFF006C4F))), CircleShape)
-                            .blur(8.dp)
-                    )
-                    AsyncImage(
-                        model = R.drawable.companion_mascot,
-                        contentDescription = "Companion",
-                        contentScale = ContentScale.Crop,
-                        modifier = Modifier
-                            .size(44.dp)
-                            .clip(CircleShape)
-                            .border(2.dp, Color(0x33FFFFFF), CircleShape)
-                    )
-                    Box(
-                        modifier = Modifier
-                            .align(Alignment.BottomEnd)
-                            .size(14.dp)
-                            .clip(CircleShape)
-                            .background(Color(0xFF27E0A9))
-                            .border(2.dp, Color(0xFF0A0A12), CircleShape)
-                    )
-                }
-            }
-
-            // Bong bóng thoại động viên của linh vật Kiki
-            AnimatedVisibility(
-                visible = mascotSpeech != null,
-                enter = fadeIn() + expandVertically(),
-                exit = fadeOut() + shrinkVertically()
-            ) {
-                mascotSpeech?.let { speech ->
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(top = 10.dp, bottom = 4.dp)
-                            .clip(RoundedCornerShape(16.dp))
-                            .background(Color(0x2251FAC1))
-                            .border(1.dp, Color(0x6651FAC1), RoundedCornerShape(16.dp))
-                            .clickable { mascotSpeech = null }
-                            .padding(horizontal = 14.dp, vertical = 10.dp)
-                    ) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(Icons.Default.AutoAwesome, contentDescription = null, tint = Color(0xFF51FAC1), modifier = Modifier.size(16.dp))
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text(
-                                text = "Kiki: \"$speech\"",
-                                color = Color.White,
-                                fontSize = 13.sp,
-                                modifier = Modifier.weight(1f)
-                            )
-                            Icon(Icons.Default.Close, contentDescription = "Close", tint = Color(0x88FFFFFF), modifier = Modifier.size(14.dp))
+                            kotlinx.coroutines.delay(1800)
+                            isPetted = false
                         }
                     }
-                }
+                )
             }
+
+            // Bong bóng thoại động viên thông minh của linh vật Kiki
+            MascotSpeechBubble(
+                speech = mascotSpeech,
+                emotion = currentEmotion,
+                onSpeakClick = {
+                    mascotSpeech?.let { speech ->
+                        viewModel.ttsManager.speak(speech)
+                    }
+                },
+                onDismiss = { mascotSpeech = null }
+            )
 
             // Scrollable Question Card Area
             Column(
@@ -622,10 +615,13 @@ fun QuestScreen(viewModel: StudyViewModel, onFinish: () -> Unit) {
                                         if (consecutiveCorrect >= 3) {
                                             showConfetti = true
                                         }
+                                        val checkEmotion = if (consecutiveCorrect >= 3) MascotEmotion.STREAK else MascotEmotion.CHEER
+                                        mascotSpeech = MascotQuotes.getQuoteForEmotion(checkEmotion, isEnglish, consecutiveCorrect)
                                     } else {
                                         consecutiveCorrect = 0
                                         haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
                                         viewModel.soundEffectManager.playIncorrect()
+                                        mascotSpeech = MascotQuotes.getQuoteForEmotion(MascotEmotion.EMPATHY, isEnglish, consecutiveCorrect)
                                     }
                                 },
                                 enabled = isCheckEnabled,
@@ -891,6 +887,7 @@ fun QuestScreen(viewModel: StudyViewModel, onFinish: () -> Unit) {
                                         speakingResult = null
                                         isChecked = false
                                         isSavedToVault = false
+                                        mascotSpeech = null
                                     } else {
                                         val finalResults = questions.mapIndexed { idx, item ->
                                             when (item.type) {
