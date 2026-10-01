@@ -68,14 +68,21 @@ fun WeakPointsClinicDialog(
         onDismissRequest = onDismiss,
         properties = DialogProperties(usePlatformDefaultWidth = false, decorFitsSystemWindows = false)
     ) {
-        Surface(
+        Box(
             modifier = Modifier
                 .fillMaxSize()
+                .background(Color(0xD9000000))
                 .statusBarsPadding()
-                .padding(top = 16.dp),
-            color = Color(0xFF0D0A14),
-            shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp)
+                .navigationBarsPadding()
+                .padding(top = 12.dp, bottom = 16.dp, start = 8.dp, end = 8.dp),
+            contentAlignment = Alignment.Center
         ) {
+            Surface(
+                modifier = Modifier.fillMaxSize(),
+                color = Color(0xFF0D0A14),
+                shape = RoundedCornerShape(28.dp),
+                border = BorderStroke(1.dp, Color(0x33FF6B6B))
+            ) {
             Box(modifier = Modifier.fillMaxSize()) {
                 Column(modifier = Modifier.fillMaxSize()) {
                     // Header & Tab Selector (Horizontal padding)
@@ -271,6 +278,7 @@ fun WeakPointsClinicDialog(
             }
         }
     }
+}
 }
 
 @Composable
