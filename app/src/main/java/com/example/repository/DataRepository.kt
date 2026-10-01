@@ -3,6 +3,7 @@ package com.example.repository
 import android.content.Context
 import com.example.model.QAItem
 import com.example.model.QuestItem
+import com.example.model.QuestionType
 import com.example.security.PasswordHasher
 import com.example.sqlite.room.*
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -129,17 +130,60 @@ class DataRepository @Inject constructor(
 
     suspend fun getQuestionsByChapter(chapterId: Long): List<QuestItem> = withContext(Dispatchers.IO) {
         val questions = dao.getQuestionsByChapter(chapterId)
-        questions.mapNotNull { q ->
+        questions.mapIndexedNotNull { index, q ->
             try {
                 val array = JSONArray(q.optionsJson)
                 val options = mutableListOf<String>()
                 for (i in 0 until array.length()) {
                     options.add(array.getString(i))
                 }
+                val correctIdx = q.correctAnswer.toIntOrNull() ?: 0
+                val isExplicitBuilder = q.questionType.equals("SENTENCE_BUILDER", ignoreCase = true)
+                val hasBlanks = q.questionText.contains(Regex("_{2,}"))
+
+                // Transform suitable questions (every 3rd question or explicit type) into interactive Sentence Builder
+                val shouldBeSentenceBuilder = (isExplicitBuilder || (hasBlanks && index % 3 == 2))
+
+                if (shouldBeSentenceBuilder && options.isNotEmpty() && correctIdx in options.indices) {
+                    val correctWord = options[correctIdx]
+                    val fullSentence = q.questionText.replace(Regex("_{2,}"), correctWord)
+                        .replace(Regex("\\s+"), " ")
+                        .trim()
+
+                    val rawTokens = fullSentence.split(Regex("\\s+"))
+                        .map { it.trim().trim('.', ',', '!', '?', ';', ':', '"') }
+                        .filter { it.isNotEmpty() }
+
+                    if (rawTokens.size in 3..14) {
+                        // Gather 1-2 distractors from wrong options to challenge the user
+                        val distractorOptions = options.filterIndexed { i, _ -> i != correctIdx }
+                        val distractors = mutableListOf<String>()
+                        for (d in distractorOptions) {
+                            val cleanD = d.trim().trim('.', ',', '!', '?', ';', ':')
+                            if (cleanD.isNotEmpty() && !rawTokens.any { it.equals(cleanD, ignoreCase = true) }) {
+                                distractors.add(cleanD)
+                                if (distractors.size >= 2) break
+                            }
+                        }
+
+                        val availableTokens = (rawTokens + distractors).shuffled()
+
+                        return@mapIndexedNotNull QuestItem(
+                            question = q.questionText,
+                            options = options,
+                            correctIndex = correctIdx,
+                            type = QuestionType.SENTENCE_BUILDER,
+                            sentenceTokens = availableTokens,
+                            correctSentence = fullSentence
+                        )
+                    }
+                }
+
                 QuestItem(
                     question = q.questionText,
                     options = options,
-                    correctIndex = q.correctAnswer.toIntOrNull() ?: 0
+                    correctIndex = correctIdx,
+                    type = QuestionType.MULTIPLE_CHOICE
                 )
             } catch (e: Exception) {
                 null

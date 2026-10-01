@@ -35,8 +35,12 @@ import androidx.compose.ui.unit.sp
 import android.widget.Toast
 import coil.compose.AsyncImage
 import com.example.model.QuestItem
+import com.example.model.QuestionType
 import com.example.ui.ConfettiEffect
+import com.example.ui.SentenceBuilderView
+import com.example.ui.safeBottomDockPadding
 import com.example.viewmodel.StudyViewModel
+import java.util.Locale
 
 private data class ComboBadgeInfo(
     val text: String,
@@ -64,6 +68,7 @@ fun QuestScreen(viewModel: StudyViewModel, onFinish: () -> Unit) {
 
     var currentQuestion by remember { mutableIntStateOf(0) }
     var selectedOption by remember { mutableIntStateOf(-1) }
+    var selectedTokenIndices by remember(currentQuestion) { mutableStateOf<List<Int>>(emptyList()) }
     var isChecked by remember { mutableStateOf(false) }
     var isCurrentCorrect by remember { mutableStateOf(false) }
     var showExitDialog by remember { mutableStateOf(false) }
@@ -283,7 +288,12 @@ fun QuestScreen(viewModel: StudyViewModel, onFinish: () -> Unit) {
                                 IconButton(
                                     onClick = {
                                         haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                                        viewModel.ttsManager.speak(currentQ.question, isSlow = false)
+                                        val textToSpeak = if (currentQ.type == QuestionType.SENTENCE_BUILDER) {
+                                            currentQ.correctSentence.ifEmpty { currentQ.question }
+                                        } else {
+                                            currentQ.question
+                                        }
+                                        viewModel.ttsManager.speak(textToSpeak, isSlow = false)
                                     },
                                     modifier = Modifier
                                         .size(32.dp)
@@ -302,7 +312,12 @@ fun QuestScreen(viewModel: StudyViewModel, onFinish: () -> Unit) {
                                 IconButton(
                                     onClick = {
                                         haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                                        viewModel.ttsManager.speak(currentQ.question, isSlow = true)
+                                        val textToSpeak = if (currentQ.type == QuestionType.SENTENCE_BUILDER) {
+                                            currentQ.correctSentence.ifEmpty { currentQ.question }
+                                        } else {
+                                            currentQ.question
+                                        }
+                                        viewModel.ttsManager.speak(textToSpeak, isSlow = true)
                                     },
                                     modifier = Modifier
                                         .size(32.dp)
@@ -339,99 +354,123 @@ fun QuestScreen(viewModel: StudyViewModel, onFinish: () -> Unit) {
                                 }
                             }
 
-                            Text(
-                                text = currentQ.question,
-                                color = Color.White,
-                                fontSize = 24.sp,
-                                fontWeight = FontWeight.Bold,
-                                textAlign = TextAlign.Center,
-                                lineHeight = 32.sp,
-                                modifier = Modifier.padding(bottom = 24.dp)
-                            )
-
-                            val options = currentQ.options
-                            val labels = listOf("A", "B", "C", "D")
-
-                            options.forEachIndexed { index, text ->
-                                val isSelected = selectedOption == index
-                                val isCorrectAnswer = index == currentQ.correctIndex
-
-                                val targetAlpha = if (isChecked && !isSelected && !isCorrectAnswer) 0.45f else 1f
-
-                                val (optionBg, optionBorder, optionTextColor) = when {
-                                    isChecked && isCorrectAnswer -> Triple(Color(0x3322C55E), Color(0xFF22C55E), Color(0xFF51FAC1))
-                                    isChecked && isSelected && !isCorrectAnswer -> Triple(Color(0x33EF4444), Color(0xFFEF4444), Color(0xFFFF7A7A))
-                                    isSelected -> Triple(Color(0x2651FAC1), Color(0xFF51FAC1), Color.White)
-                                    else -> Triple(Color(0x0DFFFFFF), Color(0x26FFFFFF), Color(0xCCFFFFFF))
-                                }
-
-                                val animatedBorderColor by animateColorAsState(targetValue = optionBorder, animationSpec = tween(250), label = "border_color")
-                                val animatedBgColor by animateColorAsState(targetValue = optionBg, animationSpec = tween(250), label = "bg_color")
-                                val animatedScale by animateFloatAsState(targetValue = if (isSelected) 1.02f else 1f, animationSpec = spring(stiffness = Spring.StiffnessMediumLow), label = "option_scale")
-
-                                Row(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(bottom = 12.dp)
-                                        .graphicsLayer {
-                                            scaleX = animatedScale
-                                            scaleY = animatedScale
-                                            alpha = targetAlpha
+                            if (currentQ.type == QuestionType.SENTENCE_BUILDER) {
+                                SentenceBuilderView(
+                                    promptText = currentQ.question,
+                                    availableTokens = currentQ.sentenceTokens,
+                                    selectedTokenIndices = selectedTokenIndices,
+                                    isChecked = isChecked,
+                                    isCorrect = isCurrentCorrect,
+                                    isEnglish = isEnglish,
+                                    onTokenSelected = { tokenIdx ->
+                                        if (!selectedTokenIndices.contains(tokenIdx)) {
+                                            selectedTokenIndices = selectedTokenIndices + tokenIdx
                                         }
-                                        .clip(CircleShape)
-                                        .background(animatedBgColor)
-                                        .border(
-                                            width = if (isSelected || (isChecked && isCorrectAnswer)) 2.dp else 1.dp,
-                                            color = animatedBorderColor,
-                                            shape = CircleShape
-                                        )
-                                        .clickable(enabled = !isChecked) {
-                                            haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                                            selectedOption = index
+                                    },
+                                    onTokenRemoved = { position ->
+                                        if (position in selectedTokenIndices.indices) {
+                                            selectedTokenIndices = selectedTokenIndices.filterIndexed { idx, _ -> idx != position }
                                         }
-                                        .padding(horizontal = 20.dp, vertical = 14.dp),
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.SpaceBetween
-                                ) {
-                                    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(1f)) {
-                                        val badgeBg = when {
-                                            isChecked && isCorrectAnswer -> Color(0xFF22C55E)
-                                            isChecked && isSelected && !isCorrectAnswer -> Color(0xFFEF4444)
-                                            isSelected -> Color(0xFF51FAC1)
-                                            else -> Color(0x1AFFFFFF)
-                                        }
-                                        val badgeTextColor = if (isSelected && !isChecked) Color(0xFF0F172A) else Color.White
+                                    },
+                                    onSpeakPrompt = {
+                                        viewModel.ttsManager.speak(currentQ.correctSentence.ifEmpty { currentQ.question })
+                                    }
+                                )
+                            } else {
+                                Text(
+                                    text = currentQ.question,
+                                    color = Color.White,
+                                    fontSize = 24.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    textAlign = TextAlign.Center,
+                                    lineHeight = 32.sp,
+                                    modifier = Modifier.padding(bottom = 24.dp)
+                                )
 
-                                        Box(
-                                            modifier = Modifier
-                                                .size(32.dp)
-                                                .clip(CircleShape)
-                                                .background(badgeBg)
-                                                .border(1.dp, animatedBorderColor, CircleShape),
-                                            contentAlignment = Alignment.Center
-                                        ) {
-                                            Text(
-                                                labels[index],
-                                                color = badgeTextColor,
-                                                fontWeight = FontWeight.ExtraBold,
-                                                fontSize = 14.sp
-                                            )
-                                        }
-                                        Spacer(modifier = Modifier.width(14.dp))
-                                        Text(
-                                            text = text,
-                                            color = optionTextColor,
-                                            fontSize = 16.sp,
-                                            fontWeight = if (isSelected || (isChecked && isCorrectAnswer)) FontWeight.Bold else FontWeight.Normal
-                                        )
+                                val options = currentQ.options
+                                val labels = listOf("A", "B", "C", "D")
+
+                                options.forEachIndexed { index, text ->
+                                    val isSelected = selectedOption == index
+                                    val isCorrectAnswer = index == currentQ.correctIndex
+
+                                    val targetAlpha = if (isChecked && !isSelected && !isCorrectAnswer) 0.45f else 1f
+
+                                    val (optionBg, optionBorder, optionTextColor) = when {
+                                        isChecked && isCorrectAnswer -> Triple(Color(0x3322C55E), Color(0xFF22C55E), Color(0xFF51FAC1))
+                                        isChecked && isSelected && !isCorrectAnswer -> Triple(Color(0x33EF4444), Color(0xFFEF4444), Color(0xFFFF7A7A))
+                                        isSelected -> Triple(Color(0x2651FAC1), Color(0xFF51FAC1), Color.White)
+                                        else -> Triple(Color(0x0DFFFFFF), Color(0x26FFFFFF), Color(0xCCFFFFFF))
                                     }
 
-                                    if (isChecked && isCorrectAnswer) {
-                                        Icon(Icons.Default.CheckCircle, contentDescription = null, tint = Color(0xFF22C55E), modifier = Modifier.size(24.dp))
-                                    } else if (isChecked && isSelected && !isCorrectAnswer) {
-                                        Icon(Icons.Default.Cancel, contentDescription = null, tint = Color(0xFFEF4444), modifier = Modifier.size(24.dp))
-                                    } else if (isSelected) {
-                                        Icon(Icons.Default.Diamond, contentDescription = null, tint = Color(0xFF51FAC1), modifier = Modifier.size(20.dp))
+                                    val animatedBorderColor by animateColorAsState(targetValue = optionBorder, animationSpec = tween(250), label = "border_color")
+                                    val animatedBgColor by animateColorAsState(targetValue = optionBg, animationSpec = tween(250), label = "bg_color")
+                                    val animatedScale by animateFloatAsState(targetValue = if (isSelected) 1.02f else 1f, animationSpec = spring(stiffness = Spring.StiffnessMediumLow), label = "option_scale")
+
+                                    Row(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(bottom = 12.dp)
+                                            .graphicsLayer {
+                                                scaleX = animatedScale
+                                                scaleY = animatedScale
+                                                alpha = targetAlpha
+                                            }
+                                            .clip(CircleShape)
+                                            .background(animatedBgColor)
+                                            .border(
+                                                width = if (isSelected || (isChecked && isCorrectAnswer)) 2.dp else 1.dp,
+                                                color = animatedBorderColor,
+                                                shape = CircleShape
+                                            )
+                                            .clickable(enabled = !isChecked) {
+                                                haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                                                selectedOption = index
+                                            }
+                                            .padding(horizontal = 20.dp, vertical = 14.dp),
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.SpaceBetween
+                                    ) {
+                                        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(1f)) {
+                                            val badgeBg = when {
+                                                isChecked && isCorrectAnswer -> Color(0xFF22C55E)
+                                                isChecked && isSelected && !isCorrectAnswer -> Color(0xFFEF4444)
+                                                isSelected -> Color(0xFF51FAC1)
+                                                else -> Color(0x1AFFFFFF)
+                                            }
+                                            val badgeTextColor = if (isSelected && !isChecked) Color(0xFF0F172A) else Color.White
+
+                                            Box(
+                                                modifier = Modifier
+                                                    .size(32.dp)
+                                                    .clip(CircleShape)
+                                                    .background(badgeBg)
+                                                    .border(1.dp, animatedBorderColor, CircleShape),
+                                                contentAlignment = Alignment.Center
+                                            ) {
+                                                Text(
+                                                    labels[index],
+                                                    color = badgeTextColor,
+                                                    fontWeight = FontWeight.ExtraBold,
+                                                    fontSize = 14.sp
+                                                )
+                                            }
+                                            Spacer(modifier = Modifier.width(14.dp))
+                                            Text(
+                                                text = text,
+                                                color = optionTextColor,
+                                                fontSize = 16.sp,
+                                                fontWeight = if (isSelected || (isChecked && isCorrectAnswer)) FontWeight.Bold else FontWeight.Normal
+                                            )
+                                        }
+
+                                        if (isChecked && isCorrectAnswer) {
+                                            Icon(Icons.Default.CheckCircle, contentDescription = null, tint = Color(0xFF22C55E), modifier = Modifier.size(24.dp))
+                                        } else if (isChecked && isSelected && !isCorrectAnswer) {
+                                            Icon(Icons.Default.Cancel, contentDescription = null, tint = Color(0xFFEF4444), modifier = Modifier.size(24.dp))
+                                        } else if (isSelected) {
+                                            Icon(Icons.Default.Diamond, contentDescription = null, tint = Color(0xFF51FAC1), modifier = Modifier.size(20.dp))
+                                        }
                                     }
                                 }
                             }
@@ -497,12 +536,27 @@ fun QuestScreen(viewModel: StudyViewModel, onFinish: () -> Unit) {
                                 )
                             }
 
-                            val isEnabled = selectedOption != -1
+                            val isCheckEnabled = if (questions[currentQuestion].type == QuestionType.SENTENCE_BUILDER) {
+                                selectedTokenIndices.isNotEmpty()
+                            } else {
+                                selectedOption != -1
+                            }
                             Button(
                                 onClick = {
                                     val currentQ = questions[currentQuestion]
                                     isChecked = true
-                                    val isCorrect = selectedOption == currentQ.correctIndex
+                                    val isCorrect = if (currentQ.type == QuestionType.SENTENCE_BUILDER) {
+                                        val assembledWords = selectedTokenIndices.mapNotNull { currentQ.sentenceTokens.getOrNull(it) }
+                                        currentQ.userSentenceTokens = assembledWords
+                                        val assembledSentence = assembledWords.joinToString(" ")
+                                        fun normalize(s: String) = s.lowercase(Locale.ROOT)
+                                            .replace(Regex("[.,!?;:\"]"), "")
+                                            .replace(Regex("\\s+"), " ")
+                                            .trim()
+                                        normalize(assembledSentence) == normalize(currentQ.correctSentence)
+                                    } else {
+                                        selectedOption == currentQ.correctIndex
+                                    }
                                     isCurrentCorrect = isCorrect
                                     if (isCorrect) {
                                         consecutiveCorrect++
@@ -517,7 +571,7 @@ fun QuestScreen(viewModel: StudyViewModel, onFinish: () -> Unit) {
                                         viewModel.soundEffectManager.playIncorrect()
                                     }
                                 },
-                                enabled = isEnabled,
+                                enabled = isCheckEnabled,
                                 modifier = Modifier
                                     .weight(1f)
                                     .height(52.dp),
@@ -534,7 +588,7 @@ fun QuestScreen(viewModel: StudyViewModel, onFinish: () -> Unit) {
                                     modifier = Modifier
                                         .fillMaxSize()
                                         .background(
-                                            if (isEnabled) Brush.horizontalGradient(
+                                            if (isCheckEnabled) Brush.horizontalGradient(
                                                 listOf(Color(0xFF51FAC1), Color(0xFF22C55E))
                                             ) else Brush.horizontalGradient(
                                                 listOf(Color(0x1AFFFFFF), Color(0x1AFFFFFF))
@@ -549,13 +603,13 @@ fun QuestScreen(viewModel: StudyViewModel, onFinish: () -> Unit) {
                                             fontWeight = FontWeight.ExtraBold,
                                             fontSize = 16.sp,
                                             letterSpacing = 1.sp,
-                                            color = if (isEnabled) Color(0xFF0F172A) else Color(0x44FFFFFF)
+                                            color = if (isCheckEnabled) Color(0xFF0F172A) else Color(0x44FFFFFF)
                                         )
                                         Spacer(modifier = Modifier.width(8.dp))
                                         Icon(
                                             Icons.Default.Bolt,
                                             contentDescription = null,
-                                            tint = if (isEnabled) Color(0xFF0F172A) else Color(0x44FFFFFF),
+                                            tint = if (isCheckEnabled) Color(0xFF0F172A) else Color(0x44FFFFFF),
                                             modifier = Modifier.size(20.dp)
                                         )
                                     }
@@ -647,7 +701,11 @@ fun QuestScreen(viewModel: StudyViewModel, onFinish: () -> Unit) {
                             // If incorrect: reveal correct answer with TTS audio + 1-tap save to vault
                             if (!isCurrentCorrect) {
                                 Spacer(modifier = Modifier.height(12.dp))
-                                val correctText = currentQ.options.getOrNull(currentQ.correctIndex) ?: ""
+                                val correctText = if (currentQ.type == QuestionType.SENTENCE_BUILDER) {
+                                    currentQ.correctSentence
+                                } else {
+                                    currentQ.options.getOrNull(currentQ.correctIndex) ?: ""
+                                }
                                 Row(
                                     modifier = Modifier
                                         .fillMaxWidth()
@@ -749,17 +807,39 @@ fun QuestScreen(viewModel: StudyViewModel, onFinish: () -> Unit) {
                             Button(
                                 onClick = {
                                     haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                                    userAnswers[currentQuestion] = selectedOption
+                                    val activeQ = questions[currentQuestion]
+                                    if (activeQ.type == QuestionType.SENTENCE_BUILDER) {
+                                        userAnswers[currentQuestion] = if (isCurrentCorrect) 0 else -1
+                                    } else {
+                                        userAnswers[currentQuestion] = selectedOption
+                                    }
                                     if (currentQuestion < totalQuestions - 1) {
                                         currentQuestion++
                                         selectedOption = -1
+                                        selectedTokenIndices = emptyList()
                                         isChecked = false
                                         isSavedToVault = false
                                     } else {
                                         val finalResults = questions.mapIndexed { idx, item ->
-                                            val copy = QuestItem(item.question, item.options, item.correctIndex)
-                                            copy.selectedIndex = userAnswers[idx] ?: -1
-                                            copy
+                                            if (item.type == QuestionType.SENTENCE_BUILDER) {
+                                                val assembled = item.userSentenceTokens.joinToString(" ")
+                                                val isItemCorrect = userAnswers[idx] == 0
+                                                val copy = QuestItem(
+                                                    question = item.question,
+                                                    options = if (isItemCorrect) listOf(item.correctSentence) else listOf(item.correctSentence, assembled.ifEmpty { "Incomplete" }),
+                                                    correctIndex = 0,
+                                                    type = item.type,
+                                                    sentenceTokens = item.sentenceTokens,
+                                                    correctSentence = item.correctSentence,
+                                                    userSentenceTokens = item.userSentenceTokens
+                                                )
+                                                copy.selectedIndex = if (isItemCorrect) 0 else 1
+                                                copy
+                                            } else {
+                                                val copy = QuestItem(item.question, item.options, item.correctIndex)
+                                                copy.selectedIndex = userAnswers[idx] ?: -1
+                                                copy
+                                            }
                                         }
                                         viewModel.completeCurrentLesson()
                                         viewModel.analyzeQuestResults(context, finalResults)
