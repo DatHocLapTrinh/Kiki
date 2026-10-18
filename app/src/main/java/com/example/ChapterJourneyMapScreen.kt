@@ -55,7 +55,6 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.viewmodel.StudyViewModel
-import kotlin.math.sin
 
 private data class ChapterLessonUi(
     val index: Int,
@@ -301,15 +300,15 @@ private fun ChapterLessonPath(
     val lessonStep = 180.dp
     val rewardTop = (lessons.size * lessonStep.value + 8f).dp
 
-    val infiniteTransition = rememberInfiniteTransition(label = "chapter_cosmic_trail")
-    val trailPhase by infiniteTransition.animateFloat(
+    val infiniteTransition = rememberInfiniteTransition(label = "chapter_neon_wave")
+    val waveOffset by infiniteTransition.animateFloat(
         initialValue = 0f,
-        targetValue = 1f,
+        targetValue = 40f,
         animationSpec = infiniteRepeatable(
-            animation = tween(3000, easing = LinearEasing),
+            animation = tween(1200, easing = LinearEasing),
             repeatMode = RepeatMode.Restart
         ),
-        label = "trail_phase"
+        label = "wave_offset"
     )
 
     BoxWithConstraints(
@@ -334,58 +333,46 @@ private fun ChapterLessonPath(
             }
 
             if (lessons.size > 1) {
-                // Dim background cosmic trail
+                // Dim background path for locked/future lessons
                 drawPath(
                     path = buildPath(lessons.lastIndex),
-                    color = Color(0x33564A7A),
-                    style = Stroke(width = 3.dp.toPx(), cap = StrokeCap.Round)
+                    color = Color(0x22564A7A),
+                    style = Stroke(
+                        width = 2.dp.toPx(),
+                        cap = StrokeCap.Round,
+                        pathEffect = PathEffect.dashPathEffect(
+                            floatArrayOf(8.dp.toPx(), 10.dp.toPx())
+                        )
+                    )
                 )
 
                 val activeSegments = lessons.indexOfLast { it.completed || it.current }.coerceIn(0, lessons.lastIndex)
                 if (activeSegments > 0) {
                     val activePath = buildPath(activeSegments)
 
-                    // Outer glow — wide soft aura
+                    // Neon soft glow (subtle)
                     drawPath(
                         path = activePath,
                         brush = Brush.verticalGradient(
-                            listOf(Color(0x2251FAC1), Color(0x227E5CFF), Color(0x2251FAC1))
+                            listOf(Color(0x1A51FAC1), Color(0x1A7E5CFF), Color(0x1A51FAC1))
                         ),
-                        style = Stroke(width = 20.dp.toPx(), cap = StrokeCap.Round)
+                        style = Stroke(width = 8.dp.toPx(), cap = StrokeCap.Round)
                     )
-                    // Mid glow
+                    // Neon Energy Wave — animated dash flow
                     drawPath(
                         path = activePath,
                         brush = Brush.verticalGradient(
-                            listOf(Color(0x6651FAC1), Color(0x667E5CFF), Color(0x6651FAC1))
+                            listOf(Color(0xFF51FAC1), Color(0xFF7E5CFF), Color(0xFF51FAC1))
                         ),
-                        style = Stroke(width = 9.dp.toPx(), cap = StrokeCap.Round)
-                    )
-                    // Core bright line
-                    drawPath(
-                        path = activePath,
-                        brush = Brush.verticalGradient(
-                            listOf(Color(0xFFB1FFF4), Color(0xFFBB9EFF), Color(0xFF51FAC1))
-                        ),
-                        style = Stroke(width = 2.5.dp.toPx(), cap = StrokeCap.Round)
-                    )
-
-                    // Animated sparkle orbs at midpoints between nodes
-                    for (index in 0 until activeSegments) {
-                        val x = (nodeX(index) + nodeX(index + 1)) / 2f
-                        val y = (nodeY(index) + nodeY(index + 1)) / 2f
-                        val pulse = (sin((trailPhase * 2.0 * Math.PI + index).toFloat()) * 0.5f + 0.5f)
-                        val radius = (3.5f + pulse * 2.5f).dp.toPx()
-                        drawCircle(
-                            brush = Brush.radialGradient(
-                                listOf(Color.White, Color(0xFFFFD166), Color(0x00FFD166)),
-                                center = Offset(x, y),
-                                radius = radius * 2f
-                            ),
-                            radius = radius,
-                            center = Offset(x, y)
+                        style = Stroke(
+                            width = 2.dp.toPx(),
+                            cap = StrokeCap.Round,
+                            pathEffect = PathEffect.dashPathEffect(
+                                floatArrayOf(12.dp.toPx(), 7.dp.toPx()),
+                                phase = waveOffset.dp.toPx()
+                            )
                         )
-                    }
+                    )
                 }
             }
         }
@@ -511,7 +498,7 @@ private fun ChapterLessonNode(
         contentAlignment = Alignment.Center
     ) {
         if (lesson.current) {
-            Box(modifier = Modifier.size(96.dp).blur(16.dp).background(Color(0x8851FAC1), CircleShape))
+            Box(modifier = Modifier.size(88.dp).blur(10.dp).background(Color(0x4451FAC1), CircleShape))
         }
         Box(
             modifier = Modifier

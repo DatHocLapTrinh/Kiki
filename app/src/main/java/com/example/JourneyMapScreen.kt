@@ -36,6 +36,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.graphicsLayer
@@ -48,7 +49,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.viewmodel.StudyViewModel
-import kotlin.math.sin
+
 
 @Composable
 fun JourneyMapScreen(
@@ -183,7 +184,7 @@ private fun JourneyTopBar(
     }
 }
 
-// ─── Cosmic glow path + stage nodes ─────────────────────────────────────────
+// ─── Neon Energy Waves path + stage nodes ────────────────────────────────────
 
 @Composable
 private fun JourneyPath(
@@ -195,15 +196,15 @@ private fun JourneyPath(
     val stageStep = 230.dp
     val rewardTop = (stages.size * stageStep.value + 10).dp
 
-    val infiniteTransition = rememberInfiniteTransition(label = "cosmic_trail")
-    val trailPhase by infiniteTransition.animateFloat(
+    val infiniteTransition = rememberInfiniteTransition(label = "neon_wave")
+    val waveOffset by infiniteTransition.animateFloat(
         initialValue = 0f,
-        targetValue = 1f,
+        targetValue = 40f,
         animationSpec = infiniteRepeatable(
-            animation = tween(3000, easing = LinearEasing),
+            animation = tween(1200, easing = LinearEasing),
             repeatMode = RepeatMode.Restart
         ),
-        label = "trail_phase"
+        label = "wave_offset"
     )
 
     BoxWithConstraints(
@@ -232,11 +233,17 @@ private fun JourneyPath(
             }
 
             if (stages.size > 1) {
-                // Dim background path for the full journey
+                // Dim background path for locked/future stages
                 drawPath(
                     path = buildPath(stages.lastIndex),
-                    color = Color(0x33564A7A),
-                    style = Stroke(width = 3.dp.toPx(), cap = StrokeCap.Round)
+                    color = Color(0x22564A7A),
+                    style = Stroke(
+                        width = 2.dp.toPx(),
+                        cap = StrokeCap.Round,
+                        pathEffect = PathEffect.dashPathEffect(
+                            floatArrayOf(8.dp.toPx(), 10.dp.toPx())
+                        )
+                    )
                 )
 
                 val activeSegments = if (currentStageIndex < 0) stages.lastIndex
@@ -245,47 +252,29 @@ private fun JourneyPath(
                 if (activeSegments > 0) {
                     val activePath = buildPath(activeSegments)
 
-                    // Outer glow — wide soft aura
+                    // Neon soft glow (subtle, not overwhelming)
                     drawPath(
                         path = activePath,
                         brush = Brush.verticalGradient(
-                            listOf(Color(0x2251FAC1), Color(0x227E5CFF), Color(0x2251FAC1))
-                        ),
-                        style = Stroke(width = 22.dp.toPx(), cap = StrokeCap.Round)
-                    )
-                    // Mid glow
-                    drawPath(
-                        path = activePath,
-                        brush = Brush.verticalGradient(
-                            listOf(Color(0x6651FAC1), Color(0x667E5CFF), Color(0x6651FAC1))
+                            listOf(Color(0x1A51FAC1), Color(0x1A7E5CFF), Color(0x1A51FAC1))
                         ),
                         style = Stroke(width = 10.dp.toPx(), cap = StrokeCap.Round)
                     )
-                    // Core bright line
+                    // Neon Energy Wave — animated dash flow
                     drawPath(
                         path = activePath,
                         brush = Brush.verticalGradient(
-                            listOf(Color(0xFFB1FFF4), Color(0xFFBB9EFF), Color(0xFF51FAC1))
+                            listOf(Color(0xFF51FAC1), Color(0xFF7E5CFF), Color(0xFF51FAC1))
                         ),
-                        style = Stroke(width = 2.5.dp.toPx(), cap = StrokeCap.Round)
-                    )
-
-                    // Animated sparkle orbs at midpoints between nodes
-                    for (index in 0 until activeSegments) {
-                        val x = (nodeX(index) + nodeX(index + 1)) / 2f
-                        val y = (nodeY(index) + nodeY(index + 1)) / 2f
-                        val pulse = (sin((trailPhase * 2.0 * Math.PI + index).toFloat()) * 0.5f + 0.5f)
-                        val radius = (3.5f + pulse * 2.5f).dp.toPx()
-                        drawCircle(
-                            brush = Brush.radialGradient(
-                                listOf(Color.White, Color(0xFFFFD166), Color(0x00FFD166)),
-                                center = Offset(x, y),
-                                radius = radius * 2f
-                            ),
-                            radius = radius,
-                            center = Offset(x, y)
+                        style = Stroke(
+                            width = 2.5.dp.toPx(),
+                            cap = StrokeCap.Round,
+                            pathEffect = PathEffect.dashPathEffect(
+                                floatArrayOf(14.dp.toPx(), 8.dp.toPx()),
+                                phase = waveOffset.dp.toPx()
+                            )
                         )
-                    }
+                    )
                 }
             }
         }
@@ -418,7 +407,7 @@ private fun JourneyPlanetNode(
         contentAlignment = Alignment.Center
     ) {
         if (isCurrent) {
-            Box(modifier = Modifier.size(112.dp).blur(20.dp).background(Color(0x9951FAC1), CircleShape))
+            Box(modifier = Modifier.size(100.dp).blur(10.dp).background(Color(0x5551FAC1), CircleShape))
         }
         Box(
             modifier = Modifier
