@@ -1,16 +1,22 @@
 package com.example
 
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
@@ -38,6 +44,7 @@ import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -290,8 +297,19 @@ private fun ChapterLessonPath(
     isEnglish: Boolean,
     onLessonClick: (Int) -> Unit
 ) {
-    val lessonStep = 178.dp
+    val lessonStep = 180.dp
     val rewardTop = (lessons.size * lessonStep.value + 8f).dp
+
+    val infiniteTransition = rememberInfiniteTransition(label = "chapter_neon_wave")
+    val waveOffset by infiniteTransition.animateFloat(
+        initialValue = 0f,
+        targetValue = 40f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(1200, easing = LinearEasing),
+            repeatMode = RepeatMode.Restart
+        ),
+        label = "wave_offset"
+    )
 
     BoxWithConstraints(
         modifier = Modifier
@@ -299,51 +317,60 @@ private fun ChapterLessonPath(
             .height((lessons.size * lessonStep.value + 188f).dp)
     ) {
         Canvas(modifier = Modifier.matchParentSize()) {
-            val leftX = size.width * 0.25f
-            val rightX = size.width * 0.75f
-            val nodeY = { index: Int -> index * lessonStep.toPx() + 60.dp.toPx() }
-            val nodeX = { index: Int -> if (index % 2 == 0) leftX else rightX }
+            val nodeX = { index: Int -> if (index % 2 == 0) 72.dp.toPx() else size.width - 72.dp.toPx() }
+            val nodeY = { index: Int -> index * lessonStep.toPx() + 72.dp.toPx() }
 
-            fun pathTo(lastSegment: Int): Path {
+            fun buildPath(lastSegment: Int): Path {
                 return Path().apply {
                     moveTo(nodeX(0), nodeY(0))
                     for (segment in 1..lastSegment) {
                         val startY = nodeY(segment - 1)
                         val endY = nodeY(segment)
                         val controlX = (nodeX(segment - 1) + nodeX(segment)) / 2f
-                        quadraticTo(controlX, startY + (endY - startY) * 0.52f, nodeX(segment), endY)
+                        quadraticTo(controlX, startY + (endY - startY) * 0.48f, nodeX(segment), endY)
                     }
                 }
             }
 
             if (lessons.size > 1) {
+                // Dim background path for locked/future lessons
                 drawPath(
-                    path = pathTo(lessons.lastIndex),
-                    color = Color(0x665D4A88),
+                    path = buildPath(lessons.lastIndex),
+                    color = Color(0x22564A7A),
                     style = Stroke(
                         width = 2.dp.toPx(),
-                        pathEffect = PathEffect.dashPathEffect(floatArrayOf(9.dp.toPx(), 8.dp.toPx()))
-                    )
-                )
-                val completedSegments = lessons.takeWhile { it.completed }.size.coerceAtMost(lessons.lastIndex)
-                if (completedSegments > 0) {
-                    drawPath(
-                        path = pathTo(completedSegments),
-                        color = Color(0xFF51FAC1),
-                        style = Stroke(
-                            width = 3.dp.toPx(),
-                            cap = StrokeCap.Round,
-                            pathEffect = PathEffect.dashPathEffect(floatArrayOf(10.dp.toPx(), 7.dp.toPx()))
+                        cap = StrokeCap.Round,
+                        pathEffect = PathEffect.dashPathEffect(
+                            floatArrayOf(8.dp.toPx(), 10.dp.toPx())
                         )
                     )
-                }
-                for (index in 0 until lessons.lastIndex) {
-                    drawCircle(
-                        color = Color(0xFFFFD166),
-                        radius = 3.5.dp.toPx(),
-                        center = Offset(
-                            (nodeX(index) + nodeX(index + 1)) / 2f,
-                            (nodeY(index) + nodeY(index + 1)) / 2f
+                )
+
+                val activeSegments = lessons.indexOfLast { it.completed || it.current }.coerceIn(0, lessons.lastIndex)
+                if (activeSegments > 0) {
+                    val activePath = buildPath(activeSegments)
+
+                    // Neon soft glow (subtle)
+                    drawPath(
+                        path = activePath,
+                        brush = Brush.verticalGradient(
+                            listOf(Color(0x1A51FAC1), Color(0x1A7E5CFF), Color(0x1A51FAC1))
+                        ),
+                        style = Stroke(width = 8.dp.toPx(), cap = StrokeCap.Round)
+                    )
+                    // Neon Energy Wave — animated dash flow
+                    drawPath(
+                        path = activePath,
+                        brush = Brush.verticalGradient(
+                            listOf(Color(0xFF51FAC1), Color(0xFF7E5CFF), Color(0xFF51FAC1))
+                        ),
+                        style = Stroke(
+                            width = 2.dp.toPx(),
+                            cap = StrokeCap.Round,
+                            pathEffect = PathEffect.dashPathEffect(
+                                floatArrayOf(12.dp.toPx(), 7.dp.toPx()),
+                                phase = waveOffset.dp.toPx()
+                            )
                         )
                     )
                 }
@@ -380,25 +407,49 @@ private fun ChapterLessonRow(
     onClick: () -> Unit
 ) {
     val isLeft = lesson.index % 2 == 1
+    var showCard by remember { mutableStateOf(false) }
+
     BoxWithConstraints(modifier = Modifier.fillMaxWidth().height(step)) {
-        val cardWidth = maxWidth * 0.55f
+        val cardWidth = maxWidth * 0.54f
         val cardModifier = if (isLeft) {
-            Modifier.align(Alignment.TopEnd).padding(top = 13.dp, end = 10.dp).width(cardWidth)
+            Modifier.align(Alignment.TopEnd).padding(top = 10.dp, end = 12.dp).width(cardWidth)
         } else {
-            Modifier.align(Alignment.TopStart).padding(top = 13.dp, start = 10.dp).width(cardWidth)
+            Modifier.align(Alignment.TopStart).padding(top = 10.dp, start = 12.dp).width(cardWidth)
         }
         val nodeModifier = if (isLeft) {
-            Modifier.align(Alignment.TopStart).padding(start = 18.dp, top = 24.dp)
+            Modifier.align(Alignment.TopStart).padding(start = 20.dp, top = 20.dp)
         } else {
-            Modifier.align(Alignment.TopEnd).padding(end = 18.dp, top = 24.dp)
+            Modifier.align(Alignment.TopEnd).padding(end = 20.dp, top = 20.dp)
         }
 
-        ChapterLessonNode(lesson = lesson, modifier = nodeModifier, onClick = onClick)
-        ChapterLessonCard(
-            lesson = lesson,
+        AnimatedVisibility(
+            visible = showCard,
             modifier = cardModifier,
-            isEnglish = isEnglish,
-            onClick = onClick
+            enter = fadeIn(tween(180)) + scaleIn(tween(180), initialScale = 0.88f),
+            exit = fadeOut(tween(150)) + scaleOut(tween(150), targetScale = 0.88f)
+        ) {
+            ChapterLessonCard(
+                lesson = lesson,
+                modifier = Modifier.fillMaxWidth(),
+                isEnglish = isEnglish,
+                onClick = {
+                    showCard = false
+                    if (!lesson.locked) onClick()
+                }
+            )
+        }
+
+        ChapterLessonNode(
+            lesson = lesson,
+            modifier = nodeModifier,
+            onLongPress = { showCard = !showCard },
+            onClick = {
+                if (showCard) {
+                    showCard = false
+                } else {
+                    if (!lesson.locked) onClick()
+                }
+            }
         )
     }
 }
@@ -407,6 +458,7 @@ private fun ChapterLessonRow(
 private fun ChapterLessonNode(
     lesson: ChapterLessonUi,
     modifier: Modifier,
+    onLongPress: () -> Unit,
     onClick: () -> Unit
 ) {
     val pulse = if (lesson.current) {
@@ -430,17 +482,23 @@ private fun ChapterLessonNode(
         lesson.current -> Color(0xFF51FAC1)
         else -> Color(0xFF8D839F)
     }
+    val label = "${lesson.index}. ${lesson.title}. ${if (lesson.locked) "Locked" else if (lesson.completed) "Completed" else "In progress"}"
 
     Box(
         modifier = modifier
             .size(104.dp)
             .graphicsLayer(scaleX = pulse, scaleY = pulse)
-            .semantics { contentDescription = lesson.title }
-            .clickable(enabled = !lesson.locked, onClick = onClick),
+            .semantics { contentDescription = label }
+            .pointerInput(lesson.index) {
+                detectTapGestures(
+                    onLongPress = { onLongPress() },
+                    onTap = { onClick() }
+                )
+            },
         contentAlignment = Alignment.Center
     ) {
         if (lesson.current) {
-            Box(modifier = Modifier.size(96.dp).blur(16.dp).background(Color(0x8851FAC1), CircleShape))
+            Box(modifier = Modifier.size(88.dp).blur(10.dp).background(Color(0x4451FAC1), CircleShape))
         }
         Box(
             modifier = Modifier
@@ -512,7 +570,7 @@ private fun ChapterLessonCard(
             .clip(RoundedCornerShape(20.dp))
             .background(Color(0xE614142B))
             .border(1.dp, accent.copy(alpha = 0.72f), RoundedCornerShape(20.dp))
-            .clickable(enabled = !lesson.locked, onClick = onClick)
+            .clickable(onClick = onClick)
             .padding(horizontal = 13.dp, vertical = 11.dp)
     ) {
         Column {
