@@ -43,6 +43,8 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import com.example.ui.BubbleArrowDirection
+import com.example.ui.SpeechBubbleShape
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
@@ -196,84 +198,50 @@ private fun JourneyPath(
     val stageStep = 230.dp
     val rewardTop = (stages.size * stageStep.value + 10).dp
 
-    val infiniteTransition = rememberInfiniteTransition(label = "neon_wave")
-    val waveOffset by infiniteTransition.animateFloat(
-        initialValue = 0f,
-        targetValue = 40f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(1200, easing = LinearEasing),
-            repeatMode = RepeatMode.Restart
-        ),
-        label = "wave_offset"
-    )
+    val auroraAnim = rememberCosmicAuroraAnimation()
+
+    fun getStageColor(visualType: PlanetVisualType): Color {
+        return when (visualType) {
+            PlanetVisualType.CYAN -> Color(0xFF51FAC1)
+            PlanetVisualType.PURPLE -> Color(0xFF974DDA)
+            PlanetVisualType.BLUE -> Color(0xFF3887E6)
+            PlanetVisualType.ORANGE -> Color(0xFFEA7218)
+            PlanetVisualType.MASTER -> Color(0xFFC084FC)
+        }
+    }
+
+    val activeUpTo = if (currentStageIndex < 0) stages.lastIndex
+        else (currentStageIndex + 1).coerceAtMost(stages.lastIndex)
 
     BoxWithConstraints(
         modifier = Modifier.fillMaxWidth().height((stages.size * stageStep.value + 190).dp)
     ) {
         Canvas(modifier = Modifier.matchParentSize()) {
-            val leftX = size.width * 0.26f
-            val rightX = size.width * 0.74f
+            val nodeX = { index: Int -> if (index % 2 == 0) 72.dp.toPx() else size.width - 72.dp.toPx() }
             val nodeY = { index: Int -> index * stageStep.toPx() + 58.dp.toPx() }
-            val nodeX = { index: Int -> if (index % 2 == 0) leftX else rightX }
-
-            fun buildPath(lastSegment: Int): Path {
-                return Path().apply {
-                    moveTo(nodeX(0), nodeY(0))
-                    for (segment in 1..lastSegment) {
-                        val startY = nodeY(segment - 1)
-                        val endY = nodeY(segment)
-                        quadraticTo(
-                            (nodeX(segment - 1) + nodeX(segment)) / 2f,
-                            startY + (endY - startY) * 0.45f,
-                            nodeX(segment),
-                            endY
-                        )
-                    }
-                }
-            }
 
             if (stages.size > 1) {
-                // Dim background path for locked/future stages
-                drawPath(
-                    path = buildPath(stages.lastIndex),
-                    color = Color(0x22564A7A),
-                    style = Stroke(
-                        width = 2.dp.toPx(),
-                        cap = StrokeCap.Round,
-                        pathEffect = PathEffect.dashPathEffect(
-                            floatArrayOf(8.dp.toPx(), 10.dp.toPx())
-                        )
-                    )
-                )
+                for (s in 1..stages.lastIndex) {
+                    val startX = nodeX(s - 1)
+                    val startY = nodeY(s - 1)
+                    val endX = nodeX(s)
+                    val endY = nodeY(s)
+                    val startColor = getStageColor(stages[s - 1].visualType)
+                    val endColor = getStageColor(stages[s].visualType)
 
-                val activeSegments = if (currentStageIndex < 0) stages.lastIndex
-                    else currentStageIndex.coerceAtMost(stages.lastIndex)
+                    val isActive = s <= activeUpTo
 
-                if (activeSegments > 0) {
-                    val activePath = buildPath(activeSegments)
-
-                    // Neon soft glow (subtle, not overwhelming)
-                    drawPath(
-                        path = activePath,
-                        brush = Brush.verticalGradient(
-                            listOf(Color(0x1A51FAC1), Color(0x1A7E5CFF), Color(0x1A51FAC1))
-                        ),
-                        style = Stroke(width = 10.dp.toPx(), cap = StrokeCap.Round)
-                    )
-                    // Neon Energy Wave — animated dash flow
-                    drawPath(
-                        path = activePath,
-                        brush = Brush.verticalGradient(
-                            listOf(Color(0xFF51FAC1), Color(0xFF7E5CFF), Color(0xFF51FAC1))
-                        ),
-                        style = Stroke(
-                            width = 2.5.dp.toPx(),
-                            cap = StrokeCap.Round,
-                            pathEffect = PathEffect.dashPathEffect(
-                                floatArrayOf(14.dp.toPx(), 8.dp.toPx()),
-                                phase = waveOffset.dp.toPx()
-                            )
-                        )
+                    drawCosmicAuroraSegment(
+                        startX = startX,
+                        startY = startY,
+                        endX = endX,
+                        endY = endY,
+                        startColor = startColor,
+                        endColor = endColor,
+                        animPhase = auroraAnim.phase.value,
+                        waveOffsetPx = auroraAnim.waveOffset.value.dp.toPx(),
+                        isActive = isActive,
+                        alphaScale = if (isActive) 1f else 0.55f
                     )
                 }
             }
@@ -316,7 +284,8 @@ private fun JourneyStageRow(
     BoxWithConstraints(
         modifier = Modifier.fillMaxWidth().height(stageStep)
     ) {
-        val cardWidth = maxWidth * 0.52f
+        val arrowDirection = if (isLeft) BubbleArrowDirection.LEFT else BubbleArrowDirection.RIGHT
+        val cardWidth = (maxWidth - 105.dp).coerceAtMost(maxWidth * 0.62f)
         val cardModifier = if (isLeft) {
             Modifier.align(Alignment.TopEnd).padding(end = 10.dp, top = 8.dp).width(cardWidth)
         } else {
@@ -337,6 +306,7 @@ private fun JourneyStageRow(
             JourneyStageInformationCard(
                 stage = stage,
                 strings = strings,
+                arrowDirection = arrowDirection,
                 onClick = {
                     showCard = false
                     onClick()
@@ -387,7 +357,7 @@ private fun JourneyPlanetNode(
         JourneyStageState.COMPLETED -> Color(0xFFFFD166)
         JourneyStageState.CURRENT   -> Color(0xFF51FAC1)
         JourneyStageState.AVAILABLE -> colors.first()
-        JourneyStageState.LOCKED    -> Color(0xFF9A91AE)
+        JourneyStageState.LOCKED    -> colors[1].copy(alpha = 0.75f)
     }
     val locked = stage.state == JourneyStageState.LOCKED
     val label = "${stage.sequence}. ${stage.title}. " +
@@ -411,20 +381,12 @@ private fun JourneyPlanetNode(
         }
         Box(
             modifier = Modifier
-                .align(Alignment.BottomCenter).offset(y = 8.dp)
-                .size(width = 98.dp, height = 18.dp)
-                .clip(RoundedCornerShape(50))
-                .background(accent.copy(alpha = 0.34f))
-                .border(1.dp, accent.copy(alpha = 0.75f), RoundedCornerShape(50))
-        )
-        Box(
-            modifier = Modifier
                 .size(96.dp).clip(CircleShape)
                 .background(
-                    if (locked) Brush.radialGradient(listOf(colors.first().copy(alpha = 0.28f), Color(0x3314141E)))
+                    if (locked) Brush.radialGradient(listOf(colors.first().copy(alpha = 0.35f), Color(0x3314141E)))
                     else Brush.radialGradient(colors)
                 )
-                .border(2.dp, accent.copy(alpha = if (locked) 0.35f else 0.9f), CircleShape),
+                .border(2.dp, accent.copy(alpha = if (locked) 0.55f else 0.9f), CircleShape),
             contentAlignment = Alignment.Center
         ) {
             Icon(
@@ -435,7 +397,7 @@ private fun JourneyPlanetNode(
                     JourneyStageState.LOCKED    -> Icons.Default.Lock
                 },
                 contentDescription = null,
-                tint = if (locked) Color(0xB3FFFFFF) else Color.White,
+                tint = if (locked) Color(0xD9FFFFFF) else Color.White,
                 modifier = Modifier.size(34.dp)
             )
         }
@@ -468,6 +430,7 @@ private fun JourneyPlanetNode(
 private fun JourneyStageInformationCard(
     stage: JourneyStageUiModel,
     strings: AppStrings,
+    arrowDirection: BubbleArrowDirection = BubbleArrowDirection.LEFT,
     onClick: () -> Unit
 ) {
     val locked = stage.state == JourneyStageState.LOCKED
@@ -483,18 +446,33 @@ private fun JourneyStageInformationCard(
         JourneyStageState.LOCKED                                 -> strings.chapterLocked
     }
 
+    val bubbleShape = remember(arrowDirection) {
+        SpeechBubbleShape(
+            direction = arrowDirection,
+            cornerRadius = 18.dp,
+            arrowWidth = 12.dp,
+            arrowHeight = 18.dp,
+            arrowCenterY = 48.dp
+        )
+    }
+
     Box(
         modifier = Modifier
             .height(154.dp)
-            .clip(RoundedCornerShape(20.dp))
+            .clip(bubbleShape)
             .background(Color(0xF0100E22))
             .border(
                 1.5.dp,
-                Brush.linearGradient(listOf(accent.copy(alpha = 0.9f), accent.copy(alpha = 0.3f))),
-                RoundedCornerShape(20.dp)
+                Brush.linearGradient(listOf(accent.copy(alpha = 0.95f), accent.copy(alpha = 0.35f))),
+                bubbleShape
             )
             .clickable(enabled = !locked, onClick = onClick)
-            .padding(horizontal = 14.dp, vertical = 12.dp)
+            .padding(
+                start = if (arrowDirection == BubbleArrowDirection.LEFT) 20.dp else 13.dp,
+                end = if (arrowDirection == BubbleArrowDirection.RIGHT) 20.dp else 13.dp,
+                top = 12.dp,
+                bottom = 12.dp
+            )
     ) {
         Column {
             Row(verticalAlignment = Alignment.CenterVertically) {

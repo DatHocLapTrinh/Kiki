@@ -33,6 +33,7 @@ import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
@@ -54,7 +55,7 @@ fun SentenceBuilderView(
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 20.dp, vertical = 8.dp),
+            .padding(horizontal = 0.dp, vertical = 2.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         // Tag & Audio Hint
@@ -65,10 +66,11 @@ fun SentenceBuilderView(
         ) {
             Box(
                 modifier = Modifier
+                    .weight(1f, fill = false)
                     .clip(RoundedCornerShape(10.dp))
                     .background(Color(0x33FFD166))
                     .border(1.dp, Color(0x66FFD166), RoundedCornerShape(10.dp))
-                    .padding(horizontal = 10.dp, vertical = 5.dp)
+                    .padding(horizontal = 10.dp, vertical = 6.dp)
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(
@@ -83,20 +85,26 @@ fun SentenceBuilderView(
                         color = Color(0xFFFFD166),
                         fontWeight = FontWeight.ExtraBold,
                         fontSize = 11.sp,
-                        letterSpacing = 1.sp
+                        letterSpacing = 0.5.sp,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
                     )
                 }
             }
 
-            IconButton(
-                onClick = {
-                    haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                    onSpeakPrompt()
-                },
+            Spacer(modifier = Modifier.width(8.dp))
+
+            Box(
                 modifier = Modifier
-                    .size(36.dp)
+                    .size(34.dp)
                     .clip(CircleShape)
                     .background(Color(0x3351FAC1))
+                    .border(1.dp, Color(0x6651FAC1), CircleShape)
+                    .clickable {
+                        haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                        onSpeakPrompt()
+                    },
+                contentAlignment = Alignment.Center
             ) {
                 Icon(
                     Icons.AutoMirrored.Filled.VolumeUp,

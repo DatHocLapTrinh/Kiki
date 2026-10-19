@@ -38,6 +38,8 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ImageBitmap
+import com.example.ui.BubbleArrowDirection
+import com.example.ui.SpeechBubbleShape
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.StrokeCap
@@ -300,16 +302,21 @@ private fun ChapterLessonPath(
     val lessonStep = 180.dp
     val rewardTop = (lessons.size * lessonStep.value + 8f).dp
 
-    val infiniteTransition = rememberInfiniteTransition(label = "chapter_neon_wave")
-    val waveOffset by infiniteTransition.animateFloat(
-        initialValue = 0f,
-        targetValue = 40f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(1200, easing = LinearEasing),
-            repeatMode = RepeatMode.Restart
-        ),
-        label = "wave_offset"
-    )
+    val auroraAnim = rememberCosmicAuroraAnimation()
+
+    fun getLessonColor(index: Int): Color {
+        return when (index) {
+            0 -> Color(0xFF51FAC1) // Lesson 1: Mint Cyan
+            1 -> Color(0xFF974DDA) // Lesson 2: Cosmic Purple
+            2 -> Color(0xFF3887E6) // Lesson 3: Astral Blue
+            3 -> Color(0xFFEA7218) // Lesson 4: Solar Amber
+            else -> Color(0xFFC084FC) // Lesson 5: Starlight Master
+        }
+    }
+
+    val currentOrLastActive = lessons.indexOfFirst { it.current }.let { idx ->
+        if (idx >= 0) idx else lessons.indexOfLast { it.completed }.coerceAtLeast(0)
+    }
 
     BoxWithConstraints(
         modifier = Modifier
@@ -320,58 +327,28 @@ private fun ChapterLessonPath(
             val nodeX = { index: Int -> if (index % 2 == 0) 72.dp.toPx() else size.width - 72.dp.toPx() }
             val nodeY = { index: Int -> index * lessonStep.toPx() + 72.dp.toPx() }
 
-            fun buildPath(lastSegment: Int): Path {
-                return Path().apply {
-                    moveTo(nodeX(0), nodeY(0))
-                    for (segment in 1..lastSegment) {
-                        val startY = nodeY(segment - 1)
-                        val endY = nodeY(segment)
-                        val controlX = (nodeX(segment - 1) + nodeX(segment)) / 2f
-                        quadraticTo(controlX, startY + (endY - startY) * 0.48f, nodeX(segment), endY)
-                    }
-                }
-            }
-
             if (lessons.size > 1) {
-                // Dim background path for locked/future lessons
-                drawPath(
-                    path = buildPath(lessons.lastIndex),
-                    color = Color(0x22564A7A),
-                    style = Stroke(
-                        width = 2.dp.toPx(),
-                        cap = StrokeCap.Round,
-                        pathEffect = PathEffect.dashPathEffect(
-                            floatArrayOf(8.dp.toPx(), 10.dp.toPx())
-                        )
-                    )
-                )
+                for (s in 1..lessons.lastIndex) {
+                    val startX = nodeX(s - 1)
+                    val startY = nodeY(s - 1)
+                    val endX = nodeX(s)
+                    val endY = nodeY(s)
+                    val startColor = getLessonColor(s - 1)
+                    val endColor = getLessonColor(s)
 
-                val activeSegments = lessons.indexOfLast { it.completed || it.current }.coerceIn(0, lessons.lastIndex)
-                if (activeSegments > 0) {
-                    val activePath = buildPath(activeSegments)
+                    val isActive = s <= (currentOrLastActive + 1).coerceAtMost(lessons.lastIndex)
 
-                    // Neon soft glow (subtle)
-                    drawPath(
-                        path = activePath,
-                        brush = Brush.verticalGradient(
-                            listOf(Color(0x1A51FAC1), Color(0x1A7E5CFF), Color(0x1A51FAC1))
-                        ),
-                        style = Stroke(width = 8.dp.toPx(), cap = StrokeCap.Round)
-                    )
-                    // Neon Energy Wave — animated dash flow
-                    drawPath(
-                        path = activePath,
-                        brush = Brush.verticalGradient(
-                            listOf(Color(0xFF51FAC1), Color(0xFF7E5CFF), Color(0xFF51FAC1))
-                        ),
-                        style = Stroke(
-                            width = 2.dp.toPx(),
-                            cap = StrokeCap.Round,
-                            pathEffect = PathEffect.dashPathEffect(
-                                floatArrayOf(12.dp.toPx(), 7.dp.toPx()),
-                                phase = waveOffset.dp.toPx()
-                            )
-                        )
+                    drawCosmicAuroraSegment(
+                        startX = startX,
+                        startY = startY,
+                        endX = endX,
+                        endY = endY,
+                        startColor = startColor,
+                        endColor = endColor,
+                        animPhase = auroraAnim.phase.value,
+                        waveOffsetPx = auroraAnim.waveOffset.value.dp.toPx(),
+                        isActive = isActive,
+                        alphaScale = if (isActive) 1f else 0.55f
                     )
                 }
             }
@@ -410,11 +387,12 @@ private fun ChapterLessonRow(
     var showCard by remember { mutableStateOf(false) }
 
     BoxWithConstraints(modifier = Modifier.fillMaxWidth().height(step)) {
-        val cardWidth = maxWidth * 0.54f
+        val arrowDirection = if (isLeft) BubbleArrowDirection.LEFT else BubbleArrowDirection.RIGHT
+        val cardWidth = (maxWidth - 105.dp).coerceAtMost(maxWidth * 0.62f)
         val cardModifier = if (isLeft) {
-            Modifier.align(Alignment.TopEnd).padding(top = 10.dp, end = 12.dp).width(cardWidth)
+            Modifier.align(Alignment.TopEnd).padding(top = 10.dp, end = 10.dp).width(cardWidth)
         } else {
-            Modifier.align(Alignment.TopStart).padding(top = 10.dp, start = 12.dp).width(cardWidth)
+            Modifier.align(Alignment.TopStart).padding(top = 10.dp, start = 10.dp).width(cardWidth)
         }
         val nodeModifier = if (isLeft) {
             Modifier.align(Alignment.TopStart).padding(start = 20.dp, top = 20.dp)
@@ -432,6 +410,7 @@ private fun ChapterLessonRow(
                 lesson = lesson,
                 modifier = Modifier.fillMaxWidth(),
                 isEnglish = isEnglish,
+                arrowDirection = arrowDirection,
                 onClick = {
                     showCard = false
                     if (!lesson.locked) onClick()
@@ -480,7 +459,7 @@ private fun ChapterLessonNode(
     val accent = when {
         lesson.completed -> Color(0xFFFFD166)
         lesson.current -> Color(0xFF51FAC1)
-        else -> Color(0xFF8D839F)
+        else -> colors[1].copy(alpha = 0.75f)
     }
     val label = "${lesson.index}. ${lesson.title}. ${if (lesson.locked) "Locked" else if (lesson.completed) "Completed" else "In progress"}"
 
@@ -502,28 +481,19 @@ private fun ChapterLessonNode(
         }
         Box(
             modifier = Modifier
-                .align(Alignment.BottomCenter)
-                .offset(y = 7.dp)
-                .size(width = 84.dp, height = 15.dp)
-                .clip(RoundedCornerShape(50))
-                .background(accent.copy(alpha = 0.32f))
-                .border(1.dp, accent.copy(alpha = 0.75f), RoundedCornerShape(50))
-        )
-        Box(
-            modifier = Modifier
                 .size(78.dp)
                 .clip(CircleShape)
                 .background(
-                    if (lesson.locked) Brush.radialGradient(listOf(colors.first().copy(alpha = 0.22f), Color(0x3314141E)))
+                    if (lesson.locked) Brush.radialGradient(listOf(colors.first().copy(alpha = 0.35f), Color(0x3314141E)))
                     else Brush.radialGradient(colors)
                 )
-                .border(2.dp, accent.copy(alpha = if (lesson.locked) 0.36f else 0.9f), CircleShape),
+                .border(2.dp, accent.copy(alpha = if (lesson.locked) 0.55f else 0.9f), CircleShape),
             contentAlignment = Alignment.Center
         ) {
             Icon(
                 imageVector = if (lesson.locked) Icons.Default.Lock else if (lesson.completed) Icons.Default.Check else lesson.icon,
                 contentDescription = null,
-                tint = if (lesson.locked) Color(0xB3FFFFFF) else Color.White,
+                tint = if (lesson.locked) Color(0xD9FFFFFF) else Color.White,
                 modifier = Modifier.size(28.dp)
             )
         }
@@ -552,6 +522,7 @@ private fun ChapterLessonCard(
     lesson: ChapterLessonUi,
     modifier: Modifier,
     isEnglish: Boolean,
+    arrowDirection: BubbleArrowDirection = BubbleArrowDirection.LEFT,
     onClick: () -> Unit
 ) {
     val accent = when {
@@ -564,14 +535,34 @@ private fun ChapterLessonCard(
         lesson.current -> if (isEnglish) "Continue learning" else "Tiếp tục học"
         else -> if (isEnglish) "Locked" else "Đang khóa"
     }
+
+    val bubbleShape = remember(arrowDirection) {
+        SpeechBubbleShape(
+            direction = arrowDirection,
+            cornerRadius = 18.dp,
+            arrowWidth = 12.dp,
+            arrowHeight = 18.dp,
+            arrowCenterY = 48.dp
+        )
+    }
+
     Box(
         modifier = modifier
-            .height(142.dp)
-            .clip(RoundedCornerShape(20.dp))
-            .background(Color(0xE614142B))
-            .border(1.dp, accent.copy(alpha = 0.72f), RoundedCornerShape(20.dp))
+            .height(144.dp)
+            .clip(bubbleShape)
+            .background(Color(0xF0130E26))
+            .border(
+                1.5.dp,
+                Brush.linearGradient(listOf(accent.copy(alpha = 0.95f), accent.copy(alpha = 0.35f))),
+                bubbleShape
+            )
             .clickable(onClick = onClick)
-            .padding(horizontal = 13.dp, vertical = 11.dp)
+            .padding(
+                start = if (arrowDirection == BubbleArrowDirection.LEFT) 20.dp else 12.dp,
+                end = if (arrowDirection == BubbleArrowDirection.RIGHT) 20.dp else 12.dp,
+                top = 11.dp,
+                bottom = 11.dp
+            )
     ) {
         Column {
             Row(verticalAlignment = Alignment.CenterVertically) {
