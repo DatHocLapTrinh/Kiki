@@ -35,6 +35,7 @@ import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.model.MatchingPair
@@ -107,7 +108,7 @@ fun MatchingPairsView(
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 6.dp),
+            .padding(horizontal = 0.dp, vertical = 2.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         // Tag & Match Progress Header
@@ -118,10 +119,11 @@ fun MatchingPairsView(
         ) {
             Box(
                 modifier = Modifier
+                    .weight(1f, fill = false)
                     .clip(RoundedCornerShape(10.dp))
                     .background(Color(0x3338BDF8))
                     .border(1.dp, Color(0x6638BDF8), RoundedCornerShape(10.dp))
-                    .padding(horizontal = 10.dp, vertical = 5.dp)
+                    .padding(horizontal = 10.dp, vertical = 6.dp)
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(
@@ -136,7 +138,9 @@ fun MatchingPairsView(
                         color = Color(0xFF38BDF8),
                         fontWeight = FontWeight.ExtraBold,
                         fontSize = 11.sp,
-                        letterSpacing = 1.sp
+                        letterSpacing = 0.5.sp,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
                     )
                 }
             }

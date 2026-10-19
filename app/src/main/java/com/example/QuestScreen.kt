@@ -160,7 +160,7 @@ fun QuestScreen(viewModel: StudyViewModel, onFinish: () -> Unit) {
                 .fillMaxSize()
                 .statusBarsPadding()
                 .navigationBarsPadding()
-                .padding(horizontal = 20.dp, vertical = 8.dp),
+                .padding(horizontal = 10.dp, vertical = 6.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             // Thanh tiến độ & Linh vật
@@ -275,8 +275,8 @@ fun QuestScreen(viewModel: StudyViewModel, onFinish: () -> Unit) {
                     val currentQ = questions[qIdx]
                     Box(
                         modifier = Modifier
-                            .fillMaxWidth(0.95f)
-                            .clip(RoundedCornerShape(32.dp))
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(26.dp))
                             .background(Color(0xF215112B))
                             .border(
                                 1.5.dp,
@@ -286,9 +286,9 @@ fun QuestScreen(viewModel: StudyViewModel, onFinish: () -> Unit) {
                                         Color(0x33A78BFA)
                                     )
                                 ),
-                                RoundedCornerShape(32.dp)
+                                RoundedCornerShape(26.dp)
                             )
-                            .padding(horizontal = 20.dp, vertical = 24.dp),
+                            .padding(horizontal = 14.dp, vertical = 16.dp),
                         contentAlignment = Alignment.TopCenter
                     ) {
                         Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.fillMaxWidth()) {
@@ -311,22 +311,27 @@ fun QuestScreen(viewModel: StudyViewModel, onFinish: () -> Unit) {
                                     overflow = TextOverflow.Ellipsis
                                 )
                                 if (!hasDedicatedAudio) {
-                                    Row(verticalAlignment = Alignment.CenterVertically) {
-                                        Spacer(modifier = Modifier.width(8.dp))
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    Row(
+                                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
                                         // Nút nghe phát âm tiếng Anh
-                                        IconButton(
-                                            onClick = {
-                                                haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                                                val textToSpeak = when (currentQ.type) {
-                                                    QuestionType.MATCHING_PAIRS -> currentQ.matchingPairs.joinToString(", ") { it.english }
-                                                    else -> currentQ.question
-                                                }
-                                                viewModel.ttsManager.speak(textToSpeak, isSlow = false)
-                                            },
+                                        Box(
                                             modifier = Modifier
-                                                .size(32.dp)
+                                                .size(34.dp)
                                                 .clip(CircleShape)
                                                 .background(Color(0x3351FAC1))
+                                                .border(1.dp, Color(0x6651FAC1), CircleShape)
+                                                .clickable {
+                                                    haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                                                    val textToSpeak = when (currentQ.type) {
+                                                        QuestionType.MATCHING_PAIRS -> currentQ.matchingPairs.joinToString(", ") { it.english }
+                                                        else -> currentQ.question
+                                                    }
+                                                    viewModel.ttsManager.speak(textToSpeak, isSlow = false)
+                                                },
+                                            contentAlignment = Alignment.Center
                                         ) {
                                             Icon(
                                                 imageVector = if (isSpeaking) Icons.Default.GraphicEq else Icons.AutoMirrored.Filled.VolumeUp,
@@ -335,23 +340,24 @@ fun QuestScreen(viewModel: StudyViewModel, onFinish: () -> Unit) {
                                                 modifier = Modifier.size(18.dp)
                                             )
                                         }
-                                        Spacer(modifier = Modifier.width(6.dp))
                                         // Nút nghe phát âm chậm ELSA Style 0.68x
-                                        IconButton(
-                                            onClick = {
-                                                haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                                                val textToSpeak = when (currentQ.type) {
-                                                    QuestionType.MATCHING_PAIRS -> currentQ.matchingPairs.joinToString(", ") { it.english }
-                                                    else -> currentQ.question
-                                                }
-                                                viewModel.ttsManager.speak(textToSpeak, isSlow = true)
-                                            },
+                                        Box(
                                             modifier = Modifier
-                                                .size(32.dp)
+                                                .size(34.dp)
                                                 .clip(CircleShape)
                                                 .background(Color(0x33FFB703))
+                                                .border(1.dp, Color(0x66FFB703), CircleShape)
+                                                .clickable {
+                                                    haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                                                    val textToSpeak = when (currentQ.type) {
+                                                        QuestionType.MATCHING_PAIRS -> currentQ.matchingPairs.joinToString(", ") { it.english }
+                                                        else -> currentQ.question
+                                                    }
+                                                    viewModel.ttsManager.speak(textToSpeak, isSlow = true)
+                                                },
+                                            contentAlignment = Alignment.Center
                                         ) {
-                                            Text("🐢", fontSize = 15.sp)
+                                            Text("🐢", fontSize = 16.sp)
                                         }
                                     }
                                 }

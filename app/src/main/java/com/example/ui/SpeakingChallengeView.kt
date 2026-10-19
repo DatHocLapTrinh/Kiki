@@ -34,6 +34,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
@@ -83,7 +84,7 @@ fun SpeakingChallengeView(
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 6.dp),
+            .padding(horizontal = 0.dp, vertical = 2.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         // Tag Header: SPEAKING CHALLENGE 🎙️
@@ -94,10 +95,11 @@ fun SpeakingChallengeView(
         ) {
             Box(
                 modifier = Modifier
+                    .weight(1f, fill = false)
                     .clip(RoundedCornerShape(10.dp))
                     .background(Color(0x33EC4899))
                     .border(1.dp, Color(0x66EC4899), RoundedCornerShape(10.dp))
-                    .padding(horizontal = 10.dp, vertical = 5.dp)
+                    .padding(horizontal = 10.dp, vertical = 6.dp)
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(
@@ -112,22 +114,31 @@ fun SpeakingChallengeView(
                         color = Color(0xFFF472B6),
                         fontWeight = FontWeight.ExtraBold,
                         fontSize = 11.sp,
-                        letterSpacing = 1.sp
+                        letterSpacing = 0.5.sp,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
                     )
                 }
             }
 
-            // Audio Reference Controls (Normal & Turtle 🐢)
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                IconButton(
-                    onClick = {
-                        haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                        onSpeakSentence(false)
-                    },
+            Spacer(modifier = Modifier.width(8.dp))
+
+            // Audio Reference Controls (Normal & Turtle 🐢) - Guaranteed spacing, zero overlap
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Box(
                     modifier = Modifier
                         .size(34.dp)
                         .clip(CircleShape)
                         .background(Color(0x3351FAC1))
+                        .border(1.dp, Color(0x6651FAC1), CircleShape)
+                        .clickable {
+                            haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                            onSpeakSentence(false)
+                        },
+                    contentAlignment = Alignment.Center
                 ) {
                     Icon(
                         Icons.AutoMirrored.Filled.VolumeUp,
@@ -136,18 +147,19 @@ fun SpeakingChallengeView(
                         modifier = Modifier.size(18.dp)
                     )
                 }
-                Spacer(modifier = Modifier.width(6.dp))
-                IconButton(
-                    onClick = {
-                        haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                        onSpeakSentence(true)
-                    },
+                Box(
                     modifier = Modifier
                         .size(34.dp)
                         .clip(CircleShape)
                         .background(Color(0x33FFB703))
+                        .border(1.dp, Color(0x66FFB703), CircleShape)
+                        .clickable {
+                            haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                            onSpeakSentence(true)
+                        },
+                    contentAlignment = Alignment.Center
                 ) {
-                    Text("🐢", fontSize = 15.sp)
+                    Text("🐢", fontSize = 16.sp)
                 }
             }
         }
