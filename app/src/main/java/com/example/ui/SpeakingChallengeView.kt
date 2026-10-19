@@ -7,6 +7,10 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.*
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -148,38 +152,57 @@ fun SpeakingChallengeView(
             }
         }
 
-        Spacer(modifier = Modifier.height(14.dp))
+        Spacer(modifier = Modifier.height(10.dp))
 
         // Target Sentence Box (Clickable words for pronunciation assistance)
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .clip(RoundedCornerShape(22.dp))
+                .clip(RoundedCornerShape(20.dp))
                 .background(Color(0x1F1A1B36))
-                .border(1.dp, Color(0x33FFFFFF), RoundedCornerShape(22.dp))
-                .padding(horizontal = 20.dp, vertical = 18.dp),
+                .border(1.dp, Color(0x33FFFFFF), RoundedCornerShape(20.dp))
+                .padding(horizontal = 16.dp, vertical = 12.dp),
             contentAlignment = Alignment.Center
         ) {
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                val words = remember(targetSentence) { targetSentence.split("\\s+".toRegex()).filter { it.isNotBlank() } }
+                FlowRow(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(6.dp, Alignment.CenterHorizontally),
+                    verticalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    words.forEach { word ->
+                        val cleanWord = word.trim().trim(',', '.', '!', '?', ';', '"')
+                        Box(
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(8.dp))
+                                .clickable {
+                                    haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                                    onSpeakWord(cleanWord)
+                                }
+                                .padding(horizontal = 4.dp, vertical = 2.dp)
+                        ) {
+                            Text(
+                                text = word,
+                                color = Color.White,
+                                fontSize = 20.sp,
+                                fontWeight = FontWeight.Bold,
+                                textAlign = TextAlign.Center
+                            )
+                        }
+                    }
+                }
+                Spacer(modifier = Modifier.height(4.dp))
                 Text(
-                    text = targetSentence,
-                    color = Color.White,
-                    fontSize = 20.sp,
-                    fontWeight = FontWeight.Bold,
-                    textAlign = TextAlign.Center,
-                    lineHeight = 28.sp
-                )
-                Spacer(modifier = Modifier.height(6.dp))
-                Text(
-                    text = if (isEnglish) "Listen to the sample, then press the mic to repeat!" else "Nghe mẫu rồi chạm vào micro để đọc lại nhé!",
+                    text = if (isEnglish) "Tap words to hear • Tap mic to speak" else "Chạm vào từ để nghe mẫu • Chạm micro để nói",
                     color = Color(0x99FFFFFF),
-                    fontSize = 12.sp,
+                    fontSize = 11.sp,
                     textAlign = TextAlign.Center
                 )
             }
         }
 
-        Spacer(modifier = Modifier.height(14.dp))
+        Spacer(modifier = Modifier.height(10.dp))
 
         // Intonation & Pitch Contour Visual Guide
         IntonationContourGuide(
@@ -187,44 +210,52 @@ fun SpeakingChallengeView(
             isEnglish = isEnglish
         )
 
-        Spacer(modifier = Modifier.height(14.dp))
+        // Live Audio Waveform Visualizer (Active only when user speaks)
+        AnimatedVisibility(
+            visible = isListening,
+            enter = expandVertically() + fadeIn(),
+            exit = shrinkVertically() + fadeOut()
+        ) {
+            Column {
+                Spacer(modifier = Modifier.height(10.dp))
+                AudioWaveformVisualizer(
+                    isListening = isListening,
+                    rmsDb = rmsDb
+                )
+            }
+        }
 
-        // Live Audio Waveform Visualizer
-        AudioWaveformVisualizer(
-            isListening = isListening,
-            rmsDb = rmsDb
-        )
-
-        Spacer(modifier = Modifier.height(18.dp))
+        Spacer(modifier = Modifier.height(12.dp))
 
         // Permission Card vs Microphone Control Button
         if (!hasAudioPermission) {
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clip(RoundedCornerShape(18.dp))
+                    .clip(RoundedCornerShape(16.dp))
                     .background(Color(0x22F59E0B))
-                    .border(1.dp, Color(0x66F59E0B), RoundedCornerShape(18.dp))
-                    .padding(16.dp),
+                    .border(1.dp, Color(0x66F59E0B), RoundedCornerShape(16.dp))
+                    .padding(14.dp),
                 contentAlignment = Alignment.Center
             ) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     Text(
                         text = if (isEnglish) "Microphone permission is required to analyze your speech." else "Kiki cần quyền Microphone để chấm điểm phát âm cho bạn.",
                         color = Color.White,
-                        fontSize = 13.sp,
+                        fontSize = 12.sp,
                         textAlign = TextAlign.Center
                     )
-                    Spacer(modifier = Modifier.height(10.dp))
+                    Spacer(modifier = Modifier.height(8.dp))
                     Button(
                         onClick = {
                             haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
                             permissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
                         },
                         colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFF59E0B)),
-                        shape = RoundedCornerShape(12.dp)
+                        shape = RoundedCornerShape(12.dp),
+                        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 6.dp)
                     ) {
-                        Text("Cấp quyền Micro 🎙️", color = Color.Black, fontWeight = FontWeight.Bold)
+                        Text("Cấp quyền Micro 🎙️", color = Color.Black, fontWeight = FontWeight.Bold, fontSize = 13.sp)
                     }
                 }
             }
@@ -251,6 +282,14 @@ fun SpeakingChallengeView(
                         )
                     }
                 }
+            )
+            Text(
+                text = if (isListening) (if (isEnglish) "Listening... Tap to stop" else "Đang nghe... Chạm để kết thúc")
+                       else (if (isEnglish) "Tap to speak" else "Chạm để phát âm"),
+                color = if (isListening) Color(0xFFEF4444) else Color(0xFF51FAC1),
+                fontSize = 12.sp,
+                fontWeight = FontWeight.SemiBold,
+                modifier = Modifier.padding(top = 4.dp)
             )
         }
 
@@ -450,7 +489,10 @@ private fun IntonationContourGuide(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.weight(1f, fill = false)
+                ) {
                     Icon(
                         Icons.Default.GraphicEq,
                         contentDescription = null,
@@ -459,19 +501,24 @@ private fun IntonationContourGuide(
                     )
                     Spacer(modifier = Modifier.width(6.dp))
                     Text(
-                        text = if (isEnglish) "INTONATION & PITCH CONTOUR" else "NGỮ ĐIỆU & CAO ĐỘ (PITCH CONTOUR)",
+                        text = if (isEnglish) "INTONATION GUIDE" else "HƯỚNG DẪN NGỮ ĐIỆU",
                         color = Color(0xFF51FAC1),
                         fontSize = 10.sp,
                         fontWeight = FontWeight.Bold,
-                        letterSpacing = 0.8.sp
+                        letterSpacing = 0.8.sp,
+                        maxLines = 1
                     )
                 }
 
+                Spacer(modifier = Modifier.width(8.dp))
+
                 Text(
-                    text = if (isQuestion) (if (isEnglish) "Rising Tone ↗" else "Giọng lên cuối ↗") else (if (isEnglish) "Falling Tone ↘" else "Giọng hạ cuối ↘"),
+                    text = if (isQuestion) (if (isEnglish) "Rising Tone ↗" else "Lên giọng cuối ↗") else (if (isEnglish) "Falling Tone ↘" else "Hạ giọng cuối ↘"),
                     color = if (isQuestion) Color(0xFFFFD166) else Color(0xFF38BDF8),
                     fontSize = 11.sp,
-                    fontWeight = FontWeight.Bold
+                    fontWeight = FontWeight.Bold,
+                    maxLines = 1,
+                    softWrap = false
                 )
             }
 

@@ -43,6 +43,8 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import com.example.ui.BubbleArrowDirection
+import com.example.ui.SpeechBubbleShape
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
@@ -282,7 +284,8 @@ private fun JourneyStageRow(
     BoxWithConstraints(
         modifier = Modifier.fillMaxWidth().height(stageStep)
     ) {
-        val cardWidth = maxWidth * 0.52f
+        val arrowDirection = if (isLeft) BubbleArrowDirection.LEFT else BubbleArrowDirection.RIGHT
+        val cardWidth = (maxWidth - 105.dp).coerceAtMost(maxWidth * 0.62f)
         val cardModifier = if (isLeft) {
             Modifier.align(Alignment.TopEnd).padding(end = 10.dp, top = 8.dp).width(cardWidth)
         } else {
@@ -303,6 +306,7 @@ private fun JourneyStageRow(
             JourneyStageInformationCard(
                 stage = stage,
                 strings = strings,
+                arrowDirection = arrowDirection,
                 onClick = {
                     showCard = false
                     onClick()
@@ -377,14 +381,6 @@ private fun JourneyPlanetNode(
         }
         Box(
             modifier = Modifier
-                .align(Alignment.BottomCenter).offset(y = 8.dp)
-                .size(width = 98.dp, height = 18.dp)
-                .clip(RoundedCornerShape(50))
-                .background(accent.copy(alpha = if (locked) 0.20f else 0.34f))
-                .border(1.dp, accent.copy(alpha = if (locked) 0.50f else 0.75f), RoundedCornerShape(50))
-        )
-        Box(
-            modifier = Modifier
                 .size(96.dp).clip(CircleShape)
                 .background(
                     if (locked) Brush.radialGradient(listOf(colors.first().copy(alpha = 0.35f), Color(0x3314141E)))
@@ -434,6 +430,7 @@ private fun JourneyPlanetNode(
 private fun JourneyStageInformationCard(
     stage: JourneyStageUiModel,
     strings: AppStrings,
+    arrowDirection: BubbleArrowDirection = BubbleArrowDirection.LEFT,
     onClick: () -> Unit
 ) {
     val locked = stage.state == JourneyStageState.LOCKED
@@ -449,18 +446,33 @@ private fun JourneyStageInformationCard(
         JourneyStageState.LOCKED                                 -> strings.chapterLocked
     }
 
+    val bubbleShape = remember(arrowDirection) {
+        SpeechBubbleShape(
+            direction = arrowDirection,
+            cornerRadius = 18.dp,
+            arrowWidth = 12.dp,
+            arrowHeight = 18.dp,
+            arrowCenterY = 48.dp
+        )
+    }
+
     Box(
         modifier = Modifier
             .height(154.dp)
-            .clip(RoundedCornerShape(20.dp))
+            .clip(bubbleShape)
             .background(Color(0xF0100E22))
             .border(
                 1.5.dp,
-                Brush.linearGradient(listOf(accent.copy(alpha = 0.9f), accent.copy(alpha = 0.3f))),
-                RoundedCornerShape(20.dp)
+                Brush.linearGradient(listOf(accent.copy(alpha = 0.95f), accent.copy(alpha = 0.35f))),
+                bubbleShape
             )
             .clickable(enabled = !locked, onClick = onClick)
-            .padding(horizontal = 14.dp, vertical = 12.dp)
+            .padding(
+                start = if (arrowDirection == BubbleArrowDirection.LEFT) 20.dp else 13.dp,
+                end = if (arrowDirection == BubbleArrowDirection.RIGHT) 20.dp else 13.dp,
+                top = 12.dp,
+                bottom = 12.dp
+            )
     ) {
         Column {
             Row(verticalAlignment = Alignment.CenterVertically) {

@@ -38,6 +38,8 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ImageBitmap
+import com.example.ui.BubbleArrowDirection
+import com.example.ui.SpeechBubbleShape
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.StrokeCap
@@ -385,11 +387,12 @@ private fun ChapterLessonRow(
     var showCard by remember { mutableStateOf(false) }
 
     BoxWithConstraints(modifier = Modifier.fillMaxWidth().height(step)) {
-        val cardWidth = maxWidth * 0.54f
+        val arrowDirection = if (isLeft) BubbleArrowDirection.LEFT else BubbleArrowDirection.RIGHT
+        val cardWidth = (maxWidth - 105.dp).coerceAtMost(maxWidth * 0.62f)
         val cardModifier = if (isLeft) {
-            Modifier.align(Alignment.TopEnd).padding(top = 10.dp, end = 12.dp).width(cardWidth)
+            Modifier.align(Alignment.TopEnd).padding(top = 10.dp, end = 10.dp).width(cardWidth)
         } else {
-            Modifier.align(Alignment.TopStart).padding(top = 10.dp, start = 12.dp).width(cardWidth)
+            Modifier.align(Alignment.TopStart).padding(top = 10.dp, start = 10.dp).width(cardWidth)
         }
         val nodeModifier = if (isLeft) {
             Modifier.align(Alignment.TopStart).padding(start = 20.dp, top = 20.dp)
@@ -407,6 +410,7 @@ private fun ChapterLessonRow(
                 lesson = lesson,
                 modifier = Modifier.fillMaxWidth(),
                 isEnglish = isEnglish,
+                arrowDirection = arrowDirection,
                 onClick = {
                     showCard = false
                     if (!lesson.locked) onClick()
@@ -477,15 +481,6 @@ private fun ChapterLessonNode(
         }
         Box(
             modifier = Modifier
-                .align(Alignment.BottomCenter)
-                .offset(y = 7.dp)
-                .size(width = 84.dp, height = 15.dp)
-                .clip(RoundedCornerShape(50))
-                .background(accent.copy(alpha = if (lesson.locked) 0.20f else 0.32f))
-                .border(1.dp, accent.copy(alpha = if (lesson.locked) 0.50f else 0.75f), RoundedCornerShape(50))
-        )
-        Box(
-            modifier = Modifier
                 .size(78.dp)
                 .clip(CircleShape)
                 .background(
@@ -527,6 +522,7 @@ private fun ChapterLessonCard(
     lesson: ChapterLessonUi,
     modifier: Modifier,
     isEnglish: Boolean,
+    arrowDirection: BubbleArrowDirection = BubbleArrowDirection.LEFT,
     onClick: () -> Unit
 ) {
     val accent = when {
@@ -539,14 +535,34 @@ private fun ChapterLessonCard(
         lesson.current -> if (isEnglish) "Continue learning" else "Tiếp tục học"
         else -> if (isEnglish) "Locked" else "Đang khóa"
     }
+
+    val bubbleShape = remember(arrowDirection) {
+        SpeechBubbleShape(
+            direction = arrowDirection,
+            cornerRadius = 18.dp,
+            arrowWidth = 12.dp,
+            arrowHeight = 18.dp,
+            arrowCenterY = 48.dp
+        )
+    }
+
     Box(
         modifier = modifier
-            .height(142.dp)
-            .clip(RoundedCornerShape(20.dp))
-            .background(Color(0xE614142B))
-            .border(1.dp, accent.copy(alpha = 0.72f), RoundedCornerShape(20.dp))
+            .height(144.dp)
+            .clip(bubbleShape)
+            .background(Color(0xF0130E26))
+            .border(
+                1.5.dp,
+                Brush.linearGradient(listOf(accent.copy(alpha = 0.95f), accent.copy(alpha = 0.35f))),
+                bubbleShape
+            )
             .clickable(onClick = onClick)
-            .padding(horizontal = 13.dp, vertical = 11.dp)
+            .padding(
+                start = if (arrowDirection == BubbleArrowDirection.LEFT) 20.dp else 12.dp,
+                end = if (arrowDirection == BubbleArrowDirection.RIGHT) 20.dp else 12.dp,
+                top = 11.dp,
+                bottom = 11.dp
+            )
     ) {
         Column {
             Row(verticalAlignment = Alignment.CenterVertically) {
