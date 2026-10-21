@@ -47,7 +47,8 @@ fun SettingsDialog(
     onLogout: () -> Unit
 ) {
     val context = LocalContext.current
-    val currentProvider = viewModel?.aiProvider?.observeAsState(StudyViewModel.PROVIDER_AUTO)?.value ?: StudyViewModel.PROVIDER_AUTO
+    val currentProvider = viewModel?.aiProvider?.observeAsState(StudyViewModel.PROVIDER_GEMINI)?.value ?: StudyViewModel.PROVIDER_GEMINI
+    val currentGeminiModel = viewModel?.geminiModel?.observeAsState(StudyViewModel.DEFAULT_GEMINI_MODEL)?.value ?: StudyViewModel.DEFAULT_GEMINI_MODEL
     val currentUniversalKey = viewModel?.universalAiKey?.observeAsState("")?.value ?: ""
     val autoTtsEnabled = viewModel?.audioDialogAutoTts?.observeAsState(true)?.value ?: true
     val batterySaverEnabled = viewModel?.batterySaver?.observeAsState(false)?.value ?: false
@@ -157,14 +158,14 @@ fun SettingsDialog(
                 // AI Engine Selection & Config Section
                 // Header: Trí Tuệ Nhân Tạo & Gia Sư AI
                 Text(
-                    "Trí Tuệ Nhân Tạo Đa Nền Tảng (Universal AI)",
+                    "Google Gemini 2.5 Flash & Native Audio Dialog",
                     color = Color(0xFF51FAC1),
                     fontSize = 15.sp,
                     fontWeight = FontWeight.Bold
                 )
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
-                    "Nhập 1 API Key duy nhất của bất kỳ mô hình nào (Groq, Gemini, Claude, OpenAI). Hệ thống sẽ tự động nhận diện và kết nối chuẩn xác.",
+                    "Mô hình AI đối thoại âm thanh hai chiều và phân tích microlearning siêu tốc. Hệ thống tự động đọc GEMINI_API_KEY từ file .env hoặc khóa tùy chỉnh của bạn.",
                     color = Color(0xB3FFFFFF),
                     fontSize = 12.sp,
                     lineHeight = 16.sp
@@ -173,9 +174,9 @@ fun SettingsDialog(
 
                 // Provider Switcher Chips
                 val providers = listOf(
-                    StudyViewModel.PROVIDER_AUTO to "✨ Tự Động",
+                    StudyViewModel.PROVIDER_GEMINI to "🧠 Gemini 2.5 Flash (Khuyên dùng)",
                     StudyViewModel.PROVIDER_GROQ to "⚡ Groq",
-                    StudyViewModel.PROVIDER_GEMINI to "🧠 Gemini",
+                    StudyViewModel.PROVIDER_AUTO to "✨ Tự Động",
                     StudyViewModel.PROVIDER_CLAUDE to "🎭 Claude",
                     StudyViewModel.PROVIDER_OPENAI to "🤖 OpenAI"
                 )
@@ -208,14 +209,63 @@ fun SettingsDialog(
                     }
                 }
 
+                // Gemini Model Switcher (khi Gemini đang được kích hoạt)
+                if (currentProvider == StudyViewModel.PROVIDER_GEMINI || currentProvider == StudyViewModel.PROVIDER_AUTO) {
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        "Mô hình Gemini:",
+                        color = Color(0xCCFFFFFF),
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Medium
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    val geminiModelsList = listOf(
+                        com.example.model.GeminiModels.MODEL_GEMINI_2_5_FLASH to "🚀 2.5 Flash (Native Audio)",
+                        "gemini-flash-lite-latest" to "⚡ Flash Lite (Tiết kiệm token)",
+                        "gemini-2.0-flash" to "🛡️ 2.0 Flash (Ổn định)"
+                    )
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .horizontalScroll(rememberScrollState()),
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        geminiModelsList.forEach { (modelId, label) ->
+                            val isModelSelected = currentGeminiModel == modelId
+                            Box(
+                                modifier = Modifier
+                                    .clip(RoundedCornerShape(8.dp))
+                                    .background(
+                                        if (isModelSelected) Color(0x3351FAC1) else Color(0x1AFFFFFF)
+                                    )
+                                    .border(
+                                        1.dp,
+                                        if (isModelSelected) Color(0xFF51FAC1) else Color(0x33FFFFFF),
+                                        RoundedCornerShape(8.dp)
+                                    )
+                                    .clickable { viewModel?.setGeminiModel(modelId) }
+                                    .padding(horizontal = 10.dp, vertical = 6.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text(
+                                    label,
+                                    color = if (isModelSelected) Color(0xFF51FAC1) else Color(0x99FFFFFF),
+                                    fontSize = 11.sp,
+                                    fontWeight = if (isModelSelected) FontWeight.Bold else FontWeight.Normal
+                                )
+                            }
+                        }
+                    }
+                }
+
                 Spacer(modifier = Modifier.height(12.dp))
 
                 // Single Unified API Key Input Field
                 OutlinedTextField(
                     value = universalKeyInput,
                     onValueChange = { universalKeyInput = it },
-                    label = { Text("AI API Key (Dán key bất kỳ)") },
-                    placeholder = { Text("gsk_..., AIza..., sk-ant-..., sk-...") },
+                    label = { Text("Khóa API Gemini (GEMINI_API_KEY)") },
+                    placeholder = { Text("AQ.... hoặc AIza... (Google Gemini)") },
                     visualTransformation = if (universalKeyVisible) VisualTransformation.None else PasswordVisualTransformation(),
                     singleLine = true,
                     keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
@@ -244,22 +294,22 @@ fun SettingsDialog(
                 // Real-time Detection Badge Card
                 val detected = StudyViewModel.detectAiProvider(universalKeyInput)
                 val (badgeText, badgeColor) = when {
+                    universalKeyInput.trim().startsWith("AQ.") || universalKeyInput.trim().startsWith("AIza") ->
+                        "🧠 Đã nhận diện: Google Gemini (2.5 Flash Native Audio Dialog)" to Color(0xFF51FAC1)
                     universalKeyInput.trim().startsWith("gsk_") ->
                         "⚡ Đã nhận diện: Groq AI (Llama 3.3 70B - Tốc độ cực nhanh)" to Color(0xFFFF9E00)
-                    universalKeyInput.trim().startsWith("AIza") ->
-                        "🧠 Đã nhận diện: Google Gemini (2.5 Flash Native Dialog)" to Color(0xFF51FAC1)
                     universalKeyInput.trim().startsWith("sk-ant-") ->
                         "🎭 Đã nhận diện: Anthropic Claude (3.5 Sonnet)" to Color(0xFFE07A5F)
                     universalKeyInput.trim().startsWith("sk-") ->
                         "🤖 Đã nhận diện: OpenAI (GPT-4o / GPT-4o-mini)" to Color(0xFF10A37F)
                     universalKeyInput.isNotBlank() ->
-                        "✨ Đã cấu hình khóa AI tùy chỉnh (${StudyViewModel.getProviderDisplayName(detected)})" to Color(0xFF80D8FF)
+                        "✨ Đã cấu hình khóa AI (${StudyViewModel.getProviderDisplayName(detected)})" to Color(0xFF80D8FF)
                     else -> {
                         val hasEnvKey = viewModel?.getEffectiveUniversalApiKey()?.isNotBlank() == true
                         if (hasEnvKey) {
-                            "🟢 Khóa AI từ file cấu hình .env đang hoạt động (${viewModel?.activeProviderDisplayTitle?.value ?: "Sẵn sàng"})." to Color(0xFF51FAC1)
+                            "🟢 Khóa GEMINI_API_KEY từ file cấu hình .env đang hoạt động (${viewModel?.activeProviderDisplayTitle?.value ?: "Gemini 2.5 Flash"})." to Color(0xFF51FAC1)
                         } else {
-                            "ℹ️ Hãy dán API key của bạn vào đây hoặc điền biến AI_API_KEY trong file .env." to Color(0xFFFFD166)
+                            "ℹ️ Hãy dán API key của bạn vào đây hoặc điền biến GEMINI_API_KEY trong file .env." to Color(0xFFFFD166)
                         }
                     }
                 }
@@ -275,7 +325,7 @@ fun SettingsDialog(
                 Button(
                     onClick = {
                         viewModel?.setUniversalAiApiKey(universalKeyInput)
-                        Toast.makeText(context, "Đã lưu và kích hoạt AI thành công!", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(context, "Đã lưu và kích hoạt Gemini AI thành công!", Toast.LENGTH_SHORT).show()
                     },
                     colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF51FAC1)),
                     shape = RoundedCornerShape(12.dp),

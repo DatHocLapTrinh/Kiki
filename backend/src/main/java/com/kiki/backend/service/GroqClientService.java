@@ -50,7 +50,7 @@ public class GroqClientService {
         if (apiKey != null && !apiKey.trim().isEmpty() && !apiKey.contains("your_")) {
             return apiKey.trim();
         }
-        String[] envVars = {"AI_API_KEY", "GROQ_API_KEY", "GEMINI_API_KEY", "OPENAI_API_KEY", "ANTHROPIC_API_KEY"};
+        String[] envVars = {"GEMINI_API_KEY", "AI_API_KEY", "GROQ_API_KEY", "OPENAI_API_KEY", "ANTHROPIC_API_KEY"};
         for (String varName : envVars) {
             String val = System.getenv(varName);
             if (val != null && !val.trim().isEmpty() && !val.contains("your_")) {
@@ -63,14 +63,14 @@ public class GroqClientService {
     public String generateChatCompletion(String systemPrompt, String userPrompt) throws IOException {
         String activeKey = resolveApiKey();
         if (activeKey.isEmpty()) {
-            log.warn("No AI API key configured (AI_API_KEY / GROQ_API_KEY / GEMINI_API_KEY). Using high-quality mock response.");
+            log.warn("No AI API key configured (GEMINI_API_KEY / AI_API_KEY / GROQ_API_KEY). Using high-quality mock response.");
             return generateMockResponse(systemPrompt, userPrompt);
         }
 
         try {
-            // Tự động nhận diện nhà cung cấp dựa trên tiền tố của API key
-            if (activeKey.startsWith("AIza")) {
-                log.info("Detected Google Gemini API key. Routing to Gemini GenerativeLanguage API.");
+            // Tự động nhận diện nhà cung cấp dựa trên tiền tố của API key (ưu tiên Gemini 2.5 Flash)
+            if (activeKey.startsWith("AQ.") || activeKey.startsWith("AIza") || System.getenv("GEMINI_API_KEY") != null) {
+                log.info("Detected Google Gemini API key. Routing to Gemini GenerativeLanguage API (Gemini 2.5 Flash Native Dialog).");
                 return callGemini(activeKey, systemPrompt, userPrompt);
             } else if (activeKey.startsWith("sk-ant-")) {
                 log.info("Detected Anthropic Claude API key. Routing to Anthropic Messages API.");
@@ -127,7 +127,7 @@ public class GroqClientService {
     }
 
     private String callGemini(String key, String systemPrompt, String userPrompt) throws IOException {
-        String url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=" + key;
+        String[] candidateModels = {"gemini-2.5-flash", "gemini-flash-lite-latest", "gemini-2.0-flash"};
         String combined = (systemPrompt != null && !systemPrompt.isEmpty() ? systemPrompt + "\n\n" : "") + userPrompt;
 
         Map<String, Object> part = Map.of("text", combined);
@@ -135,30 +135,41 @@ public class GroqClientService {
         Map<String, Object> body = Map.of("contents", List.of(content));
 
         String jsonPayload = objectMapper.writeValueAsString(body);
+        IOException lastException = null;
 
-        Request request = new Request.Builder()
-            .url(url)
-            .addHeader("Content-Type", "application/json")
-            .post(RequestBody.create(jsonPayload, MediaType.parse("application/json")))
-            .build();
+        for (String modelName : candidateModels) {
+            String url = "https://generativelanguage.googleapis.com/v1beta/models/" + modelName + ":generateContent?key=" + key;
+            Request request = new Request.Builder()
+                .url(url)
+                .addHeader("Content-Type", "application/json")
+                .post(RequestBody.create(jsonPayload, MediaType.parse("application/json")))
+                .build();
 
-        try (Response response = httpClient.newCall(request).execute()) {
-            if (!response.isSuccessful()) {
-                String errorBody = response.body() != null ? response.body().string() : "";
-                throw new IOException("Gemini API error (" + response.code() + "): " + errorBody);
-            }
+            try (Response response = httpClient.newCall(request).execute()) {
+                if (!response.isSuccessful()) {
+                    String errorBody = response.body() != null ? response.body().string() : "";
+                    lastException = new IOException("Gemini API error (" + response.code() + ") on " + modelName + ": " + errorBody);
+                    if (response.code() == 503 || response.code() == 429) {
+                        continue;
+                    }
+                    throw lastException;
+                }
 
-            String responseString = response.body() != null ? response.body().string() : "";
-            JsonNode root = objectMapper.readTree(responseString);
-            JsonNode candidates = root.path("candidates");
-            if (candidates.isArray() && !candidates.isEmpty()) {
-                JsonNode parts = candidates.get(0).path("content").path("parts");
-                if (parts.isArray() && !parts.isEmpty()) {
-                    return parts.get(0).path("text").asText();
+                String responseString = response.body() != null ? response.body().string() : "";
+                JsonNode root = objectMapper.readTree(responseString);
+                JsonNode candidates = root.path("candidates");
+                if (candidates.isArray() && !candidates.isEmpty()) {
+                    JsonNode parts = candidates.get(0).path("content").path("parts");
+                    if (parts.isArray() && !parts.isEmpty()) {
+                        return parts.get(0).path("text").asText();
+                    }
                 }
             }
-            throw new IOException("Malformed Gemini response: parts empty");
         }
+        if (lastException != null) {
+            throw lastException;
+        }
+        throw new IOException("Malformed Gemini response: parts empty");
     }
 
     private String callClaude(String key, String systemPrompt, String userPrompt) throws IOException {

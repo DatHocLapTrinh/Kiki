@@ -102,22 +102,22 @@ class StudyViewModel @Inject constructor(
         fun detectAiProvider(key: String): String {
             val clean = key.trim()
             return when {
+                clean.startsWith("AQ.") || clean.startsWith("AIza") -> PROVIDER_GEMINI
                 clean.startsWith("gsk_") -> PROVIDER_GROQ
-                clean.startsWith("AIza") -> PROVIDER_GEMINI
                 clean.startsWith("sk-ant-") -> PROVIDER_CLAUDE
                 clean.startsWith("sk-") -> PROVIDER_OPENAI
-                else -> PROVIDER_GROQ
+                else -> PROVIDER_GEMINI
             }
         }
 
         fun getProviderDisplayName(provider: String): String {
             return when (provider) {
-                PROVIDER_GROQ -> "⚡ Groq (Llama 3.3 70B)"
                 PROVIDER_GEMINI -> "🧠 Gemini 2.5 Flash Native Dialog"
+                PROVIDER_GROQ -> "⚡ Groq (Llama 3.3 70B)"
                 PROVIDER_CLAUDE -> "🎭 Claude 3.5 Sonnet"
                 PROVIDER_OPENAI -> "🤖 OpenAI GPT-4o"
-                PROVIDER_AUTO -> "✨ Tự Động Nhận Diện"
-                else -> "✨ Kiki AI Mentor"
+                PROVIDER_AUTO -> "🧠 Gemini 2.5 Flash (Tự Động)"
+                else -> "🧠 Gemini 2.5 Flash Mentor"
             }
         }
 
@@ -206,7 +206,7 @@ class StudyViewModel @Inject constructor(
         setUniversalAiApiKey(key)
     }
 
-    private val _aiProvider = MutableLiveData(prefs.getString("ai_provider", PROVIDER_AUTO) ?: PROVIDER_AUTO)
+    private val _aiProvider = MutableLiveData(prefs.getString("ai_provider", PROVIDER_GEMINI) ?: PROVIDER_GEMINI)
     val aiProvider: LiveData<String> = _aiProvider
     fun setAiProvider(provider: String) {
         prefs.edit().putString("ai_provider", provider).apply()
@@ -227,15 +227,25 @@ class StudyViewModel @Inject constructor(
         _audioDialogAutoTts.value = enabled
     }
 
+    private val aiQueryCache = java.util.concurrent.ConcurrentHashMap<String, String>()
+
     fun getEffectiveUniversalApiKey(): String {
+        val customGemini = _geminiApiKey.value?.trim()
+        if (!customGemini.isNullOrBlank()) return customGemini
         val custom = _universalAiKey.value?.trim()
         if (!custom.isNullOrBlank()) return custom
         val customUser = _userApiKey.value?.trim()
         if (!customUser.isNullOrBlank()) return customUser
-        val customGemini = _geminiApiKey.value?.trim()
-        if (!customGemini.isNullOrBlank()) return customGemini
 
         return try {
+            val envGemini = try {
+                val f = BuildConfig::class.java.getField("GEMINI_API_KEY")
+                f.get(null) as? String ?: ""
+            } catch (_: Exception) { "" }
+            if (envGemini.isNotBlank() && !envGemini.contains("your_") && !envGemini.contains("here")) {
+                return envGemini.trim()
+            }
+
             val envUniversal = try {
                 val f = BuildConfig::class.java.getField("AI_API_KEY")
                 f.get(null) as? String ?: ""
@@ -251,14 +261,6 @@ class StudyViewModel @Inject constructor(
             if (envGroq.isNotBlank() && !envGroq.contains("your_") && !envGroq.contains("here")) {
                 return envGroq.trim()
             }
-
-            val envGemini = try {
-                val f = BuildConfig::class.java.getField("GEMINI_API_KEY")
-                f.get(null) as? String ?: ""
-            } catch (_: Exception) { "" }
-            if (envGemini.isNotBlank() && !envGemini.contains("your_") && !envGemini.contains("here")) {
-                return envGemini.trim()
-            }
             ""
         } catch (_: Exception) {
             ""
@@ -266,7 +268,7 @@ class StudyViewModel @Inject constructor(
     }
 
     fun getEffectiveActiveProvider(): String {
-        val userChoice = _aiProvider.value ?: PROVIDER_AUTO
+        val userChoice = _aiProvider.value ?: PROVIDER_GEMINI
         if (userChoice != PROVIDER_AUTO) {
             return userChoice
         }
@@ -287,10 +289,10 @@ class StudyViewModel @Inject constructor(
     }
 
     fun getEffectiveGeminiApiKey(): String {
-        val key = getEffectiveUniversalApiKey()
-        if (key.startsWith("AIza")) return key
         val custom = _geminiApiKey.value?.trim()
-        if (!custom.isNullOrBlank() && custom.startsWith("AIza")) return custom
+        if (!custom.isNullOrBlank()) return custom
+        val key = getEffectiveUniversalApiKey()
+        if (key.isNotBlank()) return key
         return ""
     }
 
@@ -1009,6 +1011,28 @@ class StudyViewModel @Inject constructor(
 
                 if (imageUri != null) {
                     answer = fetchAnswerFromAI(context, question, imageUri)
+                } else if (getEffectiveActiveProvider() == PROVIDER_GEMINI) {
+                    // Trực tiếp dùng Gemini 2.5 Flash Native Audio Dialog để tối ưu tốc độ và độ chính xác
+                    answer = fetchAnswerFromGemini(context, promptForAi, null)
+                    if (answer.startsWith("Lỗi kết nối") || answer.startsWith("⚠️")) {
+                        try {
+                            val token = authManager.getIdToken() ?: "mock_dev_token_kiki_explorer"
+                            val weakPoints = _weakPoints.value?.take(5)?.map { it.question } ?: emptyList()
+                            val request = MentorChatRequest(
+                                message = promptForAi,
+                                userLevel = _selectedLevel.value ?: "Intermediate",
+                                currentChapter = _currentChapterTitle.value ?: "English Fundamentals",
+                                recentWeakPoints = weakPoints
+                            )
+                            val response = backendApiService.mentorChat("Bearer $token", request)
+                            if (response.isSuccessful && response.body() != null) {
+                                val body = response.body()!!
+                                answer = body.reply
+                                grammarTip = body.grammarTip
+                                vocabularies = body.detectedVocabularies
+                            }
+                        } catch (_: Exception) {}
+                    }
                 } else {
                     try {
                         val token = authManager.getIdToken() ?: "mock_dev_token_kiki_explorer"
@@ -1035,6 +1059,33 @@ class StudyViewModel @Inject constructor(
                 answer = sanitizeAiMentorReply(answer)
                 if (grammarTip != null) {
                     grammarTip = sanitizeAiMentorReply(grammarTip)
+                }
+
+                // Trích xuất thẻ từ vựng tự động từ kết quả Gemini nếu backend offline
+                if (vocabularies.isEmpty() && isLookup && !answer.startsWith("Lỗi") && !answer.startsWith("⚠️")) {
+                    val lines = answer.lines()
+                    val headerLine = lines.firstOrNull { it.isNotBlank() } ?: ""
+                    val phoneticMatch = Regex("/([^/]+)/").find(headerLine)?.value
+                    val meaningLine = lines.firstOrNull { it.contains("Nghĩa:", ignoreCase = true) }
+                        ?.replace(Regex("^•?\\s*Nghĩa:\\s*", RegexOption.IGNORE_CASE), "")?.trim()
+                    val exampleLine = lines.firstOrNull { it.contains("Ví dụ:", ignoreCase = true) }
+                        ?.replace(Regex("^•?\\s*Ví dụ:\\s*", RegexOption.IGNORE_CASE), "")?.trim()
+                    if (!meaningLine.isNullOrBlank()) {
+                        val targetWord = cleanQuestion
+                            .replace(Regex("^🔍\\s*(Tra từ|Tra thành ngữ|Look up word|Look up idiom):?\\s*"), "")
+                            .replace(Regex("['\"]"), "")
+                            .replace(Regex("&\\s*ví dụ.*", RegexOption.IGNORE_CASE), "")
+                            .replace(Regex("in context.*", RegexOption.IGNORE_CASE), "")
+                            .trim()
+                        vocabularies = listOf(
+                            VocabularyCardDto(
+                                word = targetWord,
+                                phonetic = phoneticMatch,
+                                meaning = meaningLine,
+                                example = exampleLine
+                            )
+                        )
+                    }
                 }
 
                 val userId = _currentUserId.value
@@ -1068,7 +1119,10 @@ class StudyViewModel @Inject constructor(
                 }
 
                 if (isAudioDialog && (_audioDialogAutoTts.value == true)) {
-                    ttsManager.speak(answer)
+                    val spokenText = GeminiModels.formatForAudioSpeech(answer)
+                    if (spokenText.isNotBlank()) {
+                        ttsManager.speak(spokenText)
+                    }
                 }
             } finally {
                 _isGenerating.value = false
@@ -1803,11 +1857,11 @@ class StudyViewModel @Inject constructor(
 
         val activeProvider = getEffectiveActiveProvider()
         val answer = when (activeProvider) {
-            PROVIDER_GROQ -> fetchAnswerFromGroq(context, prompt, uri, apiKey)
             PROVIDER_GEMINI -> fetchAnswerFromGemini(context, prompt, uri, apiKey = apiKey)
+            PROVIDER_GROQ -> fetchAnswerFromGroq(context, prompt, uri, apiKey)
             PROVIDER_CLAUDE -> fetchAnswerFromClaude(context, prompt, uri, apiKey)
             PROVIDER_OPENAI -> fetchAnswerFromOpenAI(context, prompt, uri, apiKey)
-            else -> fetchAnswerFromGroq(context, prompt, uri, apiKey)
+            else -> fetchAnswerFromGemini(context, prompt, uri, apiKey = apiKey)
         }
 
         val isError = answer.startsWith("Lỗi kết nối") ||
@@ -1822,8 +1876,8 @@ class StudyViewModel @Inject constructor(
         val detected = detectAiProvider(apiKey)
         if (detected != activeProvider) {
             val fallbackAnswer = when (detected) {
-                PROVIDER_GROQ -> fetchAnswerFromGroq(context, prompt, uri, apiKey)
                 PROVIDER_GEMINI -> fetchAnswerFromGemini(context, prompt, uri, apiKey = apiKey)
+                PROVIDER_GROQ -> fetchAnswerFromGroq(context, prompt, uri, apiKey)
                 PROVIDER_CLAUDE -> fetchAnswerFromClaude(context, prompt, uri, apiKey)
                 PROVIDER_OPENAI -> fetchAnswerFromOpenAI(context, prompt, uri, apiKey)
                 else -> answer
@@ -1847,10 +1901,10 @@ class StudyViewModel @Inject constructor(
         try {
             val effectiveKey = if (!apiKey.isNullOrBlank()) apiKey else getEffectiveGeminiApiKey()
             if (effectiveKey.isBlank()) {
-                return@withContext "⚠️ Bạn chưa cài đặt AI API Key.\n\nVui lòng mở Cài đặt và dán API Key của bạn (hỗ trợ Groq, Gemini, Claude, OpenAI) hoặc cấu hình AI_API_KEY trong file .env."
+                return@withContext "⚠️ Bạn chưa cài đặt AI API Key.\n\nVui lòng mở Cài đặt và dán API Key của bạn (hỗ trợ GEMINI_API_KEY) hoặc cấu hình GEMINI_API_KEY trong file .env."
             }
 
-            // Cross-provider auto redirection:
+            // Cross-provider auto redirection (nếu người dùng vô tình dán nhầm key Groq/Claude/OpenAI vào ô Gemini)
             if (effectiveKey.startsWith("gsk_")) {
                 return@withContext fetchAnswerFromGroq(context, prompt, uri, effectiveKey)
             }
@@ -1867,6 +1921,12 @@ class StudyViewModel @Inject constructor(
                 "Lắng nghe đoạn ghi âm giọng nói tiếng Anh này của tôi, nhận xét phát âm, ngữ pháp và gợi ý cải thiện ngắn gọn."
             } else {
                 prompt
+            }
+
+            // Bộ nhớ đệm InMemory (Zero latency & Zero token khi hỏi lặp lại trong phiên học)
+            val cacheKey = "${actualPrompt.trim().lowercase()}_${uri != null}_${audioBytes != null}"
+            aiQueryCache[cacheKey]?.let { cached ->
+                return@withContext cached
             }
 
             val parts = mutableListOf<GeminiModels.Part>()
@@ -1891,8 +1951,10 @@ class StudyViewModel @Inject constructor(
                 contents = contents,
                 systemInstruction = systemInstruction,
                 generationConfig = GeminiModels.GenerationConfig(
-                    temperature = 0.7,
-                    maxOutputTokens = 2048
+                    temperature = 0.6,
+                    maxOutputTokens = 1024,
+                    topP = 0.95,
+                    topK = 40
                 )
             )
 
@@ -1908,13 +1970,14 @@ class StudyViewModel @Inject constructor(
                     if (response.isSuccessful) {
                         val text = GeminiModels.extractResponseText(response.body())
                         if (!text.isNullOrBlank()) {
+                            aiQueryCache[cacheKey] = text
                             return@withContext text
                         }
                     }
                     val code = response.code()
                     val errorDetail = response.errorBody()?.string() ?: "Code $code"
                     if (code == 400 && errorDetail.contains("API_KEY_INVALID")) {
-                        lastError = "Khóa API không hợp lệ cho dịch vụ Google Gemini. Vui lòng kiểm tra lại khóa trong Cài đặt (nếu bạn sử dụng Groq, Claude hoặc OpenAI, hệ thống sẽ tự động chuyển đổi sang dịch vụ tương ứng)."
+                        lastError = "Khóa API không hợp lệ cho dịch vụ Google Gemini. Vui lòng kiểm tra lại khóa trong Cài đặt hoặc file .env."
                         break
                     }
                     lastError = "Gemini ($model): $errorDetail"
@@ -1935,7 +1998,7 @@ class StudyViewModel @Inject constructor(
             }
 
             if (hasHighDemand) {
-                "⚡ Máy chủ AI Gemini hiện đang chịu tải cao tạm thời. Hệ thống đã tự động thử các mô hình dự phòng. Bạn vui lòng thử lại sau vài giây hoặc chuyển sang Groq AI trong Cài đặt."
+                "⚡ Máy chủ AI Gemini hiện đang chịu tải cao tạm thời. Hệ thống đã tự động thử các mô hình Flash dự phòng. Bạn vui lòng thử lại sau vài giây."
             } else {
                 "Lỗi kết nối Gemini API: $lastError"
             }

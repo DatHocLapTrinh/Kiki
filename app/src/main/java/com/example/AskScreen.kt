@@ -172,7 +172,7 @@ fun AskScreen(viewModel: StudyViewModel) {
                         val strings = LocalAppStrings.current
                         Text(strings.knowledgeDecoder, color = Color.White, fontWeight = FontWeight.Bold, fontSize = 18.sp)
                     }
-                    val activeProviderTitle by viewModel.activeProviderDisplayTitle.observeAsState("✨ Kiki AI Mentor")
+                    val activeProviderTitle by viewModel.activeProviderDisplayTitle.observeAsState("🧠 Gemini 2.5 Flash Native Dialog")
                     val effectiveProvider = viewModel.getEffectiveActiveProvider()
                     val indicatorColor = when (effectiveProvider) {
                         StudyViewModel.PROVIDER_GROQ -> Color(0xFFFF9E00)
