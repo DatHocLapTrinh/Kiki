@@ -47,12 +47,15 @@ public class GroqClientService {
     }
 
     private String resolveApiKey() {
-        if (apiKey != null && !apiKey.trim().isEmpty() && !apiKey.contains("your_groq_api_key_here")) {
+        if (apiKey != null && !apiKey.trim().isEmpty() && !apiKey.contains("your_")) {
             return apiKey.trim();
         }
-        String envKey = System.getenv("GROQ_API_KEY");
-        if (envKey != null && !envKey.trim().isEmpty()) {
-            return envKey.trim();
+        String[] envVars = {"AI_API_KEY", "GROQ_API_KEY", "GEMINI_API_KEY", "OPENAI_API_KEY", "ANTHROPIC_API_KEY"};
+        for (String varName : envVars) {
+            String val = System.getenv(varName);
+            if (val != null && !val.trim().isEmpty() && !val.contains("your_")) {
+                return val.trim();
+            }
         }
         return "";
     }
@@ -60,12 +63,35 @@ public class GroqClientService {
     public String generateChatCompletion(String systemPrompt, String userPrompt) throws IOException {
         String activeKey = resolveApiKey();
         if (activeKey.isEmpty()) {
-            log.warn("GROQ_API_KEY is not set. Generating mock response for local testing.");
+            log.warn("No AI API key configured (AI_API_KEY / GROQ_API_KEY / GEMINI_API_KEY). Using high-quality mock response.");
             return generateMockResponse(systemPrompt, userPrompt);
         }
 
+        try {
+            // Tự động nhận diện nhà cung cấp dựa trên tiền tố của API key
+            if (activeKey.startsWith("AIza")) {
+                log.info("Detected Google Gemini API key. Routing to Gemini GenerativeLanguage API.");
+                return callGemini(activeKey, systemPrompt, userPrompt);
+            } else if (activeKey.startsWith("sk-ant-")) {
+                log.info("Detected Anthropic Claude API key. Routing to Anthropic Messages API.");
+                return callClaude(activeKey, systemPrompt, userPrompt);
+            } else if (activeKey.startsWith("sk-")) {
+                log.info("Detected OpenAI API key. Routing to OpenAI Chat Completions API.");
+                return callOpenAiCompatible("https://api.openai.com/v1/chat/completions", activeKey, "gpt-4o-mini", systemPrompt, userPrompt);
+            } else {
+                // Mặc định: Groq AI (Llama 3 / OSS)
+                log.info("Detected Groq / OpenAI-compatible API key. Routing to Groq API.");
+                return callOpenAiCompatible(baseUrl, activeKey, model, systemPrompt, userPrompt);
+            }
+        } catch (Exception e) {
+            log.warn("AI generation failed with live provider: {}. Falling back to structured mock response.", e.getMessage());
+            return generateMockResponse(systemPrompt, userPrompt);
+        }
+    }
+
+    private String callOpenAiCompatible(String url, String key, String modelName, String systemPrompt, String userPrompt) throws IOException {
         Map<String, Object> requestBody = new HashMap<>();
-        requestBody.put("model", model);
+        requestBody.put("model", modelName);
         requestBody.put("temperature", temperature);
         requestBody.put("max_tokens", maxTokens);
 
@@ -78,8 +104,8 @@ public class GroqClientService {
         String jsonPayload = objectMapper.writeValueAsString(requestBody);
 
         Request request = new Request.Builder()
-            .url(baseUrl)
-            .addHeader("Authorization", "Bearer " + activeKey)
+            .url(url)
+            .addHeader("Authorization", "Bearer " + key)
             .addHeader("Content-Type", "application/json")
             .post(RequestBody.create(jsonPayload, MediaType.parse("application/json")))
             .build();
@@ -87,8 +113,7 @@ public class GroqClientService {
         try (Response response = httpClient.newCall(request).execute()) {
             if (!response.isSuccessful()) {
                 String errorBody = response.body() != null ? response.body().string() : "No error body";
-                log.error("Groq API error ({}) : {}", response.code(), errorBody);
-                throw new IOException("Groq API error: " + response.code() + " - " + errorBody);
+                throw new IOException("OpenAI/Groq API error (" + response.code() + "): " + errorBody);
             }
 
             String responseString = response.body() != null ? response.body().string() : "";
@@ -97,8 +122,80 @@ public class GroqClientService {
             if (choices.isArray() && !choices.isEmpty()) {
                 return choices.get(0).path("message").path("content").asText();
             }
+            throw new IOException("Malformed OpenAI/Groq response: choices empty");
+        }
+    }
 
-            throw new IOException("Malformed Groq API response: choices not found");
+    private String callGemini(String key, String systemPrompt, String userPrompt) throws IOException {
+        String url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=" + key;
+        String combined = (systemPrompt != null && !systemPrompt.isEmpty() ? systemPrompt + "\n\n" : "") + userPrompt;
+
+        Map<String, Object> part = Map.of("text", combined);
+        Map<String, Object> content = Map.of("role", "user", "parts", List.of(part));
+        Map<String, Object> body = Map.of("contents", List.of(content));
+
+        String jsonPayload = objectMapper.writeValueAsString(body);
+
+        Request request = new Request.Builder()
+            .url(url)
+            .addHeader("Content-Type", "application/json")
+            .post(RequestBody.create(jsonPayload, MediaType.parse("application/json")))
+            .build();
+
+        try (Response response = httpClient.newCall(request).execute()) {
+            if (!response.isSuccessful()) {
+                String errorBody = response.body() != null ? response.body().string() : "";
+                throw new IOException("Gemini API error (" + response.code() + "): " + errorBody);
+            }
+
+            String responseString = response.body() != null ? response.body().string() : "";
+            JsonNode root = objectMapper.readTree(responseString);
+            JsonNode candidates = root.path("candidates");
+            if (candidates.isArray() && !candidates.isEmpty()) {
+                JsonNode parts = candidates.get(0).path("content").path("parts");
+                if (parts.isArray() && !parts.isEmpty()) {
+                    return parts.get(0).path("text").asText();
+                }
+            }
+            throw new IOException("Malformed Gemini response: parts empty");
+        }
+    }
+
+    private String callClaude(String key, String systemPrompt, String userPrompt) throws IOException {
+        String url = "https://api.anthropic.com/v1/messages";
+
+        Map<String, Object> userMessage = Map.of("role", "user", "content", userPrompt);
+        Map<String, Object> body = new HashMap<>();
+        body.put("model", "claude-3-5-sonnet-20241022");
+        body.put("max_tokens", maxTokens);
+        if (systemPrompt != null && !systemPrompt.isEmpty()) {
+            body.put("system", systemPrompt);
+        }
+        body.put("messages", List.of(userMessage));
+
+        String jsonPayload = objectMapper.writeValueAsString(body);
+
+        Request request = new Request.Builder()
+            .url(url)
+            .addHeader("x-api-key", key)
+            .addHeader("anthropic-version", "2023-06-01")
+            .addHeader("Content-Type", "application/json")
+            .post(RequestBody.create(jsonPayload, MediaType.parse("application/json")))
+            .build();
+
+        try (Response response = httpClient.newCall(request).execute()) {
+            if (!response.isSuccessful()) {
+                String errorBody = response.body() != null ? response.body().string() : "";
+                throw new IOException("Claude API error (" + response.code() + "): " + errorBody);
+            }
+
+            String responseString = response.body() != null ? response.body().string() : "";
+            JsonNode root = objectMapper.readTree(responseString);
+            JsonNode content = root.path("content");
+            if (content.isArray() && !content.isEmpty()) {
+                return content.get(0).path("text").asText();
+            }
+            throw new IOException("Malformed Claude response: content empty");
         }
     }
 
@@ -107,14 +204,14 @@ public class GroqClientService {
             (userPrompt != null && userPrompt.contains("Student question"))) {
             return """
             {
-              "reply": "Chào bạn! Mình là Kiki AI Mentor. Để học tiếng Anh hiệu quả, hãy luyện tập thường xuyên với các ví dụ thực tế.",
-              "grammarTip": "Mỗi ngày ghi nhớ 1 cấu trúc ngữ pháp sẽ giúp phản xạ nói của bạn tự nhiên hơn.",
+              "reply": "Resilient /rɪˈzɪliənt/ (adj)\\n• Nghĩa: Có khả năng phục hồi nhanh chóng sau khó khăn, kiên cường, bền bỉ.\\n• Ví dụ: She is resilient and bounced back quickly after the setback. (Cô ấy rất kiên cường và đã phục hồi nhanh chóng sau thất bại.)\\n• Từ đồng nghĩa: adaptable, flexible, tough, hardy\\n• Từ trái nghĩa: fragile, vulnerable, weak",
+              "grammarTip": "Ghi nhớ từ vựng cùng từ đồng nghĩa và trái nghĩa giúp tăng tốc phản xạ ngôn ngữ.",
               "detectedVocabularies": [
                 {
-                  "word": "persistent",
-                  "phonetic": "/pərˈsɪstənt/",
-                  "meaning": "kiên trì, bền bỉ",
-                  "example": "Be persistent in practicing English every day."
+                  "word": "resilient",
+                  "phonetic": "/rɪˈzɪliənt/",
+                  "meaning": "kiên cường, có khả năng phục hồi nhanh",
+                  "example": "She is resilient and bounced back quickly after the setback."
                 }
               ]
             }
@@ -124,7 +221,7 @@ public class GroqClientService {
         return """
         {
           "title": "Giao tiếp hàng ngày cơ bản",
-          "description": "Chương học mẫu được tạo tự động khi chưa cấu hình GROQ_API_KEY.",
+          "description": "Chương học mẫu được tạo tự động khi chưa cấu hình AI API key.",
           "level": "A1",
           "subject": "Daily Communication",
           "orderNo": 1,

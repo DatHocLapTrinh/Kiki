@@ -41,9 +41,12 @@ import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
@@ -169,18 +172,26 @@ fun AskScreen(viewModel: StudyViewModel) {
                         val strings = LocalAppStrings.current
                         Text(strings.knowledgeDecoder, color = Color.White, fontWeight = FontWeight.Bold, fontSize = 18.sp)
                     }
-                    val currentAiProvider by viewModel.aiProvider.observeAsState(StudyViewModel.PROVIDER_GEMINI)
+                    val activeProviderTitle by viewModel.activeProviderDisplayTitle.observeAsState("✨ Kiki AI Mentor")
+                    val effectiveProvider = viewModel.getEffectiveActiveProvider()
+                    val indicatorColor = when (effectiveProvider) {
+                        StudyViewModel.PROVIDER_GROQ -> Color(0xFFFF9E00)
+                        StudyViewModel.PROVIDER_GEMINI -> Color(0xFF51FAC1)
+                        StudyViewModel.PROVIDER_CLAUDE -> Color(0xFFE07A5F)
+                        StudyViewModel.PROVIDER_OPENAI -> Color(0xFF10A37F)
+                        else -> Color(0xFF51FAC1)
+                    }
                     Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(top = 2.dp)) {
                         Box(
                             modifier = Modifier
                                 .size(6.dp)
                                 .clip(CircleShape)
-                                .background(if (currentAiProvider == StudyViewModel.PROVIDER_GEMINI) Color(0xFF51FAC1) else Color(0xFFFF9E00))
+                                .background(indicatorColor)
                         )
                         Spacer(modifier = Modifier.width(5.dp))
                         Text(
-                            text = if (currentAiProvider == StudyViewModel.PROVIDER_GEMINI) "Gemini 2.5 Flash Native Audio Dialog" else "Groq Llama 3.3",
-                            color = if (currentAiProvider == StudyViewModel.PROVIDER_GEMINI) Color(0xFF51FAC1) else Color(0xFFFF9E00),
+                            text = activeProviderTitle,
+                            color = indicatorColor,
                             fontSize = 11.sp,
                             fontWeight = FontWeight.Medium
                         )
@@ -365,38 +376,19 @@ fun AskScreen(viewModel: StudyViewModel) {
                         }
                         Spacer(modifier = Modifier.height(10.dp))
 
-                        val steps = item.answer.split("[STEP]").filter { it.isNotBlank() }
-                        if (steps.size > 1) {
-                            steps.forEachIndexed { i, stepText ->
-                                StepGlassCard(
-                                    index = i + 1,
-                                    text = stepText.trim(),
-                                    onSpeak = {
-                                        haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                                        viewModel.ttsManager.speak(stepText.trim())
-                                    },
-                                    onCopy = {
-                                        clipboardManager.setText(AnnotatedString(stepText.trim()))
-                                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                                        Toast.makeText(context, strings.copiedToClipboard, Toast.LENGTH_SHORT).show()
-                                    }
-                                )
+                        val displayAnswer = StudyViewModel.sanitizeAiMentorReply(item.answer)
+                        StepGlassCard(
+                            text = displayAnswer,
+                            onSpeak = {
+                                haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                                viewModel.ttsManager.speak(displayAnswer)
+                            },
+                            onCopy = {
+                                clipboardManager.setText(AnnotatedString(displayAnswer))
+                                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                Toast.makeText(context, strings.copiedToClipboard, Toast.LENGTH_SHORT).show()
                             }
-                        } else {
-                            StepGlassCard(
-                                index = 1,
-                                text = item.answer.trim(),
-                                onSpeak = {
-                                    haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                                    viewModel.ttsManager.speak(item.answer.trim())
-                                },
-                                onCopy = {
-                                    clipboardManager.setText(AnnotatedString(item.answer.trim()))
-                                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                                    Toast.makeText(context, strings.copiedToClipboard, Toast.LENGTH_SHORT).show()
-                                }
-                            )
-                        }
+                        )
 
                         // Grammar Insight Banner
                         if (!item.grammarTip.isNullOrBlank()) {
@@ -881,20 +873,29 @@ fun QuestionCard(question: String, imageUri: Any?) {
 
 @Composable
 fun StepGlassCard(
-    index: Int,
     text: String,
+    index: Int = 1,
     onSpeak: () -> Unit = {},
     onCopy: () -> Unit = {}
 ) {
     var visible by remember { mutableStateOf(false) }
-    LaunchedEffect(Unit) { delay(index * 150L); visible = true }
-    AnimatedVisibility(visible = visible, enter = fadeIn(tween(400)) + slideInVertically(tween(400), initialOffsetY = { 40 })) {
-        Row(modifier = Modifier.fillMaxWidth().padding(vertical = 6.dp)) {
+    LaunchedEffect(Unit) { delay(80L); visible = true }
+    AnimatedVisibility(visible = visible, enter = fadeIn(tween(350)) + slideInVertically(tween(350), initialOffsetY = { 25 })) {
+        Row(modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)) {
             Box(
-                modifier = Modifier.padding(top = 4.dp).size(26.dp).clip(CircleShape).background(Brush.linearGradient(listOf(Color(0xFF8A2BE2), Color(0xFF00F5D4)))),
+                modifier = Modifier
+                    .padding(top = 4.dp)
+                    .size(28.dp)
+                    .clip(CircleShape)
+                    .background(Brush.linearGradient(listOf(Color(0xFF8A2BE2), Color(0xFF00F5D4)))),
                 contentAlignment = Alignment.Center
             ) {
-                Text("$index", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                Icon(
+                    imageVector = Icons.Default.AutoAwesome,
+                    contentDescription = "AI Mentor",
+                    tint = Color.White,
+                    modifier = Modifier.size(15.dp)
+                )
             }
             Spacer(modifier = Modifier.width(10.dp))
             Box(
@@ -908,17 +909,17 @@ fun StepGlassCard(
             ) {
                 Column {
                     FormattedAiText(text = text)
-                    Spacer(modifier = Modifier.height(8.dp))
+                    Spacer(modifier = Modifier.height(10.dp))
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.End,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        IconButton(onClick = onCopy, modifier = Modifier.size(24.dp)) {
+                        IconButton(onClick = onCopy, modifier = Modifier.size(26.dp)) {
                             Icon(Icons.Default.ContentCopy, contentDescription = "Copy text", tint = Color(0x80FFFFFF), modifier = Modifier.size(14.dp))
                         }
                         Spacer(modifier = Modifier.width(8.dp))
-                        IconButton(onClick = onSpeak, modifier = Modifier.size(24.dp)) {
+                        IconButton(onClick = onSpeak, modifier = Modifier.size(26.dp)) {
                             Icon(Icons.AutoMirrored.Filled.VolumeUp, contentDescription = "Pronounce", tint = Color(0xFF51FAC1), modifier = Modifier.size(16.dp))
                         }
                     }
@@ -931,12 +932,12 @@ fun StepGlassCard(
 /**
  * Renders AI mentor text with proper formatting:
  * - Strips **bold** markdown asterisks
- * - Renders • bullet points as visual list items
+ * - Renders • bullet points as visual list items with gold labels
+ * - Highlights word/IPA transcription headers
  * - Handles numbered lists (1. 2. 3.)
  */
 @Composable
 fun FormattedAiText(text: String, textColor: Color = Color(0xE6FFFFFF)) {
-    // Strip markdown asterisks and clean up
     val cleaned = text
         .replace(Regex("\\*\\*(.+?)\\*\\*"), "$1")
         .replace(Regex("\\*(.+?)\\*"), "$1")
@@ -944,15 +945,17 @@ fun FormattedAiText(text: String, textColor: Color = Color(0xE6FFFFFF)) {
         .replace(Regex("(?m)^\\s*[-*]\\s+"), "• ")
         .trim()
 
-    // Split into lines for proper bullet rendering
-    val lines = cleaned.split("\n").filter { it.isNotEmpty() }
+    val lines = cleaned.split("\n").filter { it.isNotBlank() }
 
-    Column(verticalArrangement = Arrangement.spacedBy(5.dp)) {
+    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
         lines.forEach { line ->
-            val isBullet = line.trimStart().startsWith("•")
-            val isNumbered = line.trimStart().matches(Regex("^\\d+\\..*"))
+            val trimmedLine = line.trim()
+            val isBullet = trimmedLine.startsWith("•")
+            val isNumbered = trimmedLine.matches(Regex("^\\d+\\..*"))
 
             if (isBullet) {
+                val bulletContent = trimmedLine.removePrefix("•").trim()
+                val colonIdx = bulletContent.indexOf(':')
                 Row(
                     verticalAlignment = Alignment.Top,
                     modifier = Modifier.fillMaxWidth()
@@ -964,18 +967,45 @@ fun FormattedAiText(text: String, textColor: Color = Color(0xE6FFFFFF)) {
                         fontWeight = FontWeight.Bold,
                         modifier = Modifier.padding(top = 1.dp, end = 6.dp)
                     )
-                    Text(
-                        text = line.trimStart().removePrefix("•").trim(),
-                        color = textColor,
-                        fontSize = 15.sp,
-                        lineHeight = 22.sp,
-                        modifier = Modifier.weight(1f)
-                    )
+                    if (colonIdx > 0 && colonIdx < 30) {
+                        val label = bulletContent.substring(0, colonIdx + 1)
+                        val rest = bulletContent.substring(colonIdx + 1)
+                        Text(
+                            text = buildAnnotatedString {
+                                withStyle(
+                                    SpanStyle(
+                                        color = Color(0xFFFFD166),
+                                        fontWeight = FontWeight.SemiBold
+                                    )
+                                ) {
+                                    append(label)
+                                }
+                                withStyle(
+                                    SpanStyle(
+                                        color = textColor
+                                    )
+                                ) {
+                                    append(rest)
+                                }
+                            },
+                            fontSize = 15.sp,
+                            lineHeight = 22.sp,
+                            modifier = Modifier.weight(1f)
+                        )
+                    } else {
+                        Text(
+                            text = bulletContent,
+                            color = textColor,
+                            fontSize = 15.sp,
+                            lineHeight = 22.sp,
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
                 }
             } else if (isNumbered) {
-                val dotIdx = line.indexOf('.')
-                val num = line.substring(0, dotIdx + 1).trim()
-                val content = line.substring(dotIdx + 1).trim()
+                val dotIdx = trimmedLine.indexOf('.')
+                val num = trimmedLine.substring(0, dotIdx + 1).trim()
+                val content = trimmedLine.substring(dotIdx + 1).trim()
                 Row(
                     verticalAlignment = Alignment.Top,
                     modifier = Modifier.fillMaxWidth()
@@ -996,11 +1026,13 @@ fun FormattedAiText(text: String, textColor: Color = Color(0xE6FFFFFF)) {
                     )
                 }
             } else {
+                val isHeaderWord = trimmedLine.contains("/") || (trimmedLine.contains("(") && trimmedLine.contains(")"))
                 Text(
-                    text = line,
-                    color = textColor,
-                    fontSize = 15.sp,
-                    lineHeight = 22.sp
+                    text = trimmedLine,
+                    color = if (isHeaderWord) Color(0xFFFFD166) else textColor,
+                    fontSize = if (isHeaderWord) 16.5.sp else 15.sp,
+                    fontWeight = if (isHeaderWord) FontWeight.Bold else FontWeight.Normal,
+                    lineHeight = 23.sp
                 )
             }
         }

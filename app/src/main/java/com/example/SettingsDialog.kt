@@ -6,6 +6,7 @@ import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
@@ -46,19 +47,16 @@ fun SettingsDialog(
     onLogout: () -> Unit
 ) {
     val context = LocalContext.current
-    val currentProvider = viewModel?.aiProvider?.observeAsState(StudyViewModel.PROVIDER_GEMINI)?.value ?: StudyViewModel.PROVIDER_GEMINI
-    val currentGroqKey = viewModel?.userApiKey?.observeAsState("")?.value ?: ""
-    val currentGeminiKey = viewModel?.geminiApiKey?.observeAsState("")?.value ?: ""
+    val currentProvider = viewModel?.aiProvider?.observeAsState(StudyViewModel.PROVIDER_AUTO)?.value ?: StudyViewModel.PROVIDER_AUTO
+    val currentUniversalKey = viewModel?.universalAiKey?.observeAsState("")?.value ?: ""
     val autoTtsEnabled = viewModel?.audioDialogAutoTts?.observeAsState(true)?.value ?: true
     val batterySaverEnabled = viewModel?.batterySaver?.observeAsState(false)?.value ?: false
     val soundPrefs = remember {
         context.getSharedPreferences(com.example.audio.SoundEffectManager.PREFS_NAME, android.content.Context.MODE_PRIVATE)
     }
     var soundEnabled by remember { mutableStateOf(soundPrefs.getBoolean("sound_enabled", true)) }
-    var groqKeyInput by remember(currentGroqKey) { mutableStateOf(currentGroqKey) }
-    var groqKeyVisible by remember { mutableStateOf(false) }
-    var geminiKeyInput by remember(currentGeminiKey) { mutableStateOf(currentGeminiKey) }
-    var geminiKeyVisible by remember { mutableStateOf(false) }
+    var universalKeyInput by remember(currentUniversalKey) { mutableStateOf(currentUniversalKey) }
+    var universalKeyVisible by remember { mutableStateOf(false) }
 
     Dialog(
         onDismissRequest = onDismiss,
@@ -157,187 +155,142 @@ fun SettingsDialog(
                 Spacer(modifier = Modifier.height(20.dp))
 
                 // AI Engine Selection & Config Section
+                // Header: Trí Tuệ Nhân Tạo & Gia Sư AI
                 Text(
-                    "Trí Tuệ Nhân Tạo & Gia Sư AI",
+                    "Trí Tuệ Nhân Tạo Đa Nền Tảng (Universal AI)",
                     color = Color(0xFF51FAC1),
                     fontSize = 15.sp,
                     fontWeight = FontWeight.Bold
                 )
-                Spacer(modifier = Modifier.height(8.dp))
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    "Nhập 1 API Key duy nhất của bất kỳ mô hình nào (Groq, Gemini, Claude, OpenAI). Hệ thống sẽ tự động nhận diện và kết nối chuẩn xác.",
+                    color = Color(0xB3FFFFFF),
+                    fontSize = 12.sp,
+                    lineHeight = 16.sp
+                )
+                Spacer(modifier = Modifier.height(10.dp))
 
-                // Provider Switcher Row
+                // Provider Switcher Chips
+                val providers = listOf(
+                    StudyViewModel.PROVIDER_AUTO to "✨ Tự Động",
+                    StudyViewModel.PROVIDER_GROQ to "⚡ Groq",
+                    StudyViewModel.PROVIDER_GEMINI to "🧠 Gemini",
+                    StudyViewModel.PROVIDER_CLAUDE to "🎭 Claude",
+                    StudyViewModel.PROVIDER_OPENAI to "🤖 OpenAI"
+                )
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .clip(RoundedCornerShape(14.dp))
-                        .background(Color(0x3314142B))
-                        .padding(4.dp),
+                        .horizontalScroll(rememberScrollState()),
                     horizontalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
-                    val isGemini = currentProvider == StudyViewModel.PROVIDER_GEMINI
-                    Box(
-                        modifier = Modifier
-                            .weight(1f)
-                            .clip(RoundedCornerShape(10.dp))
-                            .background(
-                                if (isGemini) Brush.horizontalGradient(listOf(Color(0xFF388E3C), Color(0xFF51FAC1)))
-                                else Brush.horizontalGradient(listOf(Color.Transparent, Color.Transparent))
+                    providers.forEach { (provId, label) ->
+                        val isSelected = currentProvider == provId
+                        Box(
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(10.dp))
+                                .background(
+                                    if (isSelected) Brush.horizontalGradient(listOf(Color(0xFF388E3C), Color(0xFF51FAC1)))
+                                    else Brush.horizontalGradient(listOf(Color(0x22FFFFFF), Color(0x22FFFFFF)))
+                                )
+                                .clickable { viewModel?.setAiProvider(provId) }
+                                .padding(horizontal = 12.dp, vertical = 8.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                label,
+                                color = if (isSelected) Color(0xFF0F0C29) else Color(0xCCFFFFFF),
+                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                                fontSize = 12.sp
                             )
-                            .clickable { viewModel?.setAiProvider(StudyViewModel.PROVIDER_GEMINI) }
-                            .padding(vertical = 10.dp),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(
-                            "✨ Gemini 2.5 Flash",
-                            color = if (isGemini) Color(0xFF0F0C29) else Color(0xCCFFFFFF),
-                            fontWeight = if (isGemini) FontWeight.Bold else FontWeight.Medium,
-                            fontSize = 13.sp
-                        )
-                    }
-
-                    val isGroq = currentProvider == StudyViewModel.PROVIDER_GROQ
-                    Box(
-                        modifier = Modifier
-                            .weight(1f)
-                            .clip(RoundedCornerShape(10.dp))
-                            .background(
-                                if (isGroq) Brush.horizontalGradient(listOf(Color(0xFFFF9E00), Color(0xFFFF5400)))
-                                else Brush.horizontalGradient(listOf(Color.Transparent, Color.Transparent))
-                            )
-                            .clickable { viewModel?.setAiProvider(StudyViewModel.PROVIDER_GROQ) }
-                            .padding(vertical = 10.dp),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(
-                            "⚡ Groq (Llama 3)",
-                            color = if (isGroq) Color(0xFF0F0C29) else Color(0xCCFFFFFF),
-                            fontWeight = if (isGroq) FontWeight.Bold else FontWeight.Medium,
-                            fontSize = 13.sp
-                        )
+                        }
                     }
                 }
 
                 Spacer(modifier = Modifier.height(12.dp))
 
-                if (currentProvider == StudyViewModel.PROVIDER_GEMINI) {
-                    // Gemini Config
-                    Text(
-                        "Mô hình: Gemini 2.5 Flash Native Audio Dialog",
-                        color = Color(0xFFFFD166),
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.SemiBold
+                // Single Unified API Key Input Field
+                OutlinedTextField(
+                    value = universalKeyInput,
+                    onValueChange = { universalKeyInput = it },
+                    label = { Text("AI API Key (Dán key bất kỳ)") },
+                    placeholder = { Text("gsk_..., AIza..., sk-ant-..., sk-...") },
+                    visualTransformation = if (universalKeyVisible) VisualTransformation.None else PasswordVisualTransformation(),
+                    singleLine = true,
+                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+                    trailingIcon = {
+                        IconButton(onClick = { universalKeyVisible = !universalKeyVisible }) {
+                            Icon(
+                                if (universalKeyVisible) Icons.Default.VisibilityOff else Icons.Default.Visibility,
+                                contentDescription = "Toggle Key",
+                                tint = Color(0x99FFFFFF)
+                            )
+                        }
+                    },
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedTextColor = Color.White,
+                        unfocusedTextColor = Color.White,
+                        focusedBorderColor = Color(0xFF51FAC1),
+                        unfocusedBorderColor = Color(0x66FFFFFF),
+                        focusedLabelColor = Color(0xFF51FAC1),
+                        unfocusedLabelColor = Color(0x99FFFFFF)
                     )
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Text(
-                        "Hỗ trợ đối thoại giọng nói tương tác trực tiếp, đa phương thức âm thanh và thị giác siêu nhanh.",
-                        color = Color(0xB3FFFFFF),
-                        fontSize = 11.sp
-                    )
-                    Spacer(modifier = Modifier.height(8.dp))
-                    OutlinedTextField(
-                        value = geminiKeyInput,
-                        onValueChange = { geminiKeyInput = it },
-                        label = { Text("Gemini API Key (Tùy chỉnh)") },
-                        placeholder = { Text("Khóa mặc định đã sẵn sàng") },
-                        visualTransformation = if (geminiKeyVisible) VisualTransformation.None else PasswordVisualTransformation(),
-                        singleLine = true,
-                        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
-                        trailingIcon = {
-                            IconButton(onClick = { geminiKeyVisible = !geminiKeyVisible }) {
-                                Icon(
-                                    if (geminiKeyVisible) Icons.Default.VisibilityOff else Icons.Default.Visibility,
-                                    contentDescription = "Toggle Key",
-                                    tint = Color(0x99FFFFFF)
-                                )
-                            }
-                        },
-                        modifier = Modifier.fillMaxWidth(),
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedTextColor = Color.White,
-                            unfocusedTextColor = Color.White,
-                            focusedBorderColor = Color(0xFF51FAC1),
-                            unfocusedBorderColor = Color(0x66FFFFFF),
-                            focusedLabelColor = Color(0xFF51FAC1),
-                            unfocusedLabelColor = Color(0x99FFFFFF)
-                        )
-                    )
-                    Spacer(modifier = Modifier.height(6.dp))
-                    val hasDefaultKey = viewModel?.getEffectiveGeminiApiKey()?.isNotBlank() == true
-                    if (hasDefaultKey) {
-                        Text(
-                            "🟢 Khóa Gemini 2.5 Flash tích hợp đang hoạt động hoàn hảo.",
-                            color = Color(0xFF51FAC1),
-                            fontSize = 11.sp
-                        )
-                    }
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Button(
-                        onClick = {
-                            viewModel?.setGeminiApiKey(geminiKeyInput)
-                            Toast.makeText(context, "Đã lưu cấu hình Gemini thành công!", Toast.LENGTH_SHORT).show()
-                        },
-                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF51FAC1)),
-                        shape = RoundedCornerShape(12.dp),
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Text("Lưu Khóa Gemini", color = Color(0xFF14141E), fontWeight = FontWeight.Bold)
-                    }
+                )
 
-                    Spacer(modifier = Modifier.height(10.dp))
-                    SettingsToggle(
-                        title = "Đối thoại âm thanh tự động (Auto-TTS)",
-                        icon = Icons.Default.SpatialAudio,
-                        initialValue = autoTtsEnabled,
-                        onChanged = { viewModel?.setAudioDialogAutoTts(it) }
-                    )
-                } else {
-                    // Groq Config Section
-                    Text(
-                        "Mô hình: Llama-3.3-70b-versatile (Groq)",
-                        color = Color(0xFFFFD166),
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.SemiBold
-                    )
-                    Spacer(modifier = Modifier.height(8.dp))
-                    OutlinedTextField(
-                        value = groqKeyInput,
-                        onValueChange = { groqKeyInput = it },
-                        label = { Text("Groq API Key (gsk_...)") },
-                        visualTransformation = if (groqKeyVisible) VisualTransformation.None else PasswordVisualTransformation(),
-                        singleLine = true,
-                        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
-                        trailingIcon = {
-                            IconButton(onClick = { groqKeyVisible = !groqKeyVisible }) {
-                                Icon(
-                                    if (groqKeyVisible) Icons.Default.VisibilityOff else Icons.Default.Visibility,
-                                    contentDescription = "Toggle Key",
-                                    tint = Color(0x99FFFFFF)
-                                )
-                            }
-                        },
-                        modifier = Modifier.fillMaxWidth(),
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedTextColor = Color.White,
-                            unfocusedTextColor = Color.White,
-                            focusedBorderColor = Color(0xFF51FAC1),
-                            unfocusedBorderColor = Color(0x66FFFFFF),
-                            focusedLabelColor = Color(0xFF51FAC1),
-                            unfocusedLabelColor = Color(0x99FFFFFF)
-                        )
-                    )
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Button(
-                        onClick = {
-                            viewModel?.setCustomApiKey(groqKeyInput)
-                            Toast.makeText(context, "Đã lưu Groq API Key thành công!", Toast.LENGTH_SHORT).show()
-                        },
-                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFF9E00)),
-                        shape = RoundedCornerShape(12.dp),
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Text("Lưu Khóa Groq", color = Color(0xFF14141E), fontWeight = FontWeight.Bold)
+                Spacer(modifier = Modifier.height(8.dp))
+
+                // Real-time Detection Badge Card
+                val detected = StudyViewModel.detectAiProvider(universalKeyInput)
+                val (badgeText, badgeColor) = when {
+                    universalKeyInput.trim().startsWith("gsk_") ->
+                        "⚡ Đã nhận diện: Groq AI (Llama 3.3 70B - Tốc độ cực nhanh)" to Color(0xFFFF9E00)
+                    universalKeyInput.trim().startsWith("AIza") ->
+                        "🧠 Đã nhận diện: Google Gemini (2.5 Flash Native Dialog)" to Color(0xFF51FAC1)
+                    universalKeyInput.trim().startsWith("sk-ant-") ->
+                        "🎭 Đã nhận diện: Anthropic Claude (3.5 Sonnet)" to Color(0xFFE07A5F)
+                    universalKeyInput.trim().startsWith("sk-") ->
+                        "🤖 Đã nhận diện: OpenAI (GPT-4o / GPT-4o-mini)" to Color(0xFF10A37F)
+                    universalKeyInput.isNotBlank() ->
+                        "✨ Đã cấu hình khóa AI tùy chỉnh (${StudyViewModel.getProviderDisplayName(detected)})" to Color(0xFF80D8FF)
+                    else -> {
+                        val hasEnvKey = viewModel?.getEffectiveUniversalApiKey()?.isNotBlank() == true
+                        if (hasEnvKey) {
+                            "🟢 Khóa AI từ file cấu hình .env đang hoạt động (${viewModel?.activeProviderDisplayTitle?.value ?: "Sẵn sàng"})." to Color(0xFF51FAC1)
+                        } else {
+                            "ℹ️ Hãy dán API key của bạn vào đây hoặc điền biến AI_API_KEY trong file .env." to Color(0xFFFFD166)
+                        }
                     }
                 }
+
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Box(modifier = Modifier.size(7.dp).clip(CircleShape).background(badgeColor))
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text(badgeText, color = badgeColor, fontSize = 11.sp, fontWeight = FontWeight.Medium)
+                }
+
+                Spacer(modifier = Modifier.height(10.dp))
+
+                Button(
+                    onClick = {
+                        viewModel?.setUniversalAiApiKey(universalKeyInput)
+                        Toast.makeText(context, "Đã lưu và kích hoạt AI thành công!", Toast.LENGTH_SHORT).show()
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF51FAC1)),
+                    shape = RoundedCornerShape(12.dp),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text("Lưu & Kích Hoạt Khóa AI", color = Color(0xFF14141E), fontWeight = FontWeight.Bold)
+                }
+
+                Spacer(modifier = Modifier.height(10.dp))
+                SettingsToggle(
+                    title = "Đối thoại âm thanh tự động (Auto-TTS)",
+                    icon = Icons.Default.SpatialAudio,
+                    initialValue = autoTtsEnabled,
+                    onChanged = { viewModel?.setAudioDialogAutoTts(it) }
+                )
 
                 Spacer(modifier = Modifier.height(20.dp))
 
