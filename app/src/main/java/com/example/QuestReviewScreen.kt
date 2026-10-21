@@ -57,7 +57,12 @@ fun QuestReviewScreen(viewModel: StudyViewModel, onBack: () -> Unit) {
         }
     }
     val strings = LocalAppStrings.current
-    
+
+    LaunchedEffect(results) {
+        if (analysis == null && results.isNotEmpty()) {
+            viewModel.analyzeQuestResults(context, results)
+        }
+    }
     Scaffold(
         topBar = {
             TopAppBar(
@@ -164,10 +169,9 @@ fun QuestReviewScreen(viewModel: StudyViewModel, onBack: () -> Unit) {
                                 Spacer(modifier = Modifier.width(8.dp))
                                 Text(strings.analysisComplete, color = Color(0xFF51FAC1), fontWeight = FontWeight.Bold)
                             }
-                            Text(
+                            FormattedAiText(
                                 text = analysis ?: "",
-                                color = Color.White,
-                                fontSize = 15.sp
+                                textColor = Color.White
                             )
                         }
                     }

@@ -41,6 +41,7 @@ import com.example.model.QuestItem
 import com.example.model.QuestionType
 import com.example.ui.ConfettiEffect
 import com.example.ui.MatchingPairsView
+import com.example.ui.ListeningChallengeView
 import com.example.ui.SentenceBuilderView
 import com.example.ui.SpeakingChallengeView
 import com.example.ui.mascot.LivingMascotView
@@ -292,7 +293,7 @@ fun QuestScreen(viewModel: StudyViewModel, onFinish: () -> Unit) {
                         contentAlignment = Alignment.TopCenter
                     ) {
                         Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.fillMaxWidth()) {
-                            val hasDedicatedAudio = currentQ.type == QuestionType.SPEAKING_CHALLENGE || currentQ.type == QuestionType.SENTENCE_BUILDER
+                            val hasDedicatedAudio = currentQ.type == QuestionType.SPEAKING_CHALLENGE || currentQ.type == QuestionType.SENTENCE_BUILDER || currentQ.type == QuestionType.LISTENING_CHALLENGE
                             Row(
                                 verticalAlignment = Alignment.CenterVertically,
                                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -410,6 +411,35 @@ fun QuestScreen(viewModel: StudyViewModel, onFinish: () -> Unit) {
                                         },
                                         onSpeakPrompt = {
                                             viewModel.ttsManager.speak(currentQ.correctSentence.ifEmpty { currentQ.question })
+                                        }
+                                    )
+                                }
+                                QuestionType.LISTENING_CHALLENGE -> {
+                                    ListeningChallengeView(
+                                        sentenceToListen = currentQ.speakingSentence.ifEmpty { currentQ.correctSentence },
+                                        availableTokens = currentQ.sentenceTokens,
+                                        selectedTokenIndices = selectedTokenIndices,
+                                        isChecked = isChecked,
+                                        isCorrect = isCurrentCorrect,
+                                        isEnglish = isEnglish,
+                                        isSpeaking = isSpeaking,
+                                        onTokenSelected = { tokenIdx ->
+                                            if (!selectedTokenIndices.contains(tokenIdx)) {
+                                                selectedTokenIndices = selectedTokenIndices + tokenIdx
+                                            }
+                                        },
+                                        onTokenRemoved = { position ->
+                                            if (position in selectedTokenIndices.indices) {
+                                                selectedTokenIndices = selectedTokenIndices.filterIndexed { idx, _ -> idx != position }
+                                            }
+                                        },
+                                        onPlayAudio = {
+                                            val sentence = currentQ.speakingSentence.ifEmpty { currentQ.correctSentence }
+                                            viewModel.ttsManager.speak(sentence, isSlow = false)
+                                        },
+                                        onPlaySlow = {
+                                            val sentence = currentQ.speakingSentence.ifEmpty { currentQ.correctSentence }
+                                            viewModel.ttsManager.speak(sentence, isSlow = true)
                                         }
                                     )
                                 }
@@ -612,6 +642,7 @@ fun QuestScreen(viewModel: StudyViewModel, onFinish: () -> Unit) {
 
                             val isCheckEnabled = when (questions[currentQuestion].type) {
                                 QuestionType.SENTENCE_BUILDER -> selectedTokenIndices.isNotEmpty()
+                                QuestionType.LISTENING_CHALLENGE -> selectedTokenIndices.isNotEmpty()
                                 QuestionType.MATCHING_PAIRS -> isMatchingCompleted
                                 QuestionType.SPEAKING_CHALLENGE -> speakingResult != null
                                 else -> selectedOption != -1
@@ -622,6 +653,16 @@ fun QuestScreen(viewModel: StudyViewModel, onFinish: () -> Unit) {
                                     isChecked = true
                                     val isCorrect = when (currentQ.type) {
                                         QuestionType.SENTENCE_BUILDER -> {
+                                            val assembledWords = selectedTokenIndices.mapNotNull { currentQ.sentenceTokens.getOrNull(it) }
+                                            currentQ.userSentenceTokens = assembledWords
+                                            val assembledSentence = assembledWords.joinToString(" ")
+                                            fun normalize(s: String) = s.lowercase(Locale.ROOT)
+                                                .replace(Regex("[.,!?;:\"]"), "")
+                                                .replace(Regex("\\s+"), " ")
+                                                .trim()
+                                            normalize(assembledSentence) == normalize(currentQ.correctSentence)
+                                        }
+                                        QuestionType.LISTENING_CHALLENGE -> {
                                             val assembledWords = selectedTokenIndices.mapNotNull { currentQ.sentenceTokens.getOrNull(it) }
                                             currentQ.userSentenceTokens = assembledWords
                                             val assembledSentence = assembledWords.joinToString(" ")
@@ -752,13 +793,58 @@ fun QuestScreen(viewModel: StudyViewModel, onFinish: () -> Unit) {
                                             modifier = Modifier.size(28.dp)
                                         )
                                     }
-                                    Spacer(modifier = Modifier.width(12.dp))
-                                    Text(
-                                        text = if (isCurrentCorrect) strings.correctNotice else strings.incorrectNotice,
-                                        color = Color.White,
-                                        fontSize = 18.sp,
-                                        fontWeight = FontWeight.ExtraBold
-                                    )
+                                    Column(modifier = Modifier.weight(1f, fill = false)) {
+                                        Text(
+                                            text = if (isCurrentCorrect) strings.correctNotice else strings.incorrectNotice,
+                                            color = Color.White,
+                                            fontSize = 18.sp,
+                                            fontWeight = FontWeight.ExtraBold
+                                        )
+                                        val encouragementText = when (currentQ.type) {
+                                            QuestionType.LISTENING_CHALLENGE -> if (isCurrentCorrect) {
+                                                if (isEnglish) "Awesome! Your listening ear is spot on! 🎧✨"
+                                                else "Tuyệt vời! Bạn nghe rất chuẩn và bắt nhịp cực kỳ chính xác! 🎧✨"
+                                            } else {
+                                                if (isEnglish) "Keep going! Tap speaker to listen again and master it 💪"
+                                                else "Đừng nản lòng! Hãy bấm nút loa để nghe lại một lần nữa và ghi nhớ nhé 💪"
+                                            }
+                                            QuestionType.SPEAKING_CHALLENGE -> if (isCurrentCorrect) {
+                                                if (isEnglish) "Great pronunciation! Native-like cadence! 🎙️"
+                                                else "Phát âm rất tốt! Ngữ điệu chuẩn bản xứ! 🎙️"
+                                            } else {
+                                                if (isEnglish) "Speak clearly into the microphone to improve! 🎙️"
+                                                else "Hãy kiên trì luyện tập! Phát âm to và rõ ràng hơn nhé 🎙️"
+                                            }
+                                            QuestionType.SENTENCE_BUILDER -> if (isCurrentCorrect) {
+                                                if (isEnglish) "Perfect sentence structure! 🧩"
+                                                else "Cấu trúc câu hoàn hảo! Bạn sắp xếp từ rất chuẩn 🧩"
+                                            } else {
+                                                if (isEnglish) "Review the correct word order below! 💡"
+                                                else "Xem kỹ thứ tự các từ trong câu chuẩn bên dưới nhé! 💡"
+                                            }
+                                            QuestionType.MATCHING_PAIRS -> if (isCurrentCorrect) {
+                                                if (isEnglish) "Flawless matching! Great vocabulary memory! 🎯"
+                                                else "Ghép cặp chuẩn xác! Trí nhớ từ vựng rất tuyệt vời! 🎯"
+                                            } else {
+                                                if (isEnglish) "Review the word pairs below to remember! 📚"
+                                                else "Xem lại các cặp từ bên dưới để ghi nhớ nhé! 📚"
+                                            }
+                                            else -> if (isCurrentCorrect) {
+                                                if (isEnglish) "Spot on! Keep up the brilliant momentum! 🔥"
+                                                else "Chính xác! Tiếp tục giữ vững phong độ xuất sắc nhé! 🔥"
+                                            } else {
+                                                if (isEnglish) "Learn from mistakes to conquer next time! 💪"
+                                                else "Sai một lần để nhớ lâu hơn! Cố gắng ở câu tiếp theo nhé 💪"
+                                            }
+                                        }
+                                        Spacer(modifier = Modifier.height(2.dp))
+                                        Text(
+                                            text = encouragementText,
+                                            color = if (isCurrentCorrect) Color(0xFF51FAC1) else Color(0xFFFFD166),
+                                            fontSize = 12.5.sp,
+                                            fontWeight = FontWeight.Medium
+                                        )
+                                    }
                                 }
 
                                 if (isCurrentCorrect && consecutiveCorrect >= 2) {
@@ -790,6 +876,7 @@ fun QuestScreen(viewModel: StudyViewModel, onFinish: () -> Unit) {
                                 Spacer(modifier = Modifier.height(12.dp))
                                 val correctText = when (currentQ.type) {
                                     QuestionType.SENTENCE_BUILDER -> currentQ.correctSentence
+                                    QuestionType.LISTENING_CHALLENGE -> currentQ.correctSentence
                                     QuestionType.MATCHING_PAIRS -> currentQ.matchingPairs.joinToString("\n") { "• ${it.english} ↔ ${it.vietnamese}" }
                                     QuestionType.SPEAKING_CHALLENGE -> currentQ.speakingSentence.ifEmpty { currentQ.question }
                                     else -> currentQ.options.getOrNull(currentQ.correctIndex) ?: ""
@@ -905,7 +992,7 @@ fun QuestScreen(viewModel: StudyViewModel, onFinish: () -> Unit) {
                                     haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
                                     val activeQ = questions[currentQuestion]
                                     when (activeQ.type) {
-                                        QuestionType.SENTENCE_BUILDER, QuestionType.MATCHING_PAIRS, QuestionType.SPEAKING_CHALLENGE -> {
+                                        QuestionType.SENTENCE_BUILDER, QuestionType.LISTENING_CHALLENGE, QuestionType.MATCHING_PAIRS, QuestionType.SPEAKING_CHALLENGE -> {
                                             userAnswers[currentQuestion] = if (isCurrentCorrect) 0 else -1
                                         }
                                         else -> {
@@ -925,7 +1012,7 @@ fun QuestScreen(viewModel: StudyViewModel, onFinish: () -> Unit) {
                                     } else {
                                         val finalResults = questions.mapIndexed { idx, item ->
                                             when (item.type) {
-                                                QuestionType.SENTENCE_BUILDER -> {
+                                                QuestionType.SENTENCE_BUILDER, QuestionType.LISTENING_CHALLENGE -> {
                                                     val assembled = item.userSentenceTokens.joinToString(" ")
                                                     val isItemCorrect = userAnswers[idx] == 0
                                                     val copy = QuestItem(

@@ -1,6 +1,7 @@
 package com.example.repository
 
 import android.content.Context
+import com.example.model.ChapterGeneratedResponse
 import com.example.model.MatchingPair
 import com.example.model.QAItem
 import com.example.model.QuestItem
@@ -173,18 +174,21 @@ class DataRepository @Inject constructor(
                     options.add(array.getString(i))
                 }
                 val correctIdx = q.correctAnswer.toIntOrNull() ?: 0
-                val isExplicitSpeaking = q.questionType.equals("SPEAKING_CHALLENGE", ignoreCase = true)
+                val isExplicitSpeaking = q.questionType.equals("SPEAKING_CHALLENGE", ignoreCase = true) || q.questionType.equals("SPEAKING", ignoreCase = true)
                 val isExplicitMatching = q.questionType.equals("MATCHING_PAIRS", ignoreCase = true)
                 val isExplicitBuilder = q.questionType.equals("SENTENCE_BUILDER", ignoreCase = true)
+                val isExplicitListening = q.questionType.equals("LISTENING_CHALLENGE", ignoreCase = true) || q.questionType.equals("LISTENING", ignoreCase = true)
                 val hasBlanks = q.questionText.contains(Regex("_{2,}"))
 
-                // Transform suitable questions (index % 6 == 4 or explicit type) into Speaking Challenge
+                // 1. Speaking Challenge
                 if (isExplicitSpeaking || (hasBlanks && index % 6 == 4)) {
                     val correctWord = options.getOrNull(correctIdx) ?: ""
-                    val fullSentence = q.questionText.replace(Regex("_{2,}"), correctWord)
-                        .replace(Regex("\\s+"), " ")
-                        .trim()
-                    if (fullSentence.length in 8..95) {
+                    val fullSentence = if (hasBlanks) {
+                        q.questionText.replace(Regex("_{2,}"), correctWord).replace(Regex("\\s+"), " ").trim()
+                    } else {
+                        (options.firstOrNull() ?: q.questionText).trim()
+                    }
+                    if (fullSentence.isNotBlank()) {
                         return@mapIndexedNotNull QuestItem(
                             question = "Luyện nói câu tiếng Anh sau chuẩn bản xứ 🎙️",
                             options = listOf(fullSentence),
@@ -195,12 +199,22 @@ class DataRepository @Inject constructor(
                     }
                 }
 
-                // Transform suitable questions (index % 7 == 6 or explicit type) into Matching Pairs
+                // 2. Matching Pairs (Word <-> Meaning)
                 if (isExplicitMatching || index % 7 == 6) {
-                    val selectedPairs = vocabularyPairsBank.shuffled().take(4)
+                    val hasKeyVal = options.any { it.contains("=") }
+                    val selectedPairs = if (hasKeyVal) {
+                        options.mapIndexedNotNull { optIdx, opt ->
+                            val parts = opt.split("=", limit = 2)
+                            if (parts.size == 2 && parts[0].isNotBlank() && parts[1].isNotBlank()) {
+                                MatchingPair(optIdx + 1, parts[0].trim(), parts[1].trim())
+                            } else null
+                        }.takeIf { it.size >= 2 } ?: vocabularyPairsBank.shuffled().take(4)
+                    } else {
+                        vocabularyPairsBank.shuffled().take(4)
+                    }
                     val pairSummary = selectedPairs.joinToString(", ") { "${it.english} = ${it.vietnamese}" }
                     return@mapIndexedNotNull QuestItem(
-                        question = "Ghép cặp các từ vựng tiếng Anh với nghĩa tiếng Việt tương ứng",
+                        question = "Ghép cặp các từ vựng tiếng Anh với nghĩa tiếng Việt tương ứng 🧩",
                         options = listOf(pairSummary),
                         correctIndex = 0,
                         type = QuestionType.MATCHING_PAIRS,
@@ -208,21 +222,25 @@ class DataRepository @Inject constructor(
                     )
                 }
 
-                // Transform suitable questions (every 3rd question or explicit type) into interactive Sentence Builder
-                val shouldBeSentenceBuilder = (isExplicitBuilder || (hasBlanks && index % 3 == 2))
+                // 3. Listening Challenge & Sentence Builder
+                val shouldBeListening = isExplicitListening || (hasBlanks && index % 5 == 4)
+                val shouldBeBuilder = isExplicitBuilder || (hasBlanks && index % 3 == 2 && !shouldBeListening)
 
-                if (shouldBeSentenceBuilder && options.isNotEmpty() && correctIdx in options.indices) {
-                    val correctWord = options[correctIdx]
-                    val fullSentence = q.questionText.replace(Regex("_{2,}"), correctWord)
-                        .replace(Regex("\\s+"), " ")
-                        .trim()
+                if (shouldBeListening || shouldBeBuilder) {
+                    val correctWord = options.getOrNull(correctIdx) ?: ""
+                    val fullSentence = if (hasBlanks) {
+                        q.questionText.replace(Regex("_{2,}"), correctWord).replace(Regex("\\s+"), " ").trim()
+                    } else {
+                        // If explicit listening or builder without blank: options[0] or questionText is the target sentence
+                        (options.firstOrNull() ?: q.questionText).trim()
+                    }
 
                     val rawTokens = fullSentence.split(Regex("\\s+"))
                         .map { it.trim().trim('.', ',', '!', '?', ';', ':', '"') }
                         .filter { it.isNotEmpty() }
 
-                    if (rawTokens.size in 3..14) {
-                        // Gather 1-2 distractors from wrong options to challenge the user
+                    if (rawTokens.size >= 2) {
+                        // Gather distractors if options available
                         val distractorOptions = options.filterIndexed { i, _ -> i != correctIdx }
                         val distractors = mutableListOf<String>()
                         for (d in distractorOptions) {
@@ -235,14 +253,26 @@ class DataRepository @Inject constructor(
 
                         val availableTokens = (rawTokens + distractors).shuffled()
 
-                        return@mapIndexedNotNull QuestItem(
-                            question = q.questionText,
-                            options = options,
-                            correctIndex = correctIdx,
-                            type = QuestionType.SENTENCE_BUILDER,
-                            sentenceTokens = availableTokens,
-                            correctSentence = fullSentence
-                        )
+                        if (shouldBeListening) {
+                            return@mapIndexedNotNull QuestItem(
+                                question = "Nghe câu sau và sắp xếp lại các từ cho đúng thứ tự 🎧",
+                                options = options,
+                                correctIndex = correctIdx,
+                                type = QuestionType.LISTENING_CHALLENGE,
+                                sentenceTokens = availableTokens,
+                                correctSentence = fullSentence,
+                                speakingSentence = fullSentence
+                            )
+                        } else {
+                            return@mapIndexedNotNull QuestItem(
+                                question = q.questionText,
+                                options = options,
+                                correctIndex = correctIdx,
+                                type = QuestionType.SENTENCE_BUILDER,
+                                sentenceTokens = availableTokens,
+                                correctSentence = fullSentence
+                            )
+                        }
                     }
                 }
 
@@ -256,6 +286,39 @@ class DataRepository @Inject constructor(
                 null
             }
         }
+    }
+
+    suspend fun saveAiGeneratedChapter(
+        response: ChapterGeneratedResponse,
+        isPriorityFirst: Boolean = false
+    ): Long = withContext(Dispatchers.IO) {
+        val currentMaxOrder = dao.getMaxChapterOrderNo() ?: 0
+        val targetOrderNo = if (isPriorityFirst) 0 else (response.orderNo ?: (currentMaxOrder + 1)).coerceAtLeast(currentMaxOrder + 1)
+        val chapter = ChapterEntity(
+            title = response.title.trim(),
+            description = response.description,
+            level = response.level ?: "Beginner",
+            subject = response.subject ?: "English",
+            orderNo = targetOrderNo,
+            isActive = 1
+        )
+        val chapterId = dao.insertChapter(chapter)
+        if (chapterId != -1L) {
+            response.questions.forEach { qDto ->
+                val question = QuestionEntity(
+                    chapterId = chapterId,
+                    questionText = qDto.questionText,
+                    questionType = qDto.questionType ?: "MULTIPLE_CHOICE",
+                    optionsJson = qDto.optionsJson,
+                    correctAnswer = qDto.correctAnswer,
+                    explanation = qDto.explanation,
+                    points = qDto.points,
+                    difficulty = qDto.difficulty ?: "MEDIUM"
+                )
+                dao.insertQuestion(question)
+            }
+        }
+        chapterId
     }
 
     suspend fun registerUser(name: String, email: String, rawPassword: String): Long = withContext(Dispatchers.IO) {

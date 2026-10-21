@@ -10,11 +10,16 @@
 /.idea/assetWizardSettings.xml
 .DS_Store
 /build
+build/
+backend/build/
+backend/.gradle/
 /captures
 .externalNativeBuild
 .cxx
 local.properties
 .env
+*.env
+backend/.env
 debug.keystore
 node_modules/
 *.tmp

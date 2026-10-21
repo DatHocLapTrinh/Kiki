@@ -43,10 +43,13 @@ import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import com.example.viewmodel.StudyViewModel
+import com.example.ui.VocabularyVaultDialog
+import com.example.model.VocabularyCardDto
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
@@ -89,21 +92,25 @@ fun AskScreen(viewModel: StudyViewModel) {
     var showClearConfirmDialog by remember { mutableStateOf(false) }
     val isSpeaking by viewModel.ttsManager.isSpeaking
     val isEnglish by viewModel.isEnglish.observeAsState(false)
+    val vocabList by viewModel.vocabularyList.observeAsState(emptyList())
+    var showVaultDialog by remember { mutableStateOf(false) }
 
     val quickPrompts = remember(isEnglish) {
         if (isEnglish) {
             listOf(
+                "🔍 Look up word: 'Resilient' in context",
+                "🔍 Look up idiom: 'Bite the bullet'",
                 "Explain Present Perfect tense in 1 min",
                 "Difference between 'Affect' and 'Effect'",
-                "Fix my grammar: 'She don't know nothing'",
-                "3 real-world idioms for everyday conversations"
+                "Fix my grammar: 'She don't know nothing'"
             )
         } else {
             listOf(
+                "🔍 Tra từ: 'Resilient' & ví dụ",
+                "🔍 Tra thành ngữ: 'Bite the bullet'",
                 "Giải thích thì Hiện tại hoàn thành trong 1 phút",
                 "Phân biệt 'Affect' và 'Effect'",
-                "Sửa lỗi ngữ pháp câu này giúp tôi",
-                "3 thành ngữ tiếng Anh giao tiếp thông dụng"
+                "Sửa lỗi ngữ pháp câu này giúp tôi"
             )
         }
     }
@@ -181,6 +188,34 @@ fun AskScreen(viewModel: StudyViewModel) {
                 }
             },
             actions = {
+                // Sổ tay từ vựng (Vocabulary Vault) button
+                IconButton(
+                    onClick = {
+                        haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                        showVaultDialog = true
+                    }
+                ) {
+                    BadgedBox(
+                        badge = {
+                            if (vocabList.isNotEmpty()) {
+                                Badge(
+                                    containerColor = Color(0xFFFFD166),
+                                    contentColor = Color(0xFF1E1138)
+                                ) {
+                                    Text("${vocabList.size}")
+                                }
+                            }
+                        }
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.CollectionsBookmark,
+                            contentDescription = "Vocabulary Vault",
+                            tint = Color(0xFFFFD166),
+                            modifier = Modifier.size(22.dp)
+                        )
+                    }
+                }
+
                 if (history.isNotEmpty()) {
                     IconButton(
                         onClick = {
@@ -252,55 +287,78 @@ fun AskScreen(viewModel: StudyViewModel) {
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.SpaceBetween
                         ) {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                modifier = Modifier.weight(1f, fill = false)
+                            ) {
                                 Icon(Icons.Default.Psychology, contentDescription = null, tint = Color(0xFF51FAC1), modifier = Modifier.size(18.dp))
                                 Spacer(modifier = Modifier.width(6.dp))
-                                Text(strings.kikiAnalyzingSocratic, fontWeight = FontWeight.Bold, color = Color(0xFF51FAC1), fontSize = 14.sp)
+                                Text(
+                                    strings.kikiAnalyzingSocratic,
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color(0xFF51FAC1),
+                                    fontSize = 13.sp,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
+                                )
                             }
 
-                            Row(verticalAlignment = Alignment.CenterVertically) {
+                            Spacer(modifier = Modifier.width(10.dp))
+
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
                                 // Nút lưu vào Sổ tay từ vựng
-                                IconButton(
-                                    onClick = {
-                                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                                        val cleanQuestion = item.question.ifBlank { "AI Q&A" }
-                                        val firstLine = item.answer.lineSequence().firstOrNull { it.isNotBlank() } ?: item.answer.take(80)
-                                        viewModel.saveWord(
-                                            word = cleanQuestion.take(100),
-                                            meaning = firstLine.take(150),
-                                            example = item.answer.take(250)
-                                        )
-                                        Toast.makeText(
-                                            context,
-                                            if (isEnglish) "Saved to Vocabulary Vault! ⭐" else "Đã lưu vào Sổ tay từ vựng! ⭐",
-                                            Toast.LENGTH_SHORT
-                                        ).show()
-                                    },
-                                    modifier = Modifier.size(32.dp).clip(CircleShape).background(Color(0x22FFD166))
+                                Box(
+                                    modifier = Modifier
+                                        .size(34.dp)
+                                        .clip(CircleShape)
+                                        .background(Color(0x22FFD166))
+                                        .border(1.dp, Color(0x66FFD166), CircleShape)
+                                        .clickable {
+                                            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                            val cleanQuestion = item.question.ifBlank { "AI Q&A" }
+                                            val firstLine = item.answer.lineSequence().firstOrNull { it.isNotBlank() } ?: item.answer.take(80)
+                                            viewModel.saveWord(
+                                                word = cleanQuestion.take(100),
+                                                meaning = firstLine.take(150),
+                                                example = item.answer.take(250)
+                                            )
+                                            Toast.makeText(
+                                                context,
+                                                if (isEnglish) "Saved to Vocabulary Vault! ⭐" else "Đã lưu vào Sổ tay từ vựng! ⭐",
+                                                Toast.LENGTH_SHORT
+                                            ).show()
+                                        },
+                                    contentAlignment = Alignment.Center
                                 ) {
                                     Icon(
                                         Icons.Default.BookmarkBorder,
                                         contentDescription = "Save to Vault",
                                         tint = Color(0xFFFFD166),
-                                        modifier = Modifier.size(16.dp)
+                                        modifier = Modifier.size(17.dp)
                                     )
                                 }
 
-                                Spacer(modifier = Modifier.width(8.dp))
-
                                 // Nút nghe phát âm tiếng Anh
-                                IconButton(
-                                    onClick = {
-                                        haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                                        viewModel.ttsManager.speak(item.answer)
-                                    },
-                                    modifier = Modifier.size(32.dp).clip(CircleShape).background(Color(0x2651FAC1))
+                                Box(
+                                    modifier = Modifier
+                                        .size(34.dp)
+                                        .clip(CircleShape)
+                                        .background(Color(0x2651FAC1))
+                                        .border(1.dp, Color(0x6651FAC1), CircleShape)
+                                        .clickable {
+                                            haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                                            viewModel.ttsManager.speak(item.answer)
+                                        },
+                                    contentAlignment = Alignment.Center
                                 ) {
                                     Icon(
                                         imageVector = if (isSpeaking) Icons.Default.GraphicEq else Icons.AutoMirrored.Filled.VolumeUp,
                                         contentDescription = "Speak Answer",
                                         tint = if (isSpeaking) Color(0xFF51FAC1) else Color(0xFFFFD166),
-                                        modifier = Modifier.size(16.dp)
+                                        modifier = Modifier.size(17.dp)
                                     )
                                 }
                             }
@@ -338,6 +396,179 @@ fun AskScreen(viewModel: StudyViewModel) {
                                     Toast.makeText(context, strings.copiedToClipboard, Toast.LENGTH_SHORT).show()
                                 }
                             )
+                        }
+
+                        // Grammar Insight Banner
+                        if (!item.grammarTip.isNullOrBlank()) {
+                            Spacer(modifier = Modifier.height(10.dp))
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clip(RoundedCornerShape(16.dp))
+                                    .background(Color(0x228A2BE2))
+                                    .border(1.dp, Color(0xFF8A2BE2), RoundedCornerShape(16.dp))
+                                    .padding(14.dp)
+                            ) {
+                                Row(verticalAlignment = Alignment.Top) {
+                                    Icon(
+                                        imageVector = Icons.Default.Lightbulb,
+                                        contentDescription = null,
+                                        tint = Color(0xFFFFD166),
+                                        modifier = Modifier.size(20.dp).padding(top = 2.dp)
+                                    )
+                                    Spacer(modifier = Modifier.width(10.dp))
+                                    Column {
+                                        Text(
+                                            text = if (isEnglish) "Key Grammar Insight" else "Điểm ngữ pháp cốt lõi",
+                                            color = Color(0xFFFFD166),
+                                            fontWeight = FontWeight.Bold,
+                                            fontSize = 12.sp,
+                                            letterSpacing = 1.sp
+                                        )
+                                        Spacer(modifier = Modifier.height(4.dp))
+                                        Text(
+                                            text = item.grammarTip,
+                                            color = Color.White,
+                                            fontSize = 13.5.sp,
+                                            lineHeight = 19.sp
+                                        )
+                                    }
+                                }
+                            }
+                        }
+
+                        // Key Vocabulary Detected (1-Touch Save to Vault)
+                        if (item.detectedVocabularies.isNotEmpty()) {
+                            Spacer(modifier = Modifier.height(12.dp))
+                            Text(
+                                text = if (isEnglish) "Key Vocabulary (1-Touch Save)" else "Từ vựng nổi bật (Chạm 1-chạm để lưu vào Sổ tay)",
+                                color = Color(0xFF51FAC1),
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 12.sp,
+                                letterSpacing = 1.sp
+                            )
+                            Spacer(modifier = Modifier.height(6.dp))
+                            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                                item.detectedVocabularies.forEach { vocab ->
+                                    val isSaved = vocabList.any { it.word.equals(vocab.word, ignoreCase = true) }
+                                    Box(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .clip(RoundedCornerShape(16.dp))
+                                            .background(Color(0xFF141226))
+                                            .border(
+                                                1.dp,
+                                                if (isSaved) Color(0xFF22C55E) else Color(0x3351FAC1),
+                                                RoundedCornerShape(16.dp)
+                                            )
+                                            .padding(12.dp)
+                                    ) {
+                                        Row(
+                                            modifier = Modifier.fillMaxWidth(),
+                                            verticalAlignment = Alignment.CenterVertically
+                                        ) {
+                                            Column(modifier = Modifier.weight(1f)) {
+                                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                                    Text(
+                                                        text = vocab.word,
+                                                        color = Color.White,
+                                                        fontWeight = FontWeight.ExtraBold,
+                                                        fontSize = 15.sp
+                                                    )
+                                                    if (!vocab.phonetic.isNullOrBlank()) {
+                                                        Spacer(modifier = Modifier.width(8.dp))
+                                                        Text(
+                                                            text = vocab.phonetic,
+                                                            color = Color(0xFF51FAC1),
+                                                            fontSize = 12.5.sp
+                                                        )
+                                                    }
+                                                }
+                                                Spacer(modifier = Modifier.height(2.dp))
+                                                Text(
+                                                    text = vocab.meaning,
+                                                    color = Color(0xCCFFFFFF),
+                                                    fontSize = 13.sp
+                                                )
+                                                if (!vocab.example.isNullOrBlank()) {
+                                                    Spacer(modifier = Modifier.height(4.dp))
+                                                    Text(
+                                                        text = "“${vocab.example}”",
+                                                        color = Color(0x99FFFFFF),
+                                                        fontSize = 11.5.sp,
+                                                        fontStyle = androidx.compose.ui.text.font.FontStyle.Italic
+                                                    )
+                                                }
+                                            }
+
+                                            Spacer(modifier = Modifier.width(8.dp))
+
+                                            Row(
+                                                verticalAlignment = Alignment.CenterVertically,
+                                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                            ) {
+                                                // Pronounce word
+                                                Box(
+                                                    modifier = Modifier
+                                                        .size(34.dp)
+                                                        .clip(CircleShape)
+                                                        .background(Color(0x2251FAC1))
+                                                        .border(1.dp, Color(0x6651FAC1), CircleShape)
+                                                        .clickable {
+                                                            haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                                                            viewModel.ttsManager.speak(vocab.word)
+                                                        },
+                                                    contentAlignment = Alignment.Center
+                                                ) {
+                                                    Icon(
+                                                        imageVector = Icons.AutoMirrored.Filled.VolumeUp,
+                                                        contentDescription = "Speak",
+                                                        tint = Color(0xFF51FAC1),
+                                                        modifier = Modifier.size(17.dp)
+                                                    )
+                                                }
+
+                                                // 1-Touch Save to Vault
+                                                Box(
+                                                    modifier = Modifier
+                                                        .size(34.dp)
+                                                        .clip(CircleShape)
+                                                        .background(if (isSaved) Color(0x3322C55E) else Color(0x22FFD166))
+                                                        .border(
+                                                            1.dp,
+                                                            if (isSaved) Color(0x6622C55E) else Color(0x66FFD166),
+                                                            CircleShape
+                                                        )
+                                                        .clickable {
+                                                            if (!isSaved) {
+                                                                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                                                viewModel.saveWord(
+                                                                    word = vocab.word,
+                                                                    phonetic = vocab.phonetic ?: "",
+                                                                    meaning = vocab.meaning,
+                                                                    example = vocab.example ?: ""
+                                                                )
+                                                                Toast.makeText(
+                                                                    context,
+                                                                    if (isEnglish) "Saved '${vocab.word}' to Vault! ⭐" else "Đã lưu '${vocab.word}' vào Sổ tay! ⭐",
+                                                                    Toast.LENGTH_SHORT
+                                                                ).show()
+                                                            }
+                                                        },
+                                                    contentAlignment = Alignment.Center
+                                                ) {
+                                                    Icon(
+                                                        imageVector = if (isSaved) Icons.Default.Check else Icons.Default.BookmarkAdd,
+                                                        contentDescription = "Save to Vault",
+                                                        tint = if (isSaved) Color(0xFF22C55E) else Color(0xFFFFD166),
+                                                        modifier = Modifier.size(17.dp)
+                                                    )
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
                         }
                     }
 
@@ -463,6 +694,14 @@ fun AskScreen(viewModel: StudyViewModel) {
             quizBlocks = quizQuestions,
             isLoading = quizLoading,
             onDismiss = { showQuizDialog = false }
+        )
+    }
+
+    if (showVaultDialog) {
+        VocabularyVaultDialog(
+            viewModel = viewModel,
+            isEnglish = isEnglish,
+            onDismiss = { showVaultDialog = false }
         )
     }
 
@@ -668,7 +907,7 @@ fun StepGlassCard(
                     .padding(14.dp)
             ) {
                 Column {
-                    Text(text = text, color = Color(0xE6FFFFFF), fontSize = 15.sp, lineHeight = 22.sp)
+                    FormattedAiText(text = text)
                     Spacer(modifier = Modifier.height(8.dp))
                     Row(
                         modifier = Modifier.fillMaxWidth(),
@@ -684,6 +923,85 @@ fun StepGlassCard(
                         }
                     }
                 }
+            }
+        }
+    }
+}
+
+/**
+ * Renders AI mentor text with proper formatting:
+ * - Strips **bold** markdown asterisks
+ * - Renders • bullet points as visual list items
+ * - Handles numbered lists (1. 2. 3.)
+ */
+@Composable
+fun FormattedAiText(text: String, textColor: Color = Color(0xE6FFFFFF)) {
+    // Strip markdown asterisks and clean up
+    val cleaned = text
+        .replace(Regex("\\*\\*(.+?)\\*\\*"), "$1")
+        .replace(Regex("\\*(.+?)\\*"), "$1")
+        .replace(Regex("(?m)^#{1,6}\\s*"), "")
+        .replace(Regex("(?m)^\\s*[-*]\\s+"), "• ")
+        .trim()
+
+    // Split into lines for proper bullet rendering
+    val lines = cleaned.split("\n").filter { it.isNotEmpty() }
+
+    Column(verticalArrangement = Arrangement.spacedBy(5.dp)) {
+        lines.forEach { line ->
+            val isBullet = line.trimStart().startsWith("•")
+            val isNumbered = line.trimStart().matches(Regex("^\\d+\\..*"))
+
+            if (isBullet) {
+                Row(
+                    verticalAlignment = Alignment.Top,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text(
+                        text = "•",
+                        color = Color(0xFF51FAC1),
+                        fontSize = 15.sp,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.padding(top = 1.dp, end = 6.dp)
+                    )
+                    Text(
+                        text = line.trimStart().removePrefix("•").trim(),
+                        color = textColor,
+                        fontSize = 15.sp,
+                        lineHeight = 22.sp,
+                        modifier = Modifier.weight(1f)
+                    )
+                }
+            } else if (isNumbered) {
+                val dotIdx = line.indexOf('.')
+                val num = line.substring(0, dotIdx + 1).trim()
+                val content = line.substring(dotIdx + 1).trim()
+                Row(
+                    verticalAlignment = Alignment.Top,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text(
+                        text = num,
+                        color = Color(0xFFFFD166),
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.ExtraBold,
+                        modifier = Modifier.padding(top = 1.dp, end = 6.dp)
+                    )
+                    Text(
+                        text = content,
+                        color = textColor,
+                        fontSize = 15.sp,
+                        lineHeight = 22.sp,
+                        modifier = Modifier.weight(1f)
+                    )
+                }
+            } else {
+                Text(
+                    text = line,
+                    color = textColor,
+                    fontSize = 15.sp,
+                    lineHeight = 22.sp
+                )
             }
         }
     }

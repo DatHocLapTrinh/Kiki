@@ -5,8 +5,8 @@ import com.squareup.moshi.JsonClass
 
 object GroqModels {
 
-    const val MODEL_TEXT = "llama-3.3-70b-versatile"
-    const val MODEL_VISION = "llama-3.2-11b-vision-preview"
+    const val MODEL_TEXT = "openai/gpt-oss-120b"
+    const val MODEL_VISION = "qwen/qwen3.8-27b"
 
     @JsonClass(generateAdapter = true)
     data class ChatRequest(

@@ -40,6 +40,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.example.repository.DataRepository
+import com.example.ui.PlacementQuizView
 import com.example.viewmodel.StudyViewModel
 import com.example.ui.theme.*
 import kotlinx.coroutines.delay
@@ -204,7 +205,7 @@ fun OnboardingScreen(viewModel: StudyViewModel, onFinish: () -> Unit) {
             Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.fillMaxWidth()) {
                 // Progress Indicator
                 Row(horizontalArrangement = Arrangement.Center, modifier = Modifier.padding(bottom = 24.dp)) {
-                    for (i in 0 until 3) {
+                    for (i in 0 until 5) {
                         val color = if (i <= step) Color(0xFF00F5D4) else Color(0x33FFFFFF)
                         val width by animateDpAsState(if (i == step) 24.dp else 8.dp, label = "progressWidth")
                         Box(
@@ -298,14 +299,154 @@ fun OnboardingScreen(viewModel: StudyViewModel, onFinish: () -> Unit) {
                                 }
                             }
                             2 -> {
+                                // Giai đoạn 2: Bài Quiz phân loại 3 câu (Placement Quiz)
+                                PlacementQuizView(
+                                    soundEffectManager = viewModel.soundEffectManager,
+                                    onCompleted = { evaluatedLevel, _ ->
+                                        selectedLevel = evaluatedLevel
+                                        scope.launch {
+                                            delay(200)
+                                            step = 3
+                                        }
+                                    }
+                                )
+                            }
+                            3 -> {
+                                // Giao diện loading có 3 chấm nhảy lên xuống chứng minh AI đang tạo các bài học & chương
+                                var phaseIndex by remember { mutableIntStateOf(0) }
+                                LaunchedEffect(Unit) {
+                                    viewModel.setPreferences(selectedLevel, "English")
+                                    viewModel.generateCustomChapter(selectedLevel, selectedGoal) { _, _ ->
+                                        viewModel.refreshChapters()
+                                    }
+                                    delay(900)
+                                    phaseIndex = 1
+                                    delay(900)
+                                    phaseIndex = 2
+                                    delay(900)
+                                    viewModel.refreshChapters()
+                                    delay(300)
+                                    step = 4
+                                }
+
+                                Column(
+                                    horizontalAlignment = Alignment.CenterHorizontally,
+                                    modifier = Modifier.fillMaxWidth().padding(vertical = 12.dp)
+                                ) {
+                                    Box(
+                                        modifier = Modifier
+                                            .size(72.dp)
+                                            .clip(CircleShape)
+                                            .background(
+                                                Brush.radialGradient(
+                                                    listOf(Color(0xFF00F5D4).copy(alpha = 0.35f), Color(0x1A7209B7))
+                                                )
+                                            )
+                                            .border(1.5.dp, Color(0xFF00F5D4), CircleShape),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Icon(
+                                            Icons.Default.AutoAwesome,
+                                            contentDescription = null,
+                                            tint = Color(0xFF00F5D4),
+                                            modifier = Modifier.size(34.dp)
+                                        )
+                                    }
+
+                                    Spacer(modifier = Modifier.height(20.dp))
+
+                                    Text(
+                                        text = strings.aiGeneratingRoadmapTitle,
+                                        style = MaterialTheme.typography.titleLarge,
+                                        fontWeight = FontWeight.Black,
+                                        color = Color.White,
+                                        textAlign = TextAlign.Center
+                                    )
+
+                                    Spacer(modifier = Modifier.height(8.dp))
+
+                                    Text(
+                                        text = strings.aiGeneratingRoadmapDesc,
+                                        textAlign = TextAlign.Center,
+                                        color = Color.White.copy(alpha = 0.8f),
+                                        fontSize = 12.5.sp,
+                                        modifier = Modifier.padding(horizontal = 14.dp)
+                                    )
+
+                                    Spacer(modifier = Modifier.height(28.dp))
+
+                                    // 3 Bouncing Dots Animation
+                                    BouncingDotsIndicator(
+                                        modifier = Modifier.padding(vertical = 8.dp),
+                                        dotSize = 13.dp,
+                                        bounceHeight = 16.dp
+                                    )
+
+                                    Spacer(modifier = Modifier.height(24.dp))
+
+                                    val statusText = when (phaseIndex) {
+                                        0 -> "🧠 Đang phân tích năng lực bài test..."
+                                        1 -> "✨ Thiết kế lộ trình $selectedLevel chuẩn CEFR..."
+                                        else -> "📚 Khởi tạo các bài học & chương học AI..."
+                                    }
+
+                                    Box(
+                                        modifier = Modifier
+                                            .clip(RoundedCornerShape(20.dp))
+                                            .background(Color(0x2E00F5D4))
+                                            .border(1.dp, Color(0x6600F5D4), RoundedCornerShape(20.dp))
+                                            .padding(horizontal = 14.dp, vertical = 7.dp)
+                                    ) {
+                                        Text(
+                                            text = statusText,
+                                            color = Color(0xFF00F5D4),
+                                            fontSize = 11.5.sp,
+                                            fontWeight = FontWeight.SemiBold
+                                        )
+                                    }
+                                }
+                            }
+                            4 -> {
                                 Text(strings.profileInitialized, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Black, color = Color.White)
-                                Spacer(modifier = Modifier.height(16.dp))
+                                Spacer(modifier = Modifier.height(14.dp))
                                 Text(strings.profileReady, textAlign = TextAlign.Center, color = Color.White.copy(alpha = 0.8f))
-                                Spacer(modifier = Modifier.height(32.dp))
+                                Spacer(modifier = Modifier.height(20.dp))
+
+                                // Banner kết quả phân loại AI
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .clip(RoundedCornerShape(16.dp))
+                                        .background(Color(0x2E00F5D4))
+                                        .border(1.dp, Color(0xFF00F5D4), RoundedCornerShape(16.dp))
+                                        .padding(14.dp),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                        Text(
+                                            text = "✨ " + strings.evaluatedLevelBanner.uppercase(),
+                                            color = Color(0xFF00F5D4),
+                                            fontWeight = FontWeight.Bold,
+                                            fontSize = 11.sp,
+                                            letterSpacing = 1.sp
+                                        )
+                                        Spacer(modifier = Modifier.height(4.dp))
+                                        Text(
+                                            text = when (selectedLevel) {
+                                                "Beginner" -> strings.beginnerTitle
+                                                "Intermediate" -> strings.intermediateTitle
+                                                else -> strings.advancedTitle
+                                            },
+                                            color = Color.White,
+                                            fontWeight = FontWeight.Black,
+                                            fontSize = 16.sp
+                                        )
+                                    }
+                                }
+
+                                Spacer(modifier = Modifier.height(26.dp))
                                 UltimateButton(text = strings.enterMap, icon = Icons.AutoMirrored.Filled.ArrowForward) { 
                                     for(i in 0 until 50) parallax.fireBurst(500f, 1500f)
-                                    viewModel.setPreferences(selectedLevel, "English")
-                                    viewModel.refreshChapters()
                                     onFinish() 
                                 }
                             }
@@ -314,6 +455,79 @@ fun OnboardingScreen(viewModel: StudyViewModel, onFinish: () -> Unit) {
                 }
             }
         }
+    }
+}
+
+@Composable
+fun BouncingDotsIndicator(
+    modifier: Modifier = Modifier,
+    dotSize: androidx.compose.ui.unit.Dp = 14.dp,
+    bounceHeight: androidx.compose.ui.unit.Dp = 16.dp
+) {
+    val infiniteTransition = rememberInfiniteTransition(label = "bouncing_dots")
+
+    val dot1Offset by infiniteTransition.animateFloat(
+        initialValue = 0f,
+        targetValue = -bounceHeight.value,
+        animationSpec = infiniteRepeatable(
+            animation = tween(400, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse,
+            initialStartOffset = StartOffset(0)
+        ),
+        label = "dot1"
+    )
+
+    val dot2Offset by infiniteTransition.animateFloat(
+        initialValue = 0f,
+        targetValue = -bounceHeight.value,
+        animationSpec = infiniteRepeatable(
+            animation = tween(400, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse,
+            initialStartOffset = StartOffset(140)
+        ),
+        label = "dot2"
+    )
+
+    val dot3Offset by infiniteTransition.animateFloat(
+        initialValue = 0f,
+        targetValue = -bounceHeight.value,
+        animationSpec = infiniteRepeatable(
+            animation = tween(400, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse,
+            initialStartOffset = StartOffset(280)
+        ),
+        label = "dot3"
+    )
+
+    Row(
+        modifier = modifier,
+        horizontalArrangement = Arrangement.spacedBy(10.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Box(
+            modifier = Modifier
+                .offset(y = dot1Offset.dp)
+                .size(dotSize)
+                .clip(CircleShape)
+                .background(Color(0xFF00F5D4))
+                .border(1.dp, Color.White.copy(alpha = 0.6f), CircleShape)
+        )
+        Box(
+            modifier = Modifier
+                .offset(y = dot2Offset.dp)
+                .size(dotSize)
+                .clip(CircleShape)
+                .background(Color(0xFFFF9E00))
+                .border(1.dp, Color.White.copy(alpha = 0.6f), CircleShape)
+        )
+        Box(
+            modifier = Modifier
+                .offset(y = dot3Offset.dp)
+                .size(dotSize)
+                .clip(CircleShape)
+                .background(Color(0xFF7209B7))
+                .border(1.dp, Color.White.copy(alpha = 0.6f), CircleShape)
+        )
     }
 }
 

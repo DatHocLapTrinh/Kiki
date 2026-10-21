@@ -4,8 +4,10 @@ enum class QuestionType {
     MULTIPLE_CHOICE,
     SENTENCE_BUILDER,
     MATCHING_PAIRS,
-    SPEAKING_CHALLENGE
+    SPEAKING_CHALLENGE,
+    LISTENING_CHALLENGE  // Nghe câu và sắp xếp lại các từ
 }
+
 
 data class MatchingPair(
     val id: Int,

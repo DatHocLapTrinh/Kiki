@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.room.Room
 import com.example.network.GeminiApiService
 import com.example.network.GroqApiService
+import com.example.network.KikiBackendApiService
 import com.example.sqlite.room.AppDao
 import com.example.sqlite.room.AppDatabase
 import dagger.Module
@@ -47,5 +48,10 @@ object AppModule {
     fun provideGeminiApiService(): GeminiApiService {
         return GeminiApiService.create()
     }
-}
 
+    @Provides
+    @Singleton
+    fun provideKikiBackendApiService(): KikiBackendApiService {
+        return KikiBackendApiService.create()
+    }
+}

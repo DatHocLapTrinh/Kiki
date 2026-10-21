@@ -47,6 +47,15 @@ class FirebaseAuthManager @Inject constructor(
         return getCurrentUser() != null
     }
 
+    suspend fun getIdToken(forceRefresh: Boolean = false): String? {
+        return try {
+            val user = getCurrentUser() ?: return null
+            user.getIdToken(forceRefresh).await()?.token
+        } catch (_: Exception) {
+            null
+        }
+    }
+
     suspend fun signInWithGoogle(activityContext: Context): GoogleAuthResult {
         return try {
             // Lấy default_web_client_id tự động sinh bởi google-services plugin hoặc dùng Web Client ID cấu hình sẵn

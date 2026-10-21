@@ -33,6 +33,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
+import kotlinx.coroutines.delay
 import com.example.sqlite.room.VocabularyEntity
 import com.example.viewmodel.StudyViewModel
 
@@ -216,6 +217,7 @@ fun VocabularyVaultDialog(
     if (showAddDialog) {
         AddWordDialog(
             isEnglish = isEnglish,
+            viewModel = viewModel,
             onDismiss = { showAddDialog = false },
             onSave = { word, phonetic, meaning, example ->
                 viewModel.saveWord(word, phonetic, meaning, example)
@@ -873,6 +875,7 @@ private fun EmptyVaultState(isEnglish: Boolean, onAddClick: () -> Unit) {
 @Composable
 private fun AddWordDialog(
     isEnglish: Boolean,
+    viewModel: StudyViewModel,
     onDismiss: () -> Unit,
     onSave: (word: String, phonetic: String, meaning: String, example: String) -> Unit
 ) {
@@ -880,6 +883,23 @@ private fun AddWordDialog(
     var phonetic by remember { mutableStateOf("") }
     var meaning by remember { mutableStateOf("") }
     var example by remember { mutableStateOf("") }
+    var isLoadingPhonetic by remember { mutableStateOf(false) }
+
+    // Tự động load phiên âm chuẩn xác khi user nhập từ tiếng Anh
+    LaunchedEffect(word) {
+        val cleanWord = word.trim()
+        if (cleanWord.length >= 2) {
+            delay(350)
+            isLoadingPhonetic = true
+            try {
+                val resolved = viewModel.autoLookupPhonetic(cleanWord)
+                if (!resolved.isNullOrBlank()) {
+                    phonetic = resolved
+                }
+            } catch (_: Exception) {}
+            isLoadingPhonetic = false
+        }
+    }
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -907,7 +927,28 @@ private fun AddWordDialog(
                 OutlinedTextField(
                     value = phonetic,
                     onValueChange = { phonetic = it },
-                    label = { Text(if (isEnglish) "Phonetic (optional)" else "Phiên âm (tùy chọn)") },
+                    label = { Text(if (isEnglish) "Phonetic (auto-lookup)" else "Phiên âm (tự động load)") },
+                    trailingIcon = {
+                        if (isLoadingPhonetic) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(16.dp),
+                                color = Color(0xFF51FAC1),
+                                strokeWidth = 2.dp
+                            )
+                        } else if (phonetic.isNotBlank()) {
+                            IconButton(
+                                onClick = { viewModel.ttsManager.speak(word) },
+                                modifier = Modifier.size(28.dp)
+                            ) {
+                                Icon(
+                                    Icons.AutoMirrored.Filled.VolumeUp,
+                                    contentDescription = "Listen",
+                                    tint = Color(0xFF51FAC1),
+                                    modifier = Modifier.size(16.dp)
+                                )
+                            }
+                        }
+                    },
                     colors = OutlinedTextFieldDefaults.colors(
                         focusedTextColor = Color.White,
                         unfocusedTextColor = Color.White,

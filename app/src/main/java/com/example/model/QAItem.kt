@@ -5,5 +5,7 @@ data class QAItem(
     val question: String,
     val imageUri: String? = null,
     val answer: String,
-    val timestamp: Long = System.currentTimeMillis()
+    val timestamp: Long = System.currentTimeMillis(),
+    val grammarTip: String? = null,
+    val detectedVocabularies: List<VocabularyCardDto> = emptyList()
 )

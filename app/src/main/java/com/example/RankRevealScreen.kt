@@ -12,6 +12,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.*
 import androidx.compose.material.icons.filled.*
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -50,6 +51,8 @@ fun RankRevealScreen(
     val coroutineScope = rememberCoroutineScope()
     val strings = LocalAppStrings.current
     val lastResults by viewModel.lastQuestResults.observeAsState(emptyList())
+    val unlockEvent by viewModel.chapterUnlockEvent.observeAsState(null)
+    val isGeneratingNextChapter by viewModel.isGeneratingNextChapter.observeAsState(false)
 
     val correctCount = lastResults.count { it.selectedIndex == it.correctIndex }
     val totalCount = lastResults.size
@@ -351,6 +354,99 @@ fun RankRevealScreen(
             }
 
             Spacer(modifier = Modifier.weight(1f))
+
+            // Chapter Completion & Next Chapter Unlock Banner (Giai đoạn 3)
+            if (isPassed && (unlockEvent != null || isGeneratingNextChapter)) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(20.dp))
+                        .background(
+                            Brush.linearGradient(
+                                listOf(Color(0xFF1E1138), Color(0xFF0F1E36))
+                            )
+                        )
+                        .border(
+                            width = 1.5.dp,
+                            brush = Brush.linearGradient(
+                                if (isGeneratingNextChapter)
+                                    listOf(Color(0xFF00F5D4), Color(0xFF8A2BE2), Color(0xFF00F5D4))
+                                else
+                                    listOf(Color(0xFFFFD166), Color(0xFF51FAC1), Color(0xFFFFD166))
+                            ),
+                            shape = RoundedCornerShape(20.dp)
+                        )
+                        .padding(16.dp)
+                ) {
+                    Column(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        if (isGeneratingNextChapter) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.Center
+                            ) {
+                                CircularProgressIndicator(
+                                    modifier = Modifier.size(20.dp),
+                                    color = Color(0xFF00F5D4),
+                                    strokeWidth = 2.5.dp
+                                )
+                                Spacer(modifier = Modifier.width(10.dp))
+                                Text(
+                                    text = strings.aiGeneratingNextChapter,
+                                    color = Color(0xFF00F5D4),
+                                    fontSize = 13.5.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    textAlign = TextAlign.Center
+                                )
+                            }
+                        } else if (unlockEvent != null) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.Center
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.EmojiEvents,
+                                    contentDescription = null,
+                                    tint = Color(0xFFFFD166),
+                                    modifier = Modifier.size(22.dp)
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text(
+                                    text = strings.chapterClearedTitle,
+                                    color = Color(0xFFFFD166),
+                                    fontSize = 15.sp,
+                                    fontWeight = FontWeight.ExtraBold,
+                                    letterSpacing = 1.sp
+                                )
+                            }
+                            Spacer(modifier = Modifier.height(6.dp))
+                            Text(
+                                text = "${strings.nextChapterUnlockedTitle}: ${unlockEvent!!.nextChapterTitle}",
+                                color = Color.White,
+                                fontSize = 14.sp,
+                                fontWeight = FontWeight.Bold,
+                                textAlign = TextAlign.Center
+                            )
+                            if (unlockEvent!!.isAiGenerated) {
+                                Spacer(modifier = Modifier.height(4.dp))
+                                Text(
+                                    text = if (unlockEvent!!.weakPointsAddressedCount > 0)
+                                        strings.aiReinforceWeakPointsDesc.replace("{count}", unlockEvent!!.weakPointsAddressedCount.toString())
+                                    else
+                                        strings.aiGeneratedNextChapterSuccess,
+                                    color = Color(0xFF51FAC1),
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.Medium,
+                                    textAlign = TextAlign.Center
+                                )
+                            }
+                        }
+                    }
+                }
+                Spacer(modifier = Modifier.height(14.dp))
+            }
 
             // Action Buttons
             Column(

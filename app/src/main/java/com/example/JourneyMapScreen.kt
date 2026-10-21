@@ -24,12 +24,14 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.*
 import androidx.compose.material.icons.filled.*
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
@@ -124,6 +126,20 @@ fun JourneyMapScreen(
                         }
                     }
                 )
+
+                val isGeneratingNextChapter by viewModel.isGeneratingNextChapter.observeAsState(false)
+                val allCompleted = stages.isNotEmpty() && stages.all { it.state == JourneyStageState.COMPLETED }
+
+                if (allCompleted || stages.size >= 5) {
+                    Spacer(modifier = Modifier.height(24.dp))
+                    AiNextChapterCard(
+                        isGenerating = isGeneratingNextChapter,
+                        strings = strings,
+                        onGenerate = {
+                            viewModel.generateNextChapterOnDemand()
+                        }
+                    )
+                }
             }
         }
     }
@@ -152,7 +168,7 @@ private fun JourneyTopBar(
                 letterSpacing = 1.2.sp
             )
             Text(
-                text = if (isEnglish) "$userName's Journey" else "Hành trình của $userName",
+                text = if (isEnglish) "$userName's Roadmap" else "Lộ trình của $userName",
                 color = Color.White,
                 fontSize = 22.sp,
                 fontWeight = FontWeight.Black,
@@ -160,7 +176,7 @@ private fun JourneyTopBar(
                 overflow = TextOverflow.Ellipsis
             )
             Text(
-                text = strings.mapSubtitle,
+                text = if (isEnglish) "Master English step-by-step" else "Lộ trình chinh phục tiếng Anh từng bước",
                 color = Color(0xB3FFFFFF),
                 fontSize = 12.sp
             )
@@ -247,6 +263,8 @@ private fun JourneyPath(
             }
         }
 
+        var selectedStageIndex by remember { mutableStateOf<Int?>(null) }
+
         Column(modifier = Modifier.fillMaxWidth()) {
             stages.forEachIndexed { index, stage ->
                 JourneyStageRow(
@@ -254,7 +272,14 @@ private fun JourneyPath(
                     index = index,
                     stageStep = stageStep,
                     strings = strings,
-                    onClick = { onStageClick(stage) }
+                    isSelected = selectedStageIndex == index,
+                    onToggleSelect = {
+                        selectedStageIndex = if (selectedStageIndex == index) null else index
+                    },
+                    onEnterChapter = {
+                        selectedStageIndex = null
+                        onStageClick(stage)
+                    }
                 )
             }
         }
@@ -268,7 +293,7 @@ private fun JourneyPath(
     }
 }
 
-// ─── Stage row — long press reveals the info card ────────────────────────────
+// ─── Stage row — tap reveals the smart info card ─────────────────────────────
 
 @Composable
 private fun JourneyStageRow(
@@ -276,16 +301,17 @@ private fun JourneyStageRow(
     index: Int,
     stageStep: Dp,
     strings: AppStrings,
-    onClick: () -> Unit
+    isSelected: Boolean,
+    onToggleSelect: () -> Unit,
+    onEnterChapter: () -> Unit
 ) {
     val isLeft = index % 2 == 0
-    var showCard by remember { mutableStateOf(false) }
 
     BoxWithConstraints(
         modifier = Modifier.fillMaxWidth().height(stageStep)
     ) {
         val arrowDirection = if (isLeft) BubbleArrowDirection.LEFT else BubbleArrowDirection.RIGHT
-        val cardWidth = (maxWidth - 105.dp).coerceAtMost(maxWidth * 0.62f)
+        val cardWidth = (maxWidth - 105.dp).coerceAtMost(maxWidth * 0.65f)
         val cardModifier = if (isLeft) {
             Modifier.align(Alignment.TopEnd).padding(end = 10.dp, top = 8.dp).width(cardWidth)
         } else {
@@ -298,7 +324,7 @@ private fun JourneyStageRow(
         }
 
         AnimatedVisibility(
-            visible = showCard,
+            visible = isSelected,
             modifier = cardModifier,
             enter = fadeIn(tween(180)) + scaleIn(tween(180), initialScale = 0.88f),
             exit = fadeOut(tween(150)) + scaleOut(tween(150), targetScale = 0.88f)
@@ -307,20 +333,19 @@ private fun JourneyStageRow(
                 stage = stage,
                 strings = strings,
                 arrowDirection = arrowDirection,
-                onClick = {
-                    showCard = false
-                    onClick()
-                }
+                onClick = onEnterChapter
             )
         }
 
         JourneyPlanetNode(
             stage = stage,
             modifier = nodeModifier,
-            onLongPress = { showCard = !showCard },
             onClick = {
-                showCard = false
-                onClick()
+                if (isSelected && stage.state != JourneyStageState.LOCKED) {
+                    onEnterChapter()
+                } else {
+                    onToggleSelect()
+                }
             }
         )
     }
@@ -332,7 +357,6 @@ private fun JourneyStageRow(
 private fun JourneyPlanetNode(
     stage: JourneyStageUiModel,
     modifier: Modifier,
-    onLongPress: () -> Unit,
     onClick: () -> Unit
 ) {
     val isCurrent = stage.state == JourneyStageState.CURRENT
@@ -370,7 +394,6 @@ private fun JourneyPlanetNode(
             .semantics { contentDescription = label }
             .pointerInput(Unit) {
                 detectTapGestures(
-                    onLongPress = { if (!locked) onLongPress() },
                     onTap = { onClick() }
                 )
             },
@@ -407,18 +430,6 @@ private fun JourneyPlanetNode(
                 contentDescription = null,
                 tint = Color.White,
                 modifier = Modifier.align(Alignment.TopCenter).offset(y = (-12).dp).size(24.dp)
-            )
-        }
-        // Hint dot — signals the planet can be long-pressed
-        if (!locked) {
-            Box(
-                modifier = Modifier
-                    .align(Alignment.BottomEnd)
-                    .offset(x = (-2).dp, y = (-20).dp)
-                    .size(10.dp)
-                    .clip(CircleShape)
-                    .background(accent.copy(alpha = 0.75f))
-                    .border(1.dp, Color.White.copy(alpha = 0.4f), CircleShape)
             )
         }
     }
@@ -458,9 +469,9 @@ private fun JourneyStageInformationCard(
 
     Box(
         modifier = Modifier
-            .height(154.dp)
+            .height(162.dp)
             .clip(bubbleShape)
-            .background(Color(0xF0100E22))
+            .background(Color(0xF2100E24))
             .border(
                 1.5.dp,
                 Brush.linearGradient(listOf(accent.copy(alpha = 0.95f), accent.copy(alpha = 0.35f))),
@@ -468,19 +479,19 @@ private fun JourneyStageInformationCard(
             )
             .clickable(enabled = !locked, onClick = onClick)
             .padding(
-                start = if (arrowDirection == BubbleArrowDirection.LEFT) 20.dp else 13.dp,
-                end = if (arrowDirection == BubbleArrowDirection.RIGHT) 20.dp else 13.dp,
-                top = 12.dp,
-                bottom = 12.dp
+                start = if (arrowDirection == BubbleArrowDirection.LEFT) 20.dp else 14.dp,
+                end = if (arrowDirection == BubbleArrowDirection.RIGHT) 20.dp else 14.dp,
+                top = 11.dp,
+                bottom = 11.dp
             )
     ) {
         Column {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Box(
-                    modifier = Modifier.size(26.dp).clip(CircleShape).background(accent.copy(alpha = 0.9f)),
+                    modifier = Modifier.size(24.dp).clip(CircleShape).background(accent.copy(alpha = 0.9f)),
                     contentAlignment = Alignment.Center
                 ) {
-                    Text("${stage.sequence}", color = Color(0xFF11101B), fontSize = 12.sp, fontWeight = FontWeight.ExtraBold)
+                    Text("${stage.sequence}", color = Color(0xFF11101B), fontSize = 11.sp, fontWeight = FontWeight.ExtraBold)
                 }
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(
@@ -492,11 +503,36 @@ private fun JourneyStageInformationCard(
                     overflow = TextOverflow.Ellipsis
                 )
             }
-            Spacer(modifier = Modifier.height(8.dp))
-            Text(stage.description, color = Color(0xCCFFFFFF), fontSize = 11.sp, maxLines = 2, overflow = TextOverflow.Ellipsis)
-            Spacer(modifier = Modifier.height(8.dp))
-            Text("${stage.completedLessons}/${stage.totalLessons} lessons", color = accent, fontSize = 12.sp, fontWeight = FontWeight.Bold)
-            Spacer(modifier = Modifier.height(5.dp))
+            Spacer(modifier = Modifier.height(6.dp))
+            Text(
+                stage.description,
+                color = Color(0xCCFFFFFF),
+                fontSize = 10.5.sp,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis
+            )
+            Spacer(modifier = Modifier.height(6.dp))
+
+            // Thống kê bài học trong chương
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    "📚 ${stage.completedLessons}/${stage.totalLessons} bài học",
+                    color = accent,
+                    fontSize = 11.5.sp,
+                    fontWeight = FontWeight.Bold
+                )
+                Text(
+                    "${(stage.progress * 100).toInt()}% hoàn thành",
+                    color = Color.White.copy(alpha = 0.75f),
+                    fontSize = 10.5.sp,
+                    fontWeight = FontWeight.SemiBold
+                )
+            }
+            Spacer(modifier = Modifier.height(4.dp))
             Box(modifier = Modifier.fillMaxWidth().height(5.dp).clip(CircleShape).background(Color(0x44302A4A))) {
                 Box(
                     modifier = Modifier
@@ -510,14 +546,122 @@ private fun JourneyStageInformationCard(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text(stateLabel, color = Color(0x99FFFFFF), fontSize = 10.sp)
+                Text(
+                    text = if (locked) "🔒 Cần mở khóa" else "👉 Xem ${stage.totalLessons} bài học trong chương",
+                    color = if (locked) Color(0x99FFFFFF) else Color(0xFF00F5D4),
+                    fontSize = 10.5.sp,
+                    fontWeight = FontWeight.Bold
+                )
                 Icon(
                     imageVector = if (locked) Icons.Default.Lock else Icons.Default.ChevronRight,
                     contentDescription = if (locked) stage.description else null,
-                    tint = accent,
-                    modifier = Modifier.size(18.dp)
+                    tint = if (locked) Color(0x88FFFFFF) else Color(0xFF00F5D4),
+                    modifier = Modifier.size(17.dp)
                 )
             }
         }
     }
 }
+
+@Composable
+private fun AiNextChapterCard(
+    isGenerating: Boolean,
+    strings: AppStrings,
+    onGenerate: () -> Unit
+) {
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 22.dp)
+            .clip(RoundedCornerShape(22.dp))
+            .background(
+                Brush.linearGradient(
+                    listOf(Color(0xFF130924), Color(0xFF0D1B2A))
+                )
+            )
+            .border(
+                1.5.dp,
+                Brush.linearGradient(
+                    listOf(Color(0xFF00F5D4), Color(0xFF8A2BE2), Color(0xFF00F5D4))
+                ),
+                RoundedCornerShape(22.dp)
+            )
+            .padding(18.dp)
+    ) {
+        Column(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.Center
+            ) {
+                Icon(
+                    imageVector = Icons.Default.AutoAwesome,
+                    contentDescription = null,
+                    tint = Color(0xFF00F5D4),
+                    modifier = Modifier.size(24.dp)
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = "AI Adaptive Learning",
+                    color = Color(0xFF00F5D4),
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.ExtraBold,
+                    letterSpacing = 1.sp
+                )
+            }
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = "Hệ thống AI sẵn sàng phân tích các lỗ hổng kiến thức để kiến tạo chặng học tiếp theo tối ưu cho bạn.",
+                color = Color(0xCCFFFFFF),
+                fontSize = 12.5.sp,
+                textAlign = TextAlign.Center,
+                lineHeight = 18.sp
+            )
+            Spacer(modifier = Modifier.height(14.dp))
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(50.dp)
+                    .clip(CircleShape)
+                    .background(
+                        if (isGenerating)
+                            Brush.linearGradient(listOf(Color(0xFF332050), Color(0xFF203050)))
+                        else
+                            Brush.linearGradient(listOf(Color(0xFF00F5D4), Color(0xFF8A2BE2)))
+                    )
+                    .clickable(enabled = !isGenerating, onClick = onGenerate),
+                contentAlignment = Alignment.Center
+            ) {
+                if (isGenerating) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(20.dp),
+                            color = Color(0xFF00F5D4),
+                            strokeWidth = 2.5.dp
+                        )
+                        Spacer(modifier = Modifier.width(10.dp))
+                        Text(
+                            text = strings.aiGeneratingNextChapter,
+                            color = Color(0xFF00F5D4),
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                } else {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(
+                            text = strings.generateNextAiChapterButton,
+                            color = Color.White,
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.ExtraBold,
+                            letterSpacing = 1.sp
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+

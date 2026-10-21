@@ -51,6 +51,9 @@ interface AppDao {
     @Query("SELECT title FROM chapters WHERE is_active = 1 ORDER BY order_no")
     suspend fun getActiveChapters(): List<String>
 
+    @Query("SELECT MAX(order_no) FROM chapters")
+    suspend fun getMaxChapterOrderNo(): Int?
+
     @Query("DELETE FROM chapters")
     suspend fun clearChapters()
 

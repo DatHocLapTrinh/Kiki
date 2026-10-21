@@ -113,6 +113,36 @@ fun ChapterJourneyMapScreen(
                 progress = progress,
                 isEnglish = isEnglish
             )
+            if (completedCount >= 5) {
+                Spacer(modifier = Modifier.height(12.dp))
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 24.dp)
+                        .clip(RoundedCornerShape(16.dp))
+                        .background(Color(0x3322C55E))
+                        .border(1.dp, Color(0xFF22C55E), RoundedCornerShape(16.dp))
+                        .padding(12.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            imageVector = Icons.Default.CheckCircle,
+                            contentDescription = null,
+                            tint = Color(0xFF22C55E),
+                            modifier = Modifier.size(18.dp)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = strings.chapterClearedDesc,
+                            color = Color.White,
+                            fontSize = 12.5.sp,
+                            fontWeight = FontWeight.Bold,
+                            textAlign = TextAlign.Center
+                        )
+                    }
+                }
+            }
             Spacer(modifier = Modifier.height(18.dp))
             ChapterLessonPath(
                 lessons = lessons,
@@ -354,6 +384,8 @@ private fun ChapterLessonPath(
             }
         }
 
+        var selectedLessonIndex by remember { mutableStateOf<Int?>(null) }
+
         Column(modifier = Modifier.fillMaxWidth()) {
             lessons.forEachIndexed { index, lesson ->
                 ChapterLessonRow(
@@ -361,7 +393,14 @@ private fun ChapterLessonPath(
                     step = lessonStep,
                     strings = strings,
                     isEnglish = isEnglish,
-                    onClick = { onLessonClick(lesson.index) }
+                    isSelected = selectedLessonIndex == index,
+                    onToggleSelect = {
+                        selectedLessonIndex = if (selectedLessonIndex == index) null else index
+                    },
+                    onStartQuest = {
+                        selectedLessonIndex = null
+                        onLessonClick(lesson.index)
+                    }
                 )
             }
         }
@@ -381,14 +420,15 @@ private fun ChapterLessonRow(
     step: Dp,
     strings: AppStrings,
     isEnglish: Boolean,
-    onClick: () -> Unit
+    isSelected: Boolean,
+    onToggleSelect: () -> Unit,
+    onStartQuest: () -> Unit
 ) {
     val isLeft = lesson.index % 2 == 1
-    var showCard by remember { mutableStateOf(false) }
 
     BoxWithConstraints(modifier = Modifier.fillMaxWidth().height(step)) {
         val arrowDirection = if (isLeft) BubbleArrowDirection.LEFT else BubbleArrowDirection.RIGHT
-        val cardWidth = (maxWidth - 105.dp).coerceAtMost(maxWidth * 0.62f)
+        val cardWidth = (maxWidth - 105.dp).coerceAtMost(maxWidth * 0.65f)
         val cardModifier = if (isLeft) {
             Modifier.align(Alignment.TopEnd).padding(top = 10.dp, end = 10.dp).width(cardWidth)
         } else {
@@ -401,7 +441,7 @@ private fun ChapterLessonRow(
         }
 
         AnimatedVisibility(
-            visible = showCard,
+            visible = isSelected,
             modifier = cardModifier,
             enter = fadeIn(tween(180)) + scaleIn(tween(180), initialScale = 0.88f),
             exit = fadeOut(tween(150)) + scaleOut(tween(150), targetScale = 0.88f)
@@ -411,22 +451,18 @@ private fun ChapterLessonRow(
                 modifier = Modifier.fillMaxWidth(),
                 isEnglish = isEnglish,
                 arrowDirection = arrowDirection,
-                onClick = {
-                    showCard = false
-                    if (!lesson.locked) onClick()
-                }
+                onClick = onStartQuest
             )
         }
 
         ChapterLessonNode(
             lesson = lesson,
             modifier = nodeModifier,
-            onLongPress = { showCard = !showCard },
             onClick = {
-                if (showCard) {
-                    showCard = false
+                if (isSelected && !lesson.locked) {
+                    onStartQuest()
                 } else {
-                    if (!lesson.locked) onClick()
+                    onToggleSelect()
                 }
             }
         )
@@ -437,7 +473,6 @@ private fun ChapterLessonRow(
 private fun ChapterLessonNode(
     lesson: ChapterLessonUi,
     modifier: Modifier,
-    onLongPress: () -> Unit,
     onClick: () -> Unit
 ) {
     val pulse = if (lesson.current) {
@@ -470,7 +505,6 @@ private fun ChapterLessonNode(
             .semantics { contentDescription = label }
             .pointerInput(lesson.index) {
                 detectTapGestures(
-                    onLongPress = { onLongPress() },
                     onTap = { onClick() }
                 )
             },
@@ -530,11 +564,6 @@ private fun ChapterLessonCard(
         lesson.current -> Color(0xFF51FAC1)
         else -> Color(0xFF776A91)
     }
-    val status = when {
-        lesson.completed -> if (isEnglish) "Completed" else "Đã hoàn thành"
-        lesson.current -> if (isEnglish) "Continue learning" else "Tiếp tục học"
-        else -> if (isEnglish) "Locked" else "Đang khóa"
-    }
 
     val bubbleShape = remember(arrowDirection) {
         SpeechBubbleShape(
@@ -548,18 +577,18 @@ private fun ChapterLessonCard(
 
     Box(
         modifier = modifier
-            .height(144.dp)
+            .height(160.dp)
             .clip(bubbleShape)
-            .background(Color(0xF0130E26))
+            .background(Color(0xF2120D26))
             .border(
                 1.5.dp,
                 Brush.linearGradient(listOf(accent.copy(alpha = 0.95f), accent.copy(alpha = 0.35f))),
                 bubbleShape
             )
-            .clickable(onClick = onClick)
+            .clickable(enabled = !lesson.locked, onClick = onClick)
             .padding(
-                start = if (arrowDirection == BubbleArrowDirection.LEFT) 20.dp else 12.dp,
-                end = if (arrowDirection == BubbleArrowDirection.RIGHT) 20.dp else 12.dp,
+                start = if (arrowDirection == BubbleArrowDirection.LEFT) 20.dp else 13.dp,
+                end = if (arrowDirection == BubbleArrowDirection.RIGHT) 20.dp else 13.dp,
                 top = 11.dp,
                 bottom = 11.dp
             )
@@ -567,7 +596,7 @@ private fun ChapterLessonCard(
         Column {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Box(
-                    modifier = Modifier.size(25.dp).clip(CircleShape).background(accent.copy(alpha = 0.9f)),
+                    modifier = Modifier.size(24.dp).clip(CircleShape).background(accent.copy(alpha = 0.9f)),
                     contentAlignment = Alignment.Center
                 ) {
                     Text("${lesson.index}", color = Color(0xFF11101B), fontSize = 11.sp, fontWeight = FontWeight.ExtraBold)
@@ -582,36 +611,66 @@ private fun ChapterLessonCard(
                     overflow = TextOverflow.Ellipsis
                 )
             }
-            Spacer(modifier = Modifier.height(7.dp))
-            Text(lesson.description, color = Color(0xCCFFFFFF), fontSize = 10.sp, maxLines = 2, overflow = TextOverflow.Ellipsis)
-            Spacer(modifier = Modifier.height(7.dp))
+            Spacer(modifier = Modifier.height(6.dp))
             Text(
-                if (lesson.completed) {
-                    if (isEnglish) "1/1 lesson" else "1/1 bài học"
-                } else {
-                    if (isEnglish) "0/1 lesson" else "0/1 bài học"
-                },
-                color = accent,
-                fontSize = 11.sp,
-                fontWeight = FontWeight.Bold
+                lesson.description,
+                color = Color(0xCCFFFFFF),
+                fontSize = 10.sp,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis
             )
-            Spacer(modifier = Modifier.height(5.dp))
-            Box(modifier = Modifier.fillMaxWidth().height(5.dp).clip(CircleShape).background(Color(0x44302A4A))) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth(if (lesson.completed) 1f else 0f)
-                        .fillMaxHeight()
-                        .background(accent)
+            Spacer(modifier = Modifier.height(7.dp))
+
+            // Thống kê các câu hỏi có trong bài học
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    if (isEnglish) "❓ 5 quiz questions" else "❓ 5 câu hỏi thực hành",
+                    color = accent,
+                    fontSize = 11.5.sp,
+                    fontWeight = FontWeight.Bold
+                )
+                Text(
+                    "+20 XP • 1 ⭐",
+                    color = Color(0xFFFFD166),
+                    fontSize = 10.5.sp,
+                    fontWeight = FontWeight.SemiBold
                 )
             }
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(
+                if (isEnglish) "Format: Multiple choice • Sentence • Speaking" else "Cấu trúc: Trắc nghiệm • Ghép câu • Luyện nói",
+                color = Color(0x99FFFFFF),
+                fontSize = 9.sp,
+                maxLines = 1
+            )
             Spacer(modifier = Modifier.weight(1f))
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                Text(status, color = Color(0x99FFFFFF), fontSize = 9.sp)
+
+            // CTA action row
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                val actionText = when {
+                    lesson.locked -> if (isEnglish) "🔒 Locked" else "🔒 Chưa mở khóa"
+                    lesson.completed -> if (isEnglish) "🔄 Review Quest ▶" else "🔄 Ôn tập lại bài ▶"
+                    else -> if (isEnglish) "▶ Start Quest" else "▶ Bắt đầu làm bài"
+                }
+                Text(
+                    text = actionText,
+                    color = if (lesson.locked) Color(0x88FFFFFF) else Color(0xFF51FAC1),
+                    fontSize = 10.5.sp,
+                    fontWeight = FontWeight.Bold
+                )
                 Icon(
                     imageVector = if (lesson.locked) Icons.Default.Lock else Icons.Default.ChevronRight,
                     contentDescription = null,
-                    tint = accent,
-                    modifier = Modifier.size(17.dp)
+                    tint = if (lesson.locked) Color(0x88FFFFFF) else Color(0xFF51FAC1),
+                    modifier = Modifier.size(16.dp)
                 )
             }
         }

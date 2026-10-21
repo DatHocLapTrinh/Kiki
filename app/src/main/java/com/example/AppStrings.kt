@@ -5,7 +5,7 @@ import androidx.compose.runtime.staticCompositionLocalOf
 data class AppStrings(
     // IntroScreen
     val awakenMagic: String = "KHÁM PHÁ TIỀM NĂNG",
-    val igniteJourney: String = "BẮT ĐẦU HÀNH TRÌNH",
+    val igniteJourney: String = "BẮT ĐẦU",
     val introTitle1: String = "Học Tập Thông Minh",
     val introDesc1: String = "Khám phá chân trời kiến thức mới với AI",
     val introTitle2: String = "Lộ Trình Cá Nhân",
@@ -52,7 +52,7 @@ data class AppStrings(
     val levelAchieved: String = "Bạn đã hoàn thành bài học xuất sắc và mở khóa chặng tiếp theo!",
     val startingManaAwarded: String = "+50 XP & Mở Khóa Chặng Mới!",
     val checkAIAnalysis: String = "XEM PHÂN TÍCH AI",
-    val continueJourney: String = "TIẾP TỤC HÀNH TRÌNH",
+    val continueJourney: String = "TIẾP TỤC",
     val tierExcellentSubtitle: String = "XUẤT SẮC HOÀN THÀNH!",
     val tierExcellentTitle: String = "Chinh Phục\nXuất Sắc 🌟",
     val tierExcellentDesc: String = "Bạn đã nắm vững toàn bộ kiến thức và mở khóa chặng tiếp theo!",
@@ -69,7 +69,7 @@ data class AppStrings(
     val xpEarnedLabel: String = "Kinh nghiệm",
     val levelLabel: String = "CẤP ĐỘ",
     val subjectLabel: String = "MÔN HỌC",
-    val beginJourney: String = "Bắt đầu hành trình",
+    val beginJourney: String = "Bắt đầu",
     val selectAll: String = "Hãy chọn đủ cấp độ và môn học",
     
     // MainMapScreen & ProgressionMapScreen
@@ -212,21 +212,42 @@ data class AppStrings(
     val journeyEmptyTitle: String = "Hành trình sẵn sàng bắt đầu",
     val journeyEmptyDescription: String = "Hãy chọn môn học hoặc bắt đầu bài học đầu tiên để tạo lộ trình của bạn.",
     val retry: String = "Thử lại",
-    val mapTitle: String = "BẢN ĐỒ HÀNH TRÌNH",
+    val mapTitle: String = "LỘ TRÌNH HỌC TẬP (ROADMAP)",
     val mapSubtitle: String = "Mỗi bài học là một bước tiến mới",
     val chapterCompleted: String = "Đã hoàn thành",
     val chapterCurrent: String = "Đang học",
     val chapterLocked: String = "Đang khóa",
     val unlockAfterChapter: String = "Hoàn thành chương trước để mở khóa",
     val yes: String = "Có",
-    val no: String = "Không"
+    val no: String = "Không",
+    val placementQuizTitle: String = "Đánh Giá Năng Lực AI",
+    val placementQuizSubtitle: String = "3 câu hỏi chẩn đoán để AI định hình lộ trình học riêng cho bạn",
+    val placementQuestionCount: String = "Câu {current}/3",
+    val placementEvaluating: String = "AI Đang Phân Tích Năng Lực...",
+    val aiGeneratingRoadmapTitle: String = "Kiki AI Đang Thiết Kế Lộ Trình...",
+    val aiGeneratingRoadmapDesc: String = "Dựa trên bài test, AI đang khởi tạo các bài học & chương học phù hợp nhất cho bạn.",
+    val evaluatedLevelBanner: String = "Trình Độ Do AI Đề Xuất",
+    val beginnerTitle: String = "Sơ cấp (Beginner - A1/A2)",
+    val intermediateTitle: String = "Trung cấp (Intermediate - B1/B2)",
+    val advancedTitle: String = "Nâng cao (Advanced - C1)",
+
+    // Chapter Unlock & AI Generation
+    val chapterClearedTitle: String = "🎉 CHÚC MỪNG HOÀN THÀNH CHƯƠNG!",
+    val chapterClearedDesc: String = "Bạn đã chinh phục thành công toàn bộ bài học của chương này!",
+    val nextChapterUnlockedTitle: String = "🔓 Mở Khóa Chặng Tiếp Theo",
+    val nextChapterUnlockedDesc: String = "Chặng tiếp theo đã sẵn sàng để bạn tiếp tục hành trình!",
+    val aiGeneratingNextChapter: String = "🤖 Kiki AI đang phân tích lỗ hổng kiến thức để tạo chặng mới...",
+    val aiGeneratedNextChapterSuccess: String = "✨ Chặng học cá nhân hóa mới đã sẵn sàng!",
+    val generateNextAiChapterButton: String = "TẠO CHƯƠNG TIẾP THEO BẰNG AI 🚀",
+    val aiReinforceWeakPointsDesc: String = "Đã tích hợp {count} điểm yếu cần củng cố vào chương mới.",
+    val chapterMasteredBadge: String = "CHƯƠNG ĐÃ HOÀN THÀNH"
 )
 
 val VietnameseStrings = AppStrings()
 
 val EnglishStrings = AppStrings(
     awakenMagic = "AWAKEN YOUR POTENTIAL",
-    igniteJourney = "IGNITE JOURNEY",
+    igniteJourney = "START",
     introTitle1 = "Smart Learning",
     introDesc1 = "Discover new horizons of knowledge with AI",
     introTitle2 = "Personalized Path",
@@ -271,7 +292,7 @@ val EnglishStrings = AppStrings(
     levelAchieved = "You successfully mastered the lesson and unlocked the next stage!",
     startingManaAwarded = "+50 XP & Next Stage Reward!",
     checkAIAnalysis = "CHECK AI ANALYSIS",
-    continueJourney = "CONTINUE JOURNEY",
+    continueJourney = "CONTINUE",
     tierExcellentSubtitle = "OUTSTANDING PERFORMANCE!",
     tierExcellentTitle = "Mastery\nAchieved 🌟",
     tierExcellentDesc = "You mastered the lesson and unlocked the next stage!",
@@ -289,7 +310,7 @@ val EnglishStrings = AppStrings(
     
     levelLabel = "LEVEL",
     subjectLabel = "SUBJECT",
-    beginJourney = "Begin Journey",
+    beginJourney = "Start",
     selectAll = "Please select both level and subject",
     
     levelPrefix = "Level: ",
@@ -421,12 +442,32 @@ val EnglishStrings = AppStrings(
     journeyEmptyTitle = "Your journey is ready to begin",
     journeyEmptyDescription = "Choose a subject or start your first lesson to create your learning path.",
     retry = "Retry",
-    mapTitle = "LEARNING JOURNEY",
+    mapTitle = "LEARNING ROADMAP",
     mapSubtitle = "Every lesson is a step forward",
     chapterCompleted = "Completed",
     chapterCurrent = "In progress",
     chapterLocked = "Locked",
     unlockAfterChapter = "Complete the previous chapter to unlock",
+    placementQuizTitle = "AI Placement Quiz",
+    placementQuizSubtitle = "3 diagnostic questions for AI to calibrate your personalized journey",
+    placementQuestionCount = "Question {current}/3",
+    placementEvaluating = "AI Calibrating Proficiency...",
+    aiGeneratingRoadmapTitle = "Kiki AI is Designing Your Roadmap...",
+    aiGeneratingRoadmapDesc = "Based on your diagnostic quiz, AI is creating personalized lessons & chapters for you.",
+    evaluatedLevelBanner = "AI-Diagnosed Level",
+    beginnerTitle = "Beginner (A1/A2)",
+    intermediateTitle = "Intermediate (B1/B2)",
+    advancedTitle = "Advanced (C1)",
+
+    chapterClearedTitle = "🎉 CHAPTER CLEARED!",
+    chapterClearedDesc = "You have conquered all lessons of this chapter!",
+    nextChapterUnlockedTitle = "🔓 Next Chapter Unlocked",
+    nextChapterUnlockedDesc = "The next stage is now ready for your journey!",
+    aiGeneratingNextChapter = "🤖 Kiki AI is analyzing mistakes and crafting your next chapter...",
+    aiGeneratedNextChapterSuccess = "✨ New personalized chapter is ready!",
+    generateNextAiChapterButton = "GENERATE NEXT CHAPTER WITH AI 🚀",
+    aiReinforceWeakPointsDesc = "Reinforced {count} targeted weak points into the new chapter.",
+    chapterMasteredBadge = "CHAPTER MASTERED",
     
     yes = "Yes",
     no = "No"

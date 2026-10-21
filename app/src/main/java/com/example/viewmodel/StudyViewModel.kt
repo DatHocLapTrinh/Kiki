@@ -36,11 +36,19 @@ import java.util.Locale
 import com.example.audio.TextToSpeechManager
 import com.example.audio.SoundEffectManager
 import com.example.audio.SpeechRecognitionManager
+import com.example.model.GenerateChapterRequest
+import com.example.network.KikiBackendApiService
 import com.example.security.FirebaseAuthManager
 import com.example.security.GoogleAuthResult
 import com.example.sync.FirestoreSyncManager
 import com.example.sqlite.room.VocabularyEntity
 import com.example.sqlite.room.WeakPointEntity
+import com.example.model.ChapterUnlockEvent
+import com.example.model.ChapterGeneratedResponse
+import com.example.model.QuestionItemDto
+import com.example.model.MentorChatRequest
+import com.example.model.VocabularyCardDto
+import kotlinx.coroutines.delay
 import javax.inject.Inject
 
 @HiltViewModel
@@ -48,6 +56,7 @@ class StudyViewModel @Inject constructor(
     val repository: DataRepository,
     private val groqApiService: GroqApiService,
     private val geminiApiService: GeminiApiService,
+    private val backendApiService: KikiBackendApiService,
     val ttsManager: TextToSpeechManager,
     val soundEffectManager: SoundEffectManager,
     val speechRecognitionManager: SpeechRecognitionManager,
@@ -119,8 +128,11 @@ class StudyViewModel @Inject constructor(
         val customKey = _geminiApiKey.value?.trim()
         if (!customKey.isNullOrBlank()) return customKey
         return try {
-            val buildKey = BuildConfig.GEMINI_API_KEY
-            if (buildKey.isNotBlank() && buildKey != "your_api_key_here") buildKey else ""
+            val groqBuildKey = BuildConfig.GROQ_API_KEY
+            if (groqBuildKey.isNotBlank() && groqBuildKey != "your_api_key_here") return groqBuildKey
+            val geminiBuildKey = BuildConfig.GEMINI_API_KEY
+            if (geminiBuildKey.isNotBlank() && geminiBuildKey != "your_api_key_here") return geminiBuildKey
+            ""
         } catch (e: Exception) {
             ""
         }
@@ -410,16 +422,31 @@ class StudyViewModel @Inject constructor(
         }
     }
 
+    private val _chapterUnlockEvent = MutableLiveData<ChapterUnlockEvent?>(null)
+    val chapterUnlockEvent: LiveData<ChapterUnlockEvent?> = _chapterUnlockEvent
+
+    fun clearChapterUnlockEvent() {
+        _chapterUnlockEvent.value = null
+    }
+
+    private val _isGeneratingNextChapter = MutableLiveData(false)
+    val isGeneratingNextChapter: LiveData<Boolean> = _isGeneratingNextChapter
+
     fun completeCurrentLesson() {
         val userId = _currentUserId.value ?: return
         val chapterTitle = _currentChapterTitle.value ?: return
         val node = _currentNode.value ?: return
         if (userId == -1L) return
 
+        val isFreshChapterCompletion = (node < 6 && node + 1 >= 6)
         val nextNode = (node + 1).coerceAtMost(6)
         _currentNode.value = nextNode
         repository.saveCurrentLessonNode(userId, chapterTitle, nextNode)
         refreshChapters()
+
+        if (isFreshChapterCompletion) {
+            handleChapterCompletion(userId, chapterTitle)
+        }
     }
 
     private val _questAnalysis = MutableLiveData<String?>(null)
@@ -427,13 +454,34 @@ class StudyViewModel @Inject constructor(
 
     fun analyzeQuestResults(context: Context, results: List<QuestItem>) {
         _lastQuestResults.value = results
-        _questAnalysis.value = null
 
         val correctCount = results.count { it.selectedIndex == it.correctIndex }
         if (correctCount > 0) {
             addXp(correctCount * 20)
         }
         val totalCount = results.size
+        val accuracy = if (totalCount > 0) (correctCount * 100) / totalCount else 0
+        val isEng = _isEnglish.value ?: false
+
+        // Generate instant, insightful baseline analysis immediately so UI NEVER gets stuck loading
+        val instantAnalysis = if (correctCount == totalCount && totalCount > 0) {
+            if (isEng) {
+                "• Outstanding performance: $correctCount/$totalCount (100%)!\n• Key Strength: Excellent mastery of sentence patterns and vocabulary.\n• Recommendation: Advance to the next stage to unlock advanced topics."
+            } else {
+                "• Kết quả xuất sắc: $correctCount/$totalCount (100%)!\n• Điểm mạnh: Nắm bắt rất chuẩn cấu trúc ngữ pháp và từ vựng của bài học.\n• Lời khuyên: Hãy tiếp tục hành trình để mở rộng thêm kiến thức mới."
+            }
+        } else if (totalCount > 0) {
+            val mistakes = results.filter { it.selectedIndex != it.correctIndex }
+            if (isEng) {
+                "• Lesson Score: $correctCount/$totalCount ($accuracy% accuracy).\n• Focus Area: Review the ${mistakes.size} incorrect questions in the review list.\n• Tip: Practice listening and speaking challenges repeatedly to build natural intuition."
+            } else {
+                "• Kết quả bài học: $correctCount/$totalCount câu đúng ($accuracy% độ chính xác).\n• Trọng tâm ôn tập: Chú ý ${mistakes.size} câu làm sai trong danh sách chi tiết bên dưới.\n• Mẹo ghi nhớ: Nhấn nút loa nghe phát âm và bấm dấu trang để lưu từ vựng khó vào Sổ tay."
+            }
+        } else {
+            if (isEng) "• Complete lessons to receive personalized AI mentor insights."
+            else "• Hoàn thành bài học để nhận phân tích chi tiết từ Cố vấn AI."
+        }
+        _questAnalysis.value = instantAnalysis
 
         viewModelScope.launch {
             val userId = _currentUserId.value
@@ -471,20 +519,74 @@ class StudyViewModel @Inject constructor(
                 }
             }
 
-            val prompt = buildString {
-                append("Here are the student's exercise results:\n")
-                for (item in results) {
-                    val selected = item.options.getOrNull(item.selectedIndex) ?: "Skipped"
-                    val correct = item.options.getOrNull(item.correctIndex) ?: ""
-                    append("Question: ").append(item.question)
-                        .append("\nStudent chose: ").append(selected)
-                        .append("\nCorrect answer: ").append(correct).append("\n")
+            // Build analysis prompt for deeper AI insight
+            val mistakeSummary = buildString {
+                val mistakes = results.filter { it.selectedIndex != it.correctIndex }
+                if (mistakes.isEmpty()) {
+                    append("Student answered all ${results.size} questions correctly. Score: ${results.size}/${results.size}.")
+                } else {
+                    append("Student score: $correctCount/${results.size}.\nMistakes made:\n")
+                    mistakes.take(5).forEach { item ->
+                        val selected = item.options.getOrNull(item.selectedIndex) ?: "Skipped"
+                        val correct = item.options.getOrNull(item.correctIndex) ?: item.correctSentence.ifEmpty { "" }
+                        append("- Q: ${item.question.take(60)}\n")
+                        append("  Student: $selected | Correct: $correct\n")
+                    }
                 }
-                append("\nAct as an AI tutor, analyze weaknesses based on incorrect answers, explain briefly, and propose a study plan. DO NOT use markdown format, asterisks, hashes, or any special formatting symbols. Use plain text only.")
             }
 
-            val analysis = fetchAnswerFromAI(context, prompt, null)
-            _questAnalysis.value = analysis
+            // Helper to clean raw text
+            fun sanitizeReply(text: String): String {
+                return text.replace(Regex("\\*\\*(.+?)\\*\\*"), "$1")
+                    .replace(Regex("\\*(.+?)\\*"), "$1")
+                    .replace(Regex("(?m)^#{1,6}\\s*"), "")
+                    .replace(Regex("(?m)^\\s*[-*]\\s+"), "• ")
+                    .trim()
+            }
+
+            // Try backend mentorChat API first (faster and well-formatted) with 3.5s timeout
+            try {
+                val token = authManager.getIdToken() ?: "mock_dev_token_kiki_explorer"
+                val analysisMessage = "Analyze these lesson results and give encouraging feedback with study tips: $mistakeSummary"
+                val request = MentorChatRequest(
+                    message = analysisMessage,
+                    userLevel = _selectedLevel.value ?: "Intermediate",
+                    currentChapter = _currentChapterTitle.value ?: "English Fundamentals",
+                    recentWeakPoints = emptyList()
+                )
+                val response = withContext(Dispatchers.IO) {
+                    kotlinx.coroutines.withTimeoutOrNull(3500) {
+                        backendApiService.mentorChat("Bearer $token", request)
+                    }
+                }
+                if (response != null && response.isSuccessful && response.body() != null) {
+                    val body = response.body()!!
+                    if (body.reply.isNotBlank()) {
+                        _questAnalysis.value = sanitizeReply(body.reply)
+                        return@launch
+                    }
+                }
+            } catch (_: Exception) {}
+
+            // Fallback: use direct Groq API with 4.5s timeout
+            try {
+                val prompt = buildString {
+                    append(mistakeSummary)
+                    append("\n\nAct as a supportive English tutor. Analyze the mistakes above, briefly explain what went wrong, "
+                        + "and suggest what to review next. Format your response using bullet points starting with • character. "
+                        + "Do NOT use ** asterisks or # hash symbols. Plain text only with • bullets.")
+                }
+                val analysis = withContext(Dispatchers.IO) {
+                    kotlinx.coroutines.withTimeoutOrNull(4500) {
+                        fetchAnswerFromGroq(context, prompt, null)
+                    }
+                }
+                if (!analysis.isNullOrBlank()) {
+                    _questAnalysis.value = sanitizeReply(analysis)
+                }
+            } catch (_: Exception) {
+                // Keep instantAnalysis already set
+            }
         }
     }
 
@@ -720,11 +822,42 @@ class StudyViewModel @Inject constructor(
         _isGenerating.value = true
         viewModelScope.launch {
             try {
-                val answer = fetchAnswerFromAI(context, question, imageUri)
+                var answer: String
+                var grammarTip: String? = null
+                var vocabularies: List<VocabularyCardDto> = emptyList()
+
+                if (imageUri != null) {
+                    answer = fetchAnswerFromAI(context, question, imageUri)
+                } else {
+                    try {
+                        val token = authManager.getIdToken() ?: "mock_dev_token_kiki_explorer"
+                        val weakPoints = _weakPoints.value?.take(5)?.map { it.question } ?: emptyList()
+                        val request = MentorChatRequest(
+                            message = question,
+                            userLevel = _selectedLevel.value ?: "Intermediate",
+                            currentChapter = _currentChapterTitle.value ?: "English Fundamentals",
+                            recentWeakPoints = weakPoints
+                        )
+                        val response = backendApiService.mentorChat("Bearer $token", request)
+                        if (response.isSuccessful && response.body() != null) {
+                            val body = response.body()!!
+                            answer = body.reply
+                            grammarTip = body.grammarTip
+                            vocabularies = body.detectedVocabularies
+                        } else {
+                            answer = fetchAnswerFromAI(context, question, null)
+                        }
+                    } catch (e: Exception) {
+                        answer = fetchAnswerFromAI(context, question, null)
+                    }
+                }
                 val userId = _currentUserId.value
                 if (userId != null && userId != -1L) {
                     repository.saveAIQuestion(userId, question, imageUri?.toString(), answer)
-                    val data = repository.getAIHistory(userId)
+                    val data = repository.getAIHistory(userId).toMutableList()
+                    if (data.isNotEmpty()) {
+                        data[0] = data[0].copy(grammarTip = grammarTip, detectedVocabularies = vocabularies)
+                    }
                     _history.value = data
                     repository.updateXP(userId, 20)
                     val newXp = (_xp.value ?: 0) + 20
@@ -734,7 +867,16 @@ class StudyViewModel @Inject constructor(
                     firestoreSyncManager.syncUserProfile(userId)
                 } else {
                     val current = _history.value ?: emptyList()
-                    val updated = mutableListOf(QAItem(0, question, imageUri?.toString(), answer))
+                    val updated = mutableListOf(
+                        QAItem(
+                            id = 0,
+                            question = question,
+                            imageUri = imageUri?.toString(),
+                            answer = answer,
+                            grammarTip = grammarTip,
+                            detectedVocabularies = vocabularies
+                        )
+                    )
                     updated.addAll(current)
                     _history.value = updated
                 }
@@ -840,6 +982,431 @@ class StudyViewModel @Inject constructor(
             } finally {
                 _quizLoading.value = false
             }
+        }
+    }
+
+    private val _isGeneratingChapter = MutableLiveData(false)
+    val isGeneratingChapter: LiveData<Boolean> = _isGeneratingChapter
+
+    /**
+     * Sinh một chương học cá nhân hóa mới bằng Backend AI (hoặc bộ sinh thông minh nội bộ), tự động lưu vào Room SQLite
+     */
+    fun generateCustomChapter(
+        level: String,
+        topic: String,
+        weakWords: List<String> = emptyList(),
+        onResult: (Boolean, String) -> Unit = { _, _ -> }
+    ) {
+        _isGeneratingChapter.value = true
+        viewModelScope.launch {
+            try {
+                var chapterData: ChapterGeneratedResponse? = null
+                // 1. Thử gọi Backend với timeout 3.5s
+                try {
+                    val token = authManager.getIdToken() ?: "mock_dev_token_kiki_explorer"
+                    val request = GenerateChapterRequest(
+                        userId = _currentUserId.value?.toString(),
+                        level = level,
+                        topic = topic,
+                        weakWords = weakWords,
+                        questionCount = 5
+                    )
+                    val response = withContext(Dispatchers.IO) {
+                        kotlinx.coroutines.withTimeoutOrNull(3500) {
+                            backendApiService.generateChapter("Bearer $token", request)
+                        }
+                    }
+                    if (response != null && response.isSuccessful && response.body() != null) {
+                        chapterData = response.body()
+                    }
+                } catch (_: Exception) {}
+
+                // 2. Nếu Backend offline hoặc quá tải: Dùng bộ kiến tạo lộ trình cá nhân hóa Kiki AI
+                if (chapterData == null) {
+                    chapterData = generatePersonalizedChapter(level, topic, weakWords)
+                }
+
+                val newChapterId = repository.saveAiGeneratedChapter(chapterData, isPriorityFirst = true)
+                if (newChapterId != -1L) {
+                    refreshChapters()
+                    _isGeneratingChapter.value = false
+                    onResult(true, "Đã khởi tạo thành công chương: ${chapterData.title}")
+                } else {
+                    _isGeneratingChapter.value = false
+                    onResult(false, "Không thể lưu chương học vào cơ sở dữ liệu.")
+                }
+            } catch (e: Exception) {
+                _isGeneratingChapter.value = false
+                onResult(false, "Lỗi kết nối Backend AI: ${e.localizedMessage ?: e.message}")
+            }
+        }
+    }
+
+    /**
+     * Kiến tạo chương học cá nhân hóa hoàn chỉnh với đầy đủ 5 dạng câu hỏi theo tiêu chuẩn questions.json
+     */
+    fun generatePersonalizedChapter(
+        level: String,
+        topic: String,
+        weakWords: List<String> = emptyList()
+    ): ChapterGeneratedResponse {
+        val isEng = _isEnglish.value ?: false
+        val displayLevel = if (level.isBlank()) "Beginner" else level
+        val cleanTopic = if (topic.isBlank()) "Daily Conversations" else topic
+
+        val chapterTitle = if (isEng) "AI Roadmap: $cleanTopic ($displayLevel)" else "Lộ trình AI: $cleanTopic ($displayLevel)"
+        val chapterDesc = if (isEng) "Customized curriculum tailored by Kiki AI based on your diagnostic placement test."
+        else "Lộ trình cá nhân hóa do AI Kiki kiến tạo dựa trên bài kiểm tra chẩn đoán năng lực của bạn."
+
+        // 1. Multiple Choice
+        val q1 = QuestionItemDto(
+            questionText = when {
+                cleanTopic.contains("Grammar", ignoreCase = true) -> "She ______ to school by bus every morning."
+                cleanTopic.contains("IELTS", ignoreCase = true) -> "The research indicates a significant ______ between study habits and performance."
+                else -> "How do you respond politely when a friend asks 'How are you today?'"
+            },
+            questionType = "MULTIPLE_CHOICE",
+            optionsJson = org.json.JSONArray(
+                when {
+                    cleanTopic.contains("Grammar", ignoreCase = true) -> listOf("goes", "go", "going", "is go")
+                    cleanTopic.contains("IELTS", ignoreCase = true) -> listOf("correlation", "distraction", "neglect", "collapse")
+                    else -> listOf("I'm doing great, thank you! How about you?", "Yes, I am.", "No, not at all.", "I go home.")
+                }
+            ).toString(),
+            correctAnswer = "0",
+            explanation = "Chọn phương án chính xác nhất để hoàn thiện câu phù hợp ngữ cảnh.",
+            points = 10,
+            difficulty = "EASY"
+        )
+
+        // 2. Sentence Builder
+        val q2 = QuestionItemDto(
+            questionText = when {
+                cleanTopic.contains("Grammar", ignoreCase = true) -> "If I had more free time, I ______ learn another foreign language."
+                cleanTopic.contains("IELTS", ignoreCase = true) -> "The new economic policy was designed to ______ sustainable development."
+                else -> "Look! The children ______ happily in the school playground."
+            },
+            questionType = "SENTENCE_BUILDER",
+            optionsJson = org.json.JSONArray(
+                when {
+                    cleanTopic.contains("Grammar", ignoreCase = true) -> listOf("would", "will", "am", "have")
+                    cleanTopic.contains("IELTS", ignoreCase = true) -> listOf("foster", "demolish", "stagnate", "diminish")
+                    else -> listOf("are playing", "plays", "played", "play")
+                }
+            ).toString(),
+            correctAnswer = "0",
+            explanation = "Sắp xếp và điền từ chính xác vào chỗ trống.",
+            points = 10,
+            difficulty = "MEDIUM"
+        )
+
+        // 3. Listening Challenge
+        val q3 = QuestionItemDto(
+            questionText = "Nghe câu sau và sắp xếp lại các từ cho đúng thứ tự 🎧",
+            questionType = "LISTENING_CHALLENGE",
+            optionsJson = org.json.JSONArray(
+                when {
+                    cleanTopic.contains("Grammar", ignoreCase = true) -> listOf("They have lived in this city since 2018")
+                    cleanTopic.contains("IELTS", ignoreCase = true) -> listOf("Technological innovation has fundamentally reshaped modern global industries")
+                    else -> listOf("It is wonderful to meet you here this morning")
+                }
+            ).toString(),
+            correctAnswer = "0",
+            explanation = "Luyện kỹ năng nghe và sắp xếp các từ thành câu hoàn chỉnh.",
+            points = 10,
+            difficulty = "MEDIUM"
+        )
+
+        // 4. Matching Pairs
+        val q4 = QuestionItemDto(
+            questionText = "Ghép cặp các từ vựng tiếng Anh với nghĩa tiếng Việt tương ứng 🧩",
+            questionType = "MATCHING_PAIRS",
+            optionsJson = org.json.JSONArray(
+                when {
+                    cleanTopic.contains("Grammar", ignoreCase = true) -> listOf(
+                        "although=mặc dù", "furthermore=hơn nữa", "therefore=do đó", "meanwhile=trong khi đó"
+                    )
+                    cleanTopic.contains("IELTS", ignoreCase = true) -> listOf(
+                        "substantial=đáng kể", "crucial=tối quan trọng", "feasible=khả thi", "alleviate=làm giảm bớt"
+                    )
+                    else -> listOf(
+                        "catch up=hàn huyên", "hang out=đi chơi", "drop by=ghé thăm", "keep in touch=giữ liên lạc"
+                    )
+                }
+            ).toString(),
+            correctAnswer = "0",
+            explanation = "Ghép cặp từ vựng chính xác để ghi nhớ nghĩa.",
+            points = 10,
+            difficulty = "MEDIUM"
+        )
+
+        // 5. Speaking Challenge
+        val q5 = QuestionItemDto(
+            questionText = "Luyện nói câu tiếng Anh sau chuẩn bản xứ 🎙️",
+            questionType = "SPEAKING_CHALLENGE",
+            optionsJson = org.json.JSONArray(
+                when {
+                    cleanTopic.contains("Grammar", ignoreCase = true) -> listOf("Practice makes perfect if you stay consistent every single day.")
+                    cleanTopic.contains("IELTS", ignoreCase = true) -> listOf("Environmental conservation requires proactive collaboration across all communities.")
+                    else -> listOf("Could you please show me the way to the nearest bookstore?")
+                }
+            ).toString(),
+            correctAnswer = "0",
+            explanation = "Luyện phát âm to, rõ ràng và chuẩn ngữ điệu bản xứ.",
+            points = 10,
+            difficulty = "HARD"
+        )
+
+        return ChapterGeneratedResponse(
+            title = chapterTitle,
+            description = chapterDesc,
+            level = displayLevel,
+            subject = "English",
+            orderNo = 0,
+            questions = listOf(q1, q2, q3, q4, q5)
+        )
+    }
+
+    /**
+     * Xử lý cơ chế mở khóa & tự sinh chương tiếp theo khi hoàn thành bài học thứ 5 (Giai đoạn 3)
+     */
+    fun handleChapterCompletion(userId: Long, completedChapterTitle: String) {
+        viewModelScope.launch {
+            val chapters = _availableChapters.value?.takeIf { it.isNotEmpty() }
+                ?: repository.getChaptersByPreference(_selectedLevel.value, _selectedSubject.value)
+            val currentIndex = chapters.indexOf(completedChapterTitle)
+            val hasNextPredefined = (currentIndex != -1 && currentIndex + 1 < chapters.size)
+
+            if (hasNextPredefined) {
+                val nextChapter = chapters[currentIndex + 1]
+                _chapterUnlockEvent.postValue(
+                    ChapterUnlockEvent(
+                        completedChapterTitle = completedChapterTitle,
+                        nextChapterTitle = nextChapter,
+                        isAiGenerated = false,
+                        weakPointsAddressedCount = 0
+                    )
+                )
+            } else {
+                // Tự sinh chương tiếp theo với AI dựa trên điểm yếu
+                generateNextChapterOnDemand(
+                    userId = userId,
+                    completedChapterTitle = completedChapterTitle
+                )
+            }
+        }
+    }
+
+    /**
+     * Tự động hoặc chủ động gọi AI sinh chương học tiếp theo dựa trên Kho Điểm Yếu
+     */
+    fun generateNextChapterOnDemand(
+        userId: Long? = _currentUserId.value,
+        completedChapterTitle: String = _currentChapterTitle.value ?: "English Fundamentals",
+        onComplete: (Boolean, String) -> Unit = { _, _ -> }
+    ) {
+        val targetUserId = userId ?: return
+        if (targetUserId == -1L) return
+
+        _isGeneratingNextChapter.value = true
+        viewModelScope.launch {
+            try {
+                // Chờ ngắn để đồng bộ các điểm yếu vừa ghi nhận nếu có
+                delay(250)
+                val weakPointsList = repository.getWeakPoints(targetUserId)
+                val weakWords = extractWeakKeywords(weakPointsList)
+                val chapters = _availableChapters.value?.takeIf { it.isNotEmpty() }
+                    ?: repository.getChaptersByPreference(_selectedLevel.value, _selectedSubject.value)
+                val targetLevel = _selectedLevel.value ?: "Beginner"
+                val nextTopic = determineNextTopic(chapters, targetLevel)
+
+                val token = authManager.getIdToken() ?: "mock_dev_token_kiki_explorer"
+                val request = GenerateChapterRequest(
+                    userId = targetUserId.toString(),
+                    level = targetLevel,
+                    topic = nextTopic,
+                    weakWords = weakWords,
+                    questionCount = 5
+                )
+
+                val response = backendApiService.generateChapter("Bearer $token", request)
+                if (response.isSuccessful && response.body() != null) {
+                    val chapterData = response.body()!!
+                    val newChapterId = repository.saveAiGeneratedChapter(chapterData)
+                    if (newChapterId != -1L) {
+                        refreshChapters()
+                        _chapterUnlockEvent.postValue(
+                            ChapterUnlockEvent(
+                                completedChapterTitle = completedChapterTitle,
+                                nextChapterTitle = chapterData.title,
+                                isAiGenerated = true,
+                                weakPointsAddressedCount = weakWords.size
+                            )
+                        )
+                        onComplete(true, chapterData.title)
+                    } else {
+                        fallbackOfflineChapter(targetUserId, completedChapterTitle, nextTopic, targetLevel, weakWords)
+                        onComplete(true, nextTopic)
+                    }
+                } else {
+                    fallbackOfflineChapter(targetUserId, completedChapterTitle, nextTopic, targetLevel, weakWords)
+                    onComplete(true, nextTopic)
+                }
+            } catch (e: Exception) {
+                val chapters = _availableChapters.value ?: emptyList()
+                val targetLevel = _selectedLevel.value ?: "Beginner"
+                val nextTopic = determineNextTopic(chapters, targetLevel)
+                val weakPointsList = repository.getWeakPoints(targetUserId)
+                val weakWords = extractWeakKeywords(weakPointsList)
+                fallbackOfflineChapter(targetUserId, completedChapterTitle, nextTopic, targetLevel, weakWords)
+                onComplete(true, nextTopic)
+            } finally {
+                _isGeneratingNextChapter.postValue(false)
+            }
+        }
+    }
+
+    fun determineNextTopic(existingChapters: List<String>, level: String): String {
+        val syllabus = listOf(
+            "English Fundamentals",
+            "Vocabulary & Daily Idioms",
+            "Syntax & Sentence Mastery",
+            "Conversational Fluency",
+            "Academic & IELTS Mastery",
+            "Professional & Business Communication",
+            "Travel & Cultural Encounters",
+            "Advanced Discourse & Critical Thinking",
+            "Nuanced Collocations & Phrasal Verbs",
+            "Mastery Summit & Fluency Capstone"
+        )
+        for (topic in syllabus) {
+            if (!existingChapters.any { it.contains(topic, ignoreCase = true) }) {
+                return topic
+            }
+        }
+        return "Adaptive Mastery: Level $level Stage ${existingChapters.size + 1}"
+    }
+
+    fun extractWeakKeywords(weakPoints: List<WeakPointEntity>): List<String> {
+        val keywords = mutableListOf<String>()
+        val stringPattern = java.util.regex.Pattern.compile("\"((?:\\\\.|[^\"\\\\])*)\"")
+        for (wp in weakPoints) {
+            try {
+                val matcher = stringPattern.matcher(wp.optionsJson)
+                val options = mutableListOf<String>()
+                while (matcher.find()) {
+                    val raw = matcher.group(1) ?: ""
+                    options.add(raw.replace("\\\"", "\"").replace("\\\\", "\\").trim())
+                }
+                if (wp.correctIndex in 0 until options.size) {
+                    val word = options[wp.correctIndex]
+                    if (word.isNotBlank() && !keywords.contains(word)) {
+                        keywords.add(word)
+                    }
+                } else {
+                    val candidate = wp.question.split(" ").firstOrNull { it.length > 4 }
+                    if (candidate != null && !keywords.contains(candidate)) {
+                        keywords.add(candidate)
+                    }
+                }
+            } catch (_: Exception) {
+                val candidate = wp.question.split(" ").firstOrNull { it.length > 4 }
+                if (candidate != null && !keywords.contains(candidate)) {
+                    keywords.add(candidate)
+                }
+            }
+            if (keywords.size >= 5) break
+        }
+        return keywords
+    }
+
+    private suspend fun fallbackOfflineChapter(
+        userId: Long,
+        completedChapterTitle: String,
+        topic: String,
+        level: String,
+        weakWords: List<String>
+    ) {
+        val fallbackTitle = if (weakWords.isNotEmpty()) {
+            "Reinforcement: $topic"
+        } else {
+            topic
+        }
+
+        val questions = (1..5).map { index ->
+            val targetWord = weakWords.getOrNull(index - 1)
+            val qText = if (targetWord != null) {
+                "Reinforce target concept: Which sentence uses '$targetWord' correctly in context?"
+            } else {
+                "Challenge question $index for topic: $topic"
+            }
+            val options = if (targetWord != null) {
+                listOf(
+                    "This is the correct sentence utilizing '$targetWord' in proper context.",
+                    "This sentence mistakenly uses '$targetWord' with incorrect grammar.",
+                    "An alternative option that does not fit the context properly.",
+                    "None of the above choices are correct."
+                )
+            } else {
+                listOf(
+                    "Correct contextual usage for $topic.",
+                    "Incorrect phrasing.",
+                    "Distractor choice.",
+                    "Grammatically incomplete."
+                )
+            }
+            val qType = when (index) {
+                1 -> "MULTIPLE_CHOICE"
+                2 -> "SENTENCE_BUILDER"
+                3 -> "LISTENING_CHALLENGE"
+                4 -> "MATCHING_PAIRS"
+                5 -> "SPEAKING_CHALLENGE"
+                else -> "MULTIPLE_CHOICE"
+            }
+            val finalOptions = when (qType) {
+                "LISTENING_CHALLENGE" -> listOf("Consistent daily practice develops natural language intuition")
+                "MATCHING_PAIRS" -> listOf("confidence=tự tin", "achievement=thành tựu", "progress=tiến bộ", "dedication=sự cống hiến")
+                "SPEAKING_CHALLENGE" -> listOf("Consistency is the key to mastering English fluency.")
+                else -> options
+            }
+            val finalQText = when (qType) {
+                "LISTENING_CHALLENGE" -> "Nghe câu sau và sắp xếp lại các từ cho đúng thứ tự 🎧"
+                "MATCHING_PAIRS" -> "Ghép cặp các từ vựng tiếng Anh với nghĩa tiếng Việt tương ứng 🧩"
+                "SPEAKING_CHALLENGE" -> "Luyện nói câu tiếng Anh sau chuẩn bản xứ 🎙️"
+                else -> qText
+            }
+            val optionsJson = org.json.JSONArray(finalOptions).toString()
+            QuestionItemDto(
+                questionText = finalQText,
+                questionType = qType,
+                optionsJson = optionsJson,
+                correctAnswer = "0",
+                explanation = "Lựa chọn phương án chính xác nhất để hoàn thiện câu và củng cố lỗ hổng kiến thức.",
+                points = 10,
+                difficulty = "MEDIUM"
+            )
+        }
+
+        val generated = ChapterGeneratedResponse(
+            title = fallbackTitle,
+            description = "Chương học cá nhân hóa được tạo tự động nhằm củng cố kiến thức và mở rộng vốn từ.",
+            level = level,
+            subject = "English",
+            orderNo = null,
+            questions = questions
+        )
+
+        val newId = repository.saveAiGeneratedChapter(generated)
+        if (newId != -1L) {
+            refreshChapters()
+            _chapterUnlockEvent.postValue(
+                ChapterUnlockEvent(
+                    completedChapterTitle = completedChapterTitle,
+                    nextChapterTitle = fallbackTitle,
+                    isAiGenerated = true,
+                    weakPointsAddressedCount = weakWords.size
+                )
+            )
         }
     }
 
@@ -1167,6 +1734,69 @@ class StudyViewModel @Inject constructor(
         }
     }
 
+    private val phoneticCache = mutableMapOf<String, String>()
+
+    suspend fun autoLookupPhonetic(word: String): String? = withContext(Dispatchers.IO) {
+        val cleanWord = word.trim().lowercase()
+        if (cleanWord.isBlank()) return@withContext null
+        if (phoneticCache.containsKey(cleanWord)) return@withContext phoneticCache[cleanWord]
+
+        // 1. Try public dictionary API first
+        try {
+            val encoded = java.net.URLEncoder.encode(cleanWord, "UTF-8")
+            val url = java.net.URL("https://api.dictionaryapi.dev/api/v2/entries/en/$encoded")
+            val conn = url.openConnection() as java.net.HttpURLConnection
+            conn.connectTimeout = 3000
+            conn.readTimeout = 3000
+            conn.requestMethod = "GET"
+            if (conn.responseCode == 200) {
+                val json = conn.inputStream.bufferedReader().use { it.readText() }
+                val match = Regex("\"text\"\\s*:\\s*\"(/[^\"]+/)\"").find(json)
+                    ?: Regex("\"phonetic\"\\s*:\\s*\"(/[^\"]+/)\"").find(json)
+                if (match != null) {
+                    val result = match.groupValues[1]
+                    phoneticCache[cleanWord] = result
+                    return@withContext result
+                }
+            }
+        } catch (_: Exception) {}
+
+        // 2. Fallback to Groq AI
+        try {
+            val apiKey = getEffectiveApiKey()
+            if (apiKey.isNotBlank()) {
+                val messages = listOf(
+                    GroqModels.createTextMessage(
+                        role = "system",
+                        text = "Return ONLY the IPA phonetic transcription wrapped in slashes (e.g. /həˈloʊ/) for the given English word or phrase. No explanations, no markdown, no other text."
+                    ),
+                    GroqModels.createTextMessage(
+                        role = "user",
+                        text = cleanWord
+                    )
+                )
+                val request = GroqModels.ChatRequest(
+                    model = GroqModels.MODEL_TEXT,
+                    messages = messages,
+                    temperature = 0.1,
+                    maxTokens = 30
+                )
+                val response = groqApiService.generateChatCompletion("Bearer $apiKey", request)
+                if (response.isSuccessful && response.body() != null) {
+                    val raw = response.body()?.choices?.firstOrNull()?.message?.content?.trim() ?: ""
+                    val ipaMatch = Regex("/[^/]+/").find(raw)
+                    val result = ipaMatch?.value ?: if (raw.startsWith("/") && raw.endsWith("/")) raw else if (raw.isNotBlank()) "/$raw/" else ""
+                    if (result.length in 3..50) {
+                        phoneticCache[cleanWord] = result
+                        return@withContext result
+                    }
+                }
+            }
+        } catch (_: Exception) {}
+
+        null
+    }
+
     private suspend fun fetchAnswerFromGroq(context: Context, prompt: String, uri: Uri?): String = withContext(Dispatchers.IO) {
         try {
             val apiKey = getEffectiveApiKey()
@@ -1201,7 +1831,7 @@ class StudyViewModel @Inject constructor(
                 model = modelToUse,
                 messages = messages,
                 temperature = 0.7,
-                maxTokens = 1024
+                maxTokens = if (modelToUse == GroqModels.MODEL_VISION) 450 else 800
             )
 
             val response = groqApiService.generateChatCompletion("Bearer $apiKey", request)
