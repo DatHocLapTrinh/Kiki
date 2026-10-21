@@ -95,4 +95,36 @@ class MentorChatAndVocabularyVaultTest {
         assertEquals(0, vocab.repetitionLevel)
         assertFalse(vocab.isMastered)
     }
+
+    @Test
+    fun testSanitizeAiMentorReplyCleansMarkdownAndIntrosAndTables() {
+        val rawInput = """
+            Chào bạn! Dưới đây là phân tích chi tiết:
+            [STEP] Resilient /rɪ'zɪl.i.ənt/ (adj.)
+            ---
+            **📚 Định nghĩa (Vietnamese)**
+            - Resilient: có khả năng phục hồi nhanh, bền bỉ.
+            ---
+            Cách dùng trong câu (Sentence Breakdown)
+            | English Sentence | Vietnamese Translation | Why "resilient" fits |
+            |---|---|---|
+            | She is resilient | Cô ấy rất kiên cường | Thể hiện sự bền bỉ |
+            ---
+            • Từ đồng nghĩa: adaptable, flexible, tough
+            • Từ trái nghĩa: fragile, vulnerable
+        """.trimIndent()
+
+        val sanitized = com.example.viewmodel.StudyViewModel.sanitizeAiMentorReply(rawInput)
+
+        // Verifications:
+        assertFalse("Must not contain conversational intro", sanitized.startsWith("Chào bạn"))
+        assertFalse("Must not contain [STEP]", sanitized.contains("[STEP]"))
+        assertFalse("Must not contain ** asterisks", sanitized.contains("**"))
+        assertFalse("Must not contain table separator |---|---|", sanitized.contains("|---|---|"))
+        assertFalse("Must not contain raw table headers", sanitized.contains("Why \"resilient\" fits"))
+        assertTrue("Must contain word and phonetic", sanitized.contains("Resilient /rɪ'zɪl.i.ənt/"))
+        assertTrue("Must convert - to • bullet", sanitized.contains("• Resilient: có khả năng phục hồi"))
+        assertTrue("Must contain synonyms", sanitized.contains("• Từ đồng nghĩa: adaptable, flexible, tough"))
+        assertTrue("Must contain antonyms", sanitized.contains("• Từ trái nghĩa: fragile, vulnerable"))
+    }
 }

@@ -89,20 +89,25 @@ public class AiGenerationService {
 
     public MentorChatResponse mentorChat(MentorChatRequest request) throws IOException {
         String systemPrompt = """
-            You are Kiki, an elite AI English Socratic Mentor and Coach.
-            Provide encouraging, clear, and pedagogically sound guidance to the student.
+            You are Kiki, an elite AI English Mentor.
+            Provide concise, direct guidance to the student in 1 single answer without any conversational greetings or introductions (never say "Chào bạn", "Dưới đây là...", "Here is...").
             
             FORMATTING RULES (CRITICAL - strictly follow these):
-            - NEVER use markdown asterisks (**bold**) or hashes (#) in your reply.
-            - Structure your reply using plain text bullet points starting with "• " character.
-            - Each key point or concept should start on a new line with "• ".
-            - Use numbered lists like "1." "2." "3." for sequential steps.
-            - Keep explanations clear, warm, and bilingual (Vietnamese + English examples).
-            - DO NOT use any markdown symbols. Only plain text with • bullet points.
+            - NEVER use conversational introductions or greetings.
+            - NEVER use markdown asterisks (**bold**) or hashes (#).
+            - NEVER use markdown tables (| col |).
+            - Structure your reply using plain text bullet points starting with "• ".
+            - When explaining a word, idiom, phrase, or vocabulary, strictly follow this concise schema:
+              [Word/Phrase] /IPA/ (Part of speech)
+              • Nghĩa: [Vietnamese definition, concise and clear]
+              • Ví dụ: [Natural English sentence] ([Vietnamese translation])
+              • Từ đồng nghĩa: [3-5 synonyms separated by commas]
+              • Từ trái nghĩa: [2-4 antonyms separated by commas]
+            - When explaining grammar, provide a concise formula, 2 bilingual examples, and 1 tip using • bullet points.
             
             Return ONLY a valid JSON object matching this schema:
             {
-              "reply": "string (Detailed encouraging explanation using • bullet points, absolutely NO ** asterisks)",
+              "reply": "string (Concise explanation using • bullet points, NO ** asterisks, NO greetings, NO tables)",
               "grammarTip": "string (Key takeaway in 1 concise sentence, NO ** asterisks)",
               "detectedVocabularies": [
                 {
@@ -136,14 +141,14 @@ public class AiGenerationService {
             String cleanRaw = sanitizeMarkdown(rawResponse);
             return new MentorChatResponse(
                 cleanRaw,
-                "Luyen tap thuong xuyen se giup ban phan xa tieng Anh tu nhien hon!",
+                "Luyện tập thường xuyên sẽ giúp bạn phản xạ tiếng Anh tự nhiên hơn!",
                 List.of()
             );
         }
     }
 
     /**
-     * Cleans up markdown formatting: removes ** asterisks, replaces - bullets with bullet char
+     * Cleans up markdown formatting: removes ** asterisks, tables, dividers, greetings
      */
     private String sanitizeMarkdown(String input) {
         if (input == null) return "";
@@ -151,7 +156,12 @@ public class AiGenerationService {
             .replaceAll("\\*\\*(.+?)\\*\\*", "$1")   // **bold** -> plain text
             .replaceAll("\\*(.+?)\\*", "$1")           // *italic* -> plain text
             .replaceAll("(?m)^#{1,6}\\s*", "")         // ## headings -> plain
+            .replaceAll("\\[STEP\\]", "")              // [STEP] -> remove
+            .replaceAll("(?m)^\\s*[-=_]{3,}\\s*$", "") // --- dividers
+            .replaceAll("(?m)^\\s*\\|[-| :]+\\|\\s*$", "") // table separators
+            .replaceAll("(?m)^\\s*\\|\\s*(.+?)\\s*\\|\\s*$", "$1") // table row
             .replaceAll("(?m)^\\s*[-*]\\s+", "\u2022 ")  // - bullets -> bullet char
+            .replaceAll("(?i)^(chào bạn[!,.]?|hello[!,.]?|hi there[!,.]?|dưới đây là[^\n]*\n?)\\s*", "")
             .trim();
     }
 

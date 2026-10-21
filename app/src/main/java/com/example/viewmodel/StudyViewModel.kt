@@ -120,6 +120,52 @@ class StudyViewModel @Inject constructor(
                 else -> "✨ Kiki AI Mentor"
             }
         }
+
+        const val AI_MENTOR_SYSTEM_PROMPT =
+            "You are Kiki, an elite AI English Mentor. Your response MUST be concise, direct, and delivered in a SINGLE answer without any conversational introductions, greetings, preamble, or outro (do NOT say 'Chào bạn', 'Dưới đây là...', 'Here is the breakdown...'). Never use markdown tables (| col |). Never use '[STEP]' prefixes.\n\n" +
+            "When explaining any English word, vocabulary, idiom, or phrase, you MUST strictly follow this exact structured format:\n\n" +
+            "[Word / Phrase] /IPA Phonetics/ (Part of speech)\n" +
+            "• Nghĩa: [Vietnamese meaning, concise and precise]\n" +
+            "• Ví dụ: [Natural English sentence] ([Vietnamese translation])\n" +
+            "• Từ đồng nghĩa: [3-5 synonyms separated by commas]\n" +
+            "• Từ trái nghĩa: [2-4 antonyms separated by commas]\n\n" +
+            "If the question is about grammar, provide a concise explanation with formula, 2 bilingual examples, and a quick tip using clean • bullet points. Keep the entire response within 1 single concise message."
+
+        fun sanitizeAiMentorReply(raw: String): String {
+            if (raw.isBlank()) return ""
+            var cleaned = raw
+                .replace(Regex("\\*\\*(.+?)\\*\\*"), "$1")
+                .replace(Regex("\\*(.+?)\\*"), "$1")
+                .replace(Regex("(?m)^#{1,6}\\s*"), "")
+                .replace("[STEP]", "")
+                .replace(Regex("(?m)^\\s*[-=_]{3,}\\s*$"), "")
+
+            val lines = cleaned.lines().mapNotNull { line ->
+                val trimmed = line.trim()
+                if (trimmed.isEmpty()) {
+                    ""
+                } else if (trimmed.matches(Regex("^\\|[-| :]+\\|$"))) {
+                    null
+                } else if (trimmed.startsWith("|") && trimmed.endsWith("|")) {
+                    val cells = trimmed.split("|").map { it.trim() }.filter { it.isNotEmpty() }
+                    if (cells.isNotEmpty() && !cells.any { it.contains("English Sentence", ignoreCase = true) || it.contains("Translation", ignoreCase = true) }) {
+                        "• " + cells.joinToString(" - ")
+                    } else {
+                        null
+                    }
+                } else {
+                    line
+                }
+            }
+            cleaned = lines.joinToString("\n")
+            cleaned = cleaned.replace(Regex("(?m)^\\s*[-*]\\s+"), "• ")
+            cleaned = cleaned.replace(
+                Regex("(?i)^(chào bạn[!,.]?|hello[!,.]?|hi there[!,.]?|sure[!,.]?|dưới đây là[^\n]*\n?|here is[^\n]*\n?|sau đây là[^\n]*\n?|tất nhiên rồi[^\n]*\n?)\\s*"),
+                ""
+            )
+            cleaned = cleaned.replace(Regex("\n{3,}"), "\n\n")
+            return cleaned.trim()
+        }
     }
 
     private val genericHttpClient = OkHttpClient.Builder()
@@ -934,6 +980,33 @@ class StudyViewModel @Inject constructor(
                 var grammarTip: String? = null
                 var vocabularies: List<VocabularyCardDto> = emptyList()
 
+                // Augment vocab/lookup questions to strictly request the concise 1-card format
+                val cleanQuestion = question.trim()
+                val isLookup = cleanQuestion.startsWith("🔍") ||
+                        cleanQuestion.contains("Tra từ", ignoreCase = true) ||
+                        cleanQuestion.contains("Tra thành ngữ", ignoreCase = true) ||
+                        cleanQuestion.contains("Look up", ignoreCase = true) ||
+                        cleanQuestion.contains("nghĩa là gì", ignoreCase = true) ||
+                        (cleanQuestion.split(Regex("\\s+")).size <= 3 && !cleanQuestion.endsWith("?") && !cleanQuestion.contains("tại sao", ignoreCase = true) && !cleanQuestion.contains("why", ignoreCase = true))
+
+                val promptForAi = if (isLookup && imageUri == null) {
+                    val targetWord = cleanQuestion
+                        .replace(Regex("^🔍\\s*(Tra từ|Tra thành ngữ|Look up word|Look up idiom):?\\s*"), "")
+                        .replace(Regex("['\"]"), "")
+                        .replace(Regex("&\\s*ví dụ.*", RegexOption.IGNORE_CASE), "")
+                        .replace(Regex("in context.*", RegexOption.IGNORE_CASE), "")
+                        .trim()
+
+                    "Giải thích từ/cụm từ: '$targetWord'. Trả lời NGẮN GỌN trong DUY NHẤT 1 câu trả lời theo đúng mẫu sau (tuyệt đối không chào hỏi, không giới thiệu, không bảng biểu, không dùng [STEP]):\n" +
+                    "$targetWord /IPA/ (Từ loại)\n" +
+                    "• Nghĩa: [Giải thích nghĩa tiếng Việt ngắn gọn, súc tích]\n" +
+                    "• Ví dụ: [Câu tiếng Anh] ([Dịch nghĩa tiếng Việt])\n" +
+                    "• Từ đồng nghĩa: [3-5 từ đồng nghĩa]\n" +
+                    "• Từ trái nghĩa: [2-4 từ trái nghĩa]"
+                } else {
+                    cleanQuestion
+                }
+
                 if (imageUri != null) {
                     answer = fetchAnswerFromAI(context, question, imageUri)
                 } else {
@@ -941,7 +1014,7 @@ class StudyViewModel @Inject constructor(
                         val token = authManager.getIdToken() ?: "mock_dev_token_kiki_explorer"
                         val weakPoints = _weakPoints.value?.take(5)?.map { it.question } ?: emptyList()
                         val request = MentorChatRequest(
-                            message = question,
+                            message = promptForAi,
                             userLevel = _selectedLevel.value ?: "Intermediate",
                             currentChapter = _currentChapterTitle.value ?: "English Fundamentals",
                             recentWeakPoints = weakPoints
@@ -953,12 +1026,17 @@ class StudyViewModel @Inject constructor(
                             grammarTip = body.grammarTip
                             vocabularies = body.detectedVocabularies
                         } else {
-                            answer = fetchAnswerFromAI(context, question, null)
+                            answer = fetchAnswerFromAI(context, promptForAi, null)
                         }
                     } catch (e: Exception) {
-                        answer = fetchAnswerFromAI(context, question, null)
+                        answer = fetchAnswerFromAI(context, promptForAi, null)
                     }
                 }
+                answer = sanitizeAiMentorReply(answer)
+                if (grammarTip != null) {
+                    grammarTip = sanitizeAiMentorReply(grammarTip)
+                }
+
                 val userId = _currentUserId.value
                 if (userId != null && userId != -1L) {
                     repository.saveAIQuestion(userId, question, imageUri?.toString(), answer)
@@ -1011,15 +1089,16 @@ class StudyViewModel @Inject constructor(
                 var title = ""
                 when (followUpType) {
                     "EXPLAIN" -> {
-                        prompt = "Based on the question: '$currentQuestion'. Please explain it in more detail, step by step. Use '[STEP] ' prefix for each step. Reply in the same language as the question."
+                        prompt = "Based on the question: '$currentQuestion'. Please explain it in more detail concisely in 1 single answer with • bullet points. Do not include conversational greetings or markdown tables."
                         title = "Giải thích thêm: $currentQuestion"
                     }
                     "SIMILAR" -> {
-                        prompt = "Based on the question: '$currentQuestion'. Give me a similar practice exercise with a hint. Use '[STEP] ' prefix for each step. Reply in the same language as the question."
+                        prompt = "Based on the question: '$currentQuestion'. Give me a similar practice exercise with a hint concisely in 1 single answer with • bullet points. Do not include conversational greetings or markdown tables."
                         title = "Bài tập tương tự: $currentQuestion"
                     }
                 }
-                val answer = fetchAnswerFromAI(context, prompt, null)
+                val rawAnswer = fetchAnswerFromAI(context, prompt, null)
+                val answer = sanitizeAiMentorReply(rawAnswer)
                 val userId = _currentUserId.value
                 if (userId != null && userId != -1L) {
                     repository.saveAIQuestion(userId, title, null, answer)
@@ -1042,9 +1121,10 @@ class StudyViewModel @Inject constructor(
         _isGenerating.value = true
         viewModelScope.launch {
             try {
-                val prompt = "Perform a deep academic analysis of this topic: '$question'. Cover: 1) Core concept, 2) Why it works (theory), 3) Common mistakes, 4) Real-world applications. Use '[STEP] ' prefix for each section. Reply in the same language as the question."
+                val prompt = "Perform a deep academic analysis of this topic: '$question'. Cover: 1) Core concept, 2) Theory, 3) Common mistakes, 4) Real-world applications. Format concisely in 1 single answer with • bullet points. Do not include greetings, conversational filler, or markdown tables."
                 val title = "[Phân tích sâu] $question"
-                val answer = fetchAnswerFromAI(context, prompt, null)
+                val rawAnswer = fetchAnswerFromAI(context, prompt, null)
+                val answer = sanitizeAiMentorReply(rawAnswer)
                 val userId = _currentUserId.value
                 if (userId != null && userId != -1L) {
                     repository.saveAIQuestion(userId, title, null, answer)
@@ -1735,7 +1815,7 @@ class StudyViewModel @Inject constructor(
                 answer.startsWith("⚡ Máy chủ AI")
 
         if (!isError) {
-            return answer
+            return sanitizeAiMentorReply(answer)
         }
 
         // Tự động chuyển provider dựa trên format key nếu provider đã chọn gặp sự cố
@@ -1749,7 +1829,7 @@ class StudyViewModel @Inject constructor(
                 else -> answer
             }
             if (!fallbackAnswer.startsWith("Lỗi kết nối") && !fallbackAnswer.startsWith("⚠️")) {
-                return fallbackAnswer
+                return sanitizeAiMentorReply(fallbackAnswer)
             }
         }
 
@@ -1782,9 +1862,9 @@ class StudyViewModel @Inject constructor(
             }
 
             val actualPrompt = if (prompt.isBlank() && uri != null) {
-                "Hãy phân tích chi tiết và giải thích bài tập trong hình ảnh này từng bước một."
+                "Hãy phân tích chi tiết và giải thích bài tập trong hình ảnh này."
             } else if (prompt.isBlank() && audioBytes != null) {
-                "Lắng nghe đoạn ghi âm giọng nói tiếng Anh này của tôi, nhận xét phát âm, ngữ pháp và gợi ý cải thiện chi tiết."
+                "Lắng nghe đoạn ghi âm giọng nói tiếng Anh này của tôi, nhận xét phát âm, ngữ pháp và gợi ý cải thiện ngắn gọn."
             } else {
                 prompt
             }
@@ -1805,12 +1885,7 @@ class StudyViewModel @Inject constructor(
             }
 
             val contents = listOf(GeminiModels.Content(role = "user", parts = parts))
-            val systemInstruction = GeminiModels.createSystemInstruction(
-                "You are Kiki, an elite AI English Learning Mentor and Socratic Language Coach powered by Gemini 2.5 Flash Native Audio Dialog. " +
-                "Guide the student to master English grammar, vocabulary, pronunciation nuances, and natural conversational phrasing. " +
-                "Use concise, encouraging, and clear explanations. Use '[STEP] ' prefix when explaining complex rules or sentence breakdowns. " +
-                "Provide bilingual Vietnamese-English explanations when helpful for clarity."
-            )
+            val systemInstruction = GeminiModels.createSystemInstruction(AI_MENTOR_SYSTEM_PROMPT)
 
             val request = GeminiModels.GenerateContentRequest(
                 contents = contents,
@@ -1956,16 +2031,13 @@ class StudyViewModel @Inject constructor(
                 return@withContext fetchAnswerFromOpenAI(context, prompt, uri, apiKey)
             }
 
-            val actualPrompt = if (prompt.isBlank()) "Hãy phân tích chi tiết và giải thích bài tập trong hình ảnh này từng bước một." else prompt
+            val actualPrompt = if (prompt.isBlank()) "Hãy phân tích chi tiết và giải thích bài tập trong hình ảnh này." else prompt
 
             val messages = mutableListOf<GroqModels.ChatMessage>()
             messages.add(
                 GroqModels.createTextMessage(
                     role = "system",
-                    text = "You are Kiki, an elite AI English Learning Mentor and Socratic Language Coach. " +
-                           "Guide the student to master English grammar, vocabulary, pronunciation nuances, and natural conversational phrasing. " +
-                           "Use concise, encouraging, and clear explanations. Use '[STEP] ' prefix when explaining complex rules or sentence breakdowns. " +
-                           "Provide bilingual Vietnamese-English explanations when helpful for clarity."
+                    text = AI_MENTOR_SYSTEM_PROMPT
                 )
             )
 
@@ -2014,11 +2086,8 @@ class StudyViewModel @Inject constructor(
                 return@withContext "⚠️ Bạn chưa cài đặt Anthropic Claude API Key.\n\nVui lòng mở Cài đặt và dán API Key của bạn (bắt đầu bằng sk-ant-...)."
             }
 
-            val actualPrompt = if (prompt.isBlank()) "Hãy phân tích chi tiết và giải thích bài tập tiếng Anh này từng bước một." else prompt
-            val systemPrompt = "You are Kiki, an elite AI English Learning Mentor and Socratic Language Coach. " +
-                    "Guide the student to master English grammar, vocabulary, pronunciation nuances, and natural conversational phrasing. " +
-                    "Use concise, encouraging, and clear explanations. Use '[STEP] ' prefix when explaining complex rules or sentence breakdowns. " +
-                    "Provide bilingual Vietnamese-English explanations when helpful for clarity."
+            val actualPrompt = if (prompt.isBlank()) "Hãy phân tích chi tiết và giải thích bài tập tiếng Anh này." else prompt
+            val systemPrompt = AI_MENTOR_SYSTEM_PROMPT
 
             val jsonBody = JSONObject().apply {
                 put("model", "claude-3-5-sonnet-20241022")
@@ -2068,11 +2137,8 @@ class StudyViewModel @Inject constructor(
                 return@withContext "⚠️ Bạn chưa cài đặt OpenAI API Key.\n\nVui lòng mở Cài đặt và dán API Key của bạn (bắt đầu bằng sk-...)."
             }
 
-            val actualPrompt = if (prompt.isBlank()) "Hãy phân tích chi tiết và giải thích bài tập tiếng Anh này từng bước một." else prompt
-            val systemPrompt = "You are Kiki, an elite AI English Learning Mentor and Socratic Language Coach. " +
-                    "Guide the student to master English grammar, vocabulary, pronunciation nuances, and natural conversational phrasing. " +
-                    "Use concise, encouraging, and clear explanations. Use '[STEP] ' prefix when explaining complex rules or sentence breakdowns. " +
-                    "Provide bilingual Vietnamese-English explanations when helpful for clarity."
+            val actualPrompt = if (prompt.isBlank()) "Hãy phân tích chi tiết và giải thích bài tập tiếng Anh này." else prompt
+            val systemPrompt = AI_MENTOR_SYSTEM_PROMPT
 
             val jsonBody = JSONObject().apply {
                 put("model", "gpt-4o-mini")

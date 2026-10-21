@@ -204,14 +204,14 @@ public class GroqClientService {
             (userPrompt != null && userPrompt.contains("Student question"))) {
             return """
             {
-              "reply": "Chào bạn! Mình là Kiki AI Mentor. Để học tiếng Anh hiệu quả, hãy luyện tập thường xuyên với các ví dụ thực tế.",
-              "grammarTip": "Mỗi ngày ghi nhớ 1 cấu trúc ngữ pháp sẽ giúp phản xạ nói của bạn tự nhiên hơn.",
+              "reply": "Resilient /rɪˈzɪliənt/ (adj)\\n• Nghĩa: Có khả năng phục hồi nhanh chóng sau khó khăn, kiên cường, bền bỉ.\\n• Ví dụ: She is resilient and bounced back quickly after the setback. (Cô ấy rất kiên cường và đã phục hồi nhanh chóng sau thất bại.)\\n• Từ đồng nghĩa: adaptable, flexible, tough, hardy\\n• Từ trái nghĩa: fragile, vulnerable, weak",
+              "grammarTip": "Ghi nhớ từ vựng cùng từ đồng nghĩa và trái nghĩa giúp tăng tốc phản xạ ngôn ngữ.",
               "detectedVocabularies": [
                 {
-                  "word": "persistent",
-                  "phonetic": "/pərˈsɪstənt/",
-                  "meaning": "kiên trì, bền bỉ",
-                  "example": "Be persistent in practicing English every day."
+                  "word": "resilient",
+                  "phonetic": "/rɪˈzɪliənt/",
+                  "meaning": "kiên cường, có khả năng phục hồi nhanh",
+                  "example": "She is resilient and bounced back quickly after the setback."
                 }
               ]
             }
