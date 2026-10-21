@@ -175,9 +175,10 @@ class StudyViewModel @Inject constructor(
         .build()
 
     private val _universalAiKey = MutableLiveData(
-        prefs.getString("kiki_universal_ai_api_key", "")
-            ?.ifBlank { prefs.getString("groq_custom_api_key", "") }
-            ?.ifBlank { prefs.getString("gemini_custom_api_key", "") }
+        prefs.getString("gemini_custom_api_key", "")
+            ?.trim()?.takeIf { !it.startsWith("sk-") && !it.startsWith("gsk_") }
+            ?: prefs.getString("kiki_universal_ai_api_key", "")
+            ?.trim()?.takeIf { !it.startsWith("sk-") && !it.startsWith("gsk_") }
             ?: ""
     )
     val universalAiKey: LiveData<String> = _universalAiKey
@@ -200,13 +201,17 @@ class StudyViewModel @Inject constructor(
         setUniversalAiApiKey(key)
     }
 
-    private val _geminiApiKey = MutableLiveData(prefs.getString("gemini_custom_api_key", "") ?: "")
+    private val _geminiApiKey = MutableLiveData(
+        prefs.getString("gemini_custom_api_key", "")
+            ?.trim()?.takeIf { !it.startsWith("sk-") && !it.startsWith("gsk_") }
+            ?: ""
+    )
     val geminiApiKey: LiveData<String> = _geminiApiKey
     fun setGeminiApiKey(key: String) {
         setUniversalAiApiKey(key)
     }
 
-    private val _aiProvider = MutableLiveData(prefs.getString("ai_provider", PROVIDER_GEMINI) ?: PROVIDER_GEMINI)
+    private val _aiProvider = MutableLiveData(PROVIDER_GEMINI)
     val aiProvider: LiveData<String> = _aiProvider
     fun setAiProvider(provider: String) {
         prefs.edit().putString("ai_provider", provider).apply()
@@ -229,57 +234,50 @@ class StudyViewModel @Inject constructor(
 
     private val aiQueryCache = java.util.concurrent.ConcurrentHashMap<String, String>()
 
-    fun getEffectiveUniversalApiKey(): String {
-        val customGemini = _geminiApiKey.value?.trim()
-        if (!customGemini.isNullOrBlank()) return customGemini
-        val custom = _universalAiKey.value?.trim()
-        if (!custom.isNullOrBlank()) return custom
-        val customUser = _userApiKey.value?.trim()
-        if (!customUser.isNullOrBlank()) return customUser
-
-        return try {
-            val envGemini = try {
-                val f = BuildConfig::class.java.getField("GEMINI_API_KEY")
-                f.get(null) as? String ?: ""
-            } catch (_: Exception) { "" }
-            if (envGemini.isNotBlank() && !envGemini.contains("your_") && !envGemini.contains("here")) {
-                return envGemini.trim()
-            }
-
-            val envUniversal = try {
-                val f = BuildConfig::class.java.getField("AI_API_KEY")
-                f.get(null) as? String ?: ""
-            } catch (_: Exception) { "" }
-            if (envUniversal.isNotBlank() && !envUniversal.contains("your_") && !envUniversal.contains("here")) {
-                return envUniversal.trim()
-            }
-
-            val envGroq = try {
-                val f = BuildConfig::class.java.getField("GROQ_API_KEY")
-                f.get(null) as? String ?: ""
-            } catch (_: Exception) { "" }
-            if (envGroq.isNotBlank() && !envGroq.contains("your_") && !envGroq.contains("here")) {
-                return envGroq.trim()
-            }
-            ""
-        } catch (_: Exception) {
-            ""
+    fun getEffectiveGeminiApiKey(): String {
+        // 1. Luôn ưu tiên tuyệt đối biến môi trường GEMINI_API_KEY từ file .env / BuildConfig
+        val envGemini = try {
+            val f = BuildConfig::class.java.getField("GEMINI_API_KEY")
+            f.get(null) as? String ?: ""
+        } catch (_: Exception) { "" }
+        if (envGemini.isNotBlank() && !envGemini.contains("your_") && !envGemini.contains("here")) {
+            return envGemini.trim()
         }
+
+        // 2. Custom key người dùng dán (chỉ chấp nhận key Gemini hợp lệ, bỏ qua key OpenAI sk- hoặc Groq gsk_)
+        val customGemini = _geminiApiKey.value?.trim()
+        if (!customGemini.isNullOrBlank() && !customGemini.startsWith("sk-") && !customGemini.startsWith("gsk_")) {
+            return customGemini
+        }
+
+        val custom = _universalAiKey.value?.trim()
+        if (!custom.isNullOrBlank() && !custom.startsWith("sk-") && !custom.startsWith("gsk_")) {
+            return custom
+        }
+
+        // 3. Fallback sang biến AI_API_KEY nếu không phải OpenAI/Groq
+        val envUniversal = try {
+            val f = BuildConfig::class.java.getField("AI_API_KEY")
+            f.get(null) as? String ?: ""
+        } catch (_: Exception) { "" }
+        if (envUniversal.isNotBlank() && !envUniversal.contains("your_") && !envUniversal.contains("here") && !envUniversal.startsWith("sk-") && !envUniversal.startsWith("gsk_")) {
+            return envUniversal.trim()
+        }
+
+        return ""
+    }
+
+    fun getEffectiveUniversalApiKey(): String {
+        return getEffectiveGeminiApiKey()
     }
 
     fun getEffectiveActiveProvider(): String {
-        val userChoice = _aiProvider.value ?: PROVIDER_GEMINI
-        if (userChoice != PROVIDER_AUTO) {
-            return userChoice
-        }
-        val key = getEffectiveUniversalApiKey()
-        return if (key.isNotBlank()) detectAiProvider(key) else PROVIDER_GEMINI
+        return PROVIDER_GEMINI
     }
 
     val activeProviderDisplayTitle: LiveData<String> = MediatorLiveData<String>().apply {
         val update = {
-            val active = getEffectiveActiveProvider()
-            value = getProviderDisplayName(active)
+            value = getProviderDisplayName(PROVIDER_GEMINI)
         }
         addSource(_aiProvider) { update() }
         addSource(_universalAiKey) { update() }
@@ -288,16 +286,8 @@ class StudyViewModel @Inject constructor(
         update()
     }
 
-    fun getEffectiveGeminiApiKey(): String {
-        val custom = _geminiApiKey.value?.trim()
-        if (!custom.isNullOrBlank()) return custom
-        val key = getEffectiveUniversalApiKey()
-        if (key.isNotBlank()) return key
-        return ""
-    }
-
     fun getEffectiveApiKey(): String {
-        return getEffectiveUniversalApiKey()
+        return getEffectiveGeminiApiKey()
     }
 
     private val _userName = MutableLiveData("Adventurer")
@@ -1850,44 +1840,13 @@ class StudyViewModel @Inject constructor(
         prompt: String,
         uri: Uri?
     ): String {
-        val apiKey = getEffectiveUniversalApiKey()
-        if (apiKey.isBlank()) {
-            return "⚠️ Bạn chưa cài đặt AI API Key.\n\n• Vui lòng mở Menu (Cài đặt) và dán API Key của bạn (hỗ trợ Groq, Gemini, Claude, OpenAI).\n• Hoặc cấu hình biến AI_API_KEY trong file .env để kích hoạt ngay lập tức."
+        val geminiKey = getEffectiveGeminiApiKey()
+        if (geminiKey.isBlank()) {
+            return "⚠️ Bạn chưa cài đặt GEMINI_API_KEY.\n\n• Vui lòng cấu hình biến GEMINI_API_KEY trong file .env để kích hoạt Gemini 2.5 Flash Native Audio Dialog.\n• Hoặc mở Cài đặt và dán khóa API của bạn."
         }
 
-        val activeProvider = getEffectiveActiveProvider()
-        val answer = when (activeProvider) {
-            PROVIDER_GEMINI -> fetchAnswerFromGemini(context, prompt, uri, apiKey = apiKey)
-            PROVIDER_GROQ -> fetchAnswerFromGroq(context, prompt, uri, apiKey)
-            PROVIDER_CLAUDE -> fetchAnswerFromClaude(context, prompt, uri, apiKey)
-            PROVIDER_OPENAI -> fetchAnswerFromOpenAI(context, prompt, uri, apiKey)
-            else -> fetchAnswerFromGemini(context, prompt, uri, apiKey = apiKey)
-        }
-
-        val isError = answer.startsWith("Lỗi kết nối") ||
-                answer.startsWith("⚠️ Bạn chưa cài đặt") ||
-                answer.startsWith("⚡ Máy chủ AI")
-
-        if (!isError) {
-            return sanitizeAiMentorReply(answer)
-        }
-
-        // Tự động chuyển provider dựa trên format key nếu provider đã chọn gặp sự cố
-        val detected = detectAiProvider(apiKey)
-        if (detected != activeProvider) {
-            val fallbackAnswer = when (detected) {
-                PROVIDER_GEMINI -> fetchAnswerFromGemini(context, prompt, uri, apiKey = apiKey)
-                PROVIDER_GROQ -> fetchAnswerFromGroq(context, prompt, uri, apiKey)
-                PROVIDER_CLAUDE -> fetchAnswerFromClaude(context, prompt, uri, apiKey)
-                PROVIDER_OPENAI -> fetchAnswerFromOpenAI(context, prompt, uri, apiKey)
-                else -> answer
-            }
-            if (!fallbackAnswer.startsWith("Lỗi kết nối") && !fallbackAnswer.startsWith("⚠️")) {
-                return sanitizeAiMentorReply(fallbackAnswer)
-            }
-        }
-
-        return answer
+        val answer = fetchAnswerFromGemini(context, prompt, uri, apiKey = geminiKey)
+        return sanitizeAiMentorReply(answer)
     }
 
     private suspend fun fetchAnswerFromGemini(
@@ -1900,19 +1859,8 @@ class StudyViewModel @Inject constructor(
     ): String = withContext(Dispatchers.IO) {
         try {
             val effectiveKey = if (!apiKey.isNullOrBlank()) apiKey else getEffectiveGeminiApiKey()
-            if (effectiveKey.isBlank()) {
-                return@withContext "⚠️ Bạn chưa cài đặt AI API Key.\n\nVui lòng mở Cài đặt và dán API Key của bạn (hỗ trợ GEMINI_API_KEY) hoặc cấu hình GEMINI_API_KEY trong file .env."
-            }
-
-            // Cross-provider auto redirection (nếu người dùng vô tình dán nhầm key Groq/Claude/OpenAI vào ô Gemini)
-            if (effectiveKey.startsWith("gsk_")) {
-                return@withContext fetchAnswerFromGroq(context, prompt, uri, effectiveKey)
-            }
-            if (effectiveKey.startsWith("sk-ant-")) {
-                return@withContext fetchAnswerFromClaude(context, prompt, uri, effectiveKey)
-            }
-            if (effectiveKey.startsWith("sk-")) {
-                return@withContext fetchAnswerFromOpenAI(context, prompt, uri, effectiveKey)
+            if (effectiveKey.isBlank() || effectiveKey.startsWith("sk-")) {
+                return@withContext "⚠️ Khóa API không hợp lệ cho Google Gemini. Vui lòng cấu hình GEMINI_API_KEY trong file .env để sử dụng Gemini 2.5 Flash Native Audio Dialog."
             }
 
             val actualPrompt = if (prompt.isBlank() && uri != null) {
