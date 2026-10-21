@@ -169,18 +169,26 @@ fun AskScreen(viewModel: StudyViewModel) {
                         val strings = LocalAppStrings.current
                         Text(strings.knowledgeDecoder, color = Color.White, fontWeight = FontWeight.Bold, fontSize = 18.sp)
                     }
-                    val currentAiProvider by viewModel.aiProvider.observeAsState(StudyViewModel.PROVIDER_GEMINI)
+                    val activeProviderTitle by viewModel.activeProviderDisplayTitle.observeAsState("✨ Kiki AI Mentor")
+                    val effectiveProvider = viewModel.getEffectiveActiveProvider()
+                    val indicatorColor = when (effectiveProvider) {
+                        StudyViewModel.PROVIDER_GROQ -> Color(0xFFFF9E00)
+                        StudyViewModel.PROVIDER_GEMINI -> Color(0xFF51FAC1)
+                        StudyViewModel.PROVIDER_CLAUDE -> Color(0xFFE07A5F)
+                        StudyViewModel.PROVIDER_OPENAI -> Color(0xFF10A37F)
+                        else -> Color(0xFF51FAC1)
+                    }
                     Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(top = 2.dp)) {
                         Box(
                             modifier = Modifier
                                 .size(6.dp)
                                 .clip(CircleShape)
-                                .background(if (currentAiProvider == StudyViewModel.PROVIDER_GEMINI) Color(0xFF51FAC1) else Color(0xFFFF9E00))
+                                .background(indicatorColor)
                         )
                         Spacer(modifier = Modifier.width(5.dp))
                         Text(
-                            text = if (currentAiProvider == StudyViewModel.PROVIDER_GEMINI) "Gemini 2.5 Flash Native Audio Dialog" else "Groq Llama 3.3",
-                            color = if (currentAiProvider == StudyViewModel.PROVIDER_GEMINI) Color(0xFF51FAC1) else Color(0xFFFF9E00),
+                            text = activeProviderTitle,
+                            color = indicatorColor,
                             fontSize = 11.sp,
                             fontWeight = FontWeight.Medium
                         )

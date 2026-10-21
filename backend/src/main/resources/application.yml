@@ -5,9 +5,9 @@ spring:
   application:
     name: kiki-backend
 
-# Cấu hình AI Engine (Groq / Gemini)
+# Cấu hình AI Engine Đa Nền Tảng (Groq / Gemini / Claude / OpenAI)
 groq:
-  api-key: ${GROQ_API_KEY:your_groq_api_key_here}
+  api-key: ${AI_API_KEY:${GROQ_API_KEY:your_groq_api_key_here}}
   base-url: https://api.groq.com/openai/v1/chat/completions
   model: ${GROQ_MODEL:openai/gpt-oss-120b}
   temperature: 0.7

@@ -6,10 +6,18 @@ import android.graphics.BitmapFactory
 import android.net.Uri
 import android.util.Base64
 import androidx.lifecycle.LiveData
+import androidx.lifecycle.MediatorLiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.BuildConfig
+import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.OkHttpClient
+import okhttp3.Request
+import okhttp3.RequestBody.Companion.toRequestBody
+import java.util.concurrent.TimeUnit
+import org.json.JSONObject
+import org.json.JSONArray
 import com.example.model.AchievementBadge
 import com.example.model.AchievementRegistry
 import com.example.model.BadgeId
@@ -82,32 +90,81 @@ class StudyViewModel @Inject constructor(
         _batterySaver.value = enabled
     }
 
+    // --- Universal Multi-Provider AI Architecture ---
+    companion object {
+        const val PROVIDER_AUTO = "AUTO"
+        const val PROVIDER_GEMINI = "GEMINI"
+        const val PROVIDER_GROQ = "GROQ"
+        const val PROVIDER_CLAUDE = "CLAUDE"
+        const val PROVIDER_OPENAI = "OPENAI"
+        const val DEFAULT_GEMINI_MODEL = GeminiModels.MODEL_GEMINI_2_5_FLASH
+
+        fun detectAiProvider(key: String): String {
+            val clean = key.trim()
+            return when {
+                clean.startsWith("gsk_") -> PROVIDER_GROQ
+                clean.startsWith("AIza") -> PROVIDER_GEMINI
+                clean.startsWith("sk-ant-") -> PROVIDER_CLAUDE
+                clean.startsWith("sk-") -> PROVIDER_OPENAI
+                else -> PROVIDER_GROQ
+            }
+        }
+
+        fun getProviderDisplayName(provider: String): String {
+            return when (provider) {
+                PROVIDER_GROQ -> "⚡ Groq (Llama 3.3 70B)"
+                PROVIDER_GEMINI -> "🧠 Gemini 2.5 Flash Native Dialog"
+                PROVIDER_CLAUDE -> "🎭 Claude 3.5 Sonnet"
+                PROVIDER_OPENAI -> "🤖 OpenAI GPT-4o"
+                PROVIDER_AUTO -> "✨ Tự Động Nhận Diện"
+                else -> "✨ Kiki AI Mentor"
+            }
+        }
+    }
+
+    private val genericHttpClient = OkHttpClient.Builder()
+        .connectTimeout(30, TimeUnit.SECONDS)
+        .readTimeout(45, TimeUnit.SECONDS)
+        .writeTimeout(30, TimeUnit.SECONDS)
+        .build()
+
+    private val _universalAiKey = MutableLiveData(
+        prefs.getString("kiki_universal_ai_api_key", "")
+            ?.ifBlank { prefs.getString("groq_custom_api_key", "") }
+            ?.ifBlank { prefs.getString("gemini_custom_api_key", "") }
+            ?: ""
+    )
+    val universalAiKey: LiveData<String> = _universalAiKey
+
+    fun setUniversalAiApiKey(key: String) {
+        val clean = key.trim()
+        prefs.edit()
+            .putString("kiki_universal_ai_api_key", clean)
+            .putString("groq_custom_api_key", clean)
+            .putString("gemini_custom_api_key", clean)
+            .apply()
+        _universalAiKey.value = clean
+        _userApiKey.value = clean
+        _geminiApiKey.value = clean
+    }
+
     private val _userApiKey = MutableLiveData(prefs.getString("groq_custom_api_key", "") ?: "")
     val userApiKey: LiveData<String> = _userApiKey
     fun setCustomApiKey(key: String) {
-        prefs.edit().putString("groq_custom_api_key", key.trim()).apply()
-        _userApiKey.value = key.trim()
-    }
-
-    // --- Gemini 2.5 Flash Native Audio Dialog State & Config ---
-    companion object {
-        const val PROVIDER_GEMINI = "GEMINI"
-        const val PROVIDER_GROQ = "GROQ"
-        const val DEFAULT_GEMINI_MODEL = GeminiModels.MODEL_GEMINI_2_5_FLASH
-    }
-
-    private val _aiProvider = MutableLiveData(prefs.getString("ai_provider", PROVIDER_GEMINI) ?: PROVIDER_GEMINI)
-    val aiProvider: LiveData<String> = _aiProvider
-    fun setAiProvider(provider: String) {
-        prefs.edit().putString("ai_provider", provider).apply()
-        _aiProvider.value = provider
+        setUniversalAiApiKey(key)
     }
 
     private val _geminiApiKey = MutableLiveData(prefs.getString("gemini_custom_api_key", "") ?: "")
     val geminiApiKey: LiveData<String> = _geminiApiKey
     fun setGeminiApiKey(key: String) {
-        prefs.edit().putString("gemini_custom_api_key", key.trim()).apply()
-        _geminiApiKey.value = key.trim()
+        setUniversalAiApiKey(key)
+    }
+
+    private val _aiProvider = MutableLiveData(prefs.getString("ai_provider", PROVIDER_AUTO) ?: PROVIDER_AUTO)
+    val aiProvider: LiveData<String> = _aiProvider
+    fun setAiProvider(provider: String) {
+        prefs.edit().putString("ai_provider", provider).apply()
+        _aiProvider.value = provider
     }
 
     private val _geminiModel = MutableLiveData(prefs.getString("gemini_selected_model", DEFAULT_GEMINI_MODEL) ?: DEFAULT_GEMINI_MODEL)
@@ -124,24 +181,75 @@ class StudyViewModel @Inject constructor(
         _audioDialogAutoTts.value = enabled
     }
 
-    fun getEffectiveGeminiApiKey(): String {
-        val customKey = _geminiApiKey.value?.trim()
-        if (!customKey.isNullOrBlank()) return customKey
+    fun getEffectiveUniversalApiKey(): String {
+        val custom = _universalAiKey.value?.trim()
+        if (!custom.isNullOrBlank()) return custom
+        val customUser = _userApiKey.value?.trim()
+        if (!customUser.isNullOrBlank()) return customUser
+        val customGemini = _geminiApiKey.value?.trim()
+        if (!customGemini.isNullOrBlank()) return customGemini
+
         return try {
-            val groqBuildKey = BuildConfig.GROQ_API_KEY
-            if (groqBuildKey.isNotBlank() && groqBuildKey != "your_api_key_here") return groqBuildKey
-            val geminiBuildKey = BuildConfig.GEMINI_API_KEY
-            if (geminiBuildKey.isNotBlank() && geminiBuildKey != "your_api_key_here") return geminiBuildKey
+            val envUniversal = try {
+                val f = BuildConfig::class.java.getField("AI_API_KEY")
+                f.get(null) as? String ?: ""
+            } catch (_: Exception) { "" }
+            if (envUniversal.isNotBlank() && !envUniversal.contains("your_") && !envUniversal.contains("here")) {
+                return envUniversal.trim()
+            }
+
+            val envGroq = try {
+                val f = BuildConfig::class.java.getField("GROQ_API_KEY")
+                f.get(null) as? String ?: ""
+            } catch (_: Exception) { "" }
+            if (envGroq.isNotBlank() && !envGroq.contains("your_") && !envGroq.contains("here")) {
+                return envGroq.trim()
+            }
+
+            val envGemini = try {
+                val f = BuildConfig::class.java.getField("GEMINI_API_KEY")
+                f.get(null) as? String ?: ""
+            } catch (_: Exception) { "" }
+            if (envGemini.isNotBlank() && !envGemini.contains("your_") && !envGemini.contains("here")) {
+                return envGemini.trim()
+            }
             ""
-        } catch (e: Exception) {
+        } catch (_: Exception) {
             ""
         }
     }
 
-    fun getEffectiveApiKey(): String {
-        val customKey = _userApiKey.value?.trim()
-        if (!customKey.isNullOrBlank()) return customKey
+    fun getEffectiveActiveProvider(): String {
+        val userChoice = _aiProvider.value ?: PROVIDER_AUTO
+        if (userChoice != PROVIDER_AUTO) {
+            return userChoice
+        }
+        val key = getEffectiveUniversalApiKey()
+        return if (key.isNotBlank()) detectAiProvider(key) else PROVIDER_GEMINI
+    }
+
+    val activeProviderDisplayTitle: LiveData<String> = MediatorLiveData<String>().apply {
+        val update = {
+            val active = getEffectiveActiveProvider()
+            value = getProviderDisplayName(active)
+        }
+        addSource(_aiProvider) { update() }
+        addSource(_universalAiKey) { update() }
+        addSource(_userApiKey) { update() }
+        addSource(_geminiApiKey) { update() }
+        update()
+    }
+
+    fun getEffectiveGeminiApiKey(): String {
+        val key = getEffectiveUniversalApiKey()
+        if (key.startsWith("AIza")) return key
+        val custom = _geminiApiKey.value?.trim()
+        if (!custom.isNullOrBlank() && custom.startsWith("AIza")) return custom
         return ""
+    }
+
+    fun getEffectiveApiKey(): String {
+        return getEffectiveUniversalApiKey()
     }
 
     private val _userName = MutableLiveData("Adventurer")
@@ -578,10 +686,10 @@ class StudyViewModel @Inject constructor(
                 }
                 val analysis = withContext(Dispatchers.IO) {
                     kotlinx.coroutines.withTimeoutOrNull(4500) {
-                        fetchAnswerFromGroq(context, prompt, null)
+                        fetchAnswerFromAI(context, prompt, null)
                     }
                 }
-                if (!analysis.isNullOrBlank()) {
+                if (!analysis.isNullOrBlank() && !analysis.startsWith("⚠️") && !analysis.startsWith("Lỗi kết nối")) {
                     _questAnalysis.value = sanitizeReply(analysis)
                 }
             } catch (_: Exception) {
@@ -1608,31 +1716,44 @@ class StudyViewModel @Inject constructor(
         prompt: String,
         uri: Uri?
     ): String {
-        val provider = _aiProvider.value ?: PROVIDER_GEMINI
-        if (provider == PROVIDER_GEMINI) {
-            val geminiAnswer = fetchAnswerFromGemini(context, prompt, uri)
-            val isGeminiError = geminiAnswer.startsWith("Lỗi kết nối Gemini API") ||
-                    geminiAnswer.startsWith("⚠️ Bạn chưa cài đặt") ||
-                    geminiAnswer.startsWith("⚡ Máy chủ AI Gemini")
-
-            if (!isGeminiError) {
-                return geminiAnswer
-            }
-
-            // Fallback sang Groq nếu người dùng đã cài đặt Groq API Key
-            val groqKey = getEffectiveApiKey()
-            if (groqKey.isNotBlank()) {
-                val groqAnswer = fetchAnswerFromGroq(context, prompt, uri)
-                val isGroqError = groqAnswer.startsWith("Lỗi kết nối Groq API") ||
-                        groqAnswer.startsWith("⚠️ Bạn chưa cài đặt")
-                if (!isGroqError) {
-                    return groqAnswer
-                }
-            }
-            return geminiAnswer
-        } else {
-            return fetchAnswerFromGroq(context, prompt, uri)
+        val apiKey = getEffectiveUniversalApiKey()
+        if (apiKey.isBlank()) {
+            return "⚠️ Bạn chưa cài đặt AI API Key.\n\n• Vui lòng mở Menu (Cài đặt) và dán API Key của bạn (hỗ trợ Groq, Gemini, Claude, OpenAI).\n• Hoặc cấu hình biến AI_API_KEY trong file .env để kích hoạt ngay lập tức."
         }
+
+        val activeProvider = getEffectiveActiveProvider()
+        val answer = when (activeProvider) {
+            PROVIDER_GROQ -> fetchAnswerFromGroq(context, prompt, uri, apiKey)
+            PROVIDER_GEMINI -> fetchAnswerFromGemini(context, prompt, uri, apiKey = apiKey)
+            PROVIDER_CLAUDE -> fetchAnswerFromClaude(context, prompt, uri, apiKey)
+            PROVIDER_OPENAI -> fetchAnswerFromOpenAI(context, prompt, uri, apiKey)
+            else -> fetchAnswerFromGroq(context, prompt, uri, apiKey)
+        }
+
+        val isError = answer.startsWith("Lỗi kết nối") ||
+                answer.startsWith("⚠️ Bạn chưa cài đặt") ||
+                answer.startsWith("⚡ Máy chủ AI")
+
+        if (!isError) {
+            return answer
+        }
+
+        // Tự động chuyển provider dựa trên format key nếu provider đã chọn gặp sự cố
+        val detected = detectAiProvider(apiKey)
+        if (detected != activeProvider) {
+            val fallbackAnswer = when (detected) {
+                PROVIDER_GROQ -> fetchAnswerFromGroq(context, prompt, uri, apiKey)
+                PROVIDER_GEMINI -> fetchAnswerFromGemini(context, prompt, uri, apiKey = apiKey)
+                PROVIDER_CLAUDE -> fetchAnswerFromClaude(context, prompt, uri, apiKey)
+                PROVIDER_OPENAI -> fetchAnswerFromOpenAI(context, prompt, uri, apiKey)
+                else -> answer
+            }
+            if (!fallbackAnswer.startsWith("Lỗi kết nối") && !fallbackAnswer.startsWith("⚠️")) {
+                return fallbackAnswer
+            }
+        }
+
+        return answer
     }
 
     private suspend fun fetchAnswerFromGemini(
@@ -1640,12 +1761,24 @@ class StudyViewModel @Inject constructor(
         prompt: String,
         uri: Uri?,
         audioBytes: ByteArray? = null,
-        audioMime: String = "audio/wav"
+        audioMime: String = "audio/wav",
+        apiKey: String? = null
     ): String = withContext(Dispatchers.IO) {
         try {
-            val apiKey = getEffectiveGeminiApiKey()
-            if (apiKey.isBlank()) {
-                return@withContext "⚠️ Bạn chưa cài đặt Gemini API Key.\n\nVui lòng mở Cài đặt để kích hoạt mô hình Gemini 2.5 Flash Native Audio Dialog."
+            val effectiveKey = if (!apiKey.isNullOrBlank()) apiKey else getEffectiveGeminiApiKey()
+            if (effectiveKey.isBlank()) {
+                return@withContext "⚠️ Bạn chưa cài đặt AI API Key.\n\nVui lòng mở Cài đặt và dán API Key của bạn (hỗ trợ Groq, Gemini, Claude, OpenAI) hoặc cấu hình AI_API_KEY trong file .env."
+            }
+
+            // Cross-provider auto redirection:
+            if (effectiveKey.startsWith("gsk_")) {
+                return@withContext fetchAnswerFromGroq(context, prompt, uri, effectiveKey)
+            }
+            if (effectiveKey.startsWith("sk-ant-")) {
+                return@withContext fetchAnswerFromClaude(context, prompt, uri, effectiveKey)
+            }
+            if (effectiveKey.startsWith("sk-")) {
+                return@withContext fetchAnswerFromOpenAI(context, prompt, uri, effectiveKey)
             }
 
             val actualPrompt = if (prompt.isBlank() && uri != null) {
@@ -1696,7 +1829,7 @@ class StudyViewModel @Inject constructor(
 
             for (model in candidateModels) {
                 try {
-                    val response = geminiApiService.generateContent(model, apiKey, request)
+                    val response = geminiApiService.generateContent(model, effectiveKey, request)
                     if (response.isSuccessful) {
                         val text = GeminiModels.extractResponseText(response.body())
                         if (!text.isNullOrBlank()) {
@@ -1705,6 +1838,10 @@ class StudyViewModel @Inject constructor(
                     }
                     val code = response.code()
                     val errorDetail = response.errorBody()?.string() ?: "Code $code"
+                    if (code == 400 && errorDetail.contains("API_KEY_INVALID")) {
+                        lastError = "Khóa API không hợp lệ cho dịch vụ Google Gemini. Vui lòng kiểm tra lại khóa trong Cài đặt (nếu bạn sử dụng Groq, Claude hoặc OpenAI, hệ thống sẽ tự động chuyển đổi sang dịch vụ tương ứng)."
+                        break
+                    }
                     lastError = "Gemini ($model): $errorDetail"
 
                     // Nếu gặp 503 (High demand) hoặc 429 (Rate limit tạm thời), delay ngắn và chuyển model tiếp theo
@@ -1717,7 +1854,6 @@ class StudyViewModel @Inject constructor(
                     if (code == 401 || code == 403) {
                         break
                     }
-                    // Với mọi mã lỗi khác (404 deprecated, 500, 502, 503, 504), tiếp tục xoay vòng thử model khác
                 } catch (e: Exception) {
                     lastError = "Gemini Network Error ($model): ${e.localizedMessage}"
                 }
@@ -1797,11 +1933,27 @@ class StudyViewModel @Inject constructor(
         null
     }
 
-    private suspend fun fetchAnswerFromGroq(context: Context, prompt: String, uri: Uri?): String = withContext(Dispatchers.IO) {
+    private suspend fun fetchAnswerFromGroq(
+        context: Context,
+        prompt: String,
+        uri: Uri?,
+        apiKeyOverride: String? = null
+    ): String = withContext(Dispatchers.IO) {
         try {
-            val apiKey = getEffectiveApiKey()
+            val apiKey = if (!apiKeyOverride.isNullOrBlank()) apiKeyOverride else getEffectiveApiKey()
             if (apiKey.isBlank()) {
-                return@withContext "⚠️ Bạn chưa cài đặt Groq API Key.\n\nVui lòng mở biểu tượng Menu (Cài đặt) và dán API Key của Groq để kích hoạt gia sư AI."
+                return@withContext "⚠️ Bạn chưa cài đặt AI API Key.\n\nVui lòng mở Cài đặt và dán API Key của bạn (hỗ trợ Groq, Gemini, Claude, OpenAI) hoặc cấu hình AI_API_KEY trong file .env."
+            }
+
+            // Cross-provider auto routing:
+            if (apiKey.startsWith("AIza")) {
+                return@withContext fetchAnswerFromGemini(context, prompt, uri, apiKey = apiKey)
+            }
+            if (apiKey.startsWith("sk-ant-")) {
+                return@withContext fetchAnswerFromClaude(context, prompt, uri, apiKey)
+            }
+            if (apiKey.startsWith("sk-")) {
+                return@withContext fetchAnswerFromOpenAI(context, prompt, uri, apiKey)
             }
 
             val actualPrompt = if (prompt.isBlank()) "Hãy phân tích chi tiết và giải thích bài tập trong hình ảnh này từng bước một." else prompt
@@ -1848,6 +2000,116 @@ class StudyViewModel @Inject constructor(
         } catch (e: Exception) {
             e.printStackTrace()
             "Lỗi hệ thống/mạng: ${e.message}"
+        }
+    }
+
+    private suspend fun fetchAnswerFromClaude(
+        context: Context,
+        prompt: String,
+        uri: Uri?,
+        apiKey: String
+    ): String = withContext(Dispatchers.IO) {
+        try {
+            if (apiKey.isBlank()) {
+                return@withContext "⚠️ Bạn chưa cài đặt Anthropic Claude API Key.\n\nVui lòng mở Cài đặt và dán API Key của bạn (bắt đầu bằng sk-ant-...)."
+            }
+
+            val actualPrompt = if (prompt.isBlank()) "Hãy phân tích chi tiết và giải thích bài tập tiếng Anh này từng bước một." else prompt
+            val systemPrompt = "You are Kiki, an elite AI English Learning Mentor and Socratic Language Coach. " +
+                    "Guide the student to master English grammar, vocabulary, pronunciation nuances, and natural conversational phrasing. " +
+                    "Use concise, encouraging, and clear explanations. Use '[STEP] ' prefix when explaining complex rules or sentence breakdowns. " +
+                    "Provide bilingual Vietnamese-English explanations when helpful for clarity."
+
+            val jsonBody = JSONObject().apply {
+                put("model", "claude-3-5-sonnet-20241022")
+                put("max_tokens", 2048)
+                put("system", systemPrompt)
+                put("messages", JSONArray().apply {
+                    put(JSONObject().apply {
+                        put("role", "user")
+                        put("content", actualPrompt)
+                    })
+                })
+            }
+
+            val request = Request.Builder()
+                .url("https://api.anthropic.com/v1/messages")
+                .addHeader("x-api-key", apiKey)
+                .addHeader("anthropic-version", "2023-06-01")
+                .addHeader("Content-Type", "application/json")
+                .post(jsonBody.toString().toRequestBody("application/json".toMediaType()))
+                .build()
+
+            val response = genericHttpClient.newCall(request).execute()
+            val bodyString = response.body?.string() ?: ""
+            if (!response.isSuccessful) {
+                return@withContext "Lỗi kết nối Claude API (${response.code}): $bodyString"
+            }
+
+            val jsonResponse = JSONObject(bodyString)
+            val contentArray = jsonResponse.optJSONArray("content")
+            if (contentArray != null && contentArray.length() > 0) {
+                return@withContext contentArray.getJSONObject(0).optString("text", "")
+            }
+            "Không nhận được nội dung phản hồi từ Claude API."
+        } catch (e: Exception) {
+            "Lỗi kết nối Claude API: ${e.localizedMessage}"
+        }
+    }
+
+    private suspend fun fetchAnswerFromOpenAI(
+        context: Context,
+        prompt: String,
+        uri: Uri?,
+        apiKey: String
+    ): String = withContext(Dispatchers.IO) {
+        try {
+            if (apiKey.isBlank()) {
+                return@withContext "⚠️ Bạn chưa cài đặt OpenAI API Key.\n\nVui lòng mở Cài đặt và dán API Key của bạn (bắt đầu bằng sk-...)."
+            }
+
+            val actualPrompt = if (prompt.isBlank()) "Hãy phân tích chi tiết và giải thích bài tập tiếng Anh này từng bước một." else prompt
+            val systemPrompt = "You are Kiki, an elite AI English Learning Mentor and Socratic Language Coach. " +
+                    "Guide the student to master English grammar, vocabulary, pronunciation nuances, and natural conversational phrasing. " +
+                    "Use concise, encouraging, and clear explanations. Use '[STEP] ' prefix when explaining complex rules or sentence breakdowns. " +
+                    "Provide bilingual Vietnamese-English explanations when helpful for clarity."
+
+            val jsonBody = JSONObject().apply {
+                put("model", "gpt-4o-mini")
+                put("temperature", 0.7)
+                put("messages", JSONArray().apply {
+                    put(JSONObject().apply {
+                        put("role", "system")
+                        put("content", systemPrompt)
+                    })
+                    put(JSONObject().apply {
+                        put("role", "user")
+                        put("content", actualPrompt)
+                    })
+                })
+            }
+
+            val request = Request.Builder()
+                .url("https://api.openai.com/v1/chat/completions")
+                .addHeader("Authorization", "Bearer $apiKey")
+                .addHeader("Content-Type", "application/json")
+                .post(jsonBody.toString().toRequestBody("application/json".toMediaType()))
+                .build()
+
+            val response = genericHttpClient.newCall(request).execute()
+            val bodyString = response.body?.string() ?: ""
+            if (!response.isSuccessful) {
+                return@withContext "Lỗi kết nối OpenAI API (${response.code}): $bodyString"
+            }
+
+            val jsonResponse = JSONObject(bodyString)
+            val choicesArray = jsonResponse.optJSONArray("choices")
+            if (choicesArray != null && choicesArray.length() > 0) {
+                return@withContext choicesArray.getJSONObject(0).optJSONObject("message")?.optString("content", "") ?: ""
+            }
+            "Không nhận được nội dung phản hồi từ OpenAI API."
+        } catch (e: Exception) {
+            "Lỗi kết nối OpenAI API: ${e.localizedMessage}"
         }
     }
 
