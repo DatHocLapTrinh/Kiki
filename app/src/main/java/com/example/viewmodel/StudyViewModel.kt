@@ -13,10 +13,12 @@ import com.example.BuildConfig
 import com.example.model.AchievementBadge
 import com.example.model.AchievementRegistry
 import com.example.model.BadgeId
+import com.example.model.GeminiModels
 import com.example.model.GroqModels
 import com.example.model.QAItem
 import com.example.model.QuestItem
 import com.example.model.QuestionType
+import com.example.network.GeminiApiService
 import com.example.network.GroqApiService
 import com.example.repository.DataRepository
 import com.example.sqlite.room.DailyTaskEntity
@@ -45,6 +47,7 @@ import javax.inject.Inject
 class StudyViewModel @Inject constructor(
     val repository: DataRepository,
     private val groqApiService: GroqApiService,
+    private val geminiApiService: GeminiApiService,
     val ttsManager: TextToSpeechManager,
     val soundEffectManager: SoundEffectManager,
     val speechRecognitionManager: SpeechRecognitionManager,
@@ -77,16 +80,56 @@ class StudyViewModel @Inject constructor(
         _userApiKey.value = key.trim()
     }
 
-    fun getEffectiveApiKey(): String {
-        val customKey = _userApiKey.value?.trim()
+    // --- Gemini 2.5 Flash Native Audio Dialog State & Config ---
+    companion object {
+        const val PROVIDER_GEMINI = "GEMINI"
+        const val PROVIDER_GROQ = "GROQ"
+        const val DEFAULT_GEMINI_MODEL = GeminiModels.MODEL_GEMINI_2_5_FLASH
+    }
+
+    private val _aiProvider = MutableLiveData(prefs.getString("ai_provider", PROVIDER_GEMINI) ?: PROVIDER_GEMINI)
+    val aiProvider: LiveData<String> = _aiProvider
+    fun setAiProvider(provider: String) {
+        prefs.edit().putString("ai_provider", provider).apply()
+        _aiProvider.value = provider
+    }
+
+    private val _geminiApiKey = MutableLiveData(prefs.getString("gemini_custom_api_key", "") ?: "")
+    val geminiApiKey: LiveData<String> = _geminiApiKey
+    fun setGeminiApiKey(key: String) {
+        prefs.edit().putString("gemini_custom_api_key", key.trim()).apply()
+        _geminiApiKey.value = key.trim()
+    }
+
+    private val _geminiModel = MutableLiveData(prefs.getString("gemini_selected_model", DEFAULT_GEMINI_MODEL) ?: DEFAULT_GEMINI_MODEL)
+    val geminiModel: LiveData<String> = _geminiModel
+    fun setGeminiModel(model: String) {
+        prefs.edit().putString("gemini_selected_model", model).apply()
+        _geminiModel.value = model
+    }
+
+    private val _audioDialogAutoTts = MutableLiveData(prefs.getBoolean("audio_dialog_auto_tts", true))
+    val audioDialogAutoTts: LiveData<Boolean> = _audioDialogAutoTts
+    fun setAudioDialogAutoTts(enabled: Boolean) {
+        prefs.edit().putBoolean("audio_dialog_auto_tts", enabled).apply()
+        _audioDialogAutoTts.value = enabled
+    }
+
+    fun getEffectiveGeminiApiKey(): String {
+        val customKey = _geminiApiKey.value?.trim()
         if (!customKey.isNullOrBlank()) return customKey
-        // Fallback to BuildConfig if available
         return try {
             val buildKey = BuildConfig.GEMINI_API_KEY
             if (buildKey.isNotBlank() && buildKey != "your_api_key_here") buildKey else ""
         } catch (e: Exception) {
             ""
         }
+    }
+
+    fun getEffectiveApiKey(): String {
+        val customKey = _userApiKey.value?.trim()
+        if (!customKey.isNullOrBlank()) return customKey
+        return ""
     }
 
     private val _userName = MutableLiveData("Adventurer")
@@ -440,7 +483,7 @@ class StudyViewModel @Inject constructor(
                 append("\nAct as an AI tutor, analyze weaknesses based on incorrect answers, explain briefly, and propose a study plan. DO NOT use markdown format, asterisks, hashes, or any special formatting symbols. Use plain text only.")
             }
 
-            val analysis = fetchAnswerFromGroq(context, prompt, null)
+            val analysis = fetchAnswerFromAI(context, prompt, null)
             _questAnalysis.value = analysis
         }
     }
@@ -666,12 +709,18 @@ class StudyViewModel @Inject constructor(
         }
     }
 
-    fun askQuestion(context: Context, question: String, imageUri: Uri?, onSuccess: (() -> Unit)? = null) {
+    fun askQuestion(
+        context: Context,
+        question: String,
+        imageUri: Uri?,
+        isAudioDialog: Boolean = false,
+        onSuccess: (() -> Unit)? = null
+    ) {
         if (question.isBlank() && imageUri == null) return
         _isGenerating.value = true
         viewModelScope.launch {
             try {
-                val answer = fetchAnswerFromGroq(context, question, imageUri)
+                val answer = fetchAnswerFromAI(context, question, imageUri)
                 val userId = _currentUserId.value
                 if (userId != null && userId != -1L) {
                     repository.saveAIQuestion(userId, question, imageUri?.toString(), answer)
@@ -689,11 +738,19 @@ class StudyViewModel @Inject constructor(
                     updated.addAll(current)
                     _history.value = updated
                 }
+
+                if (isAudioDialog && (_audioDialogAutoTts.value == true)) {
+                    ttsManager.speak(answer)
+                }
             } finally {
                 _isGenerating.value = false
                 onSuccess?.invoke()
             }
         }
+    }
+
+    fun askGeminiAudioDialog(context: Context, spokenText: String, onSuccess: (() -> Unit)? = null) {
+        askQuestion(context, spokenText, null, isAudioDialog = true, onSuccess = onSuccess)
     }
 
     fun askFollowUpQuestion(context: Context, currentQuestion: String, followUpType: String) {
@@ -712,7 +769,7 @@ class StudyViewModel @Inject constructor(
                         title = "Bài tập tương tự: $currentQuestion"
                     }
                 }
-                val answer = fetchAnswerFromGroq(context, prompt, null)
+                val answer = fetchAnswerFromAI(context, prompt, null)
                 val userId = _currentUserId.value
                 if (userId != null && userId != -1L) {
                     repository.saveAIQuestion(userId, title, null, answer)
@@ -737,7 +794,7 @@ class StudyViewModel @Inject constructor(
             try {
                 val prompt = "Perform a deep academic analysis of this topic: '$question'. Cover: 1) Core concept, 2) Why it works (theory), 3) Common mistakes, 4) Real-world applications. Use '[STEP] ' prefix for each section. Reply in the same language as the question."
                 val title = "[Phân tích sâu] $question"
-                val answer = fetchAnswerFromGroq(context, prompt, null)
+                val answer = fetchAnswerFromAI(context, prompt, null)
                 val userId = _currentUserId.value
                 if (userId != null && userId != -1L) {
                     repository.saveAIQuestion(userId, title, null, answer)
@@ -777,7 +834,7 @@ class StudyViewModel @Inject constructor(
                         "ANS: [correct letter A/B/C/D]\n" +
                         "---\n" +
                         "Reply in the same language as the topic."
-                val raw = fetchAnswerFromGroq(context, prompt, null)
+                val raw = fetchAnswerFromAI(context, prompt, null)
                 val blocks = raw.split("---").map { it.trim() }.filter { it.isNotEmpty() }
                 _quizQuestions.value = blocks
             } finally {
@@ -977,6 +1034,137 @@ class StudyViewModel @Inject constructor(
         _history.value = emptyList()
         _dailyTasks.value = emptyList()
         _dailyChestOpened.value = false
+    }
+
+    private suspend fun fetchAnswerFromAI(
+        context: Context,
+        prompt: String,
+        uri: Uri?
+    ): String {
+        val provider = _aiProvider.value ?: PROVIDER_GEMINI
+        if (provider == PROVIDER_GEMINI) {
+            val geminiAnswer = fetchAnswerFromGemini(context, prompt, uri)
+            val isGeminiError = geminiAnswer.startsWith("Lỗi kết nối Gemini API") ||
+                    geminiAnswer.startsWith("⚠️ Bạn chưa cài đặt") ||
+                    geminiAnswer.startsWith("⚡ Máy chủ AI Gemini")
+
+            if (!isGeminiError) {
+                return geminiAnswer
+            }
+
+            // Fallback sang Groq nếu người dùng đã cài đặt Groq API Key
+            val groqKey = getEffectiveApiKey()
+            if (groqKey.isNotBlank()) {
+                val groqAnswer = fetchAnswerFromGroq(context, prompt, uri)
+                val isGroqError = groqAnswer.startsWith("Lỗi kết nối Groq API") ||
+                        groqAnswer.startsWith("⚠️ Bạn chưa cài đặt")
+                if (!isGroqError) {
+                    return groqAnswer
+                }
+            }
+            return geminiAnswer
+        } else {
+            return fetchAnswerFromGroq(context, prompt, uri)
+        }
+    }
+
+    private suspend fun fetchAnswerFromGemini(
+        context: Context,
+        prompt: String,
+        uri: Uri?,
+        audioBytes: ByteArray? = null,
+        audioMime: String = "audio/wav"
+    ): String = withContext(Dispatchers.IO) {
+        try {
+            val apiKey = getEffectiveGeminiApiKey()
+            if (apiKey.isBlank()) {
+                return@withContext "⚠️ Bạn chưa cài đặt Gemini API Key.\n\nVui lòng mở Cài đặt để kích hoạt mô hình Gemini 2.5 Flash Native Audio Dialog."
+            }
+
+            val actualPrompt = if (prompt.isBlank() && uri != null) {
+                "Hãy phân tích chi tiết và giải thích bài tập trong hình ảnh này từng bước một."
+            } else if (prompt.isBlank() && audioBytes != null) {
+                "Lắng nghe đoạn ghi âm giọng nói tiếng Anh này của tôi, nhận xét phát âm, ngữ pháp và gợi ý cải thiện chi tiết."
+            } else {
+                prompt
+            }
+
+            val parts = mutableListOf<GeminiModels.Part>()
+            if (actualPrompt.isNotBlank()) {
+                parts.add(GeminiModels.Part(text = actualPrompt))
+            }
+
+            val base64Image = if (uri != null) uriToBase64(context, uri) else null
+            if (base64Image != null) {
+                parts.add(GeminiModels.Part(inlineData = GeminiModels.InlineData("image/jpeg", base64Image)))
+            }
+
+            if (audioBytes != null) {
+                val base64Audio = Base64.encodeToString(audioBytes, Base64.NO_WRAP)
+                parts.add(GeminiModels.Part(inlineData = GeminiModels.InlineData(audioMime, base64Audio)))
+            }
+
+            val contents = listOf(GeminiModels.Content(role = "user", parts = parts))
+            val systemInstruction = GeminiModels.createSystemInstruction(
+                "You are Kiki, an elite AI English Learning Mentor and Socratic Language Coach powered by Gemini 2.5 Flash Native Audio Dialog. " +
+                "Guide the student to master English grammar, vocabulary, pronunciation nuances, and natural conversational phrasing. " +
+                "Use concise, encouraging, and clear explanations. Use '[STEP] ' prefix when explaining complex rules or sentence breakdowns. " +
+                "Provide bilingual Vietnamese-English explanations when helpful for clarity."
+            )
+
+            val request = GeminiModels.GenerateContentRequest(
+                contents = contents,
+                systemInstruction = systemInstruction,
+                generationConfig = GeminiModels.GenerationConfig(
+                    temperature = 0.7,
+                    maxOutputTokens = 2048
+                )
+            )
+
+            val targetModel = _geminiModel.value ?: DEFAULT_GEMINI_MODEL
+            val candidateModels = (listOf(targetModel) + GeminiModels.SUPPORTED_MODELS).distinct()
+
+            var lastError = ""
+            var hasHighDemand = false
+
+            for (model in candidateModels) {
+                try {
+                    val response = geminiApiService.generateContent(model, apiKey, request)
+                    if (response.isSuccessful) {
+                        val text = GeminiModels.extractResponseText(response.body())
+                        if (!text.isNullOrBlank()) {
+                            return@withContext text
+                        }
+                    }
+                    val code = response.code()
+                    val errorDetail = response.errorBody()?.string() ?: "Code $code"
+                    lastError = "Gemini ($model): $errorDetail"
+
+                    // Nếu gặp 503 (High demand) hoặc 429 (Rate limit tạm thời), delay ngắn và chuyển model tiếp theo
+                    if (code == 503 || code == 429) {
+                        hasHighDemand = true
+                        kotlinx.coroutines.delay(200)
+                    }
+
+                    // Nếu khóa API sai (401/403) thì mới dừng vòng lặp
+                    if (code == 401 || code == 403) {
+                        break
+                    }
+                    // Với mọi mã lỗi khác (404 deprecated, 500, 502, 503, 504), tiếp tục xoay vòng thử model khác
+                } catch (e: Exception) {
+                    lastError = "Gemini Network Error ($model): ${e.localizedMessage}"
+                }
+            }
+
+            if (hasHighDemand) {
+                "⚡ Máy chủ AI Gemini hiện đang chịu tải cao tạm thời. Hệ thống đã tự động thử các mô hình dự phòng. Bạn vui lòng thử lại sau vài giây hoặc chuyển sang Groq AI trong Cài đặt."
+            } else {
+                "Lỗi kết nối Gemini API: $lastError"
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+            "Lỗi hệ thống/mạng Gemini: ${e.message}"
+        }
     }
 
     private suspend fun fetchAnswerFromGroq(context: Context, prompt: String, uri: Uri?): String = withContext(Dispatchers.IO) {

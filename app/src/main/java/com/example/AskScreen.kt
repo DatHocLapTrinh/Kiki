@@ -55,6 +55,7 @@ import kotlinx.coroutines.launch
 fun AskScreen(viewModel: StudyViewModel) {
     var text by remember { mutableStateOf("") }
     var selectedImageUri by remember { mutableStateOf<Uri?>(null) }
+    var isVoiceQuery by remember { mutableStateOf(false) }
     val context = LocalContext.current
     val haptic = LocalHapticFeedback.current
     val clipboardManager = LocalClipboardManager.current
@@ -73,6 +74,7 @@ fun AskScreen(viewModel: StudyViewModel) {
             val spokenText = spokenList?.firstOrNull()
             if (!spokenText.isNullOrBlank()) {
                 text = if (text.isBlank()) spokenText else "$text $spokenText"
+                isVoiceQuery = true
             }
         }
     }
@@ -153,11 +155,29 @@ fun AskScreen(viewModel: StudyViewModel) {
     ) {
         TopAppBar(
             title = {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(Icons.Default.AutoFixHigh, contentDescription = null, tint = Color(0xFFFFD166), modifier = Modifier.size(24.dp))
-                    Spacer(modifier = Modifier.width(8.dp))
-                    val strings = LocalAppStrings.current
-                    Text(strings.knowledgeDecoder, color = Color.White, fontWeight = FontWeight.Bold, fontSize = 20.sp)
+                Column {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(Icons.Default.AutoFixHigh, contentDescription = null, tint = Color(0xFFFFD166), modifier = Modifier.size(22.dp))
+                        Spacer(modifier = Modifier.width(8.dp))
+                        val strings = LocalAppStrings.current
+                        Text(strings.knowledgeDecoder, color = Color.White, fontWeight = FontWeight.Bold, fontSize = 18.sp)
+                    }
+                    val currentAiProvider by viewModel.aiProvider.observeAsState(StudyViewModel.PROVIDER_GEMINI)
+                    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(top = 2.dp)) {
+                        Box(
+                            modifier = Modifier
+                                .size(6.dp)
+                                .clip(CircleShape)
+                                .background(if (currentAiProvider == StudyViewModel.PROVIDER_GEMINI) Color(0xFF51FAC1) else Color(0xFFFF9E00))
+                        )
+                        Spacer(modifier = Modifier.width(5.dp))
+                        Text(
+                            text = if (currentAiProvider == StudyViewModel.PROVIDER_GEMINI) "Gemini 2.5 Flash Native Audio Dialog" else "Groq Llama 3.3",
+                            color = if (currentAiProvider == StudyViewModel.PROVIDER_GEMINI) Color(0xFF51FAC1) else Color(0xFFFF9E00),
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Medium
+                        )
+                    }
                 }
             },
             actions = {
@@ -405,7 +425,10 @@ fun AskScreen(viewModel: StudyViewModel) {
 
         AskInputBar(
             text = text,
-            onTextChange = { text = it },
+            onTextChange = { 
+                text = it
+                if (it.isBlank()) isVoiceQuery = false
+            },
             selectedImageUri = selectedImageUri,
             onRemoveImage = { selectedImageUri = null },
             onPickImage = {
@@ -416,9 +439,11 @@ fun AskScreen(viewModel: StudyViewModel) {
             onSend = {
                 if (!isGenerating && (text.isNotBlank() || selectedImageUri != null)) {
                     haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                    viewModel.askQuestion(context, text, selectedImageUri) {
+                    val wasVoice = isVoiceQuery
+                    viewModel.askQuestion(context, text, selectedImageUri, isAudioDialog = wasVoice) {
                         text = ""
                         selectedImageUri = null
+                        isVoiceQuery = false
                     }
                 }
             },
