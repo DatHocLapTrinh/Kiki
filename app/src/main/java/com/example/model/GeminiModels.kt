@@ -6,12 +6,15 @@ import com.squareup.moshi.JsonClass
 object GeminiModels {
 
     const val MODEL_GEMINI_2_5_FLASH = "gemini-2.5-flash"
-    const val MODEL_FALLBACK_DEFAULT = "gemini-3.5-flash"
+    const val MODEL_FALLBACK_DEFAULT = "gemini-flash-lite-latest"
     val SUPPORTED_MODELS = listOf(
         "gemini-2.5-flash",
-        "gemini-3.5-flash",
         "gemini-flash-lite-latest",
-        "gemini-3.6-flash"
+        "gemini-3.1-flash-lite",
+        "gemini-3.5-flash-lite",
+        "gemini-3.5-flash",
+        "gemini-3.6-flash",
+        "gemini-3-flash-preview"
     )
 
     @JsonClass(generateAdapter = true)

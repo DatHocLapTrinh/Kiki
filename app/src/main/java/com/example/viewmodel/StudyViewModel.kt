@@ -1042,10 +1042,29 @@ class StudyViewModel @Inject constructor(
         uri: Uri?
     ): String {
         val provider = _aiProvider.value ?: PROVIDER_GEMINI
-        return if (provider == PROVIDER_GEMINI) {
-            fetchAnswerFromGemini(context, prompt, uri)
+        if (provider == PROVIDER_GEMINI) {
+            val geminiAnswer = fetchAnswerFromGemini(context, prompt, uri)
+            val isGeminiError = geminiAnswer.startsWith("Lỗi kết nối Gemini API") ||
+                    geminiAnswer.startsWith("⚠️ Bạn chưa cài đặt") ||
+                    geminiAnswer.startsWith("⚡ Máy chủ AI Gemini")
+
+            if (!isGeminiError) {
+                return geminiAnswer
+            }
+
+            // Fallback sang Groq nếu người dùng đã cài đặt Groq API Key
+            val groqKey = getEffectiveApiKey()
+            if (groqKey.isNotBlank()) {
+                val groqAnswer = fetchAnswerFromGroq(context, prompt, uri)
+                val isGroqError = groqAnswer.startsWith("Lỗi kết nối Groq API") ||
+                        groqAnswer.startsWith("⚠️ Bạn chưa cài đặt")
+                if (!isGroqError) {
+                    return groqAnswer
+                }
+            }
+            return geminiAnswer
         } else {
-            fetchAnswerFromGroq(context, prompt, uri)
+            return fetchAnswerFromGroq(context, prompt, uri)
         }
     }
 
@@ -1103,9 +1122,11 @@ class StudyViewModel @Inject constructor(
             )
 
             val targetModel = _geminiModel.value ?: DEFAULT_GEMINI_MODEL
-            val candidateModels = listOf(targetModel) + GeminiModels.SUPPORTED_MODELS.filter { it != targetModel }
+            val candidateModels = (listOf(targetModel) + GeminiModels.SUPPORTED_MODELS).distinct()
 
             var lastError = ""
+            var hasHighDemand = false
+
             for (model in candidateModels) {
                 try {
                     val response = geminiApiService.generateContent(model, apiKey, request)
@@ -1119,16 +1140,27 @@ class StudyViewModel @Inject constructor(
                     val errorDetail = response.errorBody()?.string() ?: "Code $code"
                     lastError = "Gemini ($model): $errorDetail"
 
-                    // If 404 (model deprecated for new accounts), silently continue to candidate fallback
-                    if (code != 404) {
+                    // Nếu gặp 503 (High demand) hoặc 429 (Rate limit tạm thời), delay ngắn và chuyển model tiếp theo
+                    if (code == 503 || code == 429) {
+                        hasHighDemand = true
+                        kotlinx.coroutines.delay(200)
+                    }
+
+                    // Nếu khóa API sai (401/403) thì mới dừng vòng lặp
+                    if (code == 401 || code == 403) {
                         break
                     }
+                    // Với mọi mã lỗi khác (404 deprecated, 500, 502, 503, 504), tiếp tục xoay vòng thử model khác
                 } catch (e: Exception) {
                     lastError = "Gemini Network Error ($model): ${e.localizedMessage}"
                 }
             }
 
-            "Lỗi kết nối Gemini API: $lastError"
+            if (hasHighDemand) {
+                "⚡ Máy chủ AI Gemini hiện đang chịu tải cao tạm thời. Hệ thống đã tự động thử các mô hình dự phòng. Bạn vui lòng thử lại sau vài giây hoặc chuyển sang Groq AI trong Cài đặt."
+            } else {
+                "Lỗi kết nối Gemini API: $lastError"
+            }
         } catch (e: Exception) {
             e.printStackTrace()
             "Lỗi hệ thống/mạng Gemini: ${e.message}"
