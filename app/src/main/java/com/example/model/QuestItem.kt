@@ -26,6 +26,11 @@ data class QuestItem(
     var userSentenceTokens: List<String> = emptyList(),
     val matchingPairs: List<MatchingPair> = emptyList(),
     val speakingSentence: String = "",
-    var pronunciationScore: Int = 0
+    var pronunciationScore: Int = 0,
+    var responseLatencyMs: Long = 0L,
+    var usedHint: Boolean = false,
+    var isDistracted: Boolean = false,
+    var objectiveQuality: Int = 0,
+    var sloTopic: String = ""
 )
 

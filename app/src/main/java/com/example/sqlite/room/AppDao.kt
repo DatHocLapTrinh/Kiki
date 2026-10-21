@@ -167,6 +167,23 @@ interface AppDao {
 
     @Query("SELECT COUNT(*) FROM weak_points WHERE user_id = :userId")
     suspend fun getWeakPointsCount(userId: Long): Int
+
+    // --- Research Telemetry ---
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertTelemetry(entry: ResearchTelemetryEntity): Long
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertTelemetryList(entries: List<ResearchTelemetryEntity>): List<Long>
+
+    @Query("SELECT * FROM research_telemetry WHERE user_id = :userId ORDER BY timestamp ASC")
+    suspend fun getAllTelemetry(userId: Long): List<ResearchTelemetryEntity>
+
+    @Query("SELECT COUNT(*) FROM research_telemetry WHERE user_id = :userId")
+    suspend fun getTelemetryCount(userId: Long): Int
+
+    @Query("DELETE FROM research_telemetry WHERE user_id = :userId")
+    suspend fun clearTelemetry(userId: Long): Int
 }
+
 
 

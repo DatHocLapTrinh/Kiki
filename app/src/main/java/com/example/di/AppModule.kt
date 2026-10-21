@@ -18,6 +18,36 @@ import javax.inject.Singleton
 @InstallIn(SingletonComponent::class)
 object AppModule {
 
+    private val MIGRATION_4_5 = object : androidx.room.migration.Migration(4, 5) {
+        override fun migrate(db: androidx.sqlite.db.SupportSQLiteDatabase) {
+            db.execSQL(
+                """
+                CREATE TABLE IF NOT EXISTS `research_telemetry` (
+                    `id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                    `session_id` TEXT NOT NULL,
+                    `user_id` INTEGER NOT NULL,
+                    `timestamp` TEXT NOT NULL,
+                    `slo_topic` TEXT NOT NULL,
+                    `challenge_type` TEXT NOT NULL,
+                    `item_identifier` TEXT NOT NULL,
+                    `response_latency_ms` INTEGER NOT NULL,
+                    `is_correct` INTEGER NOT NULL,
+                    `used_hint` INTEGER NOT NULL,
+                    `is_distracted` INTEGER NOT NULL,
+                    `objective_quality` INTEGER NOT NULL,
+                    `easiness_factor` REAL NOT NULL,
+                    `interval_days` INTEGER NOT NULL,
+                    `retention_probability` REAL NOT NULL,
+                    FOREIGN KEY(`user_id`) REFERENCES `users`(`user_id`) ON UPDATE NO ACTION ON DELETE CASCADE
+                )
+                """.trimIndent()
+            )
+            db.execSQL("CREATE INDEX IF NOT EXISTS `index_research_telemetry_user_id` ON `research_telemetry` (`user_id`)")
+            db.execSQL("CREATE INDEX IF NOT EXISTS `index_research_telemetry_session_id` ON `research_telemetry` (`session_id`)")
+            db.execSQL("CREATE INDEX IF NOT EXISTS `index_research_telemetry_timestamp` ON `research_telemetry` (`timestamp`)")
+        }
+    }
+
     @Provides
     @Singleton
     fun provideAppDatabase(@ApplicationContext context: Context): AppDatabase {
@@ -26,8 +56,8 @@ object AppModule {
             AppDatabase::class.java,
             "AIStudyMentorRoom.db"
         )
+            .addMigrations(MIGRATION_4_5)
             .fallbackToDestructiveMigration(dropAllTables = true)
-            // Đã loại bỏ allowMainThreadQueries() để bảo vệ luồng UI
             .build()
     }
 

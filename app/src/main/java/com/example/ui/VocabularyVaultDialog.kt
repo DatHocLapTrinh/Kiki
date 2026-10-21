@@ -292,6 +292,8 @@ private fun FlashcardDeckView(
     val safeIndex = currentIndex.coerceIn(0, (activeItems.size - 1).coerceAtLeast(0))
     val currentItem = activeItems.getOrNull(safeIndex) ?: return
 
+    val cardStartTime = remember(currentItem.vocabId) { System.currentTimeMillis() }
+
     val rotation by animateFloatAsState(
         targetValue = if (isFlipped) 180f else 0f,
         animationSpec = tween(400),
@@ -300,12 +302,13 @@ private fun FlashcardDeckView(
 
     val handleSm2Feedback = { quality: Int ->
         haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+        val latency = (System.currentTimeMillis() - cardStartTime).coerceAtLeast(150L)
         if (quality >= 3) {
             viewModel.soundEffectManager.playCorrect()
         } else {
             viewModel.soundEffectManager.playIncorrect()
         }
-        viewModel.reviewVocabularySm2(currentItem, quality)
+        viewModel.reviewVocabularySm2(currentItem, quality, latencyMs = latency)
         isFlipped = false
         if (safeIndex < activeItems.size - 1) {
             currentIndex++
@@ -496,7 +499,12 @@ private fun FlashcardDeckView(
 
                         Spacer(modifier = Modifier.height(12.dp))
 
-                        // SM-2 Memory Stats Pill
+                        // SM-2 Memory Stats & Ebbinghaus Retention Pill
+                        val todayStr = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.US).format(java.util.Date())
+                        val elapsedDays = com.example.util.Sm2Algorithm.calculateElapsedDays(currentItem.createdAt.take(10), todayStr)
+                        val retentionR = com.example.util.Sm2Algorithm.calculateRetentionProbability(elapsedDays, currentItem.intervalDays.toDouble())
+                        val retentionPercent = (retentionR * 100).toInt()
+
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.Center,
@@ -506,7 +514,7 @@ private fun FlashcardDeckView(
                                 .padding(horizontal = 8.dp, vertical = 3.dp)
                         ) {
                             Text(
-                                text = "Lv.${currentItem.repetitionLevel} • EF: ${String.format(java.util.Locale.US, "%.1f", currentItem.easinessFactor)}",
+                                text = "Lv.${currentItem.repetitionLevel} • EF: ${String.format(java.util.Locale.US, "%.1f", currentItem.easinessFactor)} • 🧠 $retentionPercent%",
                                 color = Color(0xFF51FAC1),
                                 fontSize = 11.sp,
                                 fontWeight = FontWeight.Medium

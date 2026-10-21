@@ -92,6 +92,9 @@ fun QuestScreen(viewModel: StudyViewModel, onFinish: () -> Unit) {
     var showConfetti by remember { mutableStateOf(false) }
     var isPetted by remember { mutableStateOf(false) }
     var idleSeconds by remember(currentQuestion) { mutableIntStateOf(0) }
+    var questionStartTime by remember(currentQuestion) { mutableLongStateOf(System.currentTimeMillis()) }
+    val questionLatencies = remember { mutableStateMapOf<Int, Long>() }
+    val questionHintsUsed = remember { mutableStateMapOf<Int, Boolean>() }
 
     // Theo dõi thời gian suy nghĩ của người học
     LaunchedEffect(currentQuestion, isChecked, selectedOption, selectedTokenIndices, isMatchingCompleted, speakingResult) {
@@ -682,6 +685,8 @@ fun QuestScreen(viewModel: StudyViewModel, onFinish: () -> Unit) {
                                             selectedOption == currentQ.correctIndex
                                         }
                                     }
+                                    val measuredLatency = (System.currentTimeMillis() - questionStartTime).coerceAtLeast(150L)
+                                    questionLatencies[currentQuestion] = measuredLatency
                                     isCurrentCorrect = isCorrect
                                     if (isCorrect) {
                                         consecutiveCorrect++
@@ -1011,11 +1016,11 @@ fun QuestScreen(viewModel: StudyViewModel, onFinish: () -> Unit) {
                                         mascotSpeech = null
                                     } else {
                                         val finalResults = questions.mapIndexed { idx, item ->
-                                            when (item.type) {
+                                            val copy = when (item.type) {
                                                 QuestionType.SENTENCE_BUILDER, QuestionType.LISTENING_CHALLENGE -> {
                                                     val assembled = item.userSentenceTokens.joinToString(" ")
                                                     val isItemCorrect = userAnswers[idx] == 0
-                                                    val copy = QuestItem(
+                                                    val c = QuestItem(
                                                         question = item.question,
                                                         options = if (isItemCorrect) listOf(item.correctSentence) else listOf(item.correctSentence, assembled.ifEmpty { "Incomplete" }),
                                                         correctIndex = 0,
@@ -1024,25 +1029,25 @@ fun QuestScreen(viewModel: StudyViewModel, onFinish: () -> Unit) {
                                                         correctSentence = item.correctSentence,
                                                         userSentenceTokens = item.userSentenceTokens
                                                     )
-                                                    copy.selectedIndex = if (isItemCorrect) 0 else 1
-                                                    copy
+                                                    c.selectedIndex = if (isItemCorrect) 0 else 1
+                                                    c
                                                 }
                                                 QuestionType.MATCHING_PAIRS -> {
                                                     val isItemCorrect = userAnswers[idx] == 0
                                                     val pairsSummary = item.matchingPairs.joinToString(", ") { "${it.english} = ${it.vietnamese}" }
-                                                    val copy = QuestItem(
+                                                    val c = QuestItem(
                                                         question = item.question,
                                                         options = listOf(pairsSummary),
                                                         correctIndex = 0,
                                                         type = item.type,
                                                         matchingPairs = item.matchingPairs
                                                     )
-                                                    copy.selectedIndex = if (isItemCorrect) 0 else 1
-                                                    copy
+                                                    c.selectedIndex = if (isItemCorrect) 0 else 1
+                                                    c
                                                 }
                                                 QuestionType.SPEAKING_CHALLENGE -> {
                                                     val isItemCorrect = userAnswers[idx] == 0
-                                                    val copy = QuestItem(
+                                                    val c = QuestItem(
                                                         question = item.question,
                                                         options = listOf(item.speakingSentence),
                                                         correctIndex = 0,
@@ -1050,15 +1055,30 @@ fun QuestScreen(viewModel: StudyViewModel, onFinish: () -> Unit) {
                                                         speakingSentence = item.speakingSentence,
                                                         pronunciationScore = item.pronunciationScore
                                                     )
-                                                    copy.selectedIndex = if (isItemCorrect) 0 else 1
-                                                    copy
+                                                    c.selectedIndex = if (isItemCorrect) 0 else 1
+                                                    c
                                                 }
                                                 else -> {
-                                                    val copy = QuestItem(item.question, item.options, item.correctIndex)
-                                                    copy.selectedIndex = userAnswers[idx] ?: -1
-                                                    copy
+                                                    val c = QuestItem(item.question, item.options, item.correctIndex)
+                                                    c.selectedIndex = userAnswers[idx] ?: -1
+                                                    c
                                                 }
                                             }
+                                            val latency = questionLatencies[idx] ?: 2500L
+                                            val usedHint = questionHintsUsed[idx] ?: false
+                                            val isDistracted = latency > com.example.util.Sm2Algorithm.DISTRACTION_LATENCY_THRESHOLD_MS
+                                            val isItemCorrect = copy.selectedIndex == copy.correctIndex
+                                            copy.responseLatencyMs = latency
+                                            copy.usedHint = usedHint
+                                            copy.isDistracted = isDistracted
+                                            copy.objectiveQuality = com.example.util.Sm2Algorithm.calculateObjectiveQuality(
+                                                isCorrect = isItemCorrect,
+                                                responseLatencyMs = latency,
+                                                usedHint = usedHint,
+                                                isDistracted = isDistracted
+                                            )
+                                            copy.sloTopic = chapterTitle
+                                            copy
                                         }
                                         val correctCount = finalResults.count { it.selectedIndex == it.correctIndex }
                                         val totalCount = finalResults.size

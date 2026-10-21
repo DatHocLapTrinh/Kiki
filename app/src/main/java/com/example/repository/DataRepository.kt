@@ -665,6 +665,28 @@ class DataRepository @Inject constructor(
             false
         }
     }
+
+    // --- Research Telemetry Logging (Scientific Spaced Repetition) ---
+    suspend fun saveTelemetry(entry: ResearchTelemetryEntity): Long = withContext(Dispatchers.IO) {
+        dao.insertTelemetry(entry)
+    }
+
+    suspend fun saveTelemetryBatch(entries: List<ResearchTelemetryEntity>): List<Long> = withContext(Dispatchers.IO) {
+        if (entries.isEmpty()) emptyList() else dao.insertTelemetryList(entries)
+    }
+
+    suspend fun getAllTelemetry(userId: Long): List<ResearchTelemetryEntity> = withContext(Dispatchers.IO) {
+        dao.getAllTelemetry(userId)
+    }
+
+    suspend fun getTelemetryCount(userId: Long): Int = withContext(Dispatchers.IO) {
+        dao.getTelemetryCount(userId)
+    }
+
+    suspend fun clearTelemetry(userId: Long): Boolean = withContext(Dispatchers.IO) {
+        dao.clearTelemetry(userId) > 0
+    }
 }
+
 
 

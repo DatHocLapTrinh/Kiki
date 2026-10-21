@@ -373,7 +373,73 @@ fun SettingsDialog(
                 SettingsToggle("Rung (Haptics)", Icons.Default.Vibration, true)
                 SettingsToggle("Nhắc nhở học tập", Icons.Default.Notifications, false)
 
-                Spacer(modifier = Modifier.height(24.dp))
+                Spacer(modifier = Modifier.height(20.dp))
+
+                // Research Telemetry Export Section
+                Surface(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(16.dp))
+                        .clickable {
+                            viewModel?.exportResearchTelemetryCsv(context) { success, message, file ->
+                                Toast.makeText(context, message, Toast.LENGTH_LONG).show()
+                                if (success && file != null) {
+                                    val shareIntent = com.example.util.ResearchTelemetryExporter.createShareIntent(context, file)
+                                    context.startActivity(android.content.Intent.createChooser(shareIntent, "Xuất dữ liệu nghiên cứu Kiki"))
+                                }
+                            }
+                        },
+                    color = Color(0x1A51FAC1),
+                    shape = RoundedCornerShape(16.dp),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, Color(0x4D51FAC1))
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp, vertical = 14.dp)
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(1f)) {
+                            Box(
+                                modifier = Modifier
+                                    .size(36.dp)
+                                    .clip(CircleShape)
+                                    .background(Color(0x3351FAC1)),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(
+                                    Icons.Default.Analytics,
+                                    contentDescription = null,
+                                    tint = Color(0xFF51FAC1),
+                                    modifier = Modifier.size(20.dp)
+                                )
+                            }
+                            Spacer(modifier = Modifier.width(12.dp))
+                            Column {
+                                Text(
+                                    "Dữ liệu Nghiên cứu (Research CSV)",
+                                    color = Color.White,
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 14.sp
+                                )
+                                Text(
+                                    "Xuất dữ liệu Telemetry chuẩn cho đề tài luận văn",
+                                    color = Color(0x99FFFFFF),
+                                    fontSize = 11.5.sp
+                                )
+                            }
+                        }
+                        Icon(
+                            Icons.Default.Download,
+                            contentDescription = "Export CSV",
+                            tint = Color(0xFF51FAC1),
+                            modifier = Modifier.size(22.dp)
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(20.dp))
 
                 // Logout Button
                 Box(

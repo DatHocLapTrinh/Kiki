@@ -56,6 +56,11 @@ import com.example.model.ChapterGeneratedResponse
 import com.example.model.QuestionItemDto
 import com.example.model.MentorChatRequest
 import com.example.model.VocabularyCardDto
+import com.example.sqlite.room.ResearchTelemetryEntity
+import com.example.util.Sm2Algorithm
+import com.example.util.Sm2State
+import com.example.util.ResearchTelemetryExporter
+import java.util.UUID
 import kotlinx.coroutines.delay
 import javax.inject.Inject
 
@@ -636,6 +641,51 @@ class StudyViewModel @Inject constructor(
                 if (chapterId != -1L) {
                     repository.saveQuizAttempt(userId, chapterId, totalCount, correctCount)
                 }
+
+                // Ghi nhận dữ liệu thực nghiệm thụ động (Passive Research Telemetry)
+                val sessionTimestamp = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.US).format(Date())
+                val sessionId = "SES_" + SimpleDateFormat("yyyyMMdd_HHmmss", Locale.US).format(Date()) + "_" + UUID.randomUUID().toString().take(6)
+                val currentChapter = _currentChapterTitle.value ?: "Microlearning Unit"
+
+                val telemetryList = results.map { item ->
+                    val isItemCorrect = item.selectedIndex == item.correctIndex
+                    val latency = if (item.responseLatencyMs > 0) item.responseLatencyMs else 2500L
+                    val isDistracted = item.isDistracted || (latency > Sm2Algorithm.DISTRACTION_LATENCY_THRESHOLD_MS)
+                    val q = if (item.objectiveQuality > 0) item.objectiveQuality
+                            else Sm2Algorithm.calculateObjectiveQuality(
+                                isCorrect = isItemCorrect,
+                                responseLatencyMs = latency,
+                                usedHint = item.usedHint,
+                                isDistracted = isDistracted
+                            )
+                    val pseudoNextState = Sm2Algorithm.calculateNextReview(
+                        Sm2State(repetition = 0, intervalDays = 1, easinessFactor = 2.5f),
+                        q
+                    )
+                    val retentionR = Sm2Algorithm.calculateRetentionProbability(0.0, pseudoNextState.intervalDays.toDouble()).toFloat()
+
+                    ResearchTelemetryEntity(
+                        sessionId = sessionId,
+                        userId = userId,
+                        timestamp = sessionTimestamp,
+                        sloTopic = if (item.sloTopic.isNotBlank()) item.sloTopic else currentChapter,
+                        challengeType = item.type.name,
+                        itemIdentifier = item.question.take(100),
+                        responseLatencyMs = latency,
+                        isCorrect = isItemCorrect,
+                        usedHint = item.usedHint,
+                        isDistracted = isDistracted,
+                        objectiveQuality = q,
+                        easinessFactor = pseudoNextState.easinessFactor,
+                        intervalDays = pseudoNextState.intervalDays,
+                        retentionProbability = retentionR
+                    )
+                }
+                repository.saveTelemetryBatch(telemetryList)
+
+                // Kích hoạt cơ chế nạp trước dự đoán (Predictive Prefetching) ở chế độ nền
+                prefetchNextMicrolearningUnit(userId, currentChapter)
+
                 recordDailyTaskProgress(userId, "LESSON_COMPLETE", 1)
                 recordDailyTaskProgress(userId, "ANSWER_QUESTIONS", results.size)
                 if (results.isNotEmpty() && correctCount == results.size) {
@@ -1429,8 +1479,195 @@ class StudyViewModel @Inject constructor(
         }
     }
 
+    val prefetchedMicrolearningCache = java.util.concurrent.ConcurrentHashMap<String, ChapterGeneratedResponse>()
+
+    fun prefetchNextMicrolearningUnit(userId: Long, currentTopic: String) {
+        viewModelScope.launch(Dispatchers.IO) {
+            try {
+                val chapters = _availableChapters.value?.takeIf { it.isNotEmpty() }
+                    ?: repository.getChaptersByPreference(_selectedLevel.value, _selectedSubject.value)
+                val targetLevel = _selectedLevel.value ?: "Beginner"
+                val nextTopic = determineNextTopic(chapters, targetLevel)
+                if (prefetchedMicrolearningCache.containsKey(nextTopic)) return@launch
+
+                val weakPointsList = repository.getWeakPoints(userId)
+                val weakWords = extractWeakKeywords(weakPointsList)
+
+                val generated = generate3CMicrolearningWithGemini(nextTopic, targetLevel, weakWords)
+                if (generated != null) {
+                    prefetchedMicrolearningCache[nextTopic] = generated
+                }
+            } catch (_: Exception) {}
+        }
+    }
+
+    suspend fun generate3CMicrolearningWithGemini(
+        topic: String,
+        level: String,
+        weakWords: List<String>
+    ): ChapterGeneratedResponse? = withContext(Dispatchers.IO) {
+        try {
+            val apiKey = getEffectiveGeminiApiKey()
+            if (apiKey.isBlank() || apiKey.startsWith("sk-")) return@withContext null
+
+            val weakPrompt = if (weakWords.isNotEmpty()) {
+                "Remediate these weak vocabulary/grammar items: ${weakWords.joinToString(", ")}."
+            } else {
+                "Focus on high-yield communicative proficiency."
+            }
+
+            val prompt = """
+                You are Kiki AI, an expert Microlearning Pedagogical Designer.
+                Create an Atomic Microlearning Unit (3-5 minutes) for the Single Learning Objective (SLO): "$topic" at level "$level".
+                $weakPrompt
+
+                You MUST return ONLY a raw JSON object (no markdown, no backticks) with this exact schema:
+                {
+                  "title": "$topic",
+                  "description": "Atomic 3C Microlearning unit focused on single objective.",
+                  "level": "$level",
+                  "subject": "English",
+                  "orderNo": 0,
+                  "questions": [
+                    {
+                      "questionText": "Multiple choice question testing $topic",
+                      "questionType": "MULTIPLE_CHOICE",
+                      "optionsJson": "[\"option A\", \"option B\", \"option C\", \"option D\"]",
+                      "correctAnswer": "0",
+                      "explanation": "Detailed pedagogical explanation",
+                      "points": 10,
+                      "difficulty": "EASY"
+                    },
+                    {
+                      "questionText": "Fill in the blank to build correct syntax",
+                      "questionType": "SENTENCE_BUILDER",
+                      "optionsJson": "[\"correct\", \"wrong1\", \"wrong2\", \"wrong3\"]",
+                      "correctAnswer": "0",
+                      "explanation": "Sentence structure rule",
+                      "points": 10,
+                      "difficulty": "MEDIUM"
+                    },
+                    {
+                      "questionText": "Nghe câu sau và sắp xếp lại các từ cho đúng thứ tự 🎧",
+                      "questionType": "LISTENING_CHALLENGE",
+                      "optionsJson": "[\"A clean conversational English sentence of 6 words\"]",
+                      "correctAnswer": "0",
+                      "explanation": "Listening comprehension and audio token reconstruction",
+                      "points": 10,
+                      "difficulty": "MEDIUM"
+                    },
+                    {
+                      "questionText": "Ghép cặp các từ vựng tiếng Anh với nghĩa tiếng Việt tương ứng 🧩",
+                      "questionType": "MATCHING_PAIRS",
+                      "optionsJson": "[\"word1=nghia1\", \"word2=nghia2\", \"word3=nghia3\", \"word4=nghia4\"]",
+                      "correctAnswer": "0",
+                      "explanation": "Vocabulary pairing mastery",
+                      "points": 10,
+                      "difficulty": "MEDIUM"
+                    },
+                    {
+                      "questionText": "Luyện nói câu tiếng Anh sau chuẩn bản xứ 🎙️",
+                      "questionType": "SPEAKING_CHALLENGE",
+                      "optionsJson": "[\"A natural fluent sentence for native audio dialog practice\"]",
+                      "correctAnswer": "0",
+                      "explanation": "Pronunciation cadence and speaking clarity",
+                      "points": 10,
+                      "difficulty": "HARD"
+                    }
+                  ]
+                }
+            """.trimIndent()
+
+            val contents = listOf(GeminiModels.Content(role = "user", parts = listOf(GeminiModels.Part(text = prompt))))
+            val systemInstruction = GeminiModels.createSystemInstruction(
+                "You are Kiki AI, an expert Microlearning Pedagogical Designer. Always output strict JSON only, without markdown fences or outside explanations."
+            )
+            val request = GeminiModels.GenerateContentRequest(
+                contents = contents,
+                systemInstruction = systemInstruction,
+                generationConfig = GeminiModels.GenerationConfig(
+                    temperature = 0.4,
+                    maxOutputTokens = 2048,
+                    topP = 0.95,
+                    topK = 40
+                )
+            )
+
+            val response = geminiApiService.generateContent(GeminiModels.MODEL_GEMINI_2_5_FLASH, apiKey, request)
+            if (response.isSuccessful) {
+                val rawText = GeminiModels.extractResponseText(response.body()) ?: ""
+                val cleanJson = rawText
+                    .replace(Regex("^```(?:json)?\\s*"), "")
+                    .replace(Regex("\\s*```$"), "")
+                    .trim()
+
+                val jsonObj = JSONObject(cleanJson)
+                val title = jsonObj.optString("title", "Lộ trình AI: $topic")
+                val desc = jsonObj.optString("description", "Bài học Microlearning 3C tối ưu theo mục tiêu học tập.")
+                val questionsArr = jsonObj.optJSONArray("questions")
+                val questionList = mutableListOf<QuestionItemDto>()
+
+                if (questionsArr != null) {
+                    for (i in 0 until questionsArr.length()) {
+                        val qObj = questionsArr.getJSONObject(i)
+                        questionList.add(
+                            QuestionItemDto(
+                                questionText = qObj.optString("questionText", "Question $i"),
+                                questionType = qObj.optString("questionType", "MULTIPLE_CHOICE"),
+                                optionsJson = qObj.optString("optionsJson", "[\"A\", \"B\"]"),
+                                correctAnswer = qObj.optString("correctAnswer", "0"),
+                                explanation = qObj.optString("explanation", "Giải thích"),
+                                points = qObj.optInt("points", 10),
+                                difficulty = qObj.optString("difficulty", "MEDIUM")
+                            )
+                        )
+                    }
+                }
+
+                if (questionList.isNotEmpty()) {
+                    return@withContext ChapterGeneratedResponse(
+                        title = title,
+                        description = desc,
+                        level = level,
+                        subject = "English",
+                        orderNo = 0,
+                        questions = questionList
+                    )
+                }
+            }
+            null
+        } catch (_: Exception) {
+            null
+        }
+    }
+
+    fun exportResearchTelemetryCsv(
+        context: Context,
+        onResult: (Boolean, String, java.io.File?) -> Unit
+    ) {
+        val userId = _currentUserId.value ?: return
+        if (userId == -1L) {
+            onResult(false, "Vui lòng đăng nhập để xuất dữ liệu nghiên cứu.", null)
+            return
+        }
+        viewModelScope.launch {
+            try {
+                val list = repository.getAllTelemetry(userId)
+                if (list.isEmpty()) {
+                    onResult(false, "Chưa có dữ liệu đo lường thực nghiệm. Hãy làm thêm một số bài học và luyện tập thẻ!", null)
+                    return@launch
+                }
+                val file = ResearchTelemetryExporter.saveCsvToFile(context, list)
+                onResult(true, "Đã xuất thành công ${list.size} bản ghi dữ liệu thực nghiệm!", file)
+            } catch (e: Exception) {
+                onResult(false, "Lỗi khi xuất file CSV: ${e.localizedMessage ?: e.message}", null)
+            }
+        }
+    }
+
     /**
      * Tự động hoặc chủ động gọi AI sinh chương học tiếp theo dựa trên Kho Điểm Yếu
+     * Ưu tiên tuyệt đối: Bộ nhớ đệm dự đoán (Predictive Prefetched) -> Gemini 2.5 Flash -> Backend -> Fallback
      */
     fun generateNextChapterOnDemand(
         userId: Long? = _currentUserId.value,
@@ -1452,6 +1689,45 @@ class StudyViewModel @Inject constructor(
                 val targetLevel = _selectedLevel.value ?: "Beginner"
                 val nextTopic = determineNextTopic(chapters, targetLevel)
 
+                // 1. Kiểm tra bộ nhớ đệm nạp trước (Zero Latency UX)
+                val prefetched = prefetchedMicrolearningCache.remove(nextTopic)
+                if (prefetched != null) {
+                    val newChapterId = repository.saveAiGeneratedChapter(prefetched)
+                    if (newChapterId != -1L) {
+                        refreshChapters()
+                        _chapterUnlockEvent.postValue(
+                            ChapterUnlockEvent(
+                                completedChapterTitle = completedChapterTitle,
+                                nextChapterTitle = prefetched.title,
+                                isAiGenerated = true,
+                                weakPointsAddressedCount = weakWords.size
+                            )
+                        )
+                        onComplete(true, prefetched.title)
+                        return@launch
+                    }
+                }
+
+                // 2. Trực tiếp kích hoạt Gemini 2.5 Flash Microlearning Engine trên thiết bị
+                val geminiChapter = generate3CMicrolearningWithGemini(nextTopic, targetLevel, weakWords)
+                if (geminiChapter != null) {
+                    val newChapterId = repository.saveAiGeneratedChapter(geminiChapter)
+                    if (newChapterId != -1L) {
+                        refreshChapters()
+                        _chapterUnlockEvent.postValue(
+                            ChapterUnlockEvent(
+                                completedChapterTitle = completedChapterTitle,
+                                nextChapterTitle = geminiChapter.title,
+                                isAiGenerated = true,
+                                weakPointsAddressedCount = weakWords.size
+                            )
+                        )
+                        onComplete(true, geminiChapter.title)
+                        return@launch
+                    }
+                }
+
+                // 3. Fallback Backend API
                 val token = authManager.getIdToken() ?: "mock_dev_token_kiki_explorer"
                 val request = GenerateChapterRequest(
                     userId = targetUserId.toString(),
@@ -1774,11 +2050,34 @@ class StudyViewModel @Inject constructor(
         }
     }
 
-    fun reviewVocabularySm2(entity: VocabularyEntity, quality: Int) {
+    fun reviewVocabularySm2(entity: VocabularyEntity, quality: Int, latencyMs: Long = 2500L) {
         viewModelScope.launch {
-            repository.processVocabularySm2Review(entity.vocabId, quality, entity)
+            val newState = repository.processVocabularySm2Review(entity.vocabId, quality, entity)
             val userId = _currentUserId.value
             if (userId != null && userId != -1L) {
+                // Ghi nhận telemetry thẻ từ vựng phục vụ nghiên cứu
+                val nowStr = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.US).format(Date())
+                val isDistracted = latencyMs > Sm2Algorithm.DISTRACTION_LATENCY_THRESHOLD_MS
+                val retentionR = Sm2Algorithm.calculateRetentionProbability(0.0, newState.intervalDays.toDouble()).toFloat()
+
+                val telemetry = ResearchTelemetryEntity(
+                    sessionId = "VOCAB_" + SimpleDateFormat("yyyyMMdd_HHmmss", Locale.US).format(Date()),
+                    userId = userId,
+                    timestamp = nowStr,
+                    sloTopic = "Vocabulary Vault",
+                    challengeType = "FLASHCARD",
+                    itemIdentifier = entity.word,
+                    responseLatencyMs = latencyMs,
+                    isCorrect = quality >= 3,
+                    usedHint = false,
+                    isDistracted = isDistracted,
+                    objectiveQuality = quality,
+                    easinessFactor = newState.easinessFactor,
+                    intervalDays = newState.intervalDays,
+                    retentionProbability = retentionR
+                )
+                repository.saveTelemetry(telemetry)
+
                 refreshVocabulary()
                 val masteredCount = repository.getMasteredVocabularyCount(userId)
                 _masteredVocabCount.value = masteredCount
