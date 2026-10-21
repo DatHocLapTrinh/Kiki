@@ -42,6 +42,7 @@ import androidx.navigation.compose.rememberNavController
 import com.example.repository.DataRepository
 import com.example.ui.PlacementQuizView
 import com.example.viewmodel.StudyViewModel
+import com.example.model.LearnerPersonaProfile
 import com.example.ui.theme.*
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -189,8 +190,14 @@ fun OnboardingScreen(viewModel: StudyViewModel, onFinish: () -> Unit) {
     var step by remember { mutableIntStateOf(0) }
     var selectedLevel by remember { mutableStateOf("Beginner") }
     var selectedGoal by remember { mutableStateOf("Everyday Fluency") }
+    var selectedModality by remember { mutableStateOf("AUDIO_DIALOG") }
+    var selectedPacingMinutes by remember { mutableIntStateOf(5) }
+    var selectedSelfEfficacy by remember { mutableStateOf("ELEMENTARY") }
+    var initialTheta by remember { mutableFloatStateOf(-0.3f) }
+    var evaluatedProfile by remember { mutableStateOf<LearnerPersonaProfile?>(null) }
     val scope = rememberCoroutineScope()
     val parallax = LocalParallax.current
+    val haptic = LocalHapticFeedback.current
     
     Box(modifier = Modifier.fillMaxSize().padding(24.dp), contentAlignment = Alignment.Center) {
         Box(
@@ -200,11 +207,11 @@ fun OnboardingScreen(viewModel: StudyViewModel, onFinish: () -> Unit) {
                     start = Offset.Zero, end = Offset.Infinite
                 ))
                 .border(1.dp, Brush.linearGradient(listOf(Color(0x66FFFFFF), Color(0x00FFFFFF), Color(0x33FFFFFF))), RoundedCornerShape(32.dp))
-                .padding(32.dp)
+                .padding(24.dp)
         ) {
             Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.fillMaxWidth()) {
-                // Progress Indicator
-                Row(horizontalArrangement = Arrangement.Center, modifier = Modifier.padding(bottom = 24.dp)) {
+                // Progress Indicator (5 bước)
+                Row(horizontalArrangement = Arrangement.Center, modifier = Modifier.padding(bottom = 20.dp)) {
                     for (i in 0 until 5) {
                         val color = if (i <= step) Color(0xFF00F5D4) else Color(0x33FFFFFF)
                         val width by animateDpAsState(if (i == step) 24.dp else 8.dp, label = "progressWidth")
@@ -231,79 +238,343 @@ fun OnboardingScreen(viewModel: StudyViewModel, onFinish: () -> Unit) {
                         val strings = LocalAppStrings.current
                         when (currentStep) {
                             0 -> {
-                                Text(strings.selectRealm, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Black, color = Color.White)
-                                Spacer(modifier = Modifier.height(24.dp))
-                                StaggeredOptions(
-                                    options = listOf(strings.middleSchool, strings.highSchool, strings.university),
-                                    onSelect = { 
-                                        selectedLevel = when (it) {
-                                            strings.middleSchool -> "Beginner"
-                                            strings.highSchool -> "Intermediate"
-                                            else -> "Advanced"
-                                        }
-                                        scope.launch { delay(300); step++ }
-                                    }
+                                // BƯỚC 0: MỤC TIÊU & PHƯƠNG THỨC HỌC (INTAKE PROFILING)
+                                Box(
+                                    modifier = Modifier
+                                        .clip(RoundedCornerShape(20.dp))
+                                        .background(Color(0x2E00F5D4))
+                                        .border(1.dp, Color(0x6600F5D4), RoundedCornerShape(20.dp))
+                                        .padding(horizontal = 14.dp, vertical = 5.dp)
+                                ) {
+                                    Text(
+                                        text = "🎯 HỒ SƠ HỌC TẬP (INTAKE PROFILE)",
+                                        color = Color(0xFF00F5D4),
+                                        fontWeight = FontWeight.Bold,
+                                        fontSize = 11.sp,
+                                        letterSpacing = 1.sp
+                                    )
+                                }
+
+                                Spacer(modifier = Modifier.height(12.dp))
+
+                                Text(
+                                    text = "Mục Tiêu & Phương Thức Chủ Đạo",
+                                    style = MaterialTheme.typography.titleLarge,
+                                    fontWeight = FontWeight.Black,
+                                    color = Color.White,
+                                    textAlign = TextAlign.Center
                                 )
-                            }
-                            1 -> {
-                                Text(strings.chooseDiscipline, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Black, color = Color.White)
-                                Spacer(modifier = Modifier.height(24.dp))
-                                val goalOptions = listOf(strings.goalFluency, strings.goalGrammar, strings.goalExam)
-                                var selectedGoals by remember { mutableStateOf(setOf(strings.goalFluency)) }
-                                Column {
-                                    goalOptions.forEach { option ->
-                                        val isSelected = option in selectedGoals
-                                        val haptic = androidx.compose.ui.platform.LocalHapticFeedback.current
+
+                                Spacer(modifier = Modifier.height(4.dp))
+
+                                Text(
+                                    text = "Kiki cá nhân hóa từng bài microlearning theo mục tiêu thực tế của bạn.",
+                                    color = Color.White.copy(alpha = 0.8f),
+                                    fontSize = 12.sp,
+                                    textAlign = TextAlign.Center
+                                )
+
+                                Spacer(modifier = Modifier.height(16.dp))
+
+                                val goalOptions = listOf(
+                                    Triple("Everyday Fluency", "💬 Giao Tiếp Phản Xạ Hàng Ngày", "Tự tin nói trôi chảy, phản xạ tự nhiên."),
+                                    Triple("Grammar & Vocabulary", "📝 Ngữ Pháp & Cấu Trúc Chuẩn Xác", "Nắm vững bản chất cú pháp, xóa lỗi sai."),
+                                    Triple("IELTS & TOEIC", "🎓 Luyện Thi Chứng Chỉ (IELTS/TOEIC)", "Bứt phá band điểm, mở rộng từ học thuật."),
+                                    Triple("Career & Business", "💼 Tiếng Anh Công Việc & Phỏng Vấn", "Giao tiếp công sở & đàm phán tự tin.")
+                                )
+
+                                Column(modifier = Modifier.fillMaxWidth()) {
+                                    goalOptions.forEach { (goalKey, goalTitle, goalDesc) ->
+                                        val isSelected = selectedGoal == goalKey
                                         Box(
-                                            modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp).height(56.dp)
-                                                .clip(RoundedCornerShape(16.dp))
-                                                .background(if (isSelected) Color(0x3300F5D4) else Color(0x1AFFFFFF))
-                                                .border(1.dp, if (isSelected) Brush.linearGradient(listOf(Color(0xFF00F5D4), Color(0xFF00B4D8))) else SolidColor(Color(0x33FFFFFF)), RoundedCornerShape(16.dp))
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .padding(vertical = 4.dp)
+                                                .clip(RoundedCornerShape(14.dp))
+                                                .background(if (isSelected) Color(0x3300F5D4) else Color(0x14FFFFFF))
+                                                .border(
+                                                    1.dp,
+                                                    if (isSelected) Color(0xFF00F5D4) else Color(0x26FFFFFF),
+                                                    RoundedCornerShape(14.dp)
+                                                )
                                                 .clickable {
                                                     haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                                                    selectedGoals = if (isSelected && selectedGoals.size > 1) {
-                                                        selectedGoals - option
-                                                    } else {
-                                                        selectedGoals + option
-                                                    }
-                                                },
-                                            contentAlignment = Alignment.Center
+                                                    viewModel.soundEffectManager.playClick()
+                                                    selectedGoal = goalKey
+                                                }
+                                                .padding(horizontal = 14.dp, vertical = 10.dp)
                                         ) {
                                             Row(verticalAlignment = Alignment.CenterVertically) {
-                                                Text(option, fontSize = 16.sp, color = if (isSelected) Color(0xFF00F5D4) else Color.White, fontWeight = FontWeight.SemiBold)
+                                                Column(modifier = Modifier.weight(1f)) {
+                                                    Text(
+                                                        text = goalTitle,
+                                                        color = if (isSelected) Color(0xFF00F5D4) else Color.White,
+                                                        fontWeight = FontWeight.Bold,
+                                                        fontSize = 13.5.sp
+                                                    )
+                                                    Spacer(modifier = Modifier.height(2.dp))
+                                                    Text(
+                                                        text = goalDesc,
+                                                        color = Color.White.copy(alpha = 0.7f),
+                                                        fontSize = 11.sp
+                                                    )
+                                                }
                                                 if (isSelected) {
                                                     Spacer(modifier = Modifier.width(8.dp))
-                                                    Icon(Icons.Default.Check, contentDescription = null, tint = Color(0xFF00F5D4), modifier = Modifier.size(18.dp))
+                                                    Icon(
+                                                        Icons.Default.CheckCircle,
+                                                        contentDescription = null,
+                                                        tint = Color(0xFF00F5D4),
+                                                        modifier = Modifier.size(18.dp)
+                                                    )
                                                 }
                                             }
                                         }
                                     }
-                                    Spacer(modifier = Modifier.height(16.dp))
-                                    Box(
-                                        modifier = Modifier.fillMaxWidth().height(56.dp)
-                                            .clip(RoundedCornerShape(16.dp))
-                                            .background(Brush.linearGradient(listOf(Color(0xCCFF9E00), Color(0xCC00F5D4))))
-                                            .clickable {
-                                                val firstGoal = selectedGoals.first()
-                                                selectedGoal = when (firstGoal) {
-                                                    strings.goalFluency -> "Everyday Fluency"
-                                                    strings.goalGrammar -> "Grammar & Vocabulary"
-                                                    else -> "IELTS & TOEIC"
-                                                }
-                                                scope.launch { delay(300); step++ }
-                                            },
-                                        contentAlignment = Alignment.Center
-                                    ) {
-                                        Text(strings.continueJourney, color = Color.White, fontWeight = FontWeight.Bold, fontSize = 15.sp)
+                                }
+
+                                Spacer(modifier = Modifier.height(12.dp))
+
+                                // Bộ chọn Phương thức học
+                                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                    val modalities = listOf(
+                                        Pair("AUDIO_DIALOG", "🎙️ Gemini Native Audio"),
+                                        Pair("SYNTAX_READING", "📖 Cú Pháp & Đọc Hiểu")
+                                    )
+                                    modalities.forEach { (modKey, modTitle) ->
+                                        val isSelected = selectedModality == modKey
+                                        Box(
+                                            modifier = Modifier
+                                                .weight(1f)
+                                                .height(42.dp)
+                                                .clip(RoundedCornerShape(12.dp))
+                                                .background(if (isSelected) Color(0x33FF9E00) else Color(0x14FFFFFF))
+                                                .border(1.dp, if (isSelected) Color(0xFFFF9E00) else Color(0x26FFFFFF), RoundedCornerShape(12.dp))
+                                                .clickable {
+                                                    haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                                                    viewModel.soundEffectManager.playClick()
+                                                    selectedModality = modKey
+                                                },
+                                            contentAlignment = Alignment.Center
+                                        ) {
+                                            Text(
+                                                text = modTitle,
+                                                color = if (isSelected) Color(0xFFFF9E00) else Color.White,
+                                                fontWeight = FontWeight.SemiBold,
+                                                fontSize = 11.5.sp
+                                            )
+                                        }
                                     }
+                                }
+
+                                Spacer(modifier = Modifier.height(18.dp))
+
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .height(50.dp)
+                                        .clip(RoundedCornerShape(14.dp))
+                                        .background(Brush.linearGradient(listOf(Color(0xFFFF9E00), Color(0xFF00F5D4))))
+                                        .clickable {
+                                            haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                                            viewModel.soundEffectManager.playClick()
+                                            scope.launch { delay(180); step++ }
+                                        },
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Text(
+                                        text = strings.continueJourney,
+                                        color = Color(0xFF0B0D1B),
+                                        fontWeight = FontWeight.Bold,
+                                        fontSize = 15.sp
+                                    )
+                                }
+                            }
+                            1 -> {
+                                // BƯỚC 1: THỜI LƯỢNG MICROLEARNING & ĐIỂM TỰ TIN BAN ĐẦU
+                                Box(
+                                    modifier = Modifier
+                                        .clip(RoundedCornerShape(20.dp))
+                                        .background(Color(0x2E00F5D4))
+                                        .border(1.dp, Color(0x6600F5D4), RoundedCornerShape(20.dp))
+                                        .padding(horizontal = 14.dp, vertical = 5.dp)
+                                ) {
+                                    Text(
+                                        text = "⏱️ THỜI LƯỢNG & NĂNG LỰC BAN ĐẦU",
+                                        color = Color(0xFF00F5D4),
+                                        fontWeight = FontWeight.Bold,
+                                        fontSize = 11.sp,
+                                        letterSpacing = 1.sp
+                                    )
+                                }
+
+                                Spacer(modifier = Modifier.height(12.dp))
+
+                                Text(
+                                    text = "Nhịp Độ Học & Điểm Tự Tin Ban Đầu",
+                                    style = MaterialTheme.typography.titleLarge,
+                                    fontWeight = FontWeight.Black,
+                                    color = Color.White,
+                                    textAlign = TextAlign.Center
+                                )
+
+                                Spacer(modifier = Modifier.height(4.dp))
+
+                                Text(
+                                    text = "Microlearning 3-5 phút giúp duy trì bền bỉ và tối ưu trí nhớ dài hạn.",
+                                    color = Color.White.copy(alpha = 0.8f),
+                                    fontSize = 12.sp,
+                                    textAlign = TextAlign.Center
+                                )
+
+                                Spacer(modifier = Modifier.height(14.dp))
+
+                                Text(
+                                    text = "THỜI LƯỢNG HỌC MỖI NGÀY",
+                                    color = Color(0xFFFF9E00),
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 11.sp,
+                                    letterSpacing = 1.sp,
+                                    modifier = Modifier.fillMaxWidth().padding(bottom = 6.dp)
+                                )
+
+                                val pacingOptions = listOf(
+                                    Triple(3, "⚡ 3 Phút", "Siêu Vi Mô"),
+                                    Triple(5, "🎯 5 Phút", "Khuyến Nghị"),
+                                    Triple(10, "🚀 10 Phút", "Tăng Tốc")
+                                )
+
+                                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                                    pacingOptions.forEach { (minutes, label, sub) ->
+                                        val isSelected = selectedPacingMinutes == minutes
+                                        Box(
+                                            modifier = Modifier
+                                                .weight(1f)
+                                                .height(52.dp)
+                                                .clip(RoundedCornerShape(12.dp))
+                                                .background(if (isSelected) Color(0x3300F5D4) else Color(0x14FFFFFF))
+                                                .border(1.dp, if (isSelected) Color(0xFF00F5D4) else Color(0x26FFFFFF), RoundedCornerShape(12.dp))
+                                                .clickable {
+                                                    haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                                                    viewModel.soundEffectManager.playClick()
+                                                    selectedPacingMinutes = minutes
+                                                },
+                                            contentAlignment = Alignment.Center
+                                        ) {
+                                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                                Text(
+                                                    text = label,
+                                                    color = if (isSelected) Color(0xFF00F5D4) else Color.White,
+                                                    fontWeight = FontWeight.Bold,
+                                                    fontSize = 12.sp
+                                                )
+                                                Text(
+                                                    text = sub,
+                                                    color = Color.White.copy(alpha = 0.65f),
+                                                    fontSize = 9.5.sp
+                                                )
+                                            }
+                                        }
+                                    }
+                                }
+
+                                Spacer(modifier = Modifier.height(16.dp))
+
+                                Text(
+                                    text = "ĐIỂM TỰ TIN KHỞI ĐIỂM (SELF-EFFICACY)",
+                                    color = Color(0xFFFF9E00),
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 11.sp,
+                                    letterSpacing = 1.sp,
+                                    modifier = Modifier.fillMaxWidth().padding(bottom = 6.dp)
+                                )
+
+                                val selfEfficacyOptions = listOf(
+                                    Triple("NEWCOMER", -1.0f, "🌱 Người mới bắt đầu / Mất gốc (A1)"),
+                                    Triple("ELEMENTARY", -0.3f, "🌿 Đã biết từ vựng cơ bản, còn ngại nói (A2)"),
+                                    Triple("INTERMEDIATE", 0.2f, "🌳 Giao tiếp ổn, muốn chuẩn hóa ngữ pháp (B1-B2)"),
+                                    Triple("CONFIDENT", 0.8f, "🌟 Tự tin, hướng đến C1 chuyên nghiệp")
+                                )
+
+                                Column(modifier = Modifier.fillMaxWidth()) {
+                                    selfEfficacyOptions.forEach { (key, theta, title) ->
+                                        val isSelected = selectedSelfEfficacy == key
+                                        Box(
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .padding(vertical = 3.dp)
+                                                .height(44.dp)
+                                                .clip(RoundedCornerShape(12.dp))
+                                                .background(if (isSelected) Color(0x3300F5D4) else Color(0x14FFFFFF))
+                                                .border(1.dp, if (isSelected) Color(0xFF00F5D4) else Color(0x26FFFFFF), RoundedCornerShape(12.dp))
+                                                .clickable {
+                                                    haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                                                    viewModel.soundEffectManager.playClick()
+                                                    selectedSelfEfficacy = key
+                                                    initialTheta = theta
+                                                }
+                                                .padding(horizontal = 14.dp),
+                                            contentAlignment = Alignment.CenterStart
+                                        ) {
+                                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                                Text(
+                                                    text = title,
+                                                    color = if (isSelected) Color(0xFF00F5D4) else Color.White,
+                                                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                                                    fontSize = 12.sp,
+                                                    modifier = Modifier.weight(1f)
+                                                )
+                                                if (isSelected) {
+                                                    Icon(
+                                                        Icons.Default.Check,
+                                                        contentDescription = null,
+                                                        tint = Color(0xFF00F5D4),
+                                                        modifier = Modifier.size(16.dp)
+                                                    )
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+
+                                Spacer(modifier = Modifier.height(18.dp))
+
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .height(50.dp)
+                                        .clip(RoundedCornerShape(14.dp))
+                                        .background(Brush.linearGradient(listOf(Color(0xFFFF9E00), Color(0xFF00F5D4))))
+                                        .clickable {
+                                            haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                                            viewModel.soundEffectManager.playClick()
+                                            scope.launch { delay(180); step++ }
+                                        },
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Text(
+                                        text = "Bắt Đầu Test Thích Ứng (CAT) ✨",
+                                        color = Color(0xFF0B0D1B),
+                                        fontWeight = FontWeight.Bold,
+                                        fontSize = 15.sp
+                                    )
                                 }
                             }
                             2 -> {
-                                // Giai đoạn 2: Bài Quiz phân loại 3 câu (Placement Quiz)
+                                // BƯỚC 2: BÀI TEST CHẨN ĐOÁN THÍCH ỨNG CAT (IRT) & RADAR NĂNG LỰC
                                 PlacementQuizView(
                                     soundEffectManager = viewModel.soundEffectManager,
-                                    onCompleted = { evaluatedLevel, _ ->
-                                        selectedLevel = evaluatedLevel
+                                    ttsManager = viewModel.ttsManager,
+                                    speechRecognitionManager = viewModel.speechRecognitionManager,
+                                    initialTheta = initialTheta,
+                                    goal = selectedGoal,
+                                    dailyTargetMinutes = selectedPacingMinutes,
+                                    selfEfficacy = selectedSelfEfficacy,
+                                    priorityModality = selectedModality,
+                                    userId = viewModel.currentUserId.value ?: 0L,
+                                    onCompleted = { profile ->
+                                        evaluatedProfile = profile
+                                        selectedLevel = profile.evaluatedCefr
                                         scope.launch {
                                             delay(200)
                                             step = 3
@@ -312,12 +583,23 @@ fun OnboardingScreen(viewModel: StudyViewModel, onFinish: () -> Unit) {
                                 )
                             }
                             3 -> {
-                                // Giao diện loading có 3 chấm nhảy lên xuống chứng minh AI đang tạo các bài học & chương
+                                // BƯỚC 3: AI ENGINE KIẾN TẠO LỘ TRÌNH DỰA TRÊN ĐIỂM YẾU CHẨN ĐOÁN
                                 var phaseIndex by remember { mutableIntStateOf(0) }
                                 LaunchedEffect(Unit) {
-                                    viewModel.setPreferences(selectedLevel, "English")
-                                    viewModel.generateCustomChapter(selectedLevel, selectedGoal) { _, _ ->
-                                        viewModel.refreshChapters()
+                                    evaluatedProfile?.let { profile ->
+                                        viewModel.saveLearnerPersonaProfile(profile)
+                                        viewModel.generateCustomChapter(
+                                            level = profile.evaluatedCefr,
+                                            topic = profile.goal,
+                                            weakWords = profile.baselineWeakPoints
+                                        ) { _, _ ->
+                                            viewModel.refreshChapters()
+                                        }
+                                    } ?: run {
+                                        viewModel.setPreferences(selectedLevel, "English")
+                                        viewModel.generateCustomChapter(selectedLevel, selectedGoal) { _, _ ->
+                                            viewModel.refreshChapters()
+                                        }
                                     }
                                     delay(900)
                                     phaseIndex = 1
@@ -385,9 +667,9 @@ fun OnboardingScreen(viewModel: StudyViewModel, onFinish: () -> Unit) {
                                     Spacer(modifier = Modifier.height(24.dp))
 
                                     val statusText = when (phaseIndex) {
-                                        0 -> "🧠 Đang phân tích năng lực bài test..."
-                                        1 -> "✨ Thiết kế lộ trình $selectedLevel chuẩn CEFR..."
-                                        else -> "📚 Khởi tạo các bài học & chương học AI..."
+                                        0 -> "🧠 Đang hiệu chuẩn vector năng lực θ & tham số SM-2..."
+                                        1 -> "✨ Ép khuôn JSON Schema 3C (Concept-Check-Consolidate)..."
+                                        else -> "📚 Khởi tạo Chapter 1 nhắm trúng các điểm yếu chẩn đoán..."
                                     }
 
                                     Box(
@@ -407,18 +689,19 @@ fun OnboardingScreen(viewModel: StudyViewModel, onFinish: () -> Unit) {
                                 }
                             }
                             4 -> {
+                                // BƯỚC 4: HỒ SƠ & LỘ TRÌNH ĐÃ SẴN SÀNG
                                 Text(strings.profileInitialized, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Black, color = Color.White)
-                                Spacer(modifier = Modifier.height(14.dp))
-                                Text(strings.profileReady, textAlign = TextAlign.Center, color = Color.White.copy(alpha = 0.8f))
-                                Spacer(modifier = Modifier.height(20.dp))
+                                Spacer(modifier = Modifier.height(10.dp))
+                                Text(strings.profileReady, textAlign = TextAlign.Center, color = Color.White.copy(alpha = 0.8f), fontSize = 12.5.sp)
+                                Spacer(modifier = Modifier.height(16.dp))
 
                                 // Banner kết quả phân loại AI
                                 Box(
                                     modifier = Modifier
                                         .fillMaxWidth()
                                         .clip(RoundedCornerShape(16.dp))
-                                        .background(Color(0x2E00F5D4))
-                                        .border(1.dp, Color(0xFF00F5D4), RoundedCornerShape(16.dp))
+                                        .background(Brush.linearGradient(listOf(Color(0x3300F5D4), Color(0x1A7209B7))))
+                                        .border(1.2.dp, Color(0xFF00F5D4), RoundedCornerShape(16.dp))
                                         .padding(14.dp),
                                     contentAlignment = Alignment.Center
                                 ) {
@@ -441,10 +724,18 @@ fun OnboardingScreen(viewModel: StudyViewModel, onFinish: () -> Unit) {
                                             fontWeight = FontWeight.Black,
                                             fontSize = 16.sp
                                         )
+                                        Spacer(modifier = Modifier.height(6.dp))
+                                        Text(
+                                            text = "🎯 Mục tiêu: $selectedGoal\n⏱️ Nhịp độ: $selectedPacingMinutes phút/ngày • 🎙️ Gemini 2.5 Flash Native Audio",
+                                            color = Color.White.copy(alpha = 0.85f),
+                                            fontSize = 11.5.sp,
+                                            textAlign = TextAlign.Center,
+                                            lineHeight = 17.sp
+                                        )
                                     }
                                 }
 
-                                Spacer(modifier = Modifier.height(26.dp))
+                                Spacer(modifier = Modifier.height(22.dp))
                                 UltimateButton(text = strings.enterMap, icon = Icons.AutoMirrored.Filled.ArrowForward) { 
                                     for(i in 0 until 50) parallax.fireBurst(500f, 1500f)
                                     onFinish() 

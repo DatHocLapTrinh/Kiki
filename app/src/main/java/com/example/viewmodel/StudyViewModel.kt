@@ -63,6 +63,9 @@ import com.example.util.ResearchTelemetryExporter
 import java.util.UUID
 import kotlinx.coroutines.delay
 import javax.inject.Inject
+import com.example.model.LearnerPersonaProfile
+import com.squareup.moshi.Moshi
+import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
 
 @HiltViewModel
 class StudyViewModel @Inject constructor(
@@ -430,6 +433,89 @@ class StudyViewModel @Inject constructor(
 
     private val _selectedSubject = MutableLiveData("English")
     val selectedSubject: LiveData<String> = _selectedSubject
+
+    private val _learnerPersonaProfile = MutableLiveData<LearnerPersonaProfile?>(null)
+    val learnerPersonaProfile: LiveData<LearnerPersonaProfile?> = _learnerPersonaProfile
+
+    fun saveLearnerPersonaProfile(profile: LearnerPersonaProfile) {
+        val userId = _currentUserId.value?.takeIf { it > 0 } ?: profile.userId
+        val updatedProfile = profile.copy(userId = userId)
+        _learnerPersonaProfile.postValue(updatedProfile)
+
+        // 1. SharedPreferences persistence (Moshi)
+        try {
+            val moshi = Moshi.Builder().add(KotlinJsonAdapterFactory()).build()
+            val adapter = moshi.adapter(LearnerPersonaProfile::class.java)
+            val json = adapter.toJson(updatedProfile)
+            prefs.edit().putString("learner_persona_$userId", json).apply()
+        } catch (_: Exception) {}
+
+        // 2. Set learning preferences
+        setPreferences(updatedProfile.evaluatedCefr, "English")
+
+        // 3. Save baseline weak points into Room so SM-2 and adaptive chapter generators pick them up immediately
+        viewModelScope.launch {
+            try {
+                for (weakTag in updatedProfile.baselineWeakPoints) {
+                    val prompt = when (weakTag) {
+                        "Present_Simple_Agreement" -> "Chủ ngữ số ít 'She' chia động từ ở thì Hiện tại đơn"
+                        "Conditional_Type_2" -> "Câu điều kiện loại 2 (If + S + V2/ed, S + would + V)"
+                        "Negative_Inversion" -> "Đảo ngữ câu khẳng định với trạng từ phủ định (Scarcely had he...)"
+                        "Basic_Collocation" -> "Cụm kết hợp từ tự nhiên: have dinner, make an effort"
+                        "Phrasal_Verbs" -> "Cụm động từ thông dụng: drop by, look forward to"
+                        "Academic_Collocation" -> "Cụm từ học thuật chuẩn xác: groundbreaking breakthrough"
+                        "Acoustic_Everyday_Greeting" -> "Nhận diện ngữ âm câu chào hỏi cơ bản"
+                        "Acoustic_Connected_Speech" -> "Nhận diện hiện tượng nuốt âm & nối âm (Connected Speech)"
+                        "Acoustic_Academic_Cadence" -> "Nghe hiểu câu học thuật tốc độ tự nhiên bản xứ"
+                        "Spoken_Greeting_Fluency" -> "Luyện phát âm câu giao tiếp hàng ngày"
+                        "Spoken_Polite_Inquiry" -> "Luyện ngữ điệu câu hỏi lịch sự"
+                        "Spoken_Rhythm_Connected" -> "Luyện nhịp điệu trọng âm câu phức"
+                        else -> "Kỹ năng cần củng cố: $weakTag"
+                    }
+                    repository.recordWeakPoint(
+                        userId = userId,
+                        question = prompt,
+                        options = listOf("Luyện phản xạ âm thanh", "Ôn tập cấu trúc câu", "Ứng dụng trong ngữ cảnh"),
+                        correctIndex = 0
+                    )
+                }
+                refreshWeakPoints()
+            } catch (_: Exception) {}
+
+            // 4. Record baseline diagnostic telemetry entry
+            try {
+                val nowStr = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.US).format(Date())
+                val telemetry = ResearchTelemetryEntity(
+                    sessionId = "cat_placement_${System.currentTimeMillis()}",
+                    userId = userId,
+                    timestamp = nowStr,
+                    sloTopic = "CAT_DIAGNOSTIC_PLACEMENT",
+                    challengeType = "ADAPTIVE_TEST",
+                    itemIdentifier = "Theta=${updatedProfile.thetaAbility};CEFR=${updatedProfile.evaluatedCefr};Goal=${updatedProfile.goal};Pace=${updatedProfile.dailyTargetMinutes}m",
+                    responseLatencyMs = 0L,
+                    isCorrect = true,
+                    usedHint = false,
+                    isDistracted = false,
+                    objectiveQuality = 5,
+                    easinessFactor = updatedProfile.initialEasinessFactor,
+                    intervalDays = 1,
+                    retentionProbability = 1.0f
+                )
+                repository.saveTelemetry(telemetry)
+            } catch (_: Exception) {}
+        }
+    }
+
+    fun loadLearnerPersonaProfile(userId: Long? = null): LearnerPersonaProfile? {
+        val targetId = userId ?: _currentUserId.value?.takeIf { it > 0 } ?: return null
+        val json = prefs.getString("learner_persona_$targetId", null) ?: return null
+        return try {
+            val moshi = Moshi.Builder().add(KotlinJsonAdapterFactory()).build()
+            moshi.adapter(LearnerPersonaProfile::class.java).fromJson(json)?.also {
+                _learnerPersonaProfile.postValue(it)
+            }
+        } catch (_: Exception) { null }
+    }
 
     fun setPreferences(level: String, subject: String) {
         _selectedLevel.value = level
@@ -934,6 +1020,7 @@ class StudyViewModel @Inject constructor(
             refreshVocabulary()
             refreshWeakPoints()
             refreshBadges(userId)
+            loadLearnerPersonaProfile(userId)
 
             // Tự động đồng bộ toàn bộ dữ liệu lên Cloud Firestore ngầm
             firestoreSyncManager.syncAllToCloud(userId)
