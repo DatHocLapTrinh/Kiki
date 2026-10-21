@@ -46,14 +46,19 @@ fun SettingsDialog(
     onLogout: () -> Unit
 ) {
     val context = LocalContext.current
-    val currentApiKey = viewModel?.userApiKey?.observeAsState("")?.value ?: ""
+    val currentProvider = viewModel?.aiProvider?.observeAsState(StudyViewModel.PROVIDER_GEMINI)?.value ?: StudyViewModel.PROVIDER_GEMINI
+    val currentGroqKey = viewModel?.userApiKey?.observeAsState("")?.value ?: ""
+    val currentGeminiKey = viewModel?.geminiApiKey?.observeAsState("")?.value ?: ""
+    val autoTtsEnabled = viewModel?.audioDialogAutoTts?.observeAsState(true)?.value ?: true
     val batterySaverEnabled = viewModel?.batterySaver?.observeAsState(false)?.value ?: false
     val soundPrefs = remember {
         context.getSharedPreferences(com.example.audio.SoundEffectManager.PREFS_NAME, android.content.Context.MODE_PRIVATE)
     }
     var soundEnabled by remember { mutableStateOf(soundPrefs.getBoolean("sound_enabled", true)) }
-    var apiKeyInput by remember(currentApiKey) { mutableStateOf(currentApiKey) }
-    var keyVisible by remember { mutableStateOf(false) }
+    var groqKeyInput by remember(currentGroqKey) { mutableStateOf(currentGroqKey) }
+    var groqKeyVisible by remember { mutableStateOf(false) }
+    var geminiKeyInput by remember(currentGeminiKey) { mutableStateOf(currentGeminiKey) }
+    var geminiKeyVisible by remember { mutableStateOf(false) }
 
     Dialog(
         onDismissRequest = onDismiss,
@@ -151,51 +156,187 @@ fun SettingsDialog(
 
                 Spacer(modifier = Modifier.height(20.dp))
 
-                // Groq API Key Config Section
+                // AI Engine Selection & Config Section
                 Text(
-                    "Cấu hình Trí Tuệ Nhân Tạo (Groq AI)",
+                    "Trí Tuệ Nhân Tạo & Gia Sư AI",
                     color = Color(0xFF51FAC1),
-                    fontSize = 14.sp,
+                    fontSize = 15.sp,
                     fontWeight = FontWeight.Bold
                 )
                 Spacer(modifier = Modifier.height(8.dp))
-                OutlinedTextField(
-                    value = apiKeyInput,
-                    onValueChange = { apiKeyInput = it },
-                    label = { Text("Groq API Key (gsk_...)") },
-                    visualTransformation = if (keyVisible) VisualTransformation.None else PasswordVisualTransformation(),
-                    singleLine = true,
-                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
-                    trailingIcon = {
-                        IconButton(onClick = { keyVisible = !keyVisible }) {
-                            Icon(
-                                if (keyVisible) Icons.Default.VisibilityOff else Icons.Default.Visibility,
-                                contentDescription = "Toggle Key",
-                                tint = Color(0x99FFFFFF)
-                            )
-                        }
-                    },
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedTextColor = Color.White,
-                        unfocusedTextColor = Color.White,
-                        focusedBorderColor = Color(0xFF51FAC1),
-                        unfocusedBorderColor = Color(0x66FFFFFF),
-                        focusedLabelColor = Color(0xFF51FAC1),
-                        unfocusedLabelColor = Color(0x99FFFFFF)
-                    )
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-                Button(
-                    onClick = {
-                        viewModel?.setCustomApiKey(apiKeyInput)
-                        Toast.makeText(context, "Đã lưu Groq API Key thành công!", Toast.LENGTH_SHORT).show()
-                    },
-                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF51FAC1)),
-                    shape = RoundedCornerShape(12.dp),
-                    modifier = Modifier.fillMaxWidth()
+
+                // Provider Switcher Row
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(14.dp))
+                        .background(Color(0x3314142B))
+                        .padding(4.dp),
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
-                    Text("Lưu Khóa API Groq", color = Color(0xFF14141E), fontWeight = FontWeight.Bold)
+                    val isGemini = currentProvider == StudyViewModel.PROVIDER_GEMINI
+                    Box(
+                        modifier = Modifier
+                            .weight(1f)
+                            .clip(RoundedCornerShape(10.dp))
+                            .background(
+                                if (isGemini) Brush.horizontalGradient(listOf(Color(0xFF388E3C), Color(0xFF51FAC1)))
+                                else Brush.horizontalGradient(listOf(Color.Transparent, Color.Transparent))
+                            )
+                            .clickable { viewModel?.setAiProvider(StudyViewModel.PROVIDER_GEMINI) }
+                            .padding(vertical = 10.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            "✨ Gemini 2.5 Flash",
+                            color = if (isGemini) Color(0xFF0F0C29) else Color(0xCCFFFFFF),
+                            fontWeight = if (isGemini) FontWeight.Bold else FontWeight.Medium,
+                            fontSize = 13.sp
+                        )
+                    }
+
+                    val isGroq = currentProvider == StudyViewModel.PROVIDER_GROQ
+                    Box(
+                        modifier = Modifier
+                            .weight(1f)
+                            .clip(RoundedCornerShape(10.dp))
+                            .background(
+                                if (isGroq) Brush.horizontalGradient(listOf(Color(0xFFFF9E00), Color(0xFFFF5400)))
+                                else Brush.horizontalGradient(listOf(Color.Transparent, Color.Transparent))
+                            )
+                            .clickable { viewModel?.setAiProvider(StudyViewModel.PROVIDER_GROQ) }
+                            .padding(vertical = 10.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            "⚡ Groq (Llama 3)",
+                            color = if (isGroq) Color(0xFF0F0C29) else Color(0xCCFFFFFF),
+                            fontWeight = if (isGroq) FontWeight.Bold else FontWeight.Medium,
+                            fontSize = 13.sp
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                if (currentProvider == StudyViewModel.PROVIDER_GEMINI) {
+                    // Gemini Config
+                    Text(
+                        "Mô hình: Gemini 2.5 Flash Native Audio Dialog",
+                        color = Color(0xFFFFD166),
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        "Hỗ trợ đối thoại giọng nói tương tác trực tiếp, đa phương thức âm thanh và thị giác siêu nhanh.",
+                        color = Color(0xB3FFFFFF),
+                        fontSize = 11.sp
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    OutlinedTextField(
+                        value = geminiKeyInput,
+                        onValueChange = { geminiKeyInput = it },
+                        label = { Text("Gemini API Key (Tùy chỉnh)") },
+                        placeholder = { Text("Khóa mặc định đã sẵn sàng") },
+                        visualTransformation = if (geminiKeyVisible) VisualTransformation.None else PasswordVisualTransformation(),
+                        singleLine = true,
+                        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+                        trailingIcon = {
+                            IconButton(onClick = { geminiKeyVisible = !geminiKeyVisible }) {
+                                Icon(
+                                    if (geminiKeyVisible) Icons.Default.VisibilityOff else Icons.Default.Visibility,
+                                    contentDescription = "Toggle Key",
+                                    tint = Color(0x99FFFFFF)
+                                )
+                            }
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedTextColor = Color.White,
+                            unfocusedTextColor = Color.White,
+                            focusedBorderColor = Color(0xFF51FAC1),
+                            unfocusedBorderColor = Color(0x66FFFFFF),
+                            focusedLabelColor = Color(0xFF51FAC1),
+                            unfocusedLabelColor = Color(0x99FFFFFF)
+                        )
+                    )
+                    Spacer(modifier = Modifier.height(6.dp))
+                    val hasDefaultKey = viewModel?.getEffectiveGeminiApiKey()?.isNotBlank() == true
+                    if (hasDefaultKey) {
+                        Text(
+                            "🟢 Khóa Gemini 2.5 Flash tích hợp đang hoạt động hoàn hảo.",
+                            color = Color(0xFF51FAC1),
+                            fontSize = 11.sp
+                        )
+                    }
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Button(
+                        onClick = {
+                            viewModel?.setGeminiApiKey(geminiKeyInput)
+                            Toast.makeText(context, "Đã lưu cấu hình Gemini thành công!", Toast.LENGTH_SHORT).show()
+                        },
+                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF51FAC1)),
+                        shape = RoundedCornerShape(12.dp),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text("Lưu Khóa Gemini", color = Color(0xFF14141E), fontWeight = FontWeight.Bold)
+                    }
+
+                    Spacer(modifier = Modifier.height(10.dp))
+                    SettingsToggle(
+                        title = "Đối thoại âm thanh tự động (Auto-TTS)",
+                        icon = Icons.Default.SpatialAudio,
+                        initialValue = autoTtsEnabled,
+                        onChanged = { viewModel?.setAudioDialogAutoTts(it) }
+                    )
+                } else {
+                    // Groq Config Section
+                    Text(
+                        "Mô hình: Llama-3.3-70b-versatile (Groq)",
+                        color = Color(0xFFFFD166),
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    OutlinedTextField(
+                        value = groqKeyInput,
+                        onValueChange = { groqKeyInput = it },
+                        label = { Text("Groq API Key (gsk_...)") },
+                        visualTransformation = if (groqKeyVisible) VisualTransformation.None else PasswordVisualTransformation(),
+                        singleLine = true,
+                        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+                        trailingIcon = {
+                            IconButton(onClick = { groqKeyVisible = !groqKeyVisible }) {
+                                Icon(
+                                    if (groqKeyVisible) Icons.Default.VisibilityOff else Icons.Default.Visibility,
+                                    contentDescription = "Toggle Key",
+                                    tint = Color(0x99FFFFFF)
+                                )
+                            }
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedTextColor = Color.White,
+                            unfocusedTextColor = Color.White,
+                            focusedBorderColor = Color(0xFF51FAC1),
+                            unfocusedBorderColor = Color(0x66FFFFFF),
+                            focusedLabelColor = Color(0xFF51FAC1),
+                            unfocusedLabelColor = Color(0x99FFFFFF)
+                        )
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Button(
+                        onClick = {
+                            viewModel?.setCustomApiKey(groqKeyInput)
+                            Toast.makeText(context, "Đã lưu Groq API Key thành công!", Toast.LENGTH_SHORT).show()
+                        },
+                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFF9E00)),
+                        shape = RoundedCornerShape(12.dp),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text("Lưu Khóa Groq", color = Color(0xFF14141E), fontWeight = FontWeight.Bold)
+                    }
                 }
 
                 Spacer(modifier = Modifier.height(20.dp))

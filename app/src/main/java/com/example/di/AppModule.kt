@@ -2,6 +2,7 @@ package com.example.di
 
 import android.content.Context
 import androidx.room.Room
+import com.example.network.GeminiApiService
 import com.example.network.GroqApiService
 import com.example.sqlite.room.AppDao
 import com.example.sqlite.room.AppDatabase
@@ -40,4 +41,11 @@ object AppModule {
     fun provideGroqApiService(): GroqApiService {
         return GroqApiService.create()
     }
+
+    @Provides
+    @Singleton
+    fun provideGeminiApiService(): GeminiApiService {
+        return GeminiApiService.create()
+    }
 }
+
