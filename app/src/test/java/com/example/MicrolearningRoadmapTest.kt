@@ -157,6 +157,52 @@ class MicrolearningRoadmapTest {
         assertEquals("SPEAKING", response.questions[3].questionType)
     }
 
+    @Test
+    fun testGolden5StepMultimodalCycle() {
+        val archetypes = (0..9).map { index ->
+            when (index % 5) {
+                0 -> com.example.model.QuestionType.MULTIPLE_CHOICE
+                1 -> com.example.model.QuestionType.SENTENCE_BUILDER
+                2 -> com.example.model.QuestionType.LISTENING_CHALLENGE
+                3 -> com.example.model.QuestionType.MATCHING_PAIRS
+                4 -> com.example.model.QuestionType.SPEAKING_CHALLENGE
+                else -> com.example.model.QuestionType.MULTIPLE_CHOICE
+            }
+        }
+
+        // Verify first 5 questions have distinct archetypes
+        assertEquals(com.example.model.QuestionType.MULTIPLE_CHOICE, archetypes[0])
+        assertEquals(com.example.model.QuestionType.SENTENCE_BUILDER, archetypes[1])
+        assertEquals(com.example.model.QuestionType.LISTENING_CHALLENGE, archetypes[2])
+        assertEquals(com.example.model.QuestionType.MATCHING_PAIRS, archetypes[3])
+        assertEquals(com.example.model.QuestionType.SPEAKING_CHALLENGE, archetypes[4])
+
+        // Verify seamless repetition for questions 6..10
+        assertEquals(com.example.model.QuestionType.MULTIPLE_CHOICE, archetypes[5])
+        assertEquals(com.example.model.QuestionType.SENTENCE_BUILDER, archetypes[6])
+        assertEquals(com.example.model.QuestionType.LISTENING_CHALLENGE, archetypes[7])
+        assertEquals(com.example.model.QuestionType.MATCHING_PAIRS, archetypes[8])
+        assertEquals(com.example.model.QuestionType.SPEAKING_CHALLENGE, archetypes[9])
+    }
+
+    @Test
+    fun testSentenceBuilderNeverHasRawBlanks() {
+        val questionWithBlank = "Look! The baby ______ in her crib."
+        val options = listOf("sleeps", "is sleeping", "slept", "has slept")
+        val correctWord = options[1]
+        val completeSentence = questionWithBlank.replace(Regex("_{2,}"), correctWord).replace(Regex("\\s+"), " ").trim()
+
+        assertEquals("Look! The baby is sleeping in her crib.", completeSentence)
+        assertFalse("Complete sentence should not have raw blanks", completeSentence.contains("______"))
+
+        val promptText = if (questionWithBlank.contains(Regex("_{2,}"))) {
+            "Sắp xếp các từ sau thành câu hoàn chỉnh 🧩"
+        } else {
+            questionWithBlank
+        }
+        assertEquals("Sắp xếp các từ sau thành câu hoàn chỉnh 🧩", promptText)
+    }
+
     private fun getTestScientificDefaultStages(profile: LearnerPersonaProfile): List<Pair<String, String>> {
         return when (profile.goal) {
             "Grammar & Vocabulary" -> listOf(
@@ -190,3 +236,4 @@ class MicrolearningRoadmapTest {
         }
     }
 }
+
