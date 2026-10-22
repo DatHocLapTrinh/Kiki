@@ -118,6 +118,12 @@ fun SentenceBuilderView(
         Spacer(modifier = Modifier.height(14.dp))
 
         // Prompt Question Card
+        val sanitizedPrompt = if (promptText.contains(Regex("_{2,}"))) {
+            if (isEnglish) "Assemble the words below into a complete sentence 🧩" else "Sắp xếp các từ bên dưới thành câu hoàn chỉnh 🧩"
+        } else {
+            promptText
+        }
+
         Box(
             modifier = Modifier
                 .fillMaxWidth()
@@ -128,7 +134,7 @@ fun SentenceBuilderView(
             contentAlignment = Alignment.Center
         ) {
             Text(
-                text = promptText,
+                text = sanitizedPrompt,
                 color = Color.White,
                 fontSize = 18.sp,
                 fontWeight = FontWeight.Bold,

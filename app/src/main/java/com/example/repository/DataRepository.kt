@@ -180,13 +180,13 @@ class DataRepository @Inject constructor(
                 val isExplicitListening = q.questionType.equals("LISTENING_CHALLENGE", ignoreCase = true) || q.questionType.equals("LISTENING", ignoreCase = true)
                 val hasBlanks = q.questionText.contains(Regex("_{2,}"))
 
-                // 1. Speaking Challenge
-                if (isExplicitSpeaking || (hasBlanks && index % 6 == 4)) {
-                    val correctWord = options.getOrNull(correctIdx) ?: ""
-                    val fullSentence = if (hasBlanks) {
-                        q.questionText.replace(Regex("_{2,}"), correctWord).replace(Regex("\\s+"), " ").trim()
-                    } else {
-                        (options.firstOrNull() ?: q.questionText).trim()
+                // 1. Speaking Challenge (Explicit)
+                if (isExplicitSpeaking) {
+                    val fullSentence = when {
+                        options.isNotEmpty() && options[0].contains(" ") -> options[0].trim()
+                        q.questionText.isNotBlank() && !hasBlanks -> q.questionText.trim()
+                        options.isNotEmpty() -> options[correctIdx.coerceIn(0, options.size - 1)].trim()
+                        else -> q.questionText.trim()
                     }
                     if (fullSentence.isNotBlank()) {
                         return@mapIndexedNotNull QuestItem(
@@ -199,8 +199,8 @@ class DataRepository @Inject constructor(
                     }
                 }
 
-                // 2. Matching Pairs (Word <-> Meaning)
-                if (isExplicitMatching || index % 7 == 6) {
+                // 2. Matching Pairs (Explicit)
+                if (isExplicitMatching) {
                     val hasKeyVal = options.any { it.contains("=") }
                     val selectedPairs = if (hasKeyVal) {
                         options.mapIndexedNotNull { optIdx, opt ->
@@ -222,25 +222,57 @@ class DataRepository @Inject constructor(
                     )
                 }
 
-                // 3. Listening Challenge & Sentence Builder
-                val shouldBeListening = isExplicitListening || (hasBlanks && index % 5 == 4)
-                val shouldBeBuilder = isExplicitBuilder || (hasBlanks && index % 3 == 2 && !shouldBeListening)
-
-                if (shouldBeListening || shouldBeBuilder) {
-                    val correctWord = options.getOrNull(correctIdx) ?: ""
-                    val fullSentence = if (hasBlanks) {
-                        q.questionText.replace(Regex("_{2,}"), correctWord).replace(Regex("\\s+"), " ").trim()
-                    } else {
-                        // If explicit listening or builder without blank: options[0] or questionText is the target sentence
-                        (options.firstOrNull() ?: q.questionText).trim()
+                // 3. Listening Challenge (Explicit)
+                if (isExplicitListening) {
+                    val sentenceToListen = when {
+                        options.isNotEmpty() && options[0].contains(" ") -> options[0].trim()
+                        q.correctAnswer.contains(" ") -> q.correctAnswer.trim()
+                        else -> q.questionText.trim()
                     }
-
-                    val rawTokens = fullSentence.split(Regex("\\s+"))
+                    val rawTokens = sentenceToListen.split(Regex("\\s+"))
                         .map { it.trim().trim('.', ',', '!', '?', ';', ':', '"') }
                         .filter { it.isNotEmpty() }
 
                     if (rawTokens.size >= 2) {
-                        // Gather distractors if options available
+                        return@mapIndexedNotNull QuestItem(
+                            question = "Nghe câu sau và sắp xếp lại các từ cho đúng thứ tự 🎧",
+                            options = options,
+                            correctIndex = correctIdx,
+                            type = QuestionType.LISTENING_CHALLENGE,
+                            sentenceTokens = rawTokens.shuffled(),
+                            correctSentence = sentenceToListen,
+                            speakingSentence = sentenceToListen
+                        )
+                    }
+                }
+
+                // 4. Sentence Builder (Explicit)
+                if (isExplicitBuilder) {
+                    val targetSentence = when {
+                        q.correctAnswer.contains(" ") -> q.correctAnswer.trim()
+                        options.size == 1 && options[0].contains(" ") -> options[0].trim()
+                        hasBlanks -> {
+                            val correctWord = options.getOrNull(correctIdx) ?: ""
+                            q.questionText.replace(Regex("_{2,}"), correctWord).replace(Regex("\\s+"), " ").trim()
+                        }
+                        options.size >= 3 && !options.any { it.contains(" ") } -> options.joinToString(" ")
+                        else -> options.firstOrNull() ?: q.questionText
+                    }
+
+                    // Prompt question should never display confusing raw blanks in Sentence Builder
+                    val promptText = when {
+                        hasBlanks -> "Sắp xếp các từ sau thành câu hoàn chỉnh 🧩"
+                        q.questionText.isNotBlank() -> q.questionText
+                        else -> "Sắp xếp các từ sau thành câu hoàn chỉnh 🧩"
+                    }
+
+                    val availableTokens = if (options.size >= 4 && !options.any { it.contains(" ") }) {
+                        options.shuffled()
+                    } else {
+                        val rawTokens = targetSentence.split(Regex("\\s+"))
+                            .map { it.trim().trim('.', ',', '!', '?', ';', ':', '"') }
+                            .filter { it.isNotEmpty() }
+
                         val distractorOptions = options.filterIndexed { i, _ -> i != correctIdx }
                         val distractors = mutableListOf<String>()
                         for (d in distractorOptions) {
@@ -250,32 +282,24 @@ class DataRepository @Inject constructor(
                                 if (distractors.size >= 2) break
                             }
                         }
+                        (rawTokens + distractors).shuffled()
+                    }
 
-                        val availableTokens = (rawTokens + distractors).shuffled()
-
-                        if (shouldBeListening) {
-                            return@mapIndexedNotNull QuestItem(
-                                question = "Nghe câu sau và sắp xếp lại các từ cho đúng thứ tự 🎧",
-                                options = options,
-                                correctIndex = correctIdx,
-                                type = QuestionType.LISTENING_CHALLENGE,
-                                sentenceTokens = availableTokens,
-                                correctSentence = fullSentence,
-                                speakingSentence = fullSentence
-                            )
-                        } else {
-                            return@mapIndexedNotNull QuestItem(
-                                question = q.questionText,
-                                options = options,
-                                correctIndex = correctIdx,
-                                type = QuestionType.SENTENCE_BUILDER,
-                                sentenceTokens = availableTokens,
-                                correctSentence = fullSentence
-                            )
-                        }
+                    if (availableTokens.size >= 2) {
+                        return@mapIndexedNotNull QuestItem(
+                            question = promptText,
+                            options = options,
+                            correctIndex = correctIdx,
+                            type = QuestionType.SENTENCE_BUILDER,
+                            sentenceTokens = availableTokens,
+                            correctSentence = targetSentence
+                        )
                     }
                 }
 
+                // 5. Default: Multiple Choice
+                // Questions with blanks (e.g. "Look! The baby ______ in her crib.")
+                // remain Multiple Choice naturally and intuitively!
                 QuestItem(
                     question = q.questionText,
                     options = options,

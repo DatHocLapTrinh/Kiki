@@ -1484,26 +1484,36 @@ class StudyViewModel @Inject constructor(
             difficulty = "EASY"
         )
 
-        // 2. Sentence Builder
-        val q2 = QuestionItemDto(
-            questionText = when {
-                cleanTopic.contains("Grammar", ignoreCase = true) -> "If I had more free time, I ______ learn another foreign language."
-                cleanTopic.contains("IELTS", ignoreCase = true) -> "The new economic policy was designed to ______ sustainable development."
-                else -> "Look! The children ______ happily in the school playground."
-            },
-            questionType = "SENTENCE_BUILDER",
-            optionsJson = org.json.JSONArray(
-                when {
-                    cleanTopic.contains("Grammar", ignoreCase = true) -> listOf("would", "will", "am", "have")
-                    cleanTopic.contains("IELTS", ignoreCase = true) -> listOf("foster", "demolish", "stagnate", "diminish")
-                    else -> listOf("are playing", "plays", "played", "play")
-                }
-            ).toString(),
-            correctAnswer = "0",
-            explanation = "Sắp xếp và điền từ chính xác vào chỗ trống.",
-            points = 10,
-            difficulty = "MEDIUM"
-        )
+        // 2. Sentence Builder (Sắp xếp câu chuẩn mực - không dùng blank)
+        val q2 = when {
+            cleanTopic.contains("Grammar", ignoreCase = true) -> QuestionItemDto(
+                questionText = "Sắp xếp các từ thành câu điều kiện loại 2: 'Nếu tôi có thêm thời gian, tôi sẽ học tiếng Pháp.'",
+                questionType = "SENTENCE_BUILDER",
+                optionsJson = org.json.JSONArray(listOf("If", "I", "had", "more", "time", "I", "would", "learn", "French", "will")).toString(),
+                correctAnswer = "If I had more time I would learn French",
+                explanation = "Cấu trúc câu điều kiện loại 2: If + S + V2/ed, S + would + V-inf.",
+                points = 15,
+                difficulty = "MEDIUM"
+            )
+            cleanTopic.contains("IELTS", ignoreCase = true) -> QuestionItemDto(
+                questionText = "Sắp xếp các từ thành câu học thuật: 'Chính sách mới nhằm thúc đẩy tăng trưởng bền vững.'",
+                questionType = "SENTENCE_BUILDER",
+                optionsJson = org.json.JSONArray(listOf("The", "new", "policy", "aims", "to", "foster", "sustainable", "growth", "demolish")).toString(),
+                correctAnswer = "The new policy aims to foster sustainable growth",
+                explanation = "'Foster sustainable growth' là cụm collocation học thuật chuẩn trong bài thi IELTS.",
+                points = 15,
+                difficulty = "MEDIUM"
+            )
+            else -> QuestionItemDto(
+                questionText = "Sắp xếp các từ thành câu hoàn chỉnh: 'Nhìn kìa! Em bé đang ngủ say trong nôi.'",
+                questionType = "SENTENCE_BUILDER",
+                optionsJson = org.json.JSONArray(listOf("Look!", "The", "baby", "is", "sleeping", "soundly", "in", "her", "crib", "slept")).toString(),
+                correctAnswer = "Look! The baby is sleeping soundly in her crib",
+                explanation = "Thì hiện tại tiếp diễn nhấn mạnh hành động đang diễn ra tại thời điểm nói: S + is/am/are + V-ing.",
+                points = 15,
+                difficulty = "MEDIUM"
+            )
+        }
 
         // 3. Listening Challenge
         val q3 = QuestionItemDto(
@@ -1662,12 +1672,12 @@ class StudyViewModel @Inject constructor(
                       "difficulty": "EASY"
                     },
                     {
-                      "questionText": "Fill in the blank to build correct syntax",
+                      "questionText": "Sắp xếp các từ thành câu hoàn chỉnh theo nghĩa: [Câu tiếng Việt ngắn gọn diễn giải nghĩa]",
                       "questionType": "SENTENCE_BUILDER",
-                      "optionsJson": "[\"correct\", \"wrong1\", \"wrong2\", \"wrong3\"]",
-                      "correctAnswer": "0",
-                      "explanation": "Sentence structure rule",
-                      "points": 10,
+                      "optionsJson": "[\"Word1\", \"word2\", \"word3\", \"word4\", \"word5\", \"distractor\"]",
+                      "correctAnswer": "Word1 word2 word3 word4 word5",
+                      "explanation": "Quy tắc trật tự từ và cấu trúc ngữ pháp chuẩn xác.",
+                      "points": 15,
                       "difficulty": "MEDIUM"
                     },
                     {
@@ -2166,23 +2176,29 @@ class StudyViewModel @Inject constructor(
                 else -> "MULTIPLE_CHOICE"
             }
             val finalOptions = when (qType) {
+                "SENTENCE_BUILDER" -> listOf("Daily", "practice", "improves", "your", "language", "skills", "rapidly", "wrong")
                 "LISTENING_CHALLENGE" -> listOf("Consistent daily practice develops natural language intuition")
                 "MATCHING_PAIRS" -> listOf("confidence=tự tin", "achievement=thành tựu", "progress=tiến bộ", "dedication=sự cống hiến")
                 "SPEAKING_CHALLENGE" -> listOf("Consistency is the key to mastering English fluency.")
                 else -> options
             }
             val finalQText = when (qType) {
+                "SENTENCE_BUILDER" -> "Sắp xếp các từ thành câu hoàn chỉnh: 'Luyện tập hàng ngày nâng cao kỹ năng nhanh chóng.' 🧩"
                 "LISTENING_CHALLENGE" -> "Nghe câu sau và sắp xếp lại các từ cho đúng thứ tự 🎧"
                 "MATCHING_PAIRS" -> "Ghép cặp các từ vựng tiếng Anh với nghĩa tiếng Việt tương ứng 🧩"
                 "SPEAKING_CHALLENGE" -> "Luyện nói câu tiếng Anh sau chuẩn bản xứ 🎙️"
                 else -> qText
+            }
+            val finalCorrectAnswer = when (qType) {
+                "SENTENCE_BUILDER" -> "Daily practice improves your language skills rapidly"
+                else -> "0"
             }
             val optionsJson = org.json.JSONArray(finalOptions).toString()
             QuestionItemDto(
                 questionText = finalQText,
                 questionType = qType,
                 optionsJson = optionsJson,
-                correctAnswer = "0",
+                correctAnswer = finalCorrectAnswer,
                 explanation = "Lựa chọn phương án chính xác nhất để hoàn thiện câu và củng cố lỗ hổng kiến thức.",
                 points = 10,
                 difficulty = "MEDIUM"
