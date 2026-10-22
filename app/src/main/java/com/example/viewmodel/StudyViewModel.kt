@@ -618,17 +618,47 @@ class StudyViewModel @Inject constructor(
     fun loadQuestions(chapterId: Long, lessonIndex: Int = 1) {
         viewModelScope.launch {
             allChapterQuestions = repository.getQuestionsByChapter(chapterId)
+
+            // JIT (Just-In-Time) AI Microlearning Question Generation:
+            // Nếu chapter chưa có câu hỏi trong Room SQLite, tự động gọi Gemini 2.5 Flash sinh ngay bộ câu hỏi 3C
+            if (allChapterQuestions.isEmpty()) {
+                val currentTitle = _currentChapterTitle.value ?: "Atomic Microlearning"
+                val level = _selectedLevel.value ?: "Beginner"
+                val userId = _currentUserId.value ?: 0L
+                val weakPointsList = if (userId > 0) repository.getWeakPoints(userId) else emptyList()
+                val weakWords = extractWeakKeywords(weakPointsList)
+
+                val generated = generate3CMicrolearningWithGemini(currentTitle, level, weakWords)
+                    ?: generatePersonalizedChapter(level, currentTitle, weakWords)
+
+                generated.questions.forEach { qDto ->
+                    val question = com.example.sqlite.room.QuestionEntity(
+                        chapterId = chapterId,
+                        questionText = qDto.questionText,
+                        questionType = qDto.questionType ?: "MULTIPLE_CHOICE",
+                        optionsJson = qDto.optionsJson,
+                        correctAnswer = qDto.correctAnswer,
+                        explanation = qDto.explanation,
+                        points = qDto.points,
+                        difficulty = qDto.difficulty ?: "MEDIUM"
+                    )
+                    repository.insertQuestion(question)
+                }
+                allChapterQuestions = repository.getQuestionsByChapter(chapterId)
+            }
+
             startLesson(lessonIndex)
         }
     }
 
     fun startLesson(lessonIndex: Int) {
         val safeLesson = lessonIndex.coerceIn(1, 5)
-        val startIndex = (safeLesson - 1) * 10
+        val pageSize = 5 // Tiêu chuẩn 3C Microlearning: 5 câu hỏi nguyên tử / bài học
+        val rawStartIndex = (safeLesson - 1) * pageSize
         if (allChapterQuestions.isNotEmpty()) {
-            val safeStart = if (startIndex in 0 until allChapterQuestions.size) startIndex else 0
-            val endIndex = (safeStart + 10).coerceAtMost(allChapterQuestions.size)
-            _questions.value = allChapterQuestions.subList(safeStart, endIndex)
+            val safeStart = if (rawStartIndex in 0 until allChapterQuestions.size) rawStartIndex else (rawStartIndex % allChapterQuestions.size)
+            val endIndex = (safeStart + pageSize).coerceAtMost(allChapterQuestions.size)
+            _questions.value = allChapterQuestions.subList(safeStart, if (endIndex > safeStart) endIndex else allChapterQuestions.size)
         } else {
             // Asynchronous fallback: đảm bảo nạp câu hỏi an toàn không bị kẹt spinner
             viewModelScope.launch {
@@ -640,8 +670,8 @@ class StudyViewModel @Inject constructor(
                 if (chapterId != -1L) {
                     allChapterQuestions = repository.getQuestionsByChapter(chapterId)
                 } else {
-                    val defaultChapters = repository.getChaptersByPreference("Beginner", "English")
-                    val defaultTitle = defaultChapters.firstOrNull() ?: "English Fundamentals"
+                    val defaultChapters = repository.getChaptersByPreference(_selectedLevel.value ?: "Beginner", "English")
+                    val defaultTitle = defaultChapters.firstOrNull() ?: "Atomic Microlearning"
                     val defId = repository.getChapterIdByTitle(defaultTitle)
                     if (defId != -1L) {
                         allChapterQuestions = repository.getQuestionsByChapter(defId)
@@ -649,9 +679,9 @@ class StudyViewModel @Inject constructor(
                 }
 
                 if (allChapterQuestions.isNotEmpty()) {
-                    val safeStart = if (startIndex in 0 until allChapterQuestions.size) startIndex else 0
-                    val endIndex = (safeStart + 10).coerceAtMost(allChapterQuestions.size)
-                    _questions.value = allChapterQuestions.subList(safeStart, endIndex)
+                    val safeStart = if (rawStartIndex in 0 until allChapterQuestions.size) rawStartIndex else (rawStartIndex % allChapterQuestions.size)
+                    val endIndex = (safeStart + pageSize).coerceAtMost(allChapterQuestions.size)
+                    _questions.value = allChapterQuestions.subList(safeStart, if (endIndex > safeStart) endIndex else allChapterQuestions.size)
                 } else {
                     _questions.value = emptyList()
                 }
@@ -1370,27 +1400,33 @@ class StudyViewModel @Inject constructor(
         viewModelScope.launch {
             try {
                 var chapterData: ChapterGeneratedResponse? = null
-                // 1. Thử gọi Backend với timeout 3.5s
-                try {
-                    val token = authManager.getIdToken() ?: "mock_dev_token_kiki_explorer"
-                    val request = GenerateChapterRequest(
-                        userId = _currentUserId.value?.toString(),
-                        level = level,
-                        topic = topic,
-                        weakWords = weakWords,
-                        questionCount = 5
-                    )
-                    val response = withContext(Dispatchers.IO) {
-                        kotlinx.coroutines.withTimeoutOrNull(3500) {
-                            backendApiService.generateChapter("Bearer $token", request)
-                        }
-                    }
-                    if (response != null && response.isSuccessful && response.body() != null) {
-                        chapterData = response.body()
-                    }
-                } catch (_: Exception) {}
 
-                // 2. Nếu Backend offline hoặc quá tải: Dùng bộ kiến tạo lộ trình cá nhân hóa Kiki AI
+                // 1. ƯU TIÊN SỐ 1: GỌI TRỰC TIẾP GEMINI 2.5 FLASH NATIVE AUDIO MICROLEARNING ENGINE
+                chapterData = generate3CMicrolearningWithGemini(topic, level, weakWords)
+
+                // 2. Thử gọi Backend nếu Gemini chưa trả về
+                if (chapterData == null) {
+                    try {
+                        val token = authManager.getIdToken() ?: "mock_dev_token_kiki_explorer"
+                        val request = GenerateChapterRequest(
+                            userId = _currentUserId.value?.toString(),
+                            level = level,
+                            topic = topic,
+                            weakWords = weakWords,
+                            questionCount = 5
+                        )
+                        val response = withContext(Dispatchers.IO) {
+                            kotlinx.coroutines.withTimeoutOrNull(3000) {
+                                backendApiService.generateChapter("Bearer $token", request)
+                            }
+                        }
+                        if (response != null && response.isSuccessful && response.body() != null) {
+                            chapterData = response.body()
+                        }
+                    } catch (_: Exception) {}
+                }
+
+                // 3. Fallback thông minh nội bộ
                 if (chapterData == null) {
                     chapterData = generatePersonalizedChapter(level, topic, weakWords)
                 }
@@ -1725,6 +1761,177 @@ class StudyViewModel @Inject constructor(
             null
         } catch (_: Exception) {
             null
+        }
+    }
+
+    suspend fun generate5StageMicrolearningRoadmapWithGemini(
+        profile: LearnerPersonaProfile
+    ): List<Pair<String, String>> = withContext(Dispatchers.IO) {
+        try {
+            val apiKey = getEffectiveGeminiApiKey()
+            if (apiKey.isBlank() || apiKey.startsWith("sk-")) return@withContext getScientificDefaultStages(profile)
+
+            val weakPrompt = if (profile.baselineWeakPoints.isNotEmpty()) {
+                "Remediate these diagnosed weak points in early stages: ${profile.baselineWeakPoints.joinToString(", ")}."
+            } else {
+                "Focus on accelerating conversational fluency and natural language intuition."
+            }
+
+            val prompt = """
+                You are Kiki AI, an elite Microlearning Pedagogical Curriculum Architect.
+                Design a 5-Stage Scientific Competency Roadmap for a learner with:
+                - Goal: "${profile.goal}"
+                - Target CEFR Level: "${profile.evaluatedCefr}"
+                - Ability parameter Theta: ${profile.thetaAbility}
+                - Pacing: ${profile.dailyTargetMinutes} minutes/day (Atomic Microlearning)
+                - Modality: ${profile.priorityModality}
+                $weakPrompt
+
+                Follow Bloom's Taxonomy & Vygotsky's Zone of Proximal Development:
+                Stage 1: Foundational single learning objective (SLO) targeting weak points.
+                Stage 2: Lexical expansion & natural collocations.
+                Stage 3: Acoustic decoding & connected speech (Native Audio dialog).
+                Stage 4: Contextual discourse & practical dialogue.
+                Stage 5: Milestone Mastery & communicative synthesis.
+
+                Return ONLY a raw JSON array of 5 objects (no markdown, no backticks) with this exact schema:
+                [
+                  {
+                    "title": "Stage 1 Short Title in Vietnamese with English subtitle",
+                    "description": "Pedagogical single learning objective in Vietnamese (1 concise sentence)"
+                  },
+                  {
+                    "title": "Stage 2 Short Title in Vietnamese with English subtitle",
+                    "description": "Pedagogical single learning objective in Vietnamese (1 concise sentence)"
+                  },
+                  {
+                    "title": "Stage 3 Short Title in Vietnamese with English subtitle",
+                    "description": "Pedagogical single learning objective in Vietnamese (1 concise sentence)"
+                  },
+                  {
+                    "title": "Stage 4 Short Title in Vietnamese with English subtitle",
+                    "description": "Pedagogical single learning objective in Vietnamese (1 concise sentence)"
+                  },
+                  {
+                    "title": "Stage 5 Short Title in Vietnamese with English subtitle",
+                    "description": "Pedagogical single learning objective in Vietnamese (1 concise sentence)"
+                  }
+                ]
+            """.trimIndent()
+
+            val contents = listOf(GeminiModels.Content(role = "user", parts = listOf(GeminiModels.Part(text = prompt))))
+            val systemInstruction = GeminiModels.createSystemInstruction(
+                "You are Kiki AI, an expert Microlearning Curriculum Designer. Return ONLY raw JSON array containing exactly 5 stage objects."
+            )
+            val request = GeminiModels.GenerateContentRequest(
+                contents = contents,
+                systemInstruction = systemInstruction,
+                generationConfig = GeminiModels.GenerationConfig(
+                    temperature = 0.3,
+                    maxOutputTokens = 1024,
+                    topP = 0.95,
+                    topK = 40
+                )
+            )
+
+            val response = geminiApiService.generateContent(GeminiModels.MODEL_GEMINI_2_5_FLASH, apiKey, request)
+            if (response.isSuccessful) {
+                val rawText = GeminiModels.extractResponseText(response.body()) ?: ""
+                val cleanJson = rawText
+                    .replace(Regex("^```(?:json)?\\s*"), "")
+                    .replace(Regex("\\s*```$"), "")
+                    .trim()
+
+                val jsonArr = org.json.JSONArray(cleanJson)
+                val stages = mutableListOf<Pair<String, String>>()
+                for (i in 0 until jsonArr.length()) {
+                    val obj = jsonArr.getJSONObject(i)
+                    val title = obj.optString("title", "Chặng ${i + 1}")
+                    val desc = obj.optString("description", "Bài học Microlearning 3C tối ưu theo mục tiêu học.")
+                    stages.add(Pair(title, desc))
+                }
+                if (stages.size >= 3) return@withContext stages
+            }
+        } catch (_: Exception) {}
+
+        return@withContext getScientificDefaultStages(profile)
+    }
+
+    fun getScientificDefaultStages(profile: LearnerPersonaProfile): List<Pair<String, String>> {
+        return when (profile.goal) {
+            "Grammar & Vocabulary" -> listOf(
+                Pair("Chặng 1: Củng Cố Cấu Trúc Cốt Lõi (Core Syntax)", "Xóa bỏ lỗi chia động từ và hòa hợp chủ vị cơ bản."),
+                Pair("Chặng 2: Làm Chủ Câu Điều Kiện Giả Định (Conditionals)", "Nắm vững bản chất câu điều kiện loại 2 và 3 trong giao tiếp."),
+                Pair("Chặng 3: Đảo Ngữ & Trạng Từ Nhấn Mạnh (Inversion)", "Sử dụng các trạng từ phủ định đảo ngữ để nâng cao sắc thái biểu đạt."),
+                Pair("Chặng 4: Mệnh Đề Rút Gọn & Cú Pháp Nâng Cao (Reduced Clauses)", "Rút gọn mệnh đề quan hệ và mệnh đề trạng ngữ linh hoạt."),
+                Pair("Chặng 5: Tổng Hợp Ngữ Pháp Đỉnh Cao (Mastery Synthesis)", "Chinh phục bài tập phản xạ ngữ pháp tổng hợp toàn diện.")
+            )
+            "IELTS & TOEIC" -> listOf(
+                Pair("Chặng 1: Nền Tảng Từ Vựng Học Thuật (Academic Lexicon)", "Làm chủ 20 collocations học thuật xuất hiện thường trực trong đề thi."),
+                Pair("Chặng 2: Nhận Diện Cấu Trúc Câu Phức Đề Thi (Complex Structures)", "Phân tích và dựng câu phức chuẩn mực cho bài thi viết và đọc."),
+                Pair("Chặng 3: Kỹ Thuật Nghe Bắt Ý Chính (Audio Gist Extraction)", "Rèn luyện tai nhận diện bẫy âm thanh và từ đồng nghĩa trong bài nghe."),
+                Pair("Chặng 4: Diễn Đạt Ý Nghĩa Đa Chiều (Paraphrasing Mastery)", "Kỹ năng biến đổi từ loại và cấu trúc câu tương đương tức thì."),
+                Pair("Chặng 5: Luyện Đề Bứt Phá Band Điểm (Exam Mastery Simulation)", "Thử thách phản xạ câu hỏi đề thi chuẩn hóa thời gian thực.")
+            )
+            "Career & Business" -> listOf(
+                Pair("Chặng 1: Giao Tiếp Công Sở & Email Chuẩn Mực (Workplace Etiquette)", "Sử dụng văn phong trang trọng và lịch thiệp trong trao đổi công việc."),
+                Pair("Chặng 2: Đàm Thoại & Thuyết Trình Dự Án (Business Pitching)", "Cấu trúc hóa luận điểm và trình bày báo cáo ngắn gọn, thuyết phục."),
+                Pair("Chặng 3: Thảo Luận & Từ Chối Khéo Léo (Professional Diplomacy)", "Nghệ thuật phản hồi bất đồng và thương lượng trong cuộc họp."),
+                Pair("Chặng 4: Đàm Phán & Thuyết Phục Đối Tác (Strategic Negotiation)", "Vận dụng các thuật ngữ nhượng bộ và chốt thỏa thuận kinh doanh."),
+                Pair("Chặng 5: Khẩu Ngữ Lãnh Đạo Chuyên Nghiệp (Executive Fluency)", "Nâng tầm phong thái phát âm và giao tiếp bản lĩnh.")
+            )
+            else -> listOf(
+                Pair("Chặng 1: Khởi Động & Phản Xạ Đàm Thoại (Daily Greetings)", "Tự tin mở đầu câu chuyện và phản xạ chào hỏi tự nhiên không vấp."),
+                Pair("Chặng 2: Giải Mã Nuốt Âm & Nối Âm (Connected Speech & Elision)", "Làm chủ hiện tượng nuốt âm could've, gonna trong tiếng Anh bản xứ."),
+                Pair("Chặng 3: Đặt Câu Hỏi Gián Tiếp Lịch Sự (Polite Indirect Inquiries)", "Giao tiếp lịch thiệp khi hỏi đường, nhờ vả và gọi món."),
+                Pair("Chặng 4: Cụm Động Từ Thông Dụng (High-Frequency Phrasal Verbs)", "Sử dụng phrasal verbs tự nhiên thay cho các từ đơn điệu."),
+                Pair("Chặng 5: Đột Phá Đàm Thoại Trôi Chảy (Mastery Conversational Fluency)", "Phản xạ giao tiếp Native Audio trôi chảy trong mọi ngữ cảnh.")
+            )
+        }
+    }
+
+    fun initializeAiMicrolearningRoadmap(
+        userId: Long,
+        profile: LearnerPersonaProfile,
+        onComplete: (Boolean) -> Unit = {}
+    ) {
+        viewModelScope.launch {
+            try {
+                // 1. Sinh 5 chặng lộ trình bằng Gemini 2.5 Flash
+                val stages = generate5StageMicrolearningRoadmapWithGemini(profile)
+
+                // 2. Sinh đơn vị bài học 3C đầu tiên cho Chặng 1 bằng Gemini 2.5 Flash
+                val firstStageTitle = stages.firstOrNull()?.first ?: profile.goal
+                val chapter1Units = generate3CMicrolearningWithGemini(
+                    topic = firstStageTitle,
+                    level = profile.evaluatedCefr,
+                    weakWords = profile.baselineWeakPoints
+                ) ?: generatePersonalizedChapter(profile.evaluatedCefr, firstStageTitle, profile.baselineWeakPoints)
+
+                // 3. Xóa các chapter tĩnh cũ và nạp lộ trình 100% AI vào Room SQLite
+                val targetUserId = if (userId > 0) userId else _currentUserId.value ?: 0L
+                repository.resetWithAiMicrolearningRoadmap(
+                    level = profile.evaluatedCefr,
+                    stages = stages,
+                    firstChapterUnits = chapter1Units
+                )
+
+                // 4. Lưu hồ sơ cá nhân hóa
+                saveLearnerPersonaProfile(profile)
+
+                // 5. Cập nhật trạng thái
+                refreshChapters()
+
+                // 6. Prefetch trước Chặng 2 ngầm bằng Gemini 2.5 Flash
+                if (stages.size > 1) {
+                    val secondStageTitle = stages[1].first
+                    prefetchNextMicrolearningUnit(targetUserId, secondStageTitle)
+                }
+
+                onComplete(true)
+            } catch (e: Exception) {
+                onComplete(false)
+            }
         }
     }
 

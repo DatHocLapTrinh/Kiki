@@ -321,6 +321,49 @@ class DataRepository @Inject constructor(
         chapterId
     }
 
+    suspend fun resetWithAiMicrolearningRoadmap(
+        level: String,
+        stages: List<Pair<String, String>>,
+        firstChapterUnits: ChapterGeneratedResponse?
+    ): Long = withContext(Dispatchers.IO) {
+        dao.clearQuestions()
+        dao.clearChapters()
+
+        var firstChapterId = -1L
+        stages.forEachIndexed { index, (title, description) ->
+            val chapter = ChapterEntity(
+                title = title.trim(),
+                description = description,
+                level = level,
+                subject = "English",
+                orderNo = index,
+                isActive = 1
+            )
+            val chapterId = dao.insertChapter(chapter)
+            if (index == 0) {
+                firstChapterId = chapterId
+                firstChapterUnits?.questions?.forEach { qDto ->
+                    val question = QuestionEntity(
+                        chapterId = chapterId,
+                        questionText = qDto.questionText,
+                        questionType = qDto.questionType ?: "MULTIPLE_CHOICE",
+                        optionsJson = qDto.optionsJson,
+                        correctAnswer = qDto.correctAnswer,
+                        explanation = qDto.explanation,
+                        points = qDto.points,
+                        difficulty = qDto.difficulty ?: "MEDIUM"
+                    )
+                    dao.insertQuestion(question)
+                }
+            }
+        }
+        firstChapterId
+    }
+
+    suspend fun insertQuestion(question: QuestionEntity): Long = withContext(Dispatchers.IO) {
+        dao.insertQuestion(question)
+    }
+
     suspend fun registerUser(name: String, email: String, rawPassword: String): Long = withContext(Dispatchers.IO) {
         val normalizedEmail = email.trim().lowercase(Locale.ROOT)
         val existingId = dao.getUserIdByEmail(normalizedEmail)

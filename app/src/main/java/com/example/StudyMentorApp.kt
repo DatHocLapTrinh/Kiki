@@ -586,13 +586,9 @@ fun OnboardingScreen(viewModel: StudyViewModel, onFinish: () -> Unit) {
                                 // BƯỚC 3: AI ENGINE KIẾN TẠO LỘ TRÌNH DỰA TRÊN ĐIỂM YẾU CHẨN ĐOÁN
                                 var phaseIndex by remember { mutableIntStateOf(0) }
                                 LaunchedEffect(Unit) {
+                                    val userId = viewModel.currentUserId.value ?: 0L
                                     evaluatedProfile?.let { profile ->
-                                        viewModel.saveLearnerPersonaProfile(profile)
-                                        viewModel.generateCustomChapter(
-                                            level = profile.evaluatedCefr,
-                                            topic = profile.goal,
-                                            weakWords = profile.baselineWeakPoints
-                                        ) { _, _ ->
+                                        viewModel.initializeAiMicrolearningRoadmap(userId, profile) {
                                             viewModel.refreshChapters()
                                         }
                                     } ?: run {
