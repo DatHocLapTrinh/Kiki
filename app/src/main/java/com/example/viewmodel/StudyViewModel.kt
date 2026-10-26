@@ -1743,11 +1743,17 @@ class StudyViewModel @Inject constructor(
                 if (questionsArr != null) {
                     for (i in 0 until questionsArr.length()) {
                         val qObj = questionsArr.getJSONObject(i)
+                        val rawOpts = qObj.opt("optionsJson") ?: qObj.opt("options")
+                        val finalOptionsJson = when (rawOpts) {
+                            is org.json.JSONArray -> rawOpts.toString()
+                            is String -> rawOpts
+                            else -> "[\"A\", \"B\"]"
+                        }
                         questionList.add(
                             QuestionItemDto(
                                 questionText = qObj.optString("questionText", "Question $i"),
                                 questionType = qObj.optString("questionType", "MULTIPLE_CHOICE"),
-                                optionsJson = qObj.optString("optionsJson", "[\"A\", \"B\"]"),
+                                optionsJson = finalOptionsJson,
                                 correctAnswer = qObj.optString("correctAnswer", "0"),
                                 explanation = qObj.optString("explanation", "Giải thích"),
                                 points = qObj.optInt("points", 10),

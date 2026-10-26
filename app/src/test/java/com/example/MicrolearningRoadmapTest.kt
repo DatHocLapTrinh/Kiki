@@ -2,6 +2,14 @@ package com.example
 
 import com.example.model.LearnerPersonaProfile
 import com.example.model.ChapterGeneratedResponse
+import com.example.model.ClozeChoiceSlot
+import com.example.model.SentenceBuilderSlot
+import com.example.model.ListeningChallengeSlot
+import com.example.model.PairSlotItem
+import com.example.model.MatchingPairsSlot
+import com.example.model.SpeakingChallengeSlot
+import com.example.model.InjectedAtomicLessonUnit
+import com.example.model.MicrolearningSlotArchetypes
 import com.squareup.moshi.Moshi
 import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
 import org.junit.Assert.*
@@ -201,6 +209,60 @@ class MicrolearningRoadmapTest {
             questionWithBlank
         }
         assertEquals("Sắp xếp các từ sau thành câu hoàn chỉnh 🧩", promptText)
+    }
+
+    @Test
+    fun testInjectedAtomicLessonUnitConversion() {
+        val unit = InjectedAtomicLessonUnit(
+            title = "Chặng 1: Giao Tiếp Công Sở",
+            description = "Làm chủ email và phản xạ đàm thoại cơ bản.",
+            level = "B1",
+            subject = "English",
+            slot1Cloze = ClozeChoiceSlot(
+                promptQuestion = "Could you please _____ the attached invoice?",
+                options = listOf("review", "look", "watch", "see"),
+                correctIndex = 0,
+                explanation = "Review the invoice means kiểm tra hóa đơn."
+            ),
+            slot2SentenceBuilder = SentenceBuilderSlot(
+                promptInstruction = "Sắp xếp các từ thành câu hoàn chỉnh 🧩",
+                targetSentence = "I am looking forward to hearing from you",
+                wordTokens = listOf("I", "am", "looking", "forward", "to", "hearing", "from", "you"),
+                distractorTokens = listOf("at")
+            ),
+            slot3Listening = ListeningChallengeSlot(
+                audioSentence = "Please let me know if you have questions",
+                explanation = "Nghe và nhận diện âm đuôi."
+            ),
+            slot4Matching = MatchingPairsSlot(
+                pairs = listOf(
+                    PairSlotItem(english = "inquire", vietnamese = "hỏi thăm, tra cứu"),
+                    PairSlotItem(english = "assistance", vietnamese = "sự hỗ trợ"),
+                    PairSlotItem(english = "attached", vietnamese = "được đính kèm")
+                )
+            ),
+            slot5Speaking = SpeakingChallengeSlot(
+                targetSentence = "Thank you for your prompt assistance today"
+            )
+        )
+
+        val chapter = unit.toChapterGeneratedResponse(orderNo = 1)
+        assertEquals("Chặng 1: Giao Tiếp Công Sở", chapter.title)
+        assertEquals(5, chapter.questions.size)
+
+        // Verify each slot's archetypes
+        assertEquals(MicrolearningSlotArchetypes.CLOZE_CHOICE, chapter.questions[0].questionType)
+        assertEquals(MicrolearningSlotArchetypes.SENTENCE_BUILDER, chapter.questions[1].questionType)
+        assertEquals(MicrolearningSlotArchetypes.LISTENING_CHALLENGE, chapter.questions[2].questionType)
+        assertEquals(MicrolearningSlotArchetypes.MATCHING_PAIRS, chapter.questions[3].questionType)
+        assertEquals(MicrolearningSlotArchetypes.SPEAKING_CHALLENGE, chapter.questions[4].questionType)
+
+        // Verify JSON contents of optionsJson
+        assertTrue(chapter.questions[0].optionsJson.contains("review"))
+        assertTrue(chapter.questions[1].optionsJson.contains("looking"))
+        assertTrue(chapter.questions[2].optionsJson.contains("Please let me know"))
+        assertTrue(chapter.questions[3].optionsJson.contains("inquire=hỏi thăm, tra cứu"))
+        assertTrue(chapter.questions[4].optionsJson.contains("Thank you for your prompt assistance"))
     }
 
     private fun getTestScientificDefaultStages(profile: LearnerPersonaProfile): List<Pair<String, String>> {
