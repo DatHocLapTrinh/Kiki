@@ -9,9 +9,11 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.*
 import androidx.compose.animation.core.*
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.DragInteraction
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
@@ -30,11 +32,13 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalClipboardManager
@@ -138,22 +142,94 @@ fun AskScreen(viewModel: StudyViewModel) {
 
     val isImeVisible = WindowInsets.isImeVisible
 
-    LaunchedEffect(history.size, isGenerating) {
-        if (history.isNotEmpty()) {
-            listState.animateScrollToItem(history.size)
+    val latestItemId = history.firstOrNull()?.id
+    val latestAnswer = history.firstOrNull()?.answer.orEmpty()
+    var userHasScrolledUp by remember { mutableStateOf(false) }
+
+    // Kiểm tra xem vị trí hiện tại của danh sách đã nhìn thấy hết đáy hay chưa
+    val isScrolledToBottom by remember {
+        derivedStateOf {
+            val layoutInfo = listState.layoutInfo
+            val visibleItems = layoutInfo.visibleItemsInfo
+            if (visibleItems.isEmpty()) true
+            else {
+                val lastVisible = visibleItems.last()
+                val totalCount = layoutInfo.totalItemsCount
+                if (lastVisible.index < totalCount - 1) {
+                    false
+                } else {
+                    val viewportEnd = layoutInfo.viewportEndOffset
+                    val itemBottom = lastVisible.offset + lastVisible.size
+                    itemBottom <= viewportEnd + 40
+                }
+            }
         }
     }
 
+    // Chỉ khi người dùng chủ động chạm vuốt ngược lên bằng ngón tay thì mới coi là user đã vuốt lên
+    LaunchedEffect(listState.interactionSource) {
+        listState.interactionSource.interactions.collect { interaction ->
+            if (interaction is DragInteraction.Start) {
+                userHasScrolledUp = true
+            }
+        }
+    }
+
+    // Khi vị trí màn hình đã chạm đáy, tự động reset trạng thái để tiếp tục bám theo tin nhắn mới
+    LaunchedEffect(isScrolledToBottom) {
+        if (isScrolledToBottom) {
+            userHasScrolledUp = false
+        }
+    }
+
+    // Tự động cuộn xuống khi có câu hỏi mới gửi đi (hiện câu hỏi và card loading)
+    LaunchedEffect(history.size) {
+        if (history.isNotEmpty()) {
+            userHasScrolledUp = false
+            delay(40L)
+            val total = listState.layoutInfo.totalItemsCount
+            if (total > 0) {
+                listState.animateScrollToItem(total - 1)
+            }
+        }
+    }
+
+    // Tự động cuộn mượt mà bám theo câu trả lời khi đang soạn chữ (typewriter)
+    LaunchedEffect(latestAnswer.length / 30) {
+        if (!userHasScrolledUp && history.isNotEmpty() && isGenerating) {
+            val total = listState.layoutInfo.totalItemsCount
+            if (total > 0) {
+                listState.animateScrollToItem(total - 1)
+            }
+        }
+    }
+
+    // Khi câu trả lời vừa hoàn tất: kích hoạt animation cuộn hoàn thiện để nhìn trọn vẹn toàn bộ
+    LaunchedEffect(isGenerating) {
+        if (!isGenerating && !userHasScrolledUp && history.isNotEmpty()) {
+            delay(80L)
+            val total = listState.layoutInfo.totalItemsCount
+            if (total > 0) {
+                listState.animateScrollToItem(total - 1)
+            }
+        }
+    }
+
+    // Tự động cuộn xuống khi bàn phím xuất hiện
     LaunchedEffect(isImeVisible) {
         if (isImeVisible && history.isNotEmpty()) {
-            listState.animateScrollToItem(history.size - 1)
+            delay(120L)
+            val total = listState.layoutInfo.totalItemsCount
+            if (total > 0) {
+                listState.animateScrollToItem(total - 1)
+            }
         }
     }
 
-    // Hiển thị nút Scroll-to-bottom nếu người dùng cuộn lên trên xem lại
+    // Nút mũi tên đi xuống hiển thị khi người dùng chưa ở đáy câu trả lời mới nhất
     val showScrollToBottom by remember {
         derivedStateOf {
-            listState.firstVisibleItemIndex < (history.size - 2).coerceAtLeast(0)
+            history.isNotEmpty() && !isScrolledToBottom
         }
     }
 
@@ -255,7 +331,7 @@ fun AskScreen(viewModel: StudyViewModel) {
                 LazyColumn(
                     state = listState,
                     modifier = Modifier.fillMaxSize(),
-                    contentPadding = PaddingValues(top = 8.dp, bottom = 16.dp),
+                    contentPadding = PaddingValues(top = 8.dp, bottom = 32.dp),
                     reverseLayout = false
                 ) {
                     // Toàn bộ lịch sử chat - cũ nhất trên, mới nhất dưới
@@ -292,65 +368,66 @@ fun AskScreen(viewModel: StudyViewModel) {
                         }
                         Spacer(modifier = Modifier.height(12.dp))
 
-                        // Header câu trả lời AI - bên trái kèm nút nghe toàn bộ
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween
-                        ) {
+                        if (item.answer.isNotBlank()) {
+                            // Header câu trả lời AI - bên trái kèm nút nghe toàn bộ
                             Row(
                                 verticalAlignment = Alignment.CenterVertically,
-                                modifier = Modifier.weight(1f, fill = false)
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween
                             ) {
-                                Icon(Icons.Default.Psychology, contentDescription = null, tint = Color(0xFF51FAC1), modifier = Modifier.size(18.dp))
-                                Spacer(modifier = Modifier.width(6.dp))
-                                Text(
-                                    strings.kikiAnalyzingSocratic,
-                                    fontWeight = FontWeight.Bold,
-                                    color = Color(0xFF51FAC1),
-                                    fontSize = 13.sp,
-                                    maxLines = 1,
-                                    overflow = TextOverflow.Ellipsis
-                                )
-                            }
-
-                            Spacer(modifier = Modifier.width(10.dp))
-
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(8.dp)
-                            ) {
-                                // Nút lưu vào Sổ tay từ vựng
-                                Box(
-                                    modifier = Modifier
-                                        .size(34.dp)
-                                        .clip(CircleShape)
-                                        .background(Color(0x22FFD166))
-                                        .border(1.dp, Color(0x66FFD166), CircleShape)
-                                        .clickable {
-                                            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                                            val cleanQuestion = item.question.ifBlank { "AI Q&A" }
-                                            val firstLine = item.answer.lineSequence().firstOrNull { it.isNotBlank() } ?: item.answer.take(80)
-                                            viewModel.saveWord(
-                                                word = cleanQuestion.take(100),
-                                                meaning = firstLine.take(150),
-                                                example = item.answer.take(250)
-                                            )
-                                            Toast.makeText(
-                                                context,
-                                                if (isEnglish) "Saved to Vocabulary Vault! ⭐" else "Đã lưu vào Sổ tay từ vựng! ⭐",
-                                                Toast.LENGTH_SHORT
-                                            ).show()
-                                        },
-                                    contentAlignment = Alignment.Center
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    modifier = Modifier.weight(1f, fill = false)
                                 ) {
-                                    Icon(
-                                        Icons.Default.BookmarkBorder,
-                                        contentDescription = "Save to Vault",
-                                        tint = Color(0xFFFFD166),
-                                        modifier = Modifier.size(17.dp)
+                                    Icon(Icons.Default.Psychology, contentDescription = null, tint = Color(0xFF51FAC1), modifier = Modifier.size(18.dp))
+                                    Spacer(modifier = Modifier.width(6.dp))
+                                    Text(
+                                        strings.kikiAnalyzingSocratic,
+                                        fontWeight = FontWeight.Bold,
+                                        color = Color(0xFF51FAC1),
+                                        fontSize = 13.sp,
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis
                                     )
                                 }
+
+                                Spacer(modifier = Modifier.width(10.dp))
+
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                ) {
+                                    // Nút lưu vào Sổ tay từ vựng
+                                    Box(
+                                        modifier = Modifier
+                                            .size(34.dp)
+                                            .clip(CircleShape)
+                                            .background(Color(0x22FFD166))
+                                            .border(1.dp, Color(0x66FFD166), CircleShape)
+                                            .clickable {
+                                                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                                val extracted = extractVocabFromQa(item.question, item.answer, item.detectedVocabularies)
+                                                viewModel.saveWord(
+                                                    word = extracted.word,
+                                                    phonetic = extracted.phonetic,
+                                                    meaning = extracted.meaning,
+                                                    example = extracted.example
+                                                )
+                                                Toast.makeText(
+                                                    context,
+                                                    if (isEnglish) "Saved '${extracted.word}' to Vocabulary Vault! ⭐" else "Đã lưu '${extracted.word}' vào Sổ tay từ vựng! ⭐",
+                                                    Toast.LENGTH_SHORT
+                                                ).show()
+                                            },
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Icon(
+                                            Icons.Default.BookmarkBorder,
+                                            contentDescription = "Save to Vault",
+                                            tint = Color(0xFFFFD166),
+                                            modifier = Modifier.size(17.dp)
+                                        )
+                                    }
 
                                 // Nút nghe phát âm tiếng Anh
                                 Box(
@@ -377,8 +454,10 @@ fun AskScreen(viewModel: StudyViewModel) {
                         Spacer(modifier = Modifier.height(10.dp))
 
                         val displayAnswer = StudyViewModel.sanitizeAiMentorReply(item.answer)
+                        val isItemStreaming = isGenerating && (index == history.size - 1)
                         StepGlassCard(
                             text = displayAnswer,
+                            isStreaming = isItemStreaming,
                             onSpeak = {
                                 haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
                                 viewModel.ttsManager.speak(displayAnswer)
@@ -562,64 +641,30 @@ fun AskScreen(viewModel: StudyViewModel) {
                                 }
                             }
                         }
-                    }
-
-                    // Nút đề xuất chỉ hiện dưới câu mới nhất
-                    if (latestItem != null && !isGenerating) {
-                        item {
+                    } else {
+                        // Header Kiki đang phân tích (Socratic)
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.fillMaxWidth().padding(bottom = 6.dp)
+                        ) {
+                            Icon(Icons.Default.Psychology, contentDescription = null, tint = Color(0xFF51FAC1), modifier = Modifier.size(18.dp))
+                            Spacer(modifier = Modifier.width(6.dp))
                             val strings = LocalAppStrings.current
-                            Spacer(modifier = Modifier.height(14.dp))
-                            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                                Row(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    horizontalArrangement = Arrangement.spacedBy(10.dp)
-                                ) {
-                                    QuickActionButton(
-                                        text = strings.deepAnalysis,
-                                        icon = Icons.Default.Analytics,
-                                        onClick = {
-                                            haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                                            viewModel.deepAnalysis(context, latestItem.question)
-                                        },
-                                        enabled = true,
-                                        modifier = Modifier.weight(1f)
-                                    )
-                                    QuickActionButton(
-                                        text = strings.quickQuiz,
-                                        icon = Icons.Default.Quiz,
-                                        onClick = {
-                                            haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                                            showQuizDialog = true
-                                            viewModel.generateQuickQuiz(context, latestItem.question)
-                                        },
-                                        enabled = true,
-                                        modifier = Modifier.weight(1f)
-                                    )
-                                }
-                            }
-                            Spacer(modifier = Modifier.height(8.dp))
+                            Text(
+                                strings.kikiAnalyzingSocratic,
+                                fontWeight = FontWeight.Bold,
+                                color = Color(0xFF51FAC1),
+                                fontSize = 13.sp
+                            )
                         }
+                        // Loading card hiển thị ngay khi gửi câu hỏi
+                        KikiLoadingAnswerCard(isEnglish = isEnglish)
                     }
+                }
 
-                    // Loading indicator ở dưới cùng
-                    if (isGenerating) {
-                        item {
-                            Box(
-                                modifier = Modifier.fillMaxWidth().padding(vertical = 16.dp),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Row(verticalAlignment = Alignment.CenterVertically) {
-                                    CircularProgressIndicator(
-                                        modifier = Modifier.size(18.dp),
-                                        color = Color(0xFF51FAC1),
-                                        strokeWidth = 2.dp
-                                    )
-                                    Spacer(modifier = Modifier.width(10.dp))
-                                    val strings = LocalAppStrings.current
-                                    Text(strings.kikiDecodingMagic, color = Color(0xFF51FAC1), fontSize = 13.sp)
-                                }
-                            }
-                        }
+                    // Đáy danh sách (Anchor) để luôn đảm bảo cuộn tới tận cùng đáy màn hình
+                    item(key = "chat_bottom_anchor") {
+                        Spacer(modifier = Modifier.height(28.dp))
                     }
                 }
             }
@@ -630,18 +675,26 @@ fun AskScreen(viewModel: StudyViewModel) {
                     onClick = {
                         scope.launch {
                             haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                            listState.animateScrollToItem(history.size)
+                            userHasScrolledUp = false
+                            val total = listState.layoutInfo.totalItemsCount
+                            if (total > 0) {
+                                listState.animateScrollToItem(total - 1)
+                            }
                         }
                     },
                     modifier = Modifier
                         .align(Alignment.BottomEnd)
-                        .padding(bottom = 16.dp, end = 8.dp)
+                        .padding(bottom = 16.dp, end = 12.dp)
                         .size(42.dp),
                     shape = CircleShape,
                     containerColor = Color(0xFF51FAC1),
                     contentColor = Color(0xFF0F0C29)
                 ) {
-                    Icon(Icons.Default.ArrowDownward, contentDescription = "Scroll down", modifier = Modifier.size(20.dp))
+                    Icon(
+                        Icons.Default.ArrowDownward,
+                        contentDescription = "Scroll to latest answer",
+                        modifier = Modifier.size(20.dp)
+                    )
                 }
             }
         }
@@ -662,12 +715,14 @@ fun AskScreen(viewModel: StudyViewModel) {
             onSend = {
                 if (!isGenerating && (text.isNotBlank() || selectedImageUri != null)) {
                     haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                    val qText = text
+                    val qUri = selectedImageUri
                     val wasVoice = isVoiceQuery
-                    viewModel.askQuestion(context, text, selectedImageUri, isAudioDialog = wasVoice) {
-                        text = ""
-                        selectedImageUri = null
-                        isVoiceQuery = false
-                    }
+                    text = ""
+                    selectedImageUri = null
+                    isVoiceQuery = false
+                    userHasScrolledUp = false
+                    viewModel.askQuestion(context, qText, qUri, isAudioDialog = wasVoice)
                 }
             },
             isGenerating = isGenerating,
@@ -851,21 +906,125 @@ fun QuestionCard(question: String, imageUri: Any?) {
     Column(
         modifier = Modifier
             .fillMaxWidth(0.85f)
-            .clip(RoundedCornerShape(20.dp))
-            .background(Color(0x331E1E38))
-            .border(1.dp, Color(0x4D51FAC1), RoundedCornerShape(20.dp))
-            .padding(14.dp)
+            .clip(RoundedCornerShape(topStart = 18.dp, topEnd = 18.dp, bottomStart = 18.dp, bottomEnd = 4.dp))
+            .background(
+                Brush.verticalGradient(
+                    listOf(
+                        Color(0xFF261D45),
+                        Color(0xFF191332)
+                    )
+                )
+            )
+            .border(
+                1.2.dp,
+                Brush.horizontalGradient(
+                    listOf(Color(0xFF51FAC1).copy(alpha = 0.7f), Color(0xFF7C4DFF).copy(alpha = 0.5f))
+                ),
+                RoundedCornerShape(topStart = 18.dp, topEnd = 18.dp, bottomStart = 18.dp, bottomEnd = 4.dp)
+            )
+            .padding(horizontal = 16.dp, vertical = 12.dp)
     ) {
-        Text(question, color = Color.White, fontSize = 15.sp)
+        Text(
+            text = question,
+            color = Color.White,
+            fontSize = 15.sp,
+            fontWeight = FontWeight.SemiBold,
+            lineHeight = 22.sp
+        )
         if (imageUri != null) {
             Spacer(modifier = Modifier.height(10.dp))
-            Box(modifier = Modifier.fillMaxWidth().height(180.dp).clip(RoundedCornerShape(12.dp)).border(1.dp, Color(0x3351FAC1), RoundedCornerShape(12.dp))) {
-                AsyncImage(model = imageUri, contentDescription = "Attached Image", modifier = Modifier.fillMaxSize(), contentScale = ContentScale.Crop)
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(180.dp)
+                    .clip(RoundedCornerShape(12.dp))
+                    .border(1.dp, Color(0x3351FAC1), RoundedCornerShape(12.dp))
+            ) {
+                AsyncImage(
+                    model = imageUri,
+                    contentDescription = "Attached Image",
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = ContentScale.Crop
+                )
                 val scanLineAnim = rememberInfiniteTransition(label = "scan_line")
-                val scanY by scanLineAnim.animateFloat(initialValue = 0f, targetValue = 1f, animationSpec = infiniteRepeatable(tween(3000, easing = LinearEasing), RepeatMode.Restart), label = "scan_y")
+                val scanY by scanLineAnim.animateFloat(
+                    initialValue = 0f,
+                    targetValue = 1f,
+                    animationSpec = infiniteRepeatable(tween(3000, easing = LinearEasing), RepeatMode.Restart),
+                    label = "scan_y"
+                )
                 Box(modifier = Modifier.fillMaxSize()) {
-                    Box(modifier = Modifier.fillMaxWidth().height(2.dp).background(Brush.horizontalGradient(listOf(Color.Transparent, Color(0xFF51FAC1), Color.Transparent))).align(Alignment.TopCenter).offset(y = (scanY * 180).dp))
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(2.dp)
+                            .background(Brush.horizontalGradient(listOf(Color.Transparent, Color(0xFF51FAC1), Color.Transparent)))
+                            .align(Alignment.TopCenter)
+                            .offset(y = (scanY * 180).dp)
+                    )
                 }
+            }
+        }
+    }
+}
+
+@Composable
+fun KikiLoadingAnswerCard(isEnglish: Boolean) {
+    val infiniteTransition = rememberInfiniteTransition(label = "kiki_loading_pulse")
+    val alphaAnim by infiniteTransition.animateFloat(
+        initialValue = 0.45f,
+        targetValue = 1f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(850, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "pulse_alpha"
+    )
+
+    Row(modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)) {
+        Box(
+            modifier = Modifier
+                .padding(top = 4.dp)
+                .size(28.dp)
+                .clip(CircleShape)
+                .background(Brush.linearGradient(listOf(Color(0xFF8A2BE2), Color(0xFF00F5D4)))),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(
+                imageVector = Icons.Default.AutoAwesome,
+                contentDescription = "AI Mentor",
+                tint = Color.White,
+                modifier = Modifier.size(15.dp)
+            )
+        }
+        Spacer(modifier = Modifier.width(10.dp))
+        Box(
+            modifier = Modifier
+                .weight(1f)
+                .clip(RoundedCornerShape(topEnd = 16.dp, bottomEnd = 16.dp, bottomStart = 16.dp))
+                .background(Color(0x1A51FAC1))
+                .border(
+                    BorderStroke(1.dp, Color(0x3351FAC1)),
+                    RoundedCornerShape(topEnd = 16.dp, bottomEnd = 16.dp, bottomStart = 16.dp)
+                )
+                .padding(horizontal = 16.dp, vertical = 14.dp)
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                CircularProgressIndicator(
+                    modifier = Modifier.size(16.dp),
+                    color = Color(0xFF51FAC1),
+                    strokeWidth = 2.dp
+                )
+                Spacer(modifier = Modifier.width(12.dp))
+                Text(
+                    text = if (isEnglish) "Kiki is analyzing your question..." else "Kiki đang giải đáp câu hỏi của bạn...",
+                    color = Color(0xEEFFFFFF),
+                    fontSize = 13.5.sp,
+                    fontWeight = FontWeight.Medium,
+                    modifier = Modifier.graphicsLayer { alpha = alphaAnim }
+                )
             }
         }
     }
@@ -875,40 +1034,39 @@ fun QuestionCard(question: String, imageUri: Any?) {
 fun StepGlassCard(
     text: String,
     index: Int = 1,
+    isStreaming: Boolean = false,
     onSpeak: () -> Unit = {},
     onCopy: () -> Unit = {}
 ) {
-    var visible by remember { mutableStateOf(false) }
-    LaunchedEffect(Unit) { delay(80L); visible = true }
-    AnimatedVisibility(visible = visible, enter = fadeIn(tween(350)) + slideInVertically(tween(350), initialOffsetY = { 25 })) {
-        Row(modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)) {
-            Box(
-                modifier = Modifier
-                    .padding(top = 4.dp)
-                    .size(28.dp)
-                    .clip(CircleShape)
-                    .background(Brush.linearGradient(listOf(Color(0xFF8A2BE2), Color(0xFF00F5D4)))),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    imageVector = Icons.Default.AutoAwesome,
-                    contentDescription = "AI Mentor",
-                    tint = Color.White,
-                    modifier = Modifier.size(15.dp)
-                )
-            }
-            Spacer(modifier = Modifier.width(10.dp))
-            Box(
-                modifier = Modifier
-                    .weight(1f)
-                    .clip(RoundedCornerShape(topEnd = 16.dp, bottomEnd = 16.dp, bottomStart = 16.dp))
-                    .background(Color(0x1AFFFFFF))
-                    .border(1.dp, Color(0x33FFFFFF), RoundedCornerShape(topEnd = 16.dp, bottomEnd = 16.dp, bottomStart = 16.dp))
-                    .clickable { onCopy() }
-                    .padding(14.dp)
-            ) {
-                Column {
-                    FormattedAiText(text = text)
+    Row(modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)) {
+        Box(
+            modifier = Modifier
+                .padding(top = 4.dp)
+                .size(28.dp)
+                .clip(CircleShape)
+                .background(Brush.linearGradient(listOf(Color(0xFF8A2BE2), Color(0xFF00F5D4)))),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(
+                imageVector = Icons.Default.AutoAwesome,
+                contentDescription = "AI Mentor",
+                tint = Color.White,
+                modifier = Modifier.size(15.dp)
+            )
+        }
+        Spacer(modifier = Modifier.width(10.dp))
+        Box(
+            modifier = Modifier
+                .weight(1f)
+                .clip(RoundedCornerShape(topEnd = 16.dp, bottomEnd = 16.dp, bottomStart = 16.dp))
+                .background(Color(0x1AFFFFFF))
+                .border(1.dp, Color(0x33FFFFFF), RoundedCornerShape(topEnd = 16.dp, bottomEnd = 16.dp, bottomStart = 16.dp))
+                .clickable(enabled = !isStreaming) { onCopy() }
+                .padding(14.dp)
+        ) {
+            Column {
+                FormattedAiText(text = text, isStreaming = isStreaming)
+                if (!isStreaming) {
                     Spacer(modifier = Modifier.height(10.dp))
                     Row(
                         modifier = Modifier.fillMaxWidth(),
@@ -937,7 +1095,18 @@ fun StepGlassCard(
  * - Handles numbered lists (1. 2. 3.)
  */
 @Composable
-fun FormattedAiText(text: String, textColor: Color = Color(0xE6FFFFFF)) {
+fun FormattedAiText(
+    text: String,
+    textColor: Color = Color(0xE6FFFFFF),
+    isStreaming: Boolean = false
+) {
+    val cursorAlpha by rememberInfiniteTransition(label = "cursor_pulse").animateFloat(
+        initialValue = 0.2f,
+        targetValue = 1f,
+        animationSpec = infiniteRepeatable(tween(450, easing = LinearEasing), RepeatMode.Reverse),
+        label = "cursor_alpha"
+    )
+
     val cleaned = text
         .replace(Regex("\\*\\*(.+?)\\*\\*"), "$1")
         .replace(Regex("\\*(.+?)\\*"), "$1")
@@ -948,7 +1117,8 @@ fun FormattedAiText(text: String, textColor: Color = Color(0xE6FFFFFF)) {
     val lines = cleaned.split("\n").filter { it.isNotBlank() }
 
     Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-        lines.forEach { line ->
+        lines.forEachIndexed { lineIdx, line ->
+            val isLastLine = lineIdx == lines.lastIndex
             val trimmedLine = line.trim()
             val isBullet = trimmedLine.startsWith("•")
             val isNumbered = trimmedLine.matches(Regex("^\\d+\\..*"))
@@ -987,6 +1157,11 @@ fun FormattedAiText(text: String, textColor: Color = Color(0xE6FFFFFF)) {
                                 ) {
                                     append(rest)
                                 }
+                                if (isLastLine && isStreaming) {
+                                    withStyle(SpanStyle(color = Color(0xFF51FAC1).copy(alpha = cursorAlpha), fontWeight = FontWeight.Bold)) {
+                                        append(" ▍")
+                                    }
+                                }
                             },
                             fontSize = 15.sp,
                             lineHeight = 22.sp,
@@ -994,7 +1169,14 @@ fun FormattedAiText(text: String, textColor: Color = Color(0xE6FFFFFF)) {
                         )
                     } else {
                         Text(
-                            text = bulletContent,
+                            text = buildAnnotatedString {
+                                append(bulletContent)
+                                if (isLastLine && isStreaming) {
+                                    withStyle(SpanStyle(color = Color(0xFF51FAC1).copy(alpha = cursorAlpha), fontWeight = FontWeight.Bold)) {
+                                        append(" ▍")
+                                    }
+                                }
+                            },
                             color = textColor,
                             fontSize = 15.sp,
                             lineHeight = 22.sp,
@@ -1018,7 +1200,14 @@ fun FormattedAiText(text: String, textColor: Color = Color(0xE6FFFFFF)) {
                         modifier = Modifier.padding(top = 1.dp, end = 6.dp)
                     )
                     Text(
-                        text = content,
+                        text = buildAnnotatedString {
+                            append(content)
+                            if (isLastLine && isStreaming) {
+                                withStyle(SpanStyle(color = Color(0xFF51FAC1).copy(alpha = cursorAlpha), fontWeight = FontWeight.Bold)) {
+                                    append(" ▍")
+                                }
+                            }
+                        },
                         color = textColor,
                         fontSize = 15.sp,
                         lineHeight = 22.sp,
@@ -1028,7 +1217,14 @@ fun FormattedAiText(text: String, textColor: Color = Color(0xE6FFFFFF)) {
             } else {
                 val isHeaderWord = trimmedLine.contains("/") || (trimmedLine.contains("(") && trimmedLine.contains(")"))
                 Text(
-                    text = trimmedLine,
+                    text = buildAnnotatedString {
+                        append(trimmedLine)
+                        if (isLastLine && isStreaming) {
+                            withStyle(SpanStyle(color = Color(0xFF51FAC1).copy(alpha = cursorAlpha), fontWeight = FontWeight.Bold)) {
+                                append(" ▍")
+                            }
+                        }
+                    },
                     color = if (isHeaderWord) Color(0xFFFFD166) else textColor,
                     fontSize = if (isHeaderWord) 16.5.sp else 15.sp,
                     fontWeight = if (isHeaderWord) FontWeight.Bold else FontWeight.Normal,
@@ -1358,5 +1554,94 @@ fun QuizDialog(quizBlocks: List<String>, isLoading: Boolean, onDismiss: () -> Un
                 }
             }
         }
+    )
+}
+
+data class ExtractedVocab(
+    val word: String,
+    val phonetic: String,
+    val meaning: String,
+    val example: String
+)
+
+/**
+ * Trích xuất từ vựng, phiên âm IPA, giải nghĩa và ví dụ từ câu hỏi và câu trả lời AI.
+ * Lọc bỏ các từ tiền tố tìm kiếm như "tra từ", "tra thành ngữ", "look up"...
+ */
+fun extractVocabFromQa(
+    question: String,
+    answer: String,
+    detectedVocabs: List<VocabularyCardDto> = emptyList()
+): ExtractedVocab {
+    // 1. Ưu tiên sử dụng danh sách từ vựng đã được backend phân tích sẵn
+    if (detectedVocabs.isNotEmpty()) {
+        val dto = detectedVocabs.first()
+        return ExtractedVocab(
+            word = dto.word.trim(),
+            phonetic = dto.phonetic?.trim().orEmpty(),
+            meaning = dto.meaning.trim(),
+            example = dto.example?.trim().orEmpty()
+        )
+    }
+
+    // 2. Phân tích các dòng từ câu trả lời AI
+    val lines = answer.lines().map { it.trim() }.filter { it.isNotBlank() }
+    var extractedWord = ""
+    var extractedPhonetic = ""
+    var extractedMeaning = ""
+    var extractedExample = ""
+
+    // Dòng đầu tiên thường có dạng: "Resilient /rɪˈzɪl.jənt/ (adjective)" hoặc "**Resilient** /.../"
+    if (lines.isNotEmpty()) {
+        val firstLine = lines[0].replace("**", "").replace("*", "").trim()
+        val phoneticMatch = Regex("/([^/]+)/").find(firstLine)
+        if (phoneticMatch != null) {
+            extractedPhonetic = phoneticMatch.groupValues[1].trim()
+            extractedWord = firstLine.substringBefore("/").replace(Regex("[^a-zA-Z\\s'-]"), "").trim()
+        } else {
+            val parts = firstLine.split(Regex("[-–—:(]"))
+            if (parts.isNotEmpty()) {
+                extractedWord = parts[0].replace(Regex("[^a-zA-Z\\s'-]"), "").trim()
+            }
+        }
+    }
+
+    // Tìm dòng "Nghĩa:" / "Meaning:" và "Ví dụ:" / "Example:"
+    for (line in lines) {
+        val cleanLine = line.removePrefix("•").removePrefix("-").removePrefix("*").trim()
+        val lower = cleanLine.lowercase()
+        if (lower.startsWith("nghĩa:") || lower.startsWith("nghĩa là:") || lower.startsWith("meaning:")) {
+            extractedMeaning = cleanLine.substringAfter(":").trim()
+        } else if (lower.startsWith("ví dụ:") || lower.startsWith("example:") || lower.startsWith("vd:")) {
+            extractedExample = cleanLine.substringAfter(":").trim()
+        }
+    }
+
+    // 3. Nếu từ vựng trích xuất được còn trống hoặc quá dài (dính câu dài), lọc từ trong câu hỏi của người dùng
+    if (extractedWord.isBlank() || extractedWord.split(Regex("\\s+")).size > 5) {
+        val cleanQ = question.trim()
+            .replace(Regex("(?i)^[🔍\\s]*(tra\\s+(từ\\s+vựng|từ|thành\\s+ngữ|cụm\\s+từ)|look\\s+up|tìm\\s+từ)\\s*:?\\s*"), "")
+            .replace(Regex("(?i)\\s+(nghĩa\\s+là\\s+gì|là\\s+gì|meaning|&\\s*ví\\s*dụ.*)$"), "")
+            .replace(Regex("['\"“”‘’]"), "")
+            .trim()
+        if (cleanQ.isNotBlank()) {
+            extractedWord = cleanQ
+        }
+    }
+
+    // Dự phòng nếu không tìm thấy dòng nghĩa theo định dạng gạch đầu dòng
+    if (extractedMeaning.isBlank()) {
+        extractedMeaning = if (lines.size > 1) lines[1].removePrefix("•").trim() else answer.take(150)
+    }
+
+    if (extractedWord.isBlank()) {
+        extractedWord = "Vocabulary"
+    }
+
+    return ExtractedVocab(
+        word = extractedWord,
+        phonetic = extractedPhonetic,
+        meaning = extractedMeaning,
+        example = extractedExample
     )
 }

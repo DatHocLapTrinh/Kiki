@@ -464,13 +464,30 @@ class DataRepository @Inject constructor(
         dao.updateMana(userId, manaGain)
     }
 
+    private data class DailyTaskConfig(
+        val type: String,
+        val target: Int,
+        val xp: Int
+    )
+
     suspend fun getOrCreateDailyTasks(userId: Long, taskDate: String): List<DailyTaskEntity> = withContext(Dispatchers.IO) {
         val existing = dao.getDailyTasks(userId, taskDate)
-        if (existing.isNotEmpty()) return@withContext existing
+        val existingTypes = existing.map { it.taskType }.toSet()
 
-        insertDailyTask(userId, taskDate, "LESSON_COMPLETE", 1, 50)
-        insertDailyTask(userId, taskDate, "PERFECT_SCORE", 1, 100)
-        insertDailyTask(userId, taskDate, "ANSWER_QUESTIONS", 10, 50)
+        val taskConfigs = listOf(
+            DailyTaskConfig("LESSON_COMPLETE", 1, 30),
+            DailyTaskConfig("LESSON_COMPLETE_2", 2, 50),
+            DailyTaskConfig("ANSWER_QUESTIONS", 10, 30),
+            DailyTaskConfig("ANSWER_QUESTIONS_20", 20, 60),
+            DailyTaskConfig("PERFECT_SCORE", 1, 40),
+            DailyTaskConfig("ASK_AI_TUTOR", 1, 30)
+        )
+
+        for (cfg in taskConfigs) {
+            if (!existingTypes.contains(cfg.type)) {
+                insertDailyTask(userId, taskDate, cfg.type, cfg.target, cfg.xp)
+            }
+        }
         dao.getDailyTasks(userId, taskDate)
     }
 
@@ -664,6 +681,23 @@ class DataRepository @Inject constructor(
         } else {
             false
         }
+    }
+
+    // --- Stars & Hearts (Reward Currency) ---
+    suspend fun addStars(userId: Long, amount: Int) = withContext(Dispatchers.IO) {
+        dao.addStars(userId, amount)
+    }
+
+    suspend fun spendStars(userId: Long, amount: Int) = withContext(Dispatchers.IO) {
+        dao.spendStars(userId, amount)
+    }
+
+    suspend fun addHearts(userId: Long, amount: Int) = withContext(Dispatchers.IO) {
+        dao.addHearts(userId, amount)
+    }
+
+    suspend fun spendHearts(userId: Long, amount: Int) = withContext(Dispatchers.IO) {
+        dao.spendHearts(userId, amount)
     }
 }
 

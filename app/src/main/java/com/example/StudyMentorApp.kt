@@ -657,6 +657,7 @@ fun MainNavigation(viewModel: StudyViewModel, onLogout: () -> Unit) {
             composable("ask") { AskScreen(viewModel) }
             composable("rank") { RankScreen(viewModel) }
             composable("profile") { ProfileScreen(viewModel, onLogout = onLogout) }
+            composable("shop") { ShopScreen(viewModel) }
         }
 
         FloatingNavBar(
@@ -702,6 +703,7 @@ fun FloatingNavBar(navController: androidx.navigation.NavHostController, modifie
     ) {
         NavItem("map", Icons.Default.Map, strings.navMap, currentRoute, navController)
         NavItem("quests", Icons.Default.TaskAlt, strings.navLearn, currentRoute, navController)
+        NavItem("shop", Icons.Default.Store, strings.navShop, currentRoute, navController)
         NavItem("ask", Icons.Default.ChatBubbleOutline, strings.navTutor, currentRoute, navController)
         NavItem("rank", Icons.Default.EmojiEvents, strings.navRank, currentRoute, navController)
         NavItem("profile", Icons.Default.Person, strings.navProfile, currentRoute, navController)

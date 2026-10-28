@@ -63,10 +63,7 @@ fun QuestsScreen(viewModel: StudyViewModel) {
     val isEnglish by viewModel.isEnglish.observeAsState(false)
     val currentUserId by viewModel.currentUserId.observeAsState(-1L)
     val dailyTasks by viewModel.dailyTasks.observeAsState(emptyList())
-    val weakPoints by viewModel.weakPoints.observeAsState(emptyList())
     val chestOpened by viewModel.isDailyChestOpened.observeAsState(false)
-    var showClinicDialog by remember { mutableStateOf(false) }
-    var showWordBlitzDialog by remember { mutableStateOf(false) }
 
     LaunchedEffect(currentUserId) {
         if (currentUserId != -1L) viewModel.refreshDailyTasks()
@@ -75,8 +72,22 @@ fun QuestsScreen(viewModel: StudyViewModel) {
     val quests = dailyTasks.map { task ->
         val meta = when (task.taskType) {
             "LESSON_COMPLETE" -> QuestMeta(strings.quest1Title, strings.quest1Desc, Icons.Default.AutoStories, Color(0xFF51FAC1))
+            "LESSON_COMPLETE_2" -> QuestMeta(strings.quest4Title, strings.quest4Desc, Icons.Default.School, Color(0xFF64B5F6))
+            "ANSWER_QUESTIONS" -> QuestMeta(strings.quest3Title, strings.quest3Desc, Icons.AutoMirrored.Filled.MenuBook, Color(0xFF27E0A9))
+            "ANSWER_QUESTIONS_20" -> QuestMeta(strings.quest5Title, strings.quest5Desc, Icons.Default.Psychology, Color(0xFFFFB74D))
             "PERFECT_SCORE" -> QuestMeta(strings.quest2Title, strings.quest2Desc, Icons.Default.Star, Color(0xFFFFD166))
-            else -> QuestMeta(strings.quest3Title, strings.quest3Desc, Icons.AutoMirrored.Filled.MenuBook, Color(0xFF27E0A9))
+            "ASK_AI_TUTOR" -> QuestMeta(strings.quest6Title, strings.quest6Desc, Icons.Default.ChatBubble, Color(0xFFBA68C8))
+            else -> QuestMeta(task.title, strings.quest3Desc, Icons.AutoMirrored.Filled.MenuBook, Color(0xFF27E0A9))
+        }
+        // Phần thưởng sao: 15 + 20 + 15 + 20 + 15 + 15 = 100 ⭐ / ngày
+        val starReward = when (task.taskType) {
+            "LESSON_COMPLETE" -> 15
+            "LESSON_COMPLETE_2" -> 20
+            "ANSWER_QUESTIONS" -> 15
+            "ANSWER_QUESTIONS_20" -> 20
+            "PERFECT_SCORE" -> 15
+            "ASK_AI_TUTOR" -> 15
+            else -> 15
         }
         QuestData(
             taskId = task.taskId,
@@ -84,11 +95,37 @@ fun QuestsScreen(viewModel: StudyViewModel) {
             desc = meta.desc,
             current = task.currentValue.coerceAtMost(task.targetValue),
             total = task.targetValue,
-            reward = "${task.rewardXp} XP",
+            reward = "${task.rewardXp} XP + ⭐$starReward",
             icon = meta.icon,
             color = meta.color,
             isCompleted = task.currentValue >= task.targetValue,
             isClaimed = task.status == "CLAIMED"
+        )
+    }
+
+    // Tự động sắp xếp nhiệm vụ:
+    // 1. Nhiệm vụ ĐÃ HOÀN THÀNH CHƯA NHẬN THƯỞNG: Đưa lên ĐẦU TIÊN (Rank 0) để user thấy ngay và bấm nhận, tránh bị quên.
+    // 2. Nhiệm vụ ĐÃ HOÀN THÀNH VÀ ĐÃ NHẬN: Rank 1 (nằm trong nhóm đã hoàn thành).
+    // 3. Nhiệm vụ ĐANG THỰC HIỆN: Rank 2 (sắp xếp theo tiến độ % giảm dần).
+    val sortedQuests = remember(quests) {
+        quests.sortedWith(
+            compareBy(
+                { quest ->
+                    when {
+                        quest.isCompleted && !quest.isClaimed -> 0
+                        quest.isCompleted && quest.isClaimed -> 1
+                        else -> 2
+                    }
+                },
+                { quest ->
+                    if (!quest.isCompleted && quest.total > 0) {
+                        -((quest.current.toFloat() / quest.total) * 100).toInt()
+                    } else {
+                        0
+                    }
+                },
+                { it.taskId }
+            )
         )
     }
 
@@ -112,7 +149,15 @@ fun QuestsScreen(viewModel: StudyViewModel) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Icon(Icons.AutoMirrored.Filled.MenuBook, contentDescription = null, tint = Color(0xFFFFD166), modifier = Modifier.size(28.dp))
                 Spacer(modifier = Modifier.width(12.dp))
-                Text(strings.dailyQuests, color = Color.White, fontSize = 24.sp, fontWeight = FontWeight.ExtraBold)
+                Column {
+                    Text(strings.dailyQuests, color = Color.White, fontSize = 22.sp, fontWeight = FontWeight.ExtraBold)
+                    Text(
+                        text = if (isEnglish) "Complete 6 quests to earn 100 ⭐" else "Hoàn thành 6 nhiệm vụ nhận 100 ⭐",
+                        color = Color(0xFFFFD166),
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                }
             }
 
             IconButton(
@@ -185,140 +230,21 @@ fun QuestsScreen(viewModel: StudyViewModel) {
         } else {
             LazyColumn(
                 modifier = Modifier.fillMaxSize(),
-                contentPadding = PaddingValues(start = 24.dp, end = 24.dp, top = 8.dp, bottom = 130.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp)
+                contentPadding = PaddingValues(start = 20.dp, end = 20.dp, top = 8.dp, bottom = 140.dp),
+                verticalArrangement = Arrangement.spacedBy(14.dp)
             ) {
-                // Word Blitz Speed Challenge Banner
-                item(key = "word_blitz_banner") {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clip(RoundedCornerShape(20.dp))
-                            .background(Brush.horizontalGradient(listOf(Color(0xFF2C1654), Color(0xFF131D38))))
-                            .border(1.dp, Brush.horizontalGradient(listOf(Color(0xFFFFD166), Color(0xFF51FAC1))), RoundedCornerShape(20.dp))
-                            .clickable {
-                                haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.TextHandleMove)
-                                showWordBlitzDialog = true
-                            }
-                            .padding(16.dp)
-                    ) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.SpaceBetween
-                        ) {
-                            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(1f)) {
-                                Box(
-                                    modifier = Modifier
-                                        .size(44.dp)
-                                        .clip(CircleShape)
-                                        .background(Color(0x33FFD166)),
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    Icon(Icons.Default.Bolt, contentDescription = null, tint = Color(0xFFFFD166), modifier = Modifier.size(24.dp))
-                                }
-                                Spacer(modifier = Modifier.width(12.dp))
-                                Column {
-                                    Text(
-                                        text = if (isEnglish) "WORD BLITZ SPRINT ⚡" else "THỬ THÁCH TỐC ĐỘ 60S ⚡",
-                                        color = Color(0xFFFFD166),
-                                        fontSize = 11.sp,
-                                        fontWeight = FontWeight.Bold,
-                                        letterSpacing = 1.sp
-                                    )
-                                    Text(
-                                        text = if (isEnglish) "60s Quick Fire Quiz & Combo XP Boost" else "Phản xạ từ vựng 60s & x3 Combo XP!",
-                                        color = Color.White,
-                                        fontSize = 14.sp,
-                                        fontWeight = FontWeight.Bold
-                                    )
-                                }
-                            }
-                            Icon(Icons.AutoMirrored.Filled.ArrowForward, contentDescription = null, tint = Color(0xFFFFD166), modifier = Modifier.size(20.dp))
-                        }
-                    }
-                }
-
-                if (weakPoints.isNotEmpty()) {
-                    item(key = "weak_points_clinic_banner") {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clip(RoundedCornerShape(20.dp))
-                                .background(Brush.horizontalGradient(listOf(Color(0xFF2B1017), Color(0xFF1E1428))))
-                                .border(1.dp, Color(0x80FF6B6B), RoundedCornerShape(20.dp))
-                            .clickable {
-                                haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.TextHandleMove)
-                                showClinicDialog = true
-                            }
-                            .padding(16.dp)
-                        ) {
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.SpaceBetween
-                            ) {
-                                Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(1f)) {
-                                    Box(
-                                        modifier = Modifier
-                                            .size(44.dp)
-                                            .clip(CircleShape)
-                                            .background(Color(0x33FF6B6B)),
-                                        contentAlignment = Alignment.Center
-                                    ) {
-                                        Icon(Icons.Default.Healing, contentDescription = null, tint = Color(0xFFFF6B6B), modifier = Modifier.size(22.dp))
-                                    }
-                                    Spacer(modifier = Modifier.width(12.dp))
-                                    Column {
-                                        Text(
-                                            text = if (isEnglish) "WEAK-POINT CLINIC 🏥" else "PHÒNG KHÁM LỖI SAI 🏥",
-                                            color = Color(0xFFFF6B6B),
-                                            fontSize = 11.sp,
-                                            fontWeight = FontWeight.Bold,
-                                            letterSpacing = 1.sp
-                                        )
-                                        Text(
-                                            text = if (isEnglish) "${weakPoints.size} Mistakes Ready to Review (+XP)" else "${weakPoints.size} Lỗi sai cần củng cố (+XP)",
-                                            color = Color.White,
-                                            fontSize = 14.sp,
-                                            fontWeight = FontWeight.Bold
-                                        )
-                                    }
-                                }
-                                Icon(Icons.AutoMirrored.Filled.ArrowForward, contentDescription = null, tint = Color(0xFFFF6B6B), modifier = Modifier.size(20.dp))
-                            }
-                        }
-                    }
-                }
-
-                items(quests, key = { it.taskId }) { quest ->
+                items(sortedQuests, key = { it.taskId }) { quest ->
                     QuestItemCard(
                         quest = quest,
                         onClaim = {
                             haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.LongPress)
                             viewModel.soundEffectManager.playCorrect()
-                            viewModel.claimDailyTask(quest.taskId)
+                            viewModel.claimDailyTaskWithStars(quest.taskId)
                         }
                     )
                 }
             }
         }
-    }
-
-    if (showClinicDialog) {
-        WeakPointsClinicDialog(
-            viewModel = viewModel,
-            isEnglish = isEnglish,
-            onDismiss = { showClinicDialog = false }
-        )
-    }
-
-    if (showWordBlitzDialog) {
-        com.example.ui.WordBlitzDialog(
-            viewModel = viewModel,
-            isEnglish = isEnglish,
-            onDismiss = { showWordBlitzDialog = false }
-        )
     }
 }
 
@@ -421,9 +347,21 @@ fun DailyChestHeader(progress: Float, chestOpened: Boolean, onOpenChest: () -> U
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(20.dp))
-            .background(Color(0x1A000000))
-            .border(1.dp, if (quest.isCompleted && !quest.isClaimed) quest.color.copy(alpha = 0.5f) else Color(0x1AFFFFFF), RoundedCornerShape(20.dp))
+            .clip(RoundedCornerShape(22.dp))
+            .background(
+                Brush.verticalGradient(
+                    listOf(Color(0xFF23183A), Color(0xFF140F24))
+                )
+            )
+            .border(
+                width = if (quest.isCompleted && !quest.isClaimed) 1.5.dp else 1.2.dp,
+                brush = if (quest.isCompleted && !quest.isClaimed) {
+                    Brush.horizontalGradient(listOf(Color(0xFFFFD166), Color(0xFF51FAC1)))
+                } else {
+                    Brush.horizontalGradient(listOf(Color(0x33FFFFFF), Color(0x1AFFFFFF)))
+                },
+                shape = RoundedCornerShape(22.dp)
+            )
             .padding(16.dp)
     ) {
         Column {
@@ -431,13 +369,13 @@ fun DailyChestHeader(progress: Float, chestOpened: Boolean, onOpenChest: () -> U
                 // Icon Box
                 Box(
                     modifier = Modifier
-                        .size(48.dp)
-                        .clip(RoundedCornerShape(12.dp))
-                        .background(quest.color.copy(alpha = 0.15f))
-                        .border(1.dp, quest.color.copy(alpha = 0.3f), RoundedCornerShape(12.dp)),
+                        .size(50.dp)
+                        .clip(RoundedCornerShape(14.dp))
+                        .background(quest.color.copy(alpha = 0.2f))
+                        .border(1.2.dp, quest.color.copy(alpha = 0.45f), RoundedCornerShape(14.dp)),
                     contentAlignment = Alignment.Center
                 ) {
-                    Icon(quest.icon, contentDescription = null, tint = quest.color, modifier = Modifier.size(24.dp))
+                    Icon(quest.icon, contentDescription = null, tint = quest.color, modifier = Modifier.size(26.dp))
                 }
                 
                 Spacer(modifier = Modifier.width(16.dp))
@@ -446,18 +384,19 @@ fun DailyChestHeader(progress: Float, chestOpened: Boolean, onOpenChest: () -> U
                 Column(modifier = Modifier.weight(1f)) {
                     Text(quest.title, color = Color.White, fontWeight = FontWeight.Bold, fontSize = 16.sp)
                     Spacer(modifier = Modifier.height(4.dp))
-                    Text(quest.desc, color = Color(0x99FFFFFF), fontSize = 13.sp, lineHeight = 18.sp)
+                    Text(quest.desc, color = Color(0xB3FFFFFF), fontSize = 12.5.sp, lineHeight = 17.sp)
                 }
                 
                 // Reward Badge
                 Spacer(modifier = Modifier.width(8.dp))
                 Box(
                     modifier = Modifier
-                        .clip(RoundedCornerShape(8.dp))
-                        .background(Color(0xFFFFD166).copy(alpha = 0.2f))
-                        .padding(horizontal = 8.dp, vertical = 4.dp)
+                        .clip(RoundedCornerShape(10.dp))
+                        .background(Color(0x33FFD166))
+                        .border(1.dp, Color(0x66FFD166), RoundedCornerShape(10.dp))
+                        .padding(horizontal = 9.dp, vertical = 5.dp)
                 ) {
-                    Text(quest.reward, color = Color(0xFFFFD166), fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                    Text(quest.reward, color = Color(0xFFFFD166), fontWeight = FontWeight.ExtraBold, fontSize = 12.sp)
                 }
             }
             

@@ -335,6 +335,13 @@ class StudyViewModel @Inject constructor(
     private val _streakShields = MutableLiveData(1)
     val streakShields: LiveData<Int> = _streakShields
 
+    // --- Stars & Hearts (Reward Currency) ---
+    private val _stars = MutableLiveData(0)
+    val stars: LiveData<Int> = _stars
+
+    private val _hearts = MutableLiveData(5)
+    val hearts: LiveData<Int> = _hearts
+
     private val _shieldUsedNotice = MutableLiveData(false)
     val shieldUsedNotice: LiveData<Boolean> = _shieldUsedNotice
     fun dismissShieldNotice() { _shieldUsedNotice.value = false }
@@ -645,7 +652,9 @@ class StudyViewModel @Inject constructor(
                     repository.saveQuizAttempt(userId, chapterId, totalCount, correctCount)
                 }
                 recordDailyTaskProgress(userId, "LESSON_COMPLETE", 1)
+                recordDailyTaskProgress(userId, "LESSON_COMPLETE_2", 1)
                 recordDailyTaskProgress(userId, "ANSWER_QUESTIONS", results.size)
+                recordDailyTaskProgress(userId, "ANSWER_QUESTIONS_20", results.size)
                 if (results.isNotEmpty() && correctCount == results.size) {
                     recordDailyTaskProgress(userId, "PERFECT_SCORE", 1)
                 }
@@ -875,6 +884,8 @@ class StudyViewModel @Inject constructor(
                 _streakShields.value = profile.streakShields
                 _avatarUri.value = profile.avatarUri
                 _studyMotto.value = profile.studyMotto ?: ""
+                _stars.value = profile.stars
+                _hearts.value = profile.hearts
             }
             val savedLevel = prefs.getString("learning_level_$userId", _selectedLevel.value ?: "Beginner") ?: "Beginner"
             _selectedLevel.value = savedLevel
@@ -941,6 +952,39 @@ class StudyViewModel @Inject constructor(
         }
     }
 
+    /**
+     * Nhận thưởng nhiệm vụ ngày kèm phần thưởng Sao (Stars).
+     * 6 nhiệm vụ mỗi ngày mang lại tổng cộng 100 Sao:
+     * - LESSON_COMPLETE: 15 ⭐
+     * - LESSON_COMPLETE_2: 20 ⭐
+     * - ANSWER_QUESTIONS: 15 ⭐
+     * - ANSWER_QUESTIONS_20: 20 ⭐
+     * - PERFECT_SCORE: 15 ⭐
+     * - ASK_AI_TUTOR: 15 ⭐
+     */
+    fun claimDailyTaskWithStars(taskId: Long) {
+        val userId = _currentUserId.value ?: return
+        viewModelScope.launch {
+            val task = repository.getDailyTask(taskId)
+            if (task != null && repository.claimDailyTask(taskId)) {
+                addXp(task.rewardXp)
+                val starReward = when (task.taskType) {
+                    "LESSON_COMPLETE" -> 15
+                    "LESSON_COMPLETE_2" -> 20
+                    "ANSWER_QUESTIONS" -> 15
+                    "ANSWER_QUESTIONS_20" -> 20
+                    "PERFECT_SCORE" -> 15
+                    "ASK_AI_TUTOR" -> 15
+                    else -> 15
+                }
+                repository.addStars(userId, starReward)
+                _stars.value = (_stars.value ?: 0) + starReward
+                soundEffectManager.playCorrect()
+                refreshDailyTasks()
+            }
+        }
+    }
+
     fun claimDailyChest() {
         val userId = _currentUserId.value
         if (userId == null || userId == -1L) return
@@ -951,11 +995,43 @@ class StudyViewModel @Inject constructor(
             val allClaimed = tasks.isNotEmpty() && tasks.all { it.status == "CLAIMED" }
             if (allClaimed && repository.claimDailyChest(userId, date)) {
                 addXp(500)
+                // Thưởng thêm 10 Sao khi mở rương ngày
+                repository.addStars(userId, 10)
+                _stars.value = (_stars.value ?: 0) + 10
                 _dailyChestOpened.value = true
                 soundEffectManager.playFanfare()
                 refreshDailyTasks()
             }
         }
+    }
+
+    /**
+     * Mua vật phẩm trong cửa hàng bằng Sao.
+     * @return true nếu mua thành công, false nếu không đủ Sao
+     */
+    fun purchaseShopItem(itemId: String, type: com.example.ShopItemType, starCost: Int, quantity: Int): Boolean {
+        val userId = _currentUserId.value ?: return false
+        val currentStars = _stars.value ?: 0
+        if (currentStars < starCost) return false
+
+        viewModelScope.launch {
+            repository.spendStars(userId, starCost)
+            _stars.value = currentStars - starCost
+            when (type) {
+                com.example.ShopItemType.HEART -> {
+                    repository.addHearts(userId, quantity)
+                    val newHearts = (_hearts.value ?: 0) + quantity
+                    _hearts.value = newHearts.coerceAtMost(5)
+                }
+                com.example.ShopItemType.SHIELD -> {
+                    val currentShields = _streakShields.value ?: 0
+                    repository.updateStreakShields(userId, currentShields + quantity)
+                    _streakShields.value = currentShields + quantity
+                }
+            }
+            soundEffectManager.playCorrect()
+        }
+        return true
     }
 
     fun refreshHistory(userId: Long) {
@@ -974,6 +1050,18 @@ class StudyViewModel @Inject constructor(
     ) {
         if (question.isBlank() && imageUri == null) return
         _isGenerating.value = true
+
+        // Hiển thị câu hỏi ngay lập tức vào danh sách (optimistic update)
+        val tempId = -System.currentTimeMillis().toInt()
+        val pendingItem = QAItem(
+            id = tempId,
+            question = question,
+            imageUri = imageUri?.toString(),
+            answer = ""
+        )
+        val currentHistory = _history.value ?: emptyList()
+        _history.value = listOf(pendingItem) + currentHistory
+
         viewModelScope.launch {
             try {
                 var answer: String
@@ -1037,9 +1125,14 @@ class StudyViewModel @Inject constructor(
                     grammarTip = sanitizeAiMentorReply(grammarTip)
                 }
 
+                // Bước 2: Hiển thị dần nội dung câu trả lời (streaming / typewriter)
+                streamAnswerProgressively(tempId, answer)
+
                 val userId = _currentUserId.value
                 if (userId != null && userId != -1L) {
                     repository.saveAIQuestion(userId, question, imageUri?.toString(), answer)
+                    recordDailyTaskProgress(userId, "ASK_AI_TUTOR", 1)
+                    refreshDailyTasks()
                     val data = repository.getAIHistory(userId).toMutableList()
                     if (data.isNotEmpty()) {
                         data[0] = data[0].copy(grammarTip = grammarTip, detectedVocabularies = vocabularies)
@@ -1052,7 +1145,7 @@ class StudyViewModel @Inject constructor(
                     _rankTitle.value = calculateRankTitle(newXp)
                     firestoreSyncManager.syncUserProfile(userId)
                 } else {
-                    val current = _history.value ?: emptyList()
+                    val current = (_history.value ?: emptyList()).filter { it.id != tempId }
                     val updated = mutableListOf(
                         QAItem(
                             id = 0,
@@ -1070,10 +1163,55 @@ class StudyViewModel @Inject constructor(
                 if (isAudioDialog && (_audioDialogAutoTts.value == true)) {
                     ttsManager.speak(answer)
                 }
+            } catch (e: Exception) {
+                // Xóa pendingItem nếu xảy ra lỗi
+                val current = _history.value ?: emptyList()
+                _history.value = current.filter { it.id != tempId }
             } finally {
                 _isGenerating.value = false
                 onSuccess?.invoke()
             }
+        }
+    }
+
+    /**
+     * Truyền và render dần dần nội dung câu trả lời (streaming typewriter)
+     * Chia thành các chunk từ/dòng để nội dung xuất hiện mượt mà từng phần.
+     */
+    private suspend fun streamAnswerProgressively(tempId: Int, fullAnswer: String) {
+        val words = fullAnswer.split(Regex("(?<=\\s)|(?<=\\n)"))
+        val totalWords = words.size
+        if (totalWords == 0) return
+
+        val chunkSize = when {
+            totalWords <= 40 -> 1
+            totalWords <= 100 -> 2
+            else -> 3
+        }
+        val delayMs = when {
+            totalWords <= 40 -> 24L
+            totalWords <= 100 -> 20L
+            else -> 16L
+        }
+
+        val sb = java.lang.StringBuilder()
+        var wordIndex = 0
+
+        while (wordIndex < totalWords) {
+            val end = (wordIndex + chunkSize).coerceAtMost(totalWords)
+            for (i in wordIndex until end) {
+                sb.append(words[i])
+            }
+            wordIndex = end
+
+            val partialText = sb.toString()
+            val cur = _history.value?.toMutableList() ?: mutableListOf()
+            val itemIdx = cur.indexOfFirst { it.id == tempId }
+            if (itemIdx != -1) {
+                cur[itemIdx] = cur[itemIdx].copy(answer = partialText)
+                _history.value = cur
+            }
+            delay(delayMs)
         }
     }
 
@@ -1941,7 +2079,7 @@ class StudyViewModel @Inject constructor(
             }
         } catch (e: Exception) {
             e.printStackTrace()
-            "Lỗi hệ thống/mạng Gemini: ${e.message}"
+            formatNetworkException(e, "Google Gemini")
         }
     }
 
@@ -2071,7 +2209,21 @@ class StudyViewModel @Inject constructor(
             "Lỗi kết nối Groq API (${response.code()}): $errorDetail"
         } catch (e: Exception) {
             e.printStackTrace()
-            "Lỗi hệ thống/mạng: ${e.message}"
+            formatNetworkException(e, "Groq AI")
+        }
+    }
+
+    private fun formatNetworkException(e: Exception, providerName: String): String {
+        val msg = e.message ?: ""
+        return if (e is java.net.UnknownHostException || msg.contains("Unable to resolve host", ignoreCase = true) || msg.contains("No address associated", ignoreCase = true)) {
+            "📡 Không thể kết nối Internet (Lỗi DNS / Mất mạng):\n\n" +
+            "• Thiết bị hoặc máy ảo chưa kết nối được với máy chủ $providerName.\n" +
+            "• Nếu bạn đang chạy máy ảo Android Studio trên Mac: Máy ảo thường bị kẹt DNS khi Mac đổi Wi-Fi hoặc ngủ dậy. Hãy vào Android Studio -> Device Manager -> bấm menu 3 chấm cạnh máy ảo -> chọn 'Cold Boot Now' (hoặc bật tắt lại Wi-Fi trong Cài đặt của máy ảo).\n" +
+            "• Nếu bạn đang dùng điện thoại thật: Vui lòng kiểm tra lại kết nối Wi-Fi hoặc 4G/5G."
+        } else if (e is java.net.SocketTimeoutException || msg.contains("timeout", ignoreCase = true)) {
+            "⏳ Kết nối tới $providerName quá thời gian chờ (Timeout). Vui lòng kiểm tra lại đường truyền mạng và thử lại sau giây lát."
+        } else {
+            "⚠️ Lỗi hệ thống/mạng ($providerName): ${e.localizedMessage ?: e.message}"
         }
     }
 
@@ -2122,7 +2274,8 @@ class StudyViewModel @Inject constructor(
             }
             "Không nhận được nội dung phản hồi từ Claude API."
         } catch (e: Exception) {
-            "Lỗi kết nối Claude API: ${e.localizedMessage}"
+            e.printStackTrace()
+            formatNetworkException(e, "Anthropic Claude")
         }
     }
 
@@ -2175,7 +2328,8 @@ class StudyViewModel @Inject constructor(
             }
             "Không nhận được nội dung phản hồi từ OpenAI API."
         } catch (e: Exception) {
-            "Lỗi kết nối OpenAI API: ${e.localizedMessage}"
+            e.printStackTrace()
+            formatNetworkException(e, "OpenAI")
         }
     }
 
