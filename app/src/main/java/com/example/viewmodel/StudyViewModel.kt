@@ -1465,12 +1465,9 @@ class StudyViewModel @Inject constructor(
     }
 
     /**
-     * Kiến tạo đơn vị học cá nhân hóa bằng Hệ thống Khuôn Mẫu Rỗng (Slot-Based Templates)
-     * Phân hóa triệt để theo cấp độ người học:
-     * - Beginner (A0-A1 / Mới bắt đầu từ số 0): Tập trung chào hỏi (hello, hi, thank you), giới thiệu tên, câu ngắn 2-4 từ.
-     * - Intermediate (B1-B2): Giao tiếp đời sống thực tế, phrasal verbs, nhờ vả lịch sự.
-     * - Advanced (B2-C1): Ngữ pháp nâng cao, đảo ngữ, sắc thái học thuật và đàm phán lãnh đạo.
-     * Tuyệt đối KHÔNG chứa câu hỏi mẫu tĩnh hay dấu gạch dưới raw (zero sample blanks).
+     * Kiến tạo đơn vị học cá nhân hóa bằng Hệ thống Khuôn Mẫu Rỗng Xoắn Ốc (Spiral Slot-Based Blueprint).
+     * Phân hóa triệt để theo TỪNG CHỦ ĐỀ (Topic-Aware) và TỪNG CẤP ĐỘ CEFR (A0 -> A1 -> A2 -> B1 -> B2 -> C1),
+     * đảm bảo mỗi chặng có đúng 25 câu hỏi tuần tự (5 bài học x 5 câu) theo quy tắc Bắc cầu (Scaffolding 5 bước).
      */
     fun generatePersonalizedChapter(
         level: String,
@@ -1478,715 +1475,11 @@ class StudyViewModel @Inject constructor(
         weakWords: List<String> = emptyList()
     ): ChapterGeneratedResponse {
         val isEng = _isEnglish.value ?: false
-        val displayLevel = if (level.isBlank()) "Beginner" else level
-        val cleanTopic = if (topic.isBlank()) "Daily Conversations" else topic
-
-        val isBeginner = displayLevel.equals("Beginner", ignoreCase = true) ||
-                         displayLevel.equals("A1", ignoreCase = true) ||
-                         displayLevel.equals("A0", ignoreCase = true)
-
-        val isAdvanced = displayLevel.equals("Advanced", ignoreCase = true) ||
-                         displayLevel.equals("C1", ignoreCase = true) ||
-                         displayLevel.equals("B2", ignoreCase = true)
-
-        val (chapterTitle, chapterDesc, units) = when {
-            isBeginner -> {
-                val title = if (isEng) "AI Roadmap: Hello & Daily Greetings ($displayLevel)" else "Lộ trình AI: Chào Hỏi & Làm Quen Cơ Bản ($displayLevel)"
-                val desc = if (isEng) "Zero-knowledge introductory lessons designed by Kiki AI for complete beginners."
-                else "Lộ trình học từng bước từ số 0 do AI Kiki thiết kế dành riêng cho người mới bắt đầu."
-
-                // Bài 1 (Node 1): Nhận diện từ vựng chào hỏi cơ bản nhất (Hello, Hi, Goodbye, Thank you)
-                val unit1 = InjectedAtomicLessonUnit(
-                    title = if (isEng) "Lesson 1: Core Greetings (Hello & Hi)" else "Bài 1: Từ Vựng Chào Hỏi Căn Bản (Hello & Hi)",
-                    description = if (isEng) "Get familiar with essential single greeting words." else "Làm quen với các từ vựng chào hỏi đơn lẻ cơ bản nhất.",
-                    level = displayLevel,
-                    subject = "English",
-                    slot1Cloze = ClozeChoiceSlot(
-                        promptQuestion = "Từ tiếng Anh nào dùng để nói 'Xin chào' thân thiện và thông dụng nhất khi gặp nhau?",
-                        options = listOf("Hello", "Goodbye", "No", "Sorry"),
-                        correctIndex = 0,
-                        explanation = "'Hello' (/həˈloʊ/) là từ chào hỏi cơ bản, phổ biến và lịch sự nhất trong tiếng Anh."
-                    ),
-                    slot2SentenceBuilder = SentenceBuilderSlot(
-                        promptInstruction = "Sắp xếp 2 từ thành câu chào hỏi: 'Xin chào Anna' 🧩",
-                        targetSentence = "Hello Anna",
-                        wordTokens = listOf("Hello", "Anna"),
-                        distractorTokens = listOf("Goodbye"),
-                        explanation = "Cấu trúc ghép câu chào đơn giản: Hello + [Tên người]."
-                    ),
-                    slot3Listening = ListeningChallengeSlot(
-                        promptInstruction = "Nghe âm thanh và sắp xếp lại các từ chào hỏi cho đúng 🎧",
-                        audioSentence = "Hello Anna",
-                        wordTokens = listOf("Hello", "Anna"),
-                        explanation = "Luyện nhận diện âm thanh câu chào hỏi ngắn gọn: 'Hello Anna'."
-                    ),
-                    slot4Matching = MatchingPairsSlot(
-                        promptInstruction = "Ghép cặp các từ vựng chào hỏi cơ bản với nghĩa tiếng Việt 🧩",
-                        pairs = listOf(
-                            PairSlotItem("hello", "xin chào"),
-                            PairSlotItem("hi", "chào thân mật"),
-                            PairSlotItem("goodbye", "tạm biệt"),
-                            PairSlotItem("thank you", "cảm ơn")
-                        ),
-                        explanation = "Ghi nhớ 4 từ vựng giao tiếp căn bản nhất bắt buộc phải biết khi mới học tiếng Anh."
-                    ),
-                    slot5Speaking = SpeakingChallengeSlot(
-                        promptInstruction = "Luyện phát âm từ chào hỏi cơ bản chuẩn bản xứ 🎙️",
-                        targetSentence = "Hello",
-                        phoneticFocusWord = "Hello",
-                        explanation = "Phát âm rõ ràng âm /həˈloʊ/ với ngữ điệu tự tin, vui tươi khi bắt đầu giao tiếp."
-                    )
-                )
-
-                // Bài 2 (Node 2): Từ vựng lịch sự & phản hồi (Please, Yes, No, Sorry)
-                val unit2 = InjectedAtomicLessonUnit(
-                    title = if (isEng) "Lesson 2: Polite Expressions (Please, Yes, No)" else "Bài 2: Từ Vựng Lịch Sự & Phản Hồi (Please, Yes, No)",
-                    description = if (isEng) "Learn courtesy words to react politely." else "Học các từ vựng lịch sự để phản hồi trong giao tiếp.",
-                    level = displayLevel,
-                    subject = "English",
-                    slot1Cloze = ClozeChoiceSlot(
-                        promptQuestion = "Khi bạn muốn nói 'Làm ơn / Xin vui lòng' một cách lịch sự, bạn dùng từ nào?",
-                        options = listOf("Please", "Yes", "No", "Bye"),
-                        correctIndex = 0,
-                        explanation = "'Please' (/pliːz/) nghĩa là làm ơn, xin vui lòng, thể hiện sự nhã nhặn và lịch thiệp."
-                    ),
-                    slot2SentenceBuilder = SentenceBuilderSlot(
-                        promptInstruction = "Sắp xếp 2 từ thành câu phản hồi lịch sự: 'Vâng, làm ơn' 🧩",
-                        targetSentence = "Yes please",
-                        wordTokens = listOf("Yes", "please"),
-                        distractorTokens = listOf("No"),
-                        explanation = "Cách đồng ý lời mời hoặc đề nghị lịch sự: 'Yes, please'."
-                    ),
-                    slot3Listening = ListeningChallengeSlot(
-                        promptInstruction = "Nghe lời cảm ơn và sắp xếp lại các từ cho đúng 🎧",
-                        audioSentence = "Thank you",
-                        wordTokens = listOf("Thank", "you"),
-                        explanation = "Luyện nhận diện âm thanh lời cảm ơn: 'Thank you'."
-                    ),
-                    slot4Matching = MatchingPairsSlot(
-                        promptInstruction = "Ghép cặp các từ phản hồi lịch sự với nghĩa tiếng Việt 🧩",
-                        pairs = listOf(
-                            PairSlotItem("please", "làm ơn / xin vui lòng"),
-                            PairSlotItem("yes", "vâng / có"),
-                            PairSlotItem("no", "không"),
-                            PairSlotItem("sorry", "xin lỗi")
-                        ),
-                        explanation = "Các từ phản hồi ngắn gọn, lịch sự dùng hàng ngày."
-                    ),
-                    slot5Speaking = SpeakingChallengeSlot(
-                        promptInstruction = "Luyện phát âm lời cảm ơn chuẩn bản xứ 🎙️",
-                        targetSentence = "Thank you",
-                        phoneticFocusWord = "Thank",
-                        explanation = "Đặt nhẹ đầu lưỡi giữa hai hàm răng phát âm âm /θ/ trong 'Thank you'."
-                    )
-                )
-
-                // Bài 3 (Node 3): Lắp ghép cụm chào theo buổi (Good morning, Good night)
-                val unit3 = InjectedAtomicLessonUnit(
-                    title = if (isEng) "Lesson 3: Daily Greetings (Good morning)" else "Bài 3: Lắp Ghép Cụm Chào Theo Buổi (Good morning)",
-                    description = if (isEng) "Combine 2-3 words for daily time-based greetings." else "Tập ghép 2-3 từ để chào hỏi theo các buổi trong ngày.",
-                    level = displayLevel,
-                    subject = "English",
-                    slot1Cloze = ClozeChoiceSlot(
-                        promptQuestion = "Buổi sáng khi gặp bạn bè hoặc đồng nghiệp, bạn nên chào như thế nào?",
-                        options = listOf("Good morning", "Good night", "Goodbye", "No, thanks"),
-                        correctIndex = 0,
-                        explanation = "'Good morning' là lời chào buổi sáng trang trọng và thân thiện."
-                    ),
-                    slot2SentenceBuilder = SentenceBuilderSlot(
-                        promptInstruction = "Sắp xếp 3 từ thành lời chào: 'Chào buổi sáng bạn của tôi' 🧩",
-                        targetSentence = "Good morning friend",
-                        wordTokens = listOf("Good", "morning", "friend"),
-                        distractorTokens = listOf("night"),
-                        explanation = "Ghép cụm từ chào buổi sáng với từ 'friend' (người bạn)."
-                    ),
-                    slot3Listening = ListeningChallengeSlot(
-                        promptInstruction = "Nghe cụm từ chào buổi sáng và sắp xếp lại các từ 🎧",
-                        audioSentence = "Good morning",
-                        wordTokens = listOf("Good", "morning"),
-                        explanation = "Luyện nghe nhận diện lời chào buổi sáng: 'Good morning'."
-                    ),
-                    slot4Matching = MatchingPairsSlot(
-                        promptInstruction = "Ghép cặp lời chào theo buổi với nghĩa tiếng Việt 🧩",
-                        pairs = listOf(
-                            PairSlotItem("good morning", "chào buổi sáng"),
-                            PairSlotItem("good night", "chúc ngủ ngon"),
-                            PairSlotItem("how are you", "bạn khỏe không"),
-                            PairSlotItem("fine", "khỏe / tốt")
-                        ),
-                        explanation = "Các cụm từ chào hỏi và hỏi thăm thông dụng theo thời điểm trong ngày."
-                    ),
-                    slot5Speaking = SpeakingChallengeSlot(
-                        promptInstruction = "Luyện phát âm lời chào buổi sáng tự nhiên 🎙️",
-                        targetSentence = "Good morning",
-                        phoneticFocusWord = "morning",
-                        explanation = "Nói liền mạch cụm 'Good morning' với ngữ điệu niềm nở."
-                    )
-                )
-
-                // Bài 4 (Node 4): Giới thiệu bản thân ngắn gọn (I am Alex, My name is Anna)
-                val unit4 = InjectedAtomicLessonUnit(
-                    title = if (isEng) "Lesson 4: Self Introduction (I am Alex)" else "Bài 4: Giới Thiệu Bản Thân Ngắn Gọn (I am Alex)",
-                    description = if (isEng) "Learn 3-4 word sentences to introduce yourself." else "Học câu ngắn 3-4 từ để tự giới thiệu tên mình.",
-                    level = displayLevel,
-                    subject = "English",
-                    slot1Cloze = ClozeChoiceSlot(
-                        promptQuestion = "Khi tự giới thiệu tên mình là Alex, câu nào sau đây đúng cấu trúc nhất?",
-                        options = listOf("I am Alex", "You is Alex", "He am Alex", "They is Alex"),
-                        correctIndex = 0,
-                        explanation = "Đại từ 'I' (tôi) đi với to be 'am' -> 'I am [Tên]'."
-                    ),
-                    slot2SentenceBuilder = SentenceBuilderSlot(
-                        promptInstruction = "Sắp xếp các từ thành câu: 'Xin chào, tôi là Alex' 🧩",
-                        targetSentence = "Hello I am Alex",
-                        wordTokens = listOf("Hello", "I", "am", "Alex"),
-                        distractorTokens = listOf("are"),
-                        explanation = "Cấu trúc giới thiệu tên ngắn gọn: Hello + I am + [Tên]."
-                    ),
-                    slot3Listening = ListeningChallengeSlot(
-                        promptInstruction = "Nghe câu giới thiệu tên sau và sắp xếp lại các từ 🎧",
-                        audioSentence = "My name is Anna",
-                        wordTokens = listOf("My", "name", "is", "Anna"),
-                        explanation = "Luyện nhận diện âm thanh câu giới thiệu tên: 'My name is Anna'."
-                    ),
-                    slot4Matching = MatchingPairsSlot(
-                        promptInstruction = "Ghép cặp các từ giới thiệu bản thân với nghĩa tương ứng 🧩",
-                        pairs = listOf(
-                            PairSlotItem("I", "tôi"),
-                            PairSlotItem("my name", "tên tôi"),
-                            PairSlotItem("am", "là / thì"),
-                            PairSlotItem("friend", "người bạn")
-                        ),
-                        explanation = "Các từ cấu tạo nên câu tự giới thiệu bản thân cơ bản."
-                    ),
-                    slot5Speaking = SpeakingChallengeSlot(
-                        promptInstruction = "Luyện phát âm câu giới thiệu bản thân ngắn gọn 🎙️",
-                        targetSentence = "Hello I am Alex",
-                        phoneticFocusWord = "Alex",
-                        explanation = "Phát âm rõ ràng từng từ: 'Hello, I am Alex'."
-                    )
-                )
-
-                // Bài 5 (Node 5): Phản xạ hội thoại & Thử thách kết chặng (How are you? - I am fine, thank you)
-                val unit5 = InjectedAtomicLessonUnit(
-                    title = if (isEng) "Lesson 5: Conversational Reflex & Mastery" else "Bài 5: Phản Xạ Hội Thoại & Vượt Chặng",
-                    description = if (isEng) "Reflex conversational dialogue and chapter mastery challenge." else "Luyện phản xạ đối đáp và hoàn thành thử thách vượt chặng.",
-                    level = displayLevel,
-                    subject = "English",
-                    slot1Cloze = ClozeChoiceSlot(
-                        promptQuestion = "Khi ai đó hỏi bạn 'How are you?' (Bạn khỏe không?), câu trả lời lịch sự và tự nhiên nhất là:",
-                        options = listOf("I am fine thank you", "Goodbye see you never", "No I am Alex", "My name is fine"),
-                        correctIndex = 0,
-                        explanation = "'I am fine, thank you' (Tôi khỏe, cảm ơn bạn) là câu phản hồi lịch thiệp và thông dụng nhất."
-                    ),
-                    slot2SentenceBuilder = SentenceBuilderSlot(
-                        promptInstruction = "Sắp xếp các từ thành câu đối đáp: 'Tôi khỏe, cảm ơn bạn' 🧩",
-                        targetSentence = "I am fine thank you",
-                        wordTokens = listOf("I", "am", "fine", "thank", "you"),
-                        distractorTokens = listOf("not"),
-                        explanation = "Cấu trúc phản xạ giao tiếp tự nhiên: I + am + fine + thank you."
-                    ),
-                    slot3Listening = ListeningChallengeSlot(
-                        promptInstruction = "Nghe câu hội thoại làm quen và sắp xếp lại các từ 🎧",
-                        audioSentence = "Nice to meet you",
-                        wordTokens = listOf("Nice", "to", "meet", "you"),
-                        explanation = "Luyện nhận diện câu chào khi làm quen bạn mới: 'Nice to meet you'."
-                    ),
-                    slot4Matching = MatchingPairsSlot(
-                        promptInstruction = "Ghép cặp các câu đối đáp hội thoại làm quen 🧩",
-                        pairs = listOf(
-                            PairSlotItem("how are you", "bạn khỏe không"),
-                            PairSlotItem("I am fine", "tôi khỏe"),
-                            PairSlotItem("nice to meet you", "rất vui được gặp bạn"),
-                            PairSlotItem("see you again", "hẹn gặp lại")
-                        ),
-                        explanation = "Cặp câu đối đáp phản xạ thông dụng khi làm quen với bạn bè quốc tế."
-                    ),
-                    slot5Speaking = SpeakingChallengeSlot(
-                        promptInstruction = "Luyện nói trôi chảy câu giao tiếp kết chặng 🎙️",
-                        targetSentence = "Hello nice to meet you",
-                        phoneticFocusWord = "meet",
-                        explanation = "Nói tự tin, rõ ràng: 'Hello, nice to meet you' để hoàn thành chặng học xuất sắc!"
-                    )
-                )
-
-                Triple(title, desc, listOf(unit1, unit2, unit3, unit4, unit5))
-            }
-            isAdvanced -> {
-                val title = if (isEng) "AI Mastery: $cleanTopic ($displayLevel)" else "Lộ trình AI: $cleanTopic ($displayLevel)"
-                val desc = if (isEng) "High-level nuance and executive discourse curriculum designed by Kiki AI."
-                else "Lộ trình chuyên sâu nâng cao tư duy phản biện và khẩu ngữ bản xứ do AI Kiki thiết kế."
-
-                val unit1 = InjectedAtomicLessonUnit(
-                    title = if (isEng) "Lesson 1: Executive Lexicon" else "Bài 1: Thuật Ngữ Học Thuật & Lãnh Đạo",
-                    description = if (isEng) "Master strategic high-level vocabulary." else "Làm chủ từ vựng chiến lược nâng cao.",
-                    level = displayLevel,
-                    subject = "English",
-                    slot1Cloze = ClozeChoiceSlot(
-                        promptQuestion = "Select the most articulate phrasing to negotiate strategic terms in $cleanTopic:",
-                        options = listOf(
-                            "Achieving substantial synergy through mutual concessions",
-                            "Refusing to compromise on trivial parameters",
-                            "Exhibiting ambiguity during formal deliberations",
-                            "Dismissing stakeholder perspectives abruptly"
-                        ),
-                        correctIndex = 0,
-                        explanation = "Lựa chọn chính xác thể hiện khả năng đàm phán chiến lược và văn phong chuyên nghiệp bậc cao."
-                    ),
-                    slot2SentenceBuilder = SentenceBuilderSlot(
-                        promptInstruction = "Sắp xếp các từ thành câu phức hoàn chỉnh về chủ đề $cleanTopic 🧩",
-                        targetSentence = "Our paramount objective is cultivating sustained organizational excellence",
-                        wordTokens = listOf("Our", "paramount", "objective", "is", "cultivating", "sustained", "organizational", "excellence"),
-                        distractorTokens = listOf("did", "before"),
-                        explanation = "Cấu trúc danh từ ghép và tính từ học thuật chuẩn xác."
-                    ),
-                    slot3Listening = ListeningChallengeSlot(
-                        promptInstruction = "Nghe câu sau và sắp xếp lại các từ cho đúng thứ tự 🎧",
-                        audioSentence = "Our paramount objective is cultivating sustained organizational excellence",
-                        wordTokens = listOf("Our", "paramount", "objective", "is", "cultivating", "sustained", "organizational", "excellence"),
-                        explanation = "Luyện phản xạ giải mã âm thanh học thuật với ngữ điệu bản xứ tốc độ cao."
-                    ),
-                    slot4Matching = MatchingPairsSlot(
-                        promptInstruction = "Ghép cặp các thuật ngữ tiếng Anh nâng cao với nghĩa tiếng Việt 🧩",
-                        pairs = listOf(
-                            PairSlotItem("paramount", "tối quan trọng"),
-                            PairSlotItem("groundbreaking", "đột phá"),
-                            PairSlotItem("substantial", "đáng kể"),
-                            PairSlotItem("versatile", "linh hoạt đa năng")
-                        ),
-                        explanation = "Làm chủ các tính từ học thuật C1 gia tăng chiều sâu biểu đạt."
-                    ),
-                    slot5Speaking = SpeakingChallengeSlot(
-                        promptInstruction = "Luyện nói câu tiếng Anh đĩnh đạc và phong thái lãnh đạo 🎙️",
-                        targetSentence = "Executive leadership requires strategic vision and transparent communication",
-                        phoneticFocusWord = "strategic",
-                        explanation = "Nhấn trọng âm /strəˈtiː.dʒɪk/ chính xác, ngắt nghỉ dứt khoát tại các cụm danh từ."
-                    )
-                )
-
-                val unit2 = InjectedAtomicLessonUnit(
-                    title = if (isEng) "Lesson 2: Advanced Collocations" else "Bài 2: Cụm Kết Hợp Từ Chuyên Nghiệp",
-                    description = if (isEng) "Collocations for executive leadership." else "Làm chủ các collocation đắt giá trong môi trường quốc tế.",
-                    level = displayLevel,
-                    subject = "English",
-                    slot1Cloze = ClozeChoiceSlot(
-                        promptQuestion = "Which collocation best completes the professional statement: 'The team managed to _____ groundbreaking research'?",
-                        options = listOf("spearhead", "make", "perform carelessly", "take over"),
-                        correctIndex = 0,
-                        explanation = "'Spearhead research/initiatives' là cụm từ đắt giá chỉ hành động tiên phong dẫn dắt."
-                    ),
-                    slot2SentenceBuilder = SentenceBuilderSlot(
-                        promptInstruction = "Sắp xếp các từ thành câu khẳng định vị thế: 🧩",
-                        targetSentence = "We must spearhead sustainable initiatives across all departments",
-                        wordTokens = listOf("We", "must", "spearhead", "sustainable", "initiatives", "across", "all", "departments"),
-                        distractorTokens = listOf("make"),
-                        explanation = "Cấu trúc câu khẳng định định hướng chiến lược doanh nghiệp."
-                    ),
-                    slot3Listening = ListeningChallengeSlot(
-                        promptInstruction = "Nghe câu sau và sắp xếp lại các từ 🎧",
-                        audioSentence = "We must spearhead sustainable initiatives across all departments",
-                        wordTokens = listOf("We", "must", "spearhead", "sustainable", "initiatives", "across", "all", "departments"),
-                        explanation = "Luyện nghe câu chỉ đạo chiến lược tốc độ tự nhiên."
-                    ),
-                    slot4Matching = MatchingPairsSlot(
-                        promptInstruction = "Ghép cặp các cụm động từ lãnh đạo nâng cao 🧩",
-                        pairs = listOf(
-                            PairSlotItem("spearhead", "tiên phong dẫn dắt"),
-                            PairSlotItem("facilitate", "tạo điều kiện thuận lợi"),
-                            PairSlotItem("consolidate", "củng cố hợp nhất"),
-                            PairSlotItem("streamline", "tinh gọn quy trình")
-                        ),
-                        explanation = "Các động từ hành động cao cấp thường gặp trong báo cáo chiến lược."
-                    ),
-                    slot5Speaking = SpeakingChallengeSlot(
-                        promptInstruction = "Luyện nói câu phát biểu quyết đoán 🎙️",
-                        targetSentence = "We must streamline our operations to maximize efficiency",
-                        phoneticFocusWord = "streamline",
-                        explanation = "Phát âm dứt khoát âm /striːmlaɪn/ với phong thái tự tin."
-                    )
-                )
-
-                val unit3 = InjectedAtomicLessonUnit(
-                    title = if (isEng) "Lesson 3: Inverted Syntax" else "Bài 3: Cấu Trúc Đảo Ngữ Nhấn Mạnh",
-                    description = if (isEng) "Master negative inversion structures." else "Chinh phục cấu trúc đảo ngữ nhấn mạnh C1.",
-                    level = displayLevel,
-                    subject = "English",
-                    slot1Cloze = ClozeChoiceSlot(
-                        promptQuestion = "Choose the correct inverted sentence: '_____ had the keynote finished when productive discussions commenced.'",
-                        options = listOf("Scarcely", "Hardly no", "Never have", "Not only"),
-                        correctIndex = 0,
-                        explanation = "Cấu trúc đảo ngữ: Scarcely had + S + V3/ed when... diễn tả hành động vừa dứt thì hành động khác xảy ra."
-                    ),
-                    slot2SentenceBuilder = SentenceBuilderSlot(
-                        promptInstruction = "Sắp xếp các từ thành câu đảo ngữ hoàn chỉnh: 🧩",
-                        targetSentence = "Scarcely had the keynote finished when productive discussions commenced",
-                        wordTokens = listOf("Scarcely", "had", "the", "keynote", "finished", "when", "productive", "discussions", "commenced"),
-                        distractorTokens = listOf("did", "before"),
-                        explanation = "Cấu trúc đảo ngữ với phó từ phủ định nhấn mạnh."
-                    ),
-                    slot3Listening = ListeningChallengeSlot(
-                        promptInstruction = "Nghe câu đảo ngữ sau và sắp xếp lại các từ 🎧",
-                        audioSentence = "Scarcely had the keynote finished when productive discussions commenced",
-                        wordTokens = listOf("Scarcely", "had", "the", "keynote", "finished", "when", "productive", "discussions", "commenced"),
-                        explanation = "Luyện giải mã âm thanh câu đảo ngữ có ngữ điệu trang trọng."
-                    ),
-                    slot4Matching = MatchingPairsSlot(
-                        promptInstruction = "Ghép cặp các trạng từ đảo ngữ với ngữ nghĩa 🧩",
-                        pairs = listOf(
-                            PairSlotItem("scarcely", "vừa mới ... thì"),
-                            PairSlotItem("seldom", "hiếm khi"),
-                            PairSlotItem("under no circumstances", "trong bất kỳ tình huống nào cũng không"),
-                            PairSlotItem("no sooner", "ngay khi")
-                        ),
-                        explanation = "Các phó từ phủ định khởi đầu cho cấu trúc đảo ngữ đỉnh cao."
-                    ),
-                    slot5Speaking = SpeakingChallengeSlot(
-                        promptInstruction = "Luyện phát âm câu đảo ngữ học thuật 🎙️",
-                        targetSentence = "Seldom have we witnessed such remarkable commitment",
-                        phoneticFocusWord = "witnessed",
-                        explanation = "Nhấn trọng âm câu đảo ngữ trang trọng chuẩn mực."
-                    )
-                )
-
-                val unit4 = InjectedAtomicLessonUnit(
-                    title = if (isEng) "Lesson 4: Strategic Negotiation" else "Bài 4: Đàm Phán & Thuyết Phục Chiến Lược",
-                    description = if (isEng) "Articulate diplomatic concessions." else "Diễn đạt nhượng bộ và thỏa hiệp ngoại giao.",
-                    level = displayLevel,
-                    subject = "English",
-                    slot1Cloze = ClozeChoiceSlot(
-                        promptQuestion = "Which statement demonstrates constructive diplomatic negotiation?",
-                        options = listOf(
-                            "We are prepared to make reasonable concessions provided you guarantee delivery timelines",
-                            "We refuse to listen to any of your propositions",
-                            "You must accept all our terms without question",
-                            "This meeting is an entire waste of resources"
-                        ),
-                        correctIndex = 0,
-                        explanation = "Thể hiện tinh thần đàm phán hợp tác dựa trên điều kiện có đi có lại."
-                    ),
-                    slot2SentenceBuilder = SentenceBuilderSlot(
-                        promptInstruction = "Sắp xếp các từ thành câu đàm phán ngoại giao: 🧩",
-                        targetSentence = "We are prepared to make reasonable concessions provided you guarantee quality",
-                        wordTokens = listOf("We", "are", "prepared", "to", "make", "reasonable", "concessions", "provided", "you", "guarantee", "quality"),
-                        distractorTokens = listOf("must"),
-                        explanation = "Cấu trúc liên từ điều kiện: 'provided that + mệnh đề'."
-                    ),
-                    slot3Listening = ListeningChallengeSlot(
-                        promptInstruction = "Nghe câu đàm phán sau và sắp xếp lại các từ 🎧",
-                        audioSentence = "We are prepared to make reasonable concessions provided you guarantee quality",
-                        wordTokens = listOf("We", "are", "prepared", "to", "make", "reasonable", "concessions", "provided", "you", "guarantee", "quality"),
-                        explanation = "Luyện nhận diện âm điệu đàm phán ôn hòa nhưng kiên định."
-                    ),
-                    slot4Matching = MatchingPairsSlot(
-                        promptInstruction = "Ghép cặp các thuật ngữ đàm phán quốc tế 🧩",
-                        pairs = listOf(
-                            PairSlotItem("concession", "sự nhượng bộ"),
-                            PairSlotItem("consensus", "sự đồng thuận chung"),
-                            PairSlotItem("leverage", "đòn bẩy thương lượng"),
-                            PairSlotItem("deadlock", "sự bế tắc")
-                        ),
-                        explanation = "Thuật ngữ trọng tâm trên bàn đàm phán quốc tế."
-                    ),
-                    slot5Speaking = SpeakingChallengeSlot(
-                        promptInstruction = "Luyện phát âm câu đàm phán tự tin 🎙️",
-                        targetSentence = "Reaching a mutual consensus remains our primary priority",
-                        phoneticFocusWord = "consensus",
-                        explanation = "Phát âm chuẩn âm /kənˈsensəs/ với phong thái đĩnh đạc."
-                    )
-                )
-
-                val unit5 = InjectedAtomicLessonUnit(
-                    title = if (isEng) "Lesson 5: Executive Mastery & Discourse" else "Bài 5: Hùng Biện Lãnh Đạo & Vượt Chặng",
-                    description = if (isEng) "Deliver visionary executive statements." else "Phát biểu chiến lược truyền cảm hứng và vượt chặng C1.",
-                    level = displayLevel,
-                    subject = "English",
-                    slot1Cloze = ClozeChoiceSlot(
-                        promptQuestion = "In an executive town hall, which statement best projects visionary leadership?",
-                        options = listOf(
-                            "Our collective resilience will steer this organization toward enduring excellence",
-                            "I doubt we can overcome these current obstacles",
-                            "Everyone should just mind their own business",
-                            "Profits dropped and nobody knows what to do"
-                        ),
-                        correctIndex = 0,
-                        explanation = "Văn phong truyền cảm hứng khơi dậy niềm tin và hành động tập thể."
-                    ),
-                    slot2SentenceBuilder = SentenceBuilderSlot(
-                        promptInstruction = "Sắp xếp các từ thành thông điệp lãnh đạo: 🧩",
-                        targetSentence = "Our collective resilience will steer this organization toward enduring excellence",
-                        wordTokens = listOf("Our", "collective", "resilience", "will", "steer", "this", "organization", "toward", "enduring", "excellence"),
-                        distractorTokens = listOf("can"),
-                        explanation = "Câu mang tính biểu tượng với cấu trúc song hành uyển chuyển."
-                    ),
-                    slot3Listening = ListeningChallengeSlot(
-                        promptInstruction = "Nghe thông điệp truyền cảm hứng sau và sắp xếp lại 🎧",
-                        audioSentence = "Our collective resilience will steer this organization toward enduring excellence",
-                        wordTokens = listOf("Our", "collective", "resilience", "will", "steer", "this", "organization", "toward", "enduring", "excellence"),
-                        explanation = "Luyện nghe thông điệp với nhịp điệu diễn thuyết hùng hồn."
-                    ),
-                    slot4Matching = MatchingPairsSlot(
-                        promptInstruction = "Ghép cặp các phẩm chất lãnh đạo 🧩",
-                        pairs = listOf(
-                            PairSlotItem("resilience", "khả năng phục hồi kiên cường"),
-                            PairSlotItem("foresight", "tầm nhìn nhìn xa trông rộng"),
-                            PairSlotItem("integrity", "sự chính trực liêm chính"),
-                            PairSlotItem("synergy", "sức mạnh cộng hưởng")
-                        ),
-                        explanation = "Bộ tứ phẩm chất lãnh đạo cốt lõi theo chuẩn quốc tế."
-                    ),
-                    slot5Speaking = SpeakingChallengeSlot(
-                        promptInstruction = "Luyện phát biểu câu kết chặng đầy cảm hứng 🎙️",
-                        targetSentence = "Executive leadership requires strategic vision and transparent communication",
-                        phoneticFocusWord = "transparent",
-                        explanation = "Nói với chất giọng trầm ấm, dõng dạc, dứt khoát hoàn thành chặng xuất sắc!"
-                    )
-                )
-
-                Triple(title, desc, listOf(unit1, unit2, unit3, unit4, unit5))
-            }
-            else -> {
-                val title = if (isEng) "AI Roadmap: $cleanTopic ($displayLevel)" else "Lộ trình AI: $cleanTopic ($displayLevel)"
-                val desc = if (isEng) "Dynamic conversational microlearning curriculum designed by Kiki AI."
-                else "Lộ trình vi mô dựa trên khuôn mẫu động do AI Kiki thiết kế theo mục tiêu của bạn."
-
-                val unit1 = InjectedAtomicLessonUnit(
-                    title = if (isEng) "Lesson 1: Daily Workplace Vocabulary" else "Bài 1: Từ Vựng Công Sở & Đời Sống",
-                    description = if (isEng) "Practical words for everyday work routine." else "Nắm vững các từ vựng giao tiếp thực tế hàng ngày.",
-                    level = displayLevel,
-                    subject = "English",
-                    slot1Cloze = ClozeChoiceSlot(
-                        promptQuestion = "Choose the most appropriate word: 'I have scheduled an important _____ with our client tomorrow.'",
-                        options = listOf("appointment", "appointmenting", "appoints", "disappointment"),
-                        correctIndex = 0,
-                        explanation = "Danh từ 'appointment' nghĩa là cuộc hẹn đã sắp xếp trước."
-                    ),
-                    slot2SentenceBuilder = SentenceBuilderSlot(
-                        promptInstruction = "Sắp xếp các từ thành câu hẹn gặp: 🧩",
-                        targetSentence = "I have an important appointment with our client tomorrow",
-                        wordTokens = listOf("I", "have", "an", "important", "appointment", "with", "our", "client", "tomorrow"),
-                        distractorTokens = listOf("has"),
-                        explanation = "Cấu trúc câu hoàn chỉnh về cuộc hẹn trong công việc."
-                    ),
-                    slot3Listening = ListeningChallengeSlot(
-                        promptInstruction = "Nghe câu sau và sắp xếp lại các từ cho đúng thứ tự 🎧",
-                        audioSentence = "I have an important appointment with our client tomorrow",
-                        wordTokens = listOf("I", "have", "an", "important", "appointment", "with", "our", "client", "tomorrow"),
-                        explanation = "Luyện nghe nhận diện câu hẹn gặp phổ biến trong môi trường làm việc."
-                    ),
-                    slot4Matching = MatchingPairsSlot(
-                        promptInstruction = "Ghép cặp các từ vựng công sở thông dụng 🧩",
-                        pairs = listOf(
-                            PairSlotItem("appointment", "cuộc hẹn"),
-                            PairSlotItem("convenient", "tiện lợi"),
-                            PairSlotItem("schedule", "lịch trình"),
-                            PairSlotItem("confirm", "xác nhận")
-                        ),
-                        explanation = "Từ vựng thông dụng tần suất cao trong sinh hoạt và công việc hàng ngày."
-                    ),
-                    slot5Speaking = SpeakingChallengeSlot(
-                        promptInstruction = "Luyện nói câu sắp xếp lịch trình tự nhiên 🎙️",
-                        targetSentence = "Please let me know which time is convenient for you",
-                        phoneticFocusWord = "convenient",
-                        explanation = "Phát âm âm /kənˈviː.ni.ənt/ mượt mà khi trao đổi lịch hẹn."
-                    )
-                )
-
-                val unit2 = InjectedAtomicLessonUnit(
-                    title = if (isEng) "Lesson 2: High-Frequency Phrasal Verbs" else "Bài 2: Cụm Động Từ Thông Dụng",
-                    description = if (isEng) "Master essential phrasal verbs." else "Làm chủ các cụm động từ tự nhiên như người bản xứ.",
-                    level = displayLevel,
-                    subject = "English",
-                    slot1Cloze = ClozeChoiceSlot(
-                        promptQuestion = "Which phrasal verb means 'to eagerly anticipate something pleasant'?",
-                        options = listOf("look forward to", "look down on", "look into", "look out"),
-                        correctIndex = 0,
-                        explanation = "'Look forward to + V-ing/Noun' nghĩa là rất mong chờ điều gì đó."
-                    ),
-                    slot2SentenceBuilder = SentenceBuilderSlot(
-                        promptInstruction = "Sắp xếp các từ thành câu bày tỏ sự mong đợi: 🧩",
-                        targetSentence = "I am really looking forward to our weekend trip",
-                        wordTokens = listOf("I", "am", "really", "looking", "forward", "to", "our", "weekend", "trip"),
-                        distractorTokens = listOf("for"),
-                        explanation = "Cấu trúc: be + looking forward to + Noun phrase."
-                    ),
-                    slot3Listening = ListeningChallengeSlot(
-                        promptInstruction = "Nghe câu sau và sắp xếp lại các từ 🎧",
-                        audioSentence = "I am really looking forward to our weekend trip",
-                        wordTokens = listOf("I", "am", "really", "looking", "forward", "to", "our", "weekend", "trip"),
-                        explanation = "Luyện nghe cụm từ 'look forward to' được nối âm tự nhiên."
-                    ),
-                    slot4Matching = MatchingPairsSlot(
-                        promptInstruction = "Ghép cặp các phrasal verbs thông dụng với nghĩa tiếng Việt 🧩",
-                        pairs = listOf(
-                            PairSlotItem("look forward to", "rất mong đợi"),
-                            PairSlotItem("figure out", "tìm ra cách giải quyết"),
-                            PairSlotItem("drop by", "ghé qua thăm"),
-                            PairSlotItem("take care of", "chăm sóc / xử lý")
-                        ),
-                        explanation = "4 cụm động từ xuất hiện liên tục trong mọi cuộc trò chuyện thường nhật."
-                    ),
-                    slot5Speaking = SpeakingChallengeSlot(
-                        promptInstruction = "Luyện nói câu thân mật với phrasal verb 🎙️",
-                        targetSentence = "Feel free to drop by my office anytime today",
-                        phoneticFocusWord = "drop by",
-                        explanation = "Nói tự nhiên, không ngắt quãng giữa 'drop' và 'by'."
-                    )
-                )
-
-                val unit3 = InjectedAtomicLessonUnit(
-                    title = if (isEng) "Lesson 3: Polite Inquiries & Requests" else "Bài 3: Câu Hỏi & Nhờ Vả Lịch Sự",
-                    description = if (isEng) "Ask questions politely in public." else "Rèn luyện cách hỏi đường và nhờ vả trang nhã.",
-                    level = displayLevel,
-                    subject = "English",
-                    slot1Cloze = ClozeChoiceSlot(
-                        promptQuestion = "Choose the most polite question to ask for directions:",
-                        options = listOf(
-                            "Could you please tell me how to get to the station?",
-                            "Tell me where the station is right now!",
-                            "Why don't you show me the station?",
-                            "Station where?"
-                        ),
-                        correctIndex = 0,
-                        explanation = "Mẫu câu 'Could you please tell me how to...' là cách hỏi đường lịch sự nhất."
-                    ),
-                    slot2SentenceBuilder = SentenceBuilderSlot(
-                        promptInstruction = "Sắp xếp các từ thành câu hỏi đường lịch sự: 🧩",
-                        targetSentence = "Could you please tell me how to get there",
-                        wordTokens = listOf("Could", "you", "please", "tell", "me", "how", "to", "get", "there"),
-                        distractorTokens = listOf("did", "can"),
-                        explanation = "Câu hỏi gián tiếp lịch sự: Could you please tell me + wh-question clause."
-                    ),
-                    slot3Listening = ListeningChallengeSlot(
-                        promptInstruction = "Nghe câu sau và sắp xếp lại các từ 🎧",
-                        audioSentence = "Could you please tell me how to get there",
-                        wordTokens = listOf("Could", "you", "please", "tell", "me", "how", "to", "get", "there"),
-                        explanation = "Luyện nhận diện ngữ điệu lên giọng ở cuối câu hỏi lịch sự."
-                    ),
-                    slot4Matching = MatchingPairsSlot(
-                        promptInstruction = "Ghép cặp các mẫu câu nhờ vả với sắc thái 🧩",
-                        pairs = listOf(
-                            PairSlotItem("could you please", "bạn có thể vui lòng..."),
-                            PairSlotItem("would you mind", "bạn có phiền nếu..."),
-                            PairSlotItem("I wonder if", "tôi tự hỏi liệu..."),
-                            PairSlotItem("thank you in advance", "cảm ơn bạn trước nhé")
-                        ),
-                        explanation = "Bộ công cụ vàng để giao tiếp lịch sự trong môi trường đa văn hóa."
-                    ),
-                    slot5Speaking = SpeakingChallengeSlot(
-                        promptInstruction = "Luyện phát âm câu nhờ vả nhã nhặn 🎙️",
-                        targetSentence = "Would you mind helping me with this suitcase",
-                        phoneticFocusWord = "suitcase",
-                        explanation = "Giữ ngữ điệu nhẹ nhàng, ấm áp khi nhờ giúp đỡ."
-                    )
-                )
-
-                val unit4 = InjectedAtomicLessonUnit(
-                    title = if (isEng) "Lesson 4: Expressing Preferences & Plans" else "Bài 4: Bày Tỏ Quan Điểm & Kế Hoạch",
-                    description = if (isEng) "Order food and express preferences." else "Biểu đạt sở thích và gọi món lịch thiệp.",
-                    level = displayLevel,
-                    subject = "English",
-                    slot1Cloze = ClozeChoiceSlot(
-                        promptQuestion = "Choose the most natural way to order coffee in a cafe:",
-                        options = listOf(
-                            "I would like to order a warm cup of coffee",
-                            "Bring me coffee immediately",
-                            "I need coffee now",
-                            "Give coffee"
-                        ),
-                        correctIndex = 0,
-                        explanation = "'I would like to order...' là cách gọi món chuẩn mực, nhã nhặn tại nhà hàng, quán cà phê."
-                    ),
-                    slot2SentenceBuilder = SentenceBuilderSlot(
-                        promptInstruction = "Sắp xếp các từ thành câu gọi đồ uống: 🧩",
-                        targetSentence = "I would like to order a warm cup of coffee",
-                        wordTokens = listOf("I", "would", "like", "to", "order", "a", "warm", "cup", "of", "coffee"),
-                        distractorTokens = listOf("give"),
-                        explanation = "Cấu trúc gọi món chuẩn mực: I would like + to V / Noun."
-                    ),
-                    slot3Listening = ListeningChallengeSlot(
-                        promptInstruction = "Nghe câu sau và sắp xếp lại các từ 🎧",
-                        audioSentence = "I would like to order a warm cup of coffee",
-                        wordTokens = listOf("I", "would", "like", "to", "order", "a", "warm", "cup", "of", "coffee"),
-                        explanation = "Luyện nhận diện âm thanh giao tiếp gọi đồ uống lịch thiệp."
-                    ),
-                    slot4Matching = MatchingPairsSlot(
-                        promptInstruction = "Ghép cặp từ vựng ẩm thực và dịch vụ 🧩",
-                        pairs = listOf(
-                            PairSlotItem("delicious", "ngon miệng"),
-                            PairSlotItem("receipt", "hóa đơn thanh toán"),
-                            PairSlotItem("recommendation", "món gợi ý"),
-                            PairSlotItem("reservation", "đặt bàn trước")
-                        ),
-                        explanation = "Từ vựng hữu ích khi đi ăn uống hoặc du lịch nước ngoài."
-                    ),
-                    slot5Speaking = SpeakingChallengeSlot(
-                        promptInstruction = "Luyện nói câu gọi món trôi chảy 🎙️",
-                        targetSentence = "Could we please have the bill now",
-                        phoneticFocusWord = "bill",
-                        explanation = "Nói liền mạch cụm 'have the bill' với ngữ điệu tự nhiên."
-                    )
-                )
-
-                val unit5 = InjectedAtomicLessonUnit(
-                    title = if (isEng) "Lesson 5: Conversational Reflex & Mastery" else "Bài 5: Phản Xạ Tình Huống & Vượt Chặng",
-                    description = if (isEng) "Apply everything in simulated conversation." else "Ứng dụng tổng hợp và vượt chặng Intermediate.",
-                    level = displayLevel,
-                    subject = "English",
-                    slot1Cloze = ClozeChoiceSlot(
-                        promptQuestion = "A colleague says: 'Thank you for your valuable support!' What is your best response?",
-                        options = listOf(
-                            "You are very welcome! It was a pleasure working with you.",
-                            "Do not mention it, I hated doing it.",
-                            "Why are you thanking me?",
-                            "I know I am great."
-                        ),
-                        correctIndex = 0,
-                        explanation = "'You are very welcome! It was a pleasure...' là phản hồi chuyên nghiệp, ấm áp và duyên dáng."
-                    ),
-                    slot2SentenceBuilder = SentenceBuilderSlot(
-                        promptInstruction = "Sắp xếp các từ thành câu phản hồi ấm áp: 🧩",
-                        targetSentence = "It was a true pleasure working with you on this project",
-                        wordTokens = listOf("It", "was", "a", "true", "pleasure", "working", "with", "you", "on", "this", "project"),
-                        distractorTokens = listOf("work"),
-                        explanation = "Cấu trúc phản xạ giao tiếp lịch thiệp trong công việc."
-                    ),
-                    slot3Listening = ListeningChallengeSlot(
-                        promptInstruction = "Nghe câu sau và sắp xếp lại các từ 🎧",
-                        audioSentence = "It was a true pleasure working with you on this project",
-                        wordTokens = listOf("It", "was", "a", "true", "pleasure", "working", "with", "you", "on", "this", "project"),
-                        explanation = "Luyện nghe câu chúc mừng và tri ân đối tác."
-                    ),
-                    slot4Matching = MatchingPairsSlot(
-                        promptInstruction = "Ghép cặp các câu đối thoại phản xạ nhanh 🧩",
-                        pairs = listOf(
-                            PairSlotItem("my pleasure", "rất hân hạnh"),
-                            PairSlotItem("no problem at all", "không có vấn đề gì cả"),
-                            PairSlotItem("keep in touch", "giữ liên lạc nhé"),
-                            PairSlotItem("have a wonderful trip", "chúc bạn có chuyến đi tuyệt vời")
-                        ),
-                        explanation = "Các câu nói cửa miệng thông dụng giúp cuộc đối thoại thêm duyên dáng."
-                    ),
-                    slot5Speaking = SpeakingChallengeSlot(
-                        promptInstruction = "Luyện nói câu kết chặng tràn đầy năng lượng 🎙️",
-                        targetSentence = "Thank you so much for your warm hospitality and support",
-                        phoneticFocusWord = "hospitality",
-                        explanation = "Nhấn trọng âm /ˌhɒs.pɪˈtæl.ə.ti/ chính xác và giữ nụ cười khi nói!"
-                    )
-                )
-
-                Triple(title, desc, listOf(unit1, unit2, unit3, unit4, unit5))
-            }
-        }
-
-        val allQuestions = units.flatMap { it.toQuestionsList() }
-
-        return ChapterGeneratedResponse(
-            title = chapterTitle,
-            description = chapterDesc,
-            level = displayLevel,
-            subject = "English",
-            orderNo = 0,
-            questions = allQuestions
+        return com.example.model.SpiralCurriculumBlueprint.generateTopicAwareChapter(
+            level = level,
+            topic = topic,
+            weakWords = weakWords,
+            isEng = isEng
         )
     }
 
@@ -2265,52 +1558,54 @@ class StudyViewModel @Inject constructor(
                                   level.equals("C1", ignoreCase = true) ||
                                   level.equals("B2", ignoreCase = true)
 
+            val topicSpecificGuidance = com.example.model.SpiralCurriculumBlueprint.buildTopicSpecificGeminiGuidance(level, topic)
+
             val levelQuestionConstraints = when {
                 isBeginnerLevel -> """
-                    PEDAGOGICAL CONSTRAINT: ZERO-KNOWLEDGE BEGINNER (A0-A1):
-                    - The learner knows ALMOST NO ENGLISH (mới bắt đầu từ số 0).
-                    - ALL questions MUST use ONLY extremely simple vocabulary: hello, hi, my, name, is, thank you, please, goodbye, friend, water, coffee, yes, no, good, morning.
-                    - Target sentences must be 2 to 4 words MAX (e.g. "Hello, my name is Alex", "Nice to meet you", "I am fine, thank you").
-                    - MULTIPLE_CHOICE: Prompt in Vietnamese explaining a basic situation (e.g. "Khi gặp một người bạn mới, bạn nên chào như thế nào?"). Correct answer: "Hello, nice to meet you!".
-                    - SENTENCE_BUILDER: Target sentence must be 3-5 simple tokens (e.g. "Hello my name is Alex").
-                    - LISTENING_CHALLENGE: Audio sentence must be a short, clear 3-5 word greeting (e.g. "Hello nice to meet you").
-                    - MATCHING_PAIRS: Exactly 4 simple word pairs like ["hello=xin chào", "thank you=cảm ơn", "goodbye=tạm biệt", "please=làm ơn"].
-                    - SPEAKING_CHALLENGE: Target sentence must be a short 3-4 word greeting phrase (e.g. "Hello, nice to meet you").
-                    - STRICTLY FORBIDDEN: No complex sentences, no idioms, no phrasal verbs, no connected speech (could've, gonna), no passive voice, no abstract words!
+                    PEDAGOGICAL CONSTRAINT: BEGINNER SPIRAL PROGRESSION (A0 -> A1 -> A2):
+                    - Teach the specific vocabulary and sentences of the target topic "$topic" following the Topic Focus below, while recycling earlier basic words!
+                    - Keep sentences short and clear (2 words in Lesson 1-2, 2-3 words in Lesson 3, 3-4 words in Lesson 4, 4-5 words in Lesson 5).
+                    - MULTIPLE_CHOICE: Prompt in Vietnamese explaining a clear situation for "$topic".
+                    - SENTENCE_BUILDER: Target sentence must match the lesson's scaffolding step (2 tokens in L1-L2, 3 tokens in L3, 4 tokens in L4, 4-5 tokens in L5).
+                    - LISTENING_CHALLENGE: Short, clear audio sentence matching the target topic.
+                    - MATCHING_PAIRS: 4 vocabulary/phrase pairs ("english=vietnamese") directly teaching "$topic".
+                    - SPEAKING_CHALLENGE: Short word/phrase/sentence from "$topic".
+                    - STRICTLY FORBIDDEN: No complex clauses, no idioms, no connected speech reductions (could've, gonna), no passive voice!
                 """.trimIndent()
                 isAdvancedLevel -> """
                     PEDAGOGICAL CONSTRAINT: ADVANCED LEARNER (B2-C1):
-                    - Challenge the learner with sophisticated lexical nuances, academic idioms, connected speech, elision, and complex sentence structures.
-                    - MULTIPLE_CHOICE: Nuanced distinction between similar academic or business expressions.
-                    - SENTENCE_BUILDER: 7-9 tokens with inverted syntax or complex clauses.
-                    - LISTENING_CHALLENGE: Connected speech audio sentence with native reductions.
-                    - MATCHING_PAIRS: Advanced collocations or professional terminology.
-                    - SPEAKING_CHALLENGE: Executive leadership cadence and natural speech flow.
+                    - Challenge the learner with sophisticated lexical nuances, academic idioms, syntactic inversion, diplomatic hedging, and complex sentence structures tailored to "$topic".
+                    - MULTIPLE_CHOICE: Nuanced distinction between C1 academic or executive expressions.
+                    - SENTENCE_BUILDER: 6-9 tokens with inverted syntax or strategic clauses.
+                    - LISTENING_CHALLENGE: High-register executive or academic discourse.
+                    - MATCHING_PAIRS: 4 advanced C1 collocations or terminology ("english=vietnamese").
+                    - SPEAKING_CHALLENGE: Executive leadership cadence and persuasive rhetoric.
                 """.trimIndent()
                 else -> """
                     PEDAGOGICAL CONSTRAINT: INTERMEDIATE LEARNER (B1-B2):
-                    - Focus on practical conversational fluency, high-frequency phrasal verbs, and polite inquiries.
-                    - MULTIPLE_CHOICE: Practical communicative dilemma in everyday/work context.
-                    - SENTENCE_BUILDER: 5-7 words forming a natural polite request.
-                    - LISTENING_CHALLENGE: Everyday conversational dialogue.
-                    - MATCHING_PAIRS: Practical everyday vocabulary and phrasal verbs.
-                    - SPEAKING_CHALLENGE: Natural pronunciation of daily conversational questions.
+                    - Focus on practical conversational fluency, natural collocations, phrasal verbs, polite indirect inquiries, and conditionals tailored to "$topic".
+                    - MULTIPLE_CHOICE: Practical communicative or grammatical dilemma in everyday/work context.
+                    - SENTENCE_BUILDER: 4-7 words forming a natural sentence for "$topic".
+                    - LISTENING_CHALLENGE: Everyday conversational or workplace sentence.
+                    - MATCHING_PAIRS: 4 practical B1-B2 collocations or phrasal verbs ("english=vietnamese").
+                    - SPEAKING_CHALLENGE: Natural pronunciation of daily/workplace expressions.
                 """.trimIndent()
             }
 
             val prompt = """
-                You are Kiki AI, an expert Microlearning Pedagogical Designer.
+                You are Kiki AI, an expert Microlearning Pedagogical Designer modeled after Duolingo's Spiral Curriculum.
                 Create a complete 5-Lesson Chapter Curriculum with exactly 25 progressive questions (5 lessons x 5 questions per lesson) for the topic: "$topic" at level "$level".
                 $weakPrompt
                 $levelQuestionConstraints
+                $topicSpecificGuidance
                 CRITICAL INSTRUCTION: NEVER use raw blanks or underscores like '______'. All sentences and questions must be complete, natural, and engaging.
 
-                SCAFFOLDING LESSON STRUCTURE (EXACTLY 25 QUESTIONS):
-                - Lesson 1 (Questions 1-5): Foundation - Single vocabulary recognition (e.g. Hello, Hi, Goodbye, Thank you). 1 MULTIPLE_CHOICE, 1 SENTENCE_BUILDER (2 tokens), 1 LISTENING_CHALLENGE (2 tokens), 1 MATCHING_PAIRS (4 pairs), 1 SPEAKING_CHALLENGE (single word).
-                - Lesson 2 (Questions 6-10): Expansion - Polite single words and reactions (e.g. Please, Yes, No, Sorry). 1 MULTIPLE_CHOICE, 1 SENTENCE_BUILDER (2 tokens), 1 LISTENING_CHALLENGE (2 tokens), 1 MATCHING_PAIRS, 1 SPEAKING_CHALLENGE.
-                - Lesson 3 (Questions 11-15): Phrase Building - 2-3 word short phrases and time-based greetings (e.g. Good morning, Good night). 1 MULTIPLE_CHOICE, 1 SENTENCE_BUILDER (3 tokens), 1 LISTENING_CHALLENGE, 1 MATCHING_PAIRS, 1 SPEAKING_CHALLENGE.
-                - Lesson 4 (Questions 16-20): Sentence Construction - 3-4 word simple sentences (e.g. I am Alex, My name is Anna). 1 MULTIPLE_CHOICE, 1 SENTENCE_BUILDER (4 tokens), 1 LISTENING_CHALLENGE, 1 MATCHING_PAIRS, 1 SPEAKING_CHALLENGE.
-                - Lesson 5 (Questions 21-25): Reflex Dialogue & Mastery - Conversational reflex dialogue (e.g. How are you? - I am fine thank you, Nice to meet you). 1 MULTIPLE_CHOICE, 1 SENTENCE_BUILDER (5 tokens), 1 LISTENING_CHALLENGE, 1 MATCHING_PAIRS, 1 SPEAKING_CHALLENGE.
+                SCAFFOLDING LESSON STRUCTURE (EXACTLY 25 QUESTIONS SPECIFIC TO "$topic"):
+                - Lesson 1 (Questions 1-5): Step 1 Foundation - Core single words/concepts of "$topic". 1 MULTIPLE_CHOICE, 1 SENTENCE_BUILDER, 1 LISTENING_CHALLENGE, 1 MATCHING_PAIRS (4 pairs), 1 SPEAKING_CHALLENGE.
+                - Lesson 2 (Questions 6-10): Step 2 Expansion - Action verbs, modifiers, or reactions of "$topic". 1 MULTIPLE_CHOICE, 1 SENTENCE_BUILDER, 1 LISTENING_CHALLENGE, 1 MATCHING_PAIRS, 1 SPEAKING_CHALLENGE.
+                - Lesson 3 (Questions 11-15): Step 3 Phrase & Chunk Assembly - 2-3 word collocations/phrases of "$topic". 1 MULTIPLE_CHOICE, 1 SENTENCE_BUILDER, 1 LISTENING_CHALLENGE, 1 MATCHING_PAIRS, 1 SPEAKING_CHALLENGE.
+                - Lesson 4 (Questions 16-20): Step 4 Sentence Construction - Complete sentences applying "$topic". 1 MULTIPLE_CHOICE, 1 SENTENCE_BUILDER, 1 LISTENING_CHALLENGE, 1 MATCHING_PAIRS, 1 SPEAKING_CHALLENGE.
+                - Lesson 5 (Questions 21-25): Step 5 Reflex Dialogue & Mastery - Real-world Q&A dialogue mastering "$topic". 1 MULTIPLE_CHOICE, 1 SENTENCE_BUILDER, 1 LISTENING_CHALLENGE, 1 MATCHING_PAIRS, 1 SPEAKING_CHALLENGE.
 
                 You MUST return ONLY a raw JSON object (no markdown, no backticks) with this exact schema:
                 {
@@ -2335,7 +1630,7 @@ class StudyViewModel @Inject constructor(
 
             val contents = listOf(GeminiModels.Content(role = "user", parts = listOf(GeminiModels.Part(text = prompt))))
             val systemInstruction = GeminiModels.createSystemInstruction(
-                "You are Kiki AI, an expert Microlearning Pedagogical Designer. Always output strict JSON only, without markdown fences or outside explanations. NEVER generate raw underscores or blanks. Strictly enforce CEFR level: zero-knowledge beginners must receive ultra-simple greetings (hello, thank you, my name is) with 2-4 word sentences. Provide all 25 progressive questions covering all 5 lessons."
+                "You are Kiki AI, an expert Microlearning Pedagogical Designer. Always output strict JSON only, without markdown fences or outside explanations. NEVER generate raw underscores or blanks. Strictly teach the vocabulary and grammar of the requested topic '$topic' at CEFR level '$level' across all 25 progressive questions (5 lessons x 5 questions)."
             )
             val request = GeminiModels.GenerateContentRequest(
                 contents = contents,
@@ -2357,7 +1652,7 @@ class StudyViewModel @Inject constructor(
                     .trim()
 
                 val jsonObj = JSONObject(cleanJson)
-                val title = jsonObj.optString("title", "Lộ trình AI: $topic")
+                val title = jsonObj.optString("title", topic).ifBlank { topic }
                 val desc = jsonObj.optString("description", "Bài học Microlearning 3C tối ưu theo mục tiêu học tập.")
                 val questionsArr = jsonObj.optJSONArray("questions")
                 val questionList = mutableListOf<QuestionItemDto>()
@@ -2365,6 +1660,8 @@ class StudyViewModel @Inject constructor(
                 if (questionsArr != null) {
                     for (i in 0 until questionsArr.length()) {
                         val qObj = questionsArr.getJSONObject(i)
+                        val qText = qObj.optString("questionText", "").trim()
+                        if (qText.isBlank() || qText.contains("______")) continue
                         val rawOpts = qObj.opt("optionsJson") ?: qObj.opt("options")
                         val finalOptionsJson = when (rawOpts) {
                             is org.json.JSONArray -> rawOpts.toString()
@@ -2373,11 +1670,11 @@ class StudyViewModel @Inject constructor(
                         }
                         questionList.add(
                             QuestionItemDto(
-                                questionText = qObj.optString("questionText", "Question $i"),
+                                questionText = qText,
                                 questionType = qObj.optString("questionType", "MULTIPLE_CHOICE"),
                                 optionsJson = finalOptionsJson,
                                 correctAnswer = qObj.optString("correctAnswer", "0"),
-                                explanation = qObj.optString("explanation", "Giải thích"),
+                                explanation = qObj.optString("explanation", "Giải thích chi tiết từ Kiki AI."),
                                 points = qObj.optInt("points", 10),
                                 difficulty = qObj.optString("difficulty", "MEDIUM")
                             )
@@ -2386,13 +1683,21 @@ class StudyViewModel @Inject constructor(
                 }
 
                 if (questionList.isNotEmpty()) {
+                    // Smart Hybrid Supplement: nếu Gemini trả về ít hơn 25 câu (do giới hạn token),
+                    // tự động bù đắp các bài học còn thiếu từ khung chương trình chuẩn theo đúng chủ đề (Topic-Aware Blueprint)
+                    val completeQuestions = if (questionList.size >= 25) {
+                        questionList.take(25)
+                    } else {
+                        val blueprint = generatePersonalizedChapter(level, topic, weakWords).questions
+                        (questionList + blueprint.drop(questionList.size)).take(25)
+                    }
                     return@withContext ChapterGeneratedResponse(
                         title = title,
                         description = desc,
                         level = level,
                         subject = "English",
                         orderNo = 0,
-                        questions = questionList
+                        questions = completeQuestions
                     )
                 }
             }
@@ -2674,7 +1979,30 @@ class StudyViewModel @Inject constructor(
     }
 
     /**
-     * Tự động hoặc chủ động gọi AI sinh chương học tiếp theo dựa trên Kho Điểm Yếu
+     * Tự động thăng cấp trình độ CEFR (Automatic Spiral Level-Up) khi người học hoàn thành các cột mốc chặng:
+     * - Beginner (A0-A1): Sau khi hoàn thành >= 6 chặng nền tảng (150 câu hỏi từ vựng, câu ngắn, hỏi đường),
+     *   tự động thăng cấp lên Intermediate (B1-B2).
+     * - Intermediate (B1-B2): Sau khi hoàn thành >= 10 chặng (250 câu hỏi),
+     *   tự động thăng cấp lên Advanced (B2-C1).
+     */
+    fun resolveProgressedLevel(existingChaptersCount: Int, currentLevel: String): String {
+        val isBeginner = currentLevel.equals("Beginner", ignoreCase = true) ||
+                         currentLevel.equals("A1", ignoreCase = true) ||
+                         currentLevel.equals("A0", ignoreCase = true)
+        val isIntermediate = currentLevel.equals("Intermediate", ignoreCase = true) ||
+                             currentLevel.equals("B1", ignoreCase = true) ||
+                             currentLevel.equals("A2", ignoreCase = true)
+
+        return when {
+            isBeginner && existingChaptersCount >= 6 -> "Intermediate"
+            isIntermediate && existingChaptersCount >= 10 -> "Advanced"
+            currentLevel.isBlank() -> "Beginner"
+            else -> currentLevel
+        }
+    }
+
+    /**
+     * Tự động hoặc chủ động gọi AI sinh chương học tiếp theo dựa trên Kho Điểm Yếu & Lộ Trình Xoắn Ốc
      * Ưu tiên tuyệt đối: Bộ nhớ đệm dự đoán (Predictive Prefetched) -> Gemini 2.5 Flash -> Backend -> Fallback
      */
     fun generateNextChapterOnDemand(
@@ -2694,11 +2022,15 @@ class StudyViewModel @Inject constructor(
                 val weakWords = extractWeakKeywords(weakPointsList)
                 val chapters = _availableChapters.value?.takeIf { it.isNotEmpty() }
                     ?: repository.getChaptersByPreference(_selectedLevel.value, _selectedSubject.value)
-                val targetLevel = _selectedLevel.value ?: "Beginner"
+                val rawLevel = _selectedLevel.value ?: "Beginner"
+                val targetLevel = resolveProgressedLevel(chapters.size, rawLevel)
+                if (!targetLevel.equals(rawLevel, ignoreCase = true)) {
+                    _selectedLevel.postValue(targetLevel)
+                }
                 val nextTopic = determineNextTopic(chapters, targetLevel)
 
                 // 1. Kiểm tra bộ nhớ đệm nạp trước (Zero Latency UX)
-                val prefetched = prefetchedMicrolearningCache.remove(nextTopic)
+                val prefetched = prefetchedMicrolearningCache.remove(nextTopic)?.takeIf { it.questions.size >= 25 }
                 if (prefetched != null) {
                     val newChapterId = repository.saveAiGeneratedChapter(prefetched)
                     if (newChapterId != -1L) {
@@ -2742,12 +2074,18 @@ class StudyViewModel @Inject constructor(
                     level = targetLevel,
                     topic = nextTopic,
                     weakWords = weakWords,
-                    questionCount = 5
+                    questionCount = 25
                 )
 
                 val response = backendApiService.generateChapter("Bearer $token", request)
                 if (response.isSuccessful && response.body() != null) {
-                    val chapterData = response.body()!!
+                    val rawData = response.body()!!
+                    val chapterData = if (rawData.questions.size >= 25) {
+                        rawData
+                    } else {
+                        val blueprint = generatePersonalizedChapter(targetLevel, nextTopic, weakWords).questions
+                        rawData.copy(questions = (rawData.questions + blueprint.drop(rawData.questions.size)).take(25))
+                    }
                     val newChapterId = repository.saveAiGeneratedChapter(chapterData)
                     if (newChapterId != -1L) {
                         refreshChapters()
@@ -2770,7 +2108,8 @@ class StudyViewModel @Inject constructor(
                 }
             } catch (e: Exception) {
                 val chapters = _availableChapters.value ?: emptyList()
-                val targetLevel = _selectedLevel.value ?: "Beginner"
+                val rawLevel = _selectedLevel.value ?: "Beginner"
+                val targetLevel = resolveProgressedLevel(chapters.size, rawLevel)
                 val nextTopic = determineNextTopic(chapters, targetLevel)
                 val weakPointsList = repository.getWeakPoints(targetUserId)
                 val weakWords = extractWeakKeywords(weakPointsList)
@@ -2783,53 +2122,57 @@ class StudyViewModel @Inject constructor(
     }
 
     fun determineNextTopic(existingChapters: List<String>, level: String): String {
-        val isBeginner = level.equals("Beginner", ignoreCase = true) || level.equals("A1", ignoreCase = true) || level.equals("A0", ignoreCase = true)
-        val isAdvanced = level.equals("Advanced", ignoreCase = true) || level.equals("C1", ignoreCase = true) || level.equals("B2", ignoreCase = true)
+        val progressedLevel = resolveProgressedLevel(existingChapters.size, level)
+        val isBeginner = progressedLevel.equals("Beginner", ignoreCase = true) ||
+                         progressedLevel.equals("A1", ignoreCase = true) ||
+                         progressedLevel.equals("A0", ignoreCase = true)
+        val isAdvanced = progressedLevel.equals("Advanced", ignoreCase = true) ||
+                         progressedLevel.equals("C1", ignoreCase = true) ||
+                         progressedLevel.equals("B2", ignoreCase = true)
 
-        val syllabus = when {
-            isBeginner -> listOf(
-                "Chào Hỏi & Làm Quen Cơ Bản (Hello & Daily Greetings)",
-                "Giới Thiệu Bản Thân & Hỏi Thăm (Personal Identity & How Are You)",
-                "Nhu Cầu & Đồ Vật Thiết Yếu (Everyday Essentials & Requests)",
-                "Số Đếm, Thời Gian & Mua Sắm Cơ Bản (Numbers, Time & Basic Requests)",
-                "Đàm Thoại Ngắn Phản Xạ Đời Sống (Short Daily Dialogue & Mastery)",
-                "Gia Đình & Bạn Bè Cơ Bản (Family & Friends)",
-                "Món Ăn & Đồ Uống Quen Thuộc (Food & Drinks)",
-                "Màu Sắc & Trang Phục Hàng Ngày (Colors & Clothes)",
-                "Hỏi Đường & Nơi Chốn Đơn Giản (Places & Directions)",
-                "Tổng Hợp Phản Xạ Giao Tiếp Cơ Bản (Beginner Fluency Milestone)"
-            )
-            isAdvanced -> listOf(
-                "Advanced Discourse & Critical Thinking",
-                "Nuanced Collocations & Phrasal Verbs",
-                "Academic & IELTS Lexicon",
-                "Strategic Negotiation & Business Diplomacy",
-                "Connected Speech & Phonetic Precision",
-                "Executive Rhetoric & Persuasive Debate",
-                "Cross-Cultural Workplace Communication",
-                "Subtle Inferences & Stylistic Nuance",
-                "Professional Presentation Mastery",
-                "Mastery Summit & Executive Fluency Capstone"
-            )
-            else -> listOf(
-                "English Fundamentals",
-                "Vocabulary & Daily Idioms",
-                "Syntax & Sentence Mastery",
-                "Conversational Fluency",
-                "Academic & IELTS Mastery",
-                "Professional & Business Communication",
-                "Travel & Cultural Encounters",
-                "Advanced Discourse & Critical Thinking",
-                "Nuanced Collocations & Phrasal Verbs",
-                "Mastery Summit & Fluency Capstone"
-            )
+        val beginnerSyllabus = listOf(
+            "Chào Hỏi & Làm Quen Cơ Bản (Hello & Daily Greetings)",
+            "Giới Thiệu Bản Thân & Hỏi Thăm (Personal Identity & How Are You)",
+            "Nhu Cầu & Đồ Vật Thiết Yếu (Everyday Essentials & Requests)",
+            "Số Đếm, Thời Gian & Mua Sắm Cơ Bản (Numbers, Time & Basic Requests)",
+            "Đàm Thoại Ngắn Phản Xạ Đời Sống (Short Daily Dialogue & Mastery)",
+            "Hỏi Đường & Nơi Chốn Đơn Giản (Places & Directions)"
+        )
+
+        val intermediateSyllabus = listOf(
+            "Giải Mã Nuốt Âm & Nối Âm (Connected Speech & Elision)",
+            "Đặt Câu Hỏi Gián Tiếp Lịch Sự (Polite Indirect Inquiries)",
+            "Cụm Động Từ Thông Dụng (High-Frequency Phrasal Verbs)",
+            "Làm Chủ Câu Điều Kiện Giả Định (Conditionals & Complex Syntax)",
+            "Giao Tiếp Công Sở & Email Chuẩn Mực (Workplace Etiquette)",
+            "Đàm Thoại & Thuyết Trình Dự Án (Business Pitching)"
+        )
+
+        val advancedSyllabus = listOf(
+            "Đảo Ngữ & Trạng Từ Nhấn Mạnh (Inversion & Complex Syntax)",
+            "Đàm Phán & Thuyết Phục Đối Tác (Strategic Negotiation & Diplomacy)",
+            "Nền Tảng Từ Vựng Học Thuật (Academic & IELTS Lexicon)",
+            "Khẩu Ngữ Lãnh Đạo Chuyên Nghiệp (Executive Fluency & Rhetoric)"
+        )
+
+        val fullSpiralCurriculum = when {
+            isBeginner -> beginnerSyllabus + intermediateSyllabus + advancedSyllabus
+            isAdvanced -> advancedSyllabus + intermediateSyllabus
+            else -> intermediateSyllabus + advancedSyllabus
         }
-        for (topic in syllabus) {
-            if (!existingChapters.any { it.contains(topic, ignoreCase = true) }) {
-                return topic
+
+        val stageNumber = existingChapters.size + 1
+        for (topic in fullSpiralCurriculum) {
+            val coreName = topic.substringBefore("(").trim()
+            val alreadyExists = existingChapters.any { existing ->
+                existing.contains(topic, ignoreCase = true) ||
+                (coreName.length > 5 && existing.contains(coreName, ignoreCase = true))
+            }
+            if (!alreadyExists) {
+                return "Chặng $stageNumber: $topic"
             }
         }
-        return "Adaptive Mastery: Level $level Stage ${existingChapters.size + 1}"
+        return "Chặng $stageNumber: Đàm Phán & Thuyết Phục Đối Tác (Strategic Negotiation Stage $stageNumber)"
     }
 
     fun extractWeakKeywords(weakPoints: List<WeakPointEntity>): List<String> {

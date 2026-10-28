@@ -241,8 +241,10 @@ class DataRepository @Inject constructor(
                     QuestionType.SPEAKING_CHALLENGE -> {
                         val targetSpeakSentence = completeSentence.ifEmpty { q.questionText }
                         if (targetSpeakSentence.isNotBlank()) {
+                            val prompt = q.questionText.takeIf { it.isNotBlank() && !hasBlanks && !it.equals(targetSpeakSentence, ignoreCase = true) }
+                                ?: "Luyện nói câu tiếng Anh sau chuẩn bản xứ 🎙️"
                             QuestItem(
-                                question = "Luyện nói câu tiếng Anh sau chuẩn bản xứ 🎙️",
+                                question = prompt,
                                 options = listOf(targetSpeakSentence),
                                 correctIndex = 0,
                                 type = QuestionType.SPEAKING_CHALLENGE,
@@ -271,8 +273,10 @@ class DataRepository @Inject constructor(
                             vocabularyPairsBank.shuffled().take(4)
                         }
                         val pairSummary = selectedPairs.joinToString(", ") { "${it.english} = ${it.vietnamese}" }
+                        val prompt = q.questionText.takeIf { it.isNotBlank() && !hasBlanks && it.contains("Ghép", ignoreCase = true) }
+                            ?: "Ghép cặp các từ vựng tiếng Anh với nghĩa tiếng Việt tương ứng 🧩"
                         QuestItem(
-                            question = "Ghép cặp các từ vựng tiếng Anh với nghĩa tiếng Việt tương ứng 🧩",
+                            question = prompt,
                             options = listOf(pairSummary),
                             correctIndex = 0,
                             type = QuestionType.MATCHING_PAIRS,
@@ -287,8 +291,10 @@ class DataRepository @Inject constructor(
                             .filter { it.isNotEmpty() }
 
                         if (rawTokens.size >= 2) {
+                            val prompt = q.questionText.takeIf { it.isNotBlank() && !hasBlanks && it.contains("Nghe", ignoreCase = true) }
+                                ?: "Nghe câu sau và sắp xếp lại các từ cho đúng thứ tự 🎧"
                             QuestItem(
-                                question = "Nghe câu sau và sắp xếp lại các từ cho đúng thứ tự 🎧",
+                                question = prompt,
                                 options = options,
                                 correctIndex = correctIdx,
                                 type = QuestionType.LISTENING_CHALLENGE,
@@ -314,13 +320,19 @@ class DataRepository @Inject constructor(
                             else -> "Sắp xếp các từ sau thành câu hoàn chỉnh 🧩"
                         }
 
-                        val availableTokens = if (options.size >= 4 && !options.any { it.contains(" ") } && !hasBlanks) {
+                        val rawTokens = completeSentence.split(Regex("\\s+"))
+                            .map { it.trim().trim('.', ',', '!', '?', ';', ':', '"') }
+                            .filter { it.isNotEmpty() }
+
+                        val availableTokens = if (
+                            options.size >= 2 &&
+                            !options.any { it.contains(" ") } &&
+                            !hasBlanks &&
+                            rawTokens.isNotEmpty() &&
+                            rawTokens.all { rt -> options.any { it.equals(rt, ignoreCase = true) } }
+                        ) {
                             options.shuffled()
                         } else {
-                            val rawTokens = completeSentence.split(Regex("\\s+"))
-                                .map { it.trim().trim('.', ',', '!', '?', ';', ':', '"') }
-                                .filter { it.isNotEmpty() }
-
                             val distractorOptions = options.filterIndexed { i, _ -> i != correctIdx }
                             val distractors = mutableListOf<String>()
                             for (d in distractorOptions) {
@@ -372,17 +384,24 @@ class DataRepository @Inject constructor(
         response: ChapterGeneratedResponse,
         isPriorityFirst: Boolean = false
     ): Long = withContext(Dispatchers.IO) {
-        val currentMaxOrder = dao.getMaxChapterOrderNo() ?: 0
-        val targetOrderNo = if (isPriorityFirst) 0 else (response.orderNo ?: (currentMaxOrder + 1)).coerceAtLeast(currentMaxOrder + 1)
-        val chapter = ChapterEntity(
-            title = response.title.trim(),
-            description = response.description,
-            level = response.level ?: "Beginner",
-            subject = response.subject ?: "English",
-            orderNo = targetOrderNo,
-            isActive = 1
-        )
-        val chapterId = dao.insertChapter(chapter)
+        val cleanTitle = response.title.trim()
+        val existingId = dao.getChapterIdByTitle(cleanTitle)
+        val chapterId = if (existingId != null && existingId != -1L) {
+            dao.clearQuestionsByChapter(existingId)
+            existingId
+        } else {
+            val currentMaxOrder = dao.getMaxChapterOrderNo() ?: 0
+            val targetOrderNo = if (isPriorityFirst) 0 else (response.orderNo ?: (currentMaxOrder + 1)).coerceAtLeast(currentMaxOrder + 1)
+            val chapter = ChapterEntity(
+                title = cleanTitle,
+                description = response.description,
+                level = response.level ?: "Beginner",
+                subject = response.subject ?: "English",
+                orderNo = targetOrderNo,
+                isActive = 1
+            )
+            dao.insertChapter(chapter)
+        }
         if (chapterId != -1L) {
             response.questions.forEach { qDto ->
                 val question = QuestionEntity(
@@ -411,8 +430,9 @@ class DataRepository @Inject constructor(
 
         var firstChapterId = -1L
         stages.forEachIndexed { index, (title, description) ->
+            val cleanTitle = title.trim()
             val chapter = ChapterEntity(
-                title = title.trim(),
+                title = cleanTitle,
                 description = description,
                 level = level,
                 subject = "English",
@@ -422,19 +442,34 @@ class DataRepository @Inject constructor(
             val chapterId = dao.insertChapter(chapter)
             if (index == 0) {
                 firstChapterId = chapterId
-                firstChapterUnits?.questions?.forEach { qDto ->
-                    val question = QuestionEntity(
-                        chapterId = chapterId,
-                        questionText = qDto.questionText,
-                        questionType = qDto.questionType ?: "MULTIPLE_CHOICE",
-                        optionsJson = qDto.optionsJson,
-                        correctAnswer = qDto.correctAnswer,
-                        explanation = qDto.explanation,
-                        points = qDto.points,
-                        difficulty = qDto.difficulty ?: "MEDIUM"
-                    )
-                    dao.insertQuestion(question)
-                }
+            }
+
+            // Đảm bảo MỌI CHẶNG trong lộ trình đều có đủ 25 câu hỏi tuần tự (5 bài học x 5 câu) theo đúng chủ đề riêng của chặng đó
+            val stageQuestions = if (index == 0 && firstChapterUnits != null && firstChapterUnits.questions.size >= 25) {
+                firstChapterUnits.questions
+            } else if (index == 0 && firstChapterUnits != null && firstChapterUnits.questions.isNotEmpty()) {
+                val blueprintQuestions = com.example.model.SpiralCurriculumBlueprint
+                    .generateTopicAwareChapter(level = level, topic = cleanTitle)
+                    .questions
+                (firstChapterUnits.questions + blueprintQuestions.drop(firstChapterUnits.questions.size)).take(25)
+            } else {
+                com.example.model.SpiralCurriculumBlueprint
+                    .generateTopicAwareChapter(level = level, topic = cleanTitle)
+                    .questions
+            }
+
+            stageQuestions.forEach { qDto ->
+                val question = QuestionEntity(
+                    chapterId = chapterId,
+                    questionText = qDto.questionText,
+                    questionType = qDto.questionType ?: "MULTIPLE_CHOICE",
+                    optionsJson = qDto.optionsJson,
+                    correctAnswer = qDto.correctAnswer,
+                    explanation = qDto.explanation,
+                    points = qDto.points,
+                    difficulty = qDto.difficulty ?: "MEDIUM"
+                )
+                dao.insertQuestion(question)
             }
         }
         firstChapterId

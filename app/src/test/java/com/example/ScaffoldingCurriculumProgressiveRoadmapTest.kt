@@ -326,4 +326,94 @@ class ScaffoldingCurriculumProgressiveRoadmapTest {
         // L5: "I am fine thank you"
         assertEquals("I am fine thank you", l5Questions[1].correctAnswer)
     }
+
+    @Test
+    fun testAll6BeginnerStagesGenerateDistinct25QuestionCurricula() {
+        val beginnerStages = listOf(
+            "Chặng 1: Chào Hỏi & Làm Quen Cơ Bản (Hello & Daily Greetings)",
+            "Chặng 2: Giới Thiệu Bản Thân & Hỏi Thăm (Personal Identity & How Are You)",
+            "Chặng 3: Nhu Cầu & Đồ Vật Thiết Yếu (Everyday Essentials & Requests)",
+            "Chặng 4: Số Đếm, Thời Gian & Mua Sắm Cơ Bản (Numbers, Time & Basic Requests)",
+            "Chặng 5: Đàm Thoại Ngắn Phản Xạ Đời Sống (Short Daily Dialogue & Mastery)",
+            "Chặng 6: Hỏi Đường & Nơi Chốn Đơn Giản (Places & Directions)"
+        )
+
+        val generatedChapters = beginnerStages.map { topic ->
+            com.example.model.SpiralCurriculumBlueprint.generateTopicAwareChapter(
+                level = "Beginner",
+                topic = topic
+            )
+        }
+
+        // Verify all 6 stages have 25 questions each (150 questions total across 30 lessons)
+        generatedChapters.forEach { chapter ->
+            assertEquals(25, chapter.questions.size)
+            chapter.questions.forEach { q ->
+                org.junit.Assert.assertFalse(
+                    "Question must never contain raw blanks: ${q.questionText}",
+                    q.questionText.contains("______")
+                )
+            }
+        }
+
+        // Verify each stage teaches a DIFFERENT topic (first question & sentence builder target differ across all 6 stages)
+        val firstQuestions = generatedChapters.map { it.questions[0].questionText }.toSet()
+        assertEquals(
+            "All 6 Beginner stages must have completely distinct Lesson 1 opening questions",
+            6,
+            firstQuestions.size
+        )
+
+        val lesson4Sentences = generatedChapters.map { it.questions[16].correctAnswer }.toSet()
+        assertEquals(
+            "All 6 Beginner stages must have completely distinct Lesson 4 target sentences",
+            6,
+            lesson4Sentences.size
+        )
+    }
+
+    @Test
+    fun testAllIntermediateAndAdvancedThemesGenerateDistinct25QuestionCurricula() {
+        val intermediateAndAdvancedSpecs = listOf(
+            "Intermediate" to "Chặng 1: Giải Mã Nuốt Âm & Nối Âm (Connected Speech & Elision)",
+            "Intermediate" to "Chặng 2: Đặt Câu Hỏi Gián Tiếp Lịch Sự (Polite Indirect Inquiries)",
+            "Intermediate" to "Chặng 3: Cụm Động Từ Thông Dụng (High-Frequency Phrasal Verbs)",
+            "Intermediate" to "Chặng 4: Làm Chủ Câu Điều Kiện Giả Định (Conditionals)",
+            "Advanced" to "Chặng 1: Đảo Ngữ & Trạng Từ Nhấn Mạnh (Inversion)",
+            "Advanced" to "Chặng 2: Đàm Phán & Thuyết Phục Đối Tác (Strategic Negotiation)"
+        )
+
+        val chapters = intermediateAndAdvancedSpecs.map { (level, topic) ->
+            com.example.model.SpiralCurriculumBlueprint.generateTopicAwareChapter(
+                level = level,
+                topic = topic
+            )
+        }
+
+        chapters.forEach { chapter ->
+            assertEquals(25, chapter.questions.size)
+            // Verify 5 lessons inside the chapter have distinct questions
+            val lessons = chapter.questions.chunked(5)
+            assertEquals(5, lessons.size)
+            val lessonOpeningPrompts = lessons.map { it[0].questionText }.toSet()
+            assertEquals(5, lessonOpeningPrompts.size)
+        }
+
+        val distinctStageOpenings = chapters.map { it.questions[0].questionText }.toSet()
+        assertEquals(6, distinctStageOpenings.size)
+    }
+
+    @Test
+    fun testWeakWordsRemediationInjection() {
+        val weakWords = listOf("mitigate", "consensus")
+        val chapter = com.example.model.SpiralCurriculumBlueprint.generateTopicAwareChapter(
+            level = "Advanced",
+            topic = "Chặng 2: Đàm Phán & Thuyết Phục Đối Tác (Strategic Negotiation)",
+            weakWords = weakWords
+        )
+
+        assertEquals(25, chapter.questions.size)
+        assertTrue(chapter.description?.contains("mitigate") == true)
+        assertTrue(chapter.questions.last().explanation?.contains("mitigate") == true)
+    }
 }

@@ -169,19 +169,19 @@ private fun chapterLessonItems(
 ): List<ChapterLessonUi> {
     val copies = if (isEnglish) {
         listOf(
-            "Core Vocabulary & Grammar" to "Master key words and grammatical rules.",
-            "Pronunciation & Usage" to "Explore sentence patterns and natural phrases.",
-            "Fluency Practice" to "Apply what you learned with challenge questions.",
-            "Accuracy Check" to "Review weak points and sharpen comprehension.",
-            "Chapter Mastery" to "Complete the chapter and unlock your reward."
+            "Step 1: Core Words" to "Recognize foundational single words & pronunciation.",
+            "Step 2: Word Expansion" to "Learn key verbs, modifiers, and polite reactions.",
+            "Step 3: Phrase Building" to "Combine 2-3 words into natural collocations & chunks.",
+            "Step 4: Sentence Builder" to "Assemble phrases into complete, accurate sentences.",
+            "Step 5: Dialogue Mastery" to "Master real-world Q&A reflex and unlock next stage."
         )
     } else {
         listOf(
-            "Từ Vựng & Ngữ Pháp Gốc" to "Nắm vững từ vựng và cấu trúc ngữ pháp trọng tâm.",
-            "Cách Dùng & Phát Âm" to "Khám phá ngữ cảnh câu và cách dùng tự nhiên.",
-            "Luyện Phản Xạ Tiếng Anh" to "Áp dụng kiến thức qua các câu hỏi thử thách.",
-            "Kiểm Tra Độ Chính Xác" to "Ôn lại tiến độ và củng cố các điểm còn yếu.",
-            "Chinh Phục Chương" to "Hoàn thành chương để mở khóa phần thưởng lớn."
+            "Bước 1: Từ Vựng Cốt Lõi" to "Làm quen các từ đơn nền tảng và phát âm chuẩn.",
+            "Bước 2: Mở Rộng & Phản Hồi" to "Kết hợp động từ, tính từ và từ phản hồi lịch sự.",
+            "Bước 3: Ghép Cụm Từ (2-3 Từ)" to "Tập lắp ghép các từ đã học thành cụm từ có nghĩa.",
+            "Bước 4: Lắp Câu Hoàn Chỉnh" to "Ghép các cụm từ thành câu giao tiếp hoàn chỉnh.",
+            "Bước 5: Hội Thoại & Vượt Chặng" to "Thực hành hỏi đáp thực tế và mở khóa chặng mới."
         )
     }
     val icons = listOf(Icons.AutoMirrored.Filled.MenuBook, Icons.Default.RecordVoiceOver, Icons.Default.AutoStories, Icons.Default.Spellcheck, Icons.Default.Diamond)
