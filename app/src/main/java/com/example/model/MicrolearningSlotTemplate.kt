@@ -155,6 +155,16 @@ data class InjectedAtomicLessonUnit(
     @param:Json(name = "slot4Matching") val slot4Matching: MatchingPairsSlot,
     @param:Json(name = "slot5Speaking") val slot5Speaking: SpeakingChallengeSlot
 ) {
+    fun toQuestionsList(): List<QuestionItemDto> {
+        return listOf(
+            slot1Cloze.toQuestionItemDto(),
+            slot2SentenceBuilder.toQuestionItemDto(),
+            slot3Listening.toQuestionItemDto(),
+            slot4Matching.toQuestionItemDto(),
+            slot5Speaking.toQuestionItemDto()
+        )
+    }
+
     fun toChapterGeneratedResponse(orderNo: Int = 1): ChapterGeneratedResponse {
         return ChapterGeneratedResponse(
             title = title,
@@ -162,13 +172,8 @@ data class InjectedAtomicLessonUnit(
             level = level,
             subject = subject,
             orderNo = orderNo,
-            questions = listOf(
-                slot1Cloze.toQuestionItemDto(),
-                slot2SentenceBuilder.toQuestionItemDto(),
-                slot3Listening.toQuestionItemDto(),
-                slot4Matching.toQuestionItemDto(),
-                slot5Speaking.toQuestionItemDto()
-            )
+            questions = toQuestionsList()
         )
     }
 }
+
