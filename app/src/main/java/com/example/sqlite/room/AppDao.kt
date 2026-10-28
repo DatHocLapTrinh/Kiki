@@ -167,6 +167,25 @@ interface AppDao {
 
     @Query("SELECT COUNT(*) FROM weak_points WHERE user_id = :userId")
     suspend fun getWeakPointsCount(userId: Long): Int
+
+    // --- Stars & Hearts (Reward Currency) ---
+    @Query("UPDATE user_profiles SET stars = stars + :amount WHERE user_id = :userId")
+    suspend fun addStars(userId: Long, amount: Int): Int
+
+    @Query("UPDATE user_profiles SET stars = MAX(0, stars - :amount) WHERE user_id = :userId")
+    suspend fun spendStars(userId: Long, amount: Int): Int
+
+    @Query("SELECT stars FROM user_profiles WHERE user_id = :userId")
+    suspend fun getStars(userId: Long): Int?
+
+    @Query("UPDATE user_profiles SET hearts = MIN(5, hearts + :amount) WHERE user_id = :userId")
+    suspend fun addHearts(userId: Long, amount: Int): Int
+
+    @Query("UPDATE user_profiles SET hearts = MAX(0, hearts - :amount) WHERE user_id = :userId")
+    suspend fun spendHearts(userId: Long, amount: Int): Int
+
+    @Query("SELECT hearts FROM user_profiles WHERE user_id = :userId")
+    suspend fun getHearts(userId: Long): Int?
 }
 
 

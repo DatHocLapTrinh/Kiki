@@ -58,7 +58,11 @@ data class UserProfileEntity(
     var studyMotto: String? = null,
 
     @ColumnInfo(name = "streak_shields")
-    var streakShields: Int = 1
+    var streakShields: Int = 1,
+
+    @ColumnInfo(name = "stars")
+    var stars: Int = 0,
+
+    @ColumnInfo(name = "hearts")
+    var hearts: Int = 5
 )
-
-
