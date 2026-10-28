@@ -87,6 +87,23 @@ class MicrolearningRoadmapTest {
     }
 
     @Test
+    fun testDefaultStagesStructureForZeroKnowledgeBeginner() {
+        val profile = LearnerPersonaProfile(
+            userId = 5L,
+            goal = "Everyday Fluency",
+            evaluatedCefr = "Beginner",
+            thetaAbility = -0.8f,
+            selfEfficacy = "NEWCOMER",
+            dailyTargetMinutes = 5
+        )
+        val stages = getTestScientificDefaultStages(profile)
+        assertEquals(5, stages.size)
+        assertTrue(stages[0].first.contains("Chào Hỏi") || stages[0].first.contains("Hello"))
+        assertTrue(stages[1].first.contains("Giới Thiệu") || stages[1].first.contains("How Are You"))
+        assertTrue(stages[2].first.contains("Nhu Cầu") || stages[2].first.contains("Everyday Essentials"))
+    }
+
+    @Test
     fun test3CMicrolearningJsonResponseFormat() {
         val sample3CJson = """
             {
@@ -266,6 +283,45 @@ class MicrolearningRoadmapTest {
     }
 
     private fun getTestScientificDefaultStages(profile: LearnerPersonaProfile): List<Pair<String, String>> {
+        val isBeginner = profile.evaluatedCefr.equals("Beginner", ignoreCase = true) ||
+                         profile.evaluatedCefr.equals("A1", ignoreCase = true) ||
+                         profile.evaluatedCefr.equals("A0", ignoreCase = true) ||
+                         profile.thetaAbility < -0.3f ||
+                         profile.selfEfficacy.equals("NEWCOMER", ignoreCase = true)
+
+        if (isBeginner) {
+            return when (profile.goal) {
+                "Career & Business" -> listOf(
+                    Pair("Chặng 1: Chào Hỏi Đồng Nghiệp & Làm Quen Cơ Bản (Office Greetings & Intro)", "Bắt đầu từ số 0 với Hello, Hi, Good morning, My name is nơi công sở."),
+                    Pair("Chặng 2: Giới Thiệu Chức Danh & Phòng Ban (Job Titles & Who I Am)", "Học nói về tên và công việc đơn giản: I am a / My job is..."),
+                    Pair("Chặng 3: Đồ Dùng Văn Phòng & Nhờ Vả Cơ Bản (Office Items & Polite Requests)", "Nhờ vả đơn giản với Please, Thank you, Coffee, Water, Laptop."),
+                    Pair("Chặng 4: Số Đếm, Giờ Giấc & Lịch Hẹn Đơn Giản (Numbers, Time & Schedules)", "Làm quen số đếm 1-100 và hỏi giờ họp đơn giản: What time is the meeting?"),
+                    Pair("Chặng 5: Đàm Thoại Ngắn Phản Xạ Nơi Làm Việc (Short Workplace Dialogues)", "Phản xạ giao tiếp 2-3 câu hàng ngày tự tin không vấp.")
+                )
+                "Grammar & Vocabulary" -> listOf(
+                    Pair("Chặng 1: Làm Quen Từ Vựng & Lời Chào Số 0 (Greetings & Daily Words)", "Bắt đầu từ số 0: Hello, Hi, Thank you, Yes, No, các từ căn bản nhất."),
+                    Pair("Chặng 2: Đại Từ Nhân Xưng & Động Từ To Be (I am, You are, He is)", "Nắm vững bản chất I am, You are, He is với tên và nghề nghiệp cơ bản."),
+                    Pair("Chặng 3: Đồ Vật Quanh Ta & Số Ít Số Nhiều (This, That, A, An)", "Nhận biết danh từ hàng ngày: a book, a pen, this is, that is."),
+                    Pair("Chặng 4: Động Từ Hành Động Hàng Ngày (Action Verbs: Go, Like, Eat)", "Tạo câu 3 từ đơn giản: I like coffee, I go to work."),
+                    Pair("Chặng 5: Hỏi Đáp Đơn Giản Có/Không (Basic Yes/No Questions)", "Tự tin hỏi và trả lời câu hỏi Yes/No ngắn: Are you ready? Do you like tea?")
+                )
+                "IELTS & TOEIC" -> listOf(
+                    Pair("Chặng 1: Chào Hỏi & Giới Thiệu Bản Thân Đơn Giản (Speaking Part 1 Starter)", "Làm quen cách nói tên, tuổi và quê quán bằng các câu ngắn 3-4 từ."),
+                    Pair("Chặng 2: Từ Vựng Gia Đình & Sở Thích Số 0 (Family & Basic Hobbies)", "Học từ vựng và câu đơn giản mô tả người thân và sở thích hàng ngày."),
+                    Pair("Chặng 3: Nhận Diện Chữ Cái & Số Đếm Nghe Cơ Bản (Letters & Numbers Dictation)", "Luyện nghe bắt số điện thoại, ngày tháng và đánh vần tên cơ bản."),
+                    Pair("Chặng 4: Mô Tả Đồ Vật & Vị Trí Đơn Giản (Describing Objects & Places)", "Cấu trúc There is / There are và các giới từ vị trí cơ bản in, on, at."),
+                    Pair("Chặng 5: Phản Xạ Trả Lời Câu Hỏi Ngắn (Short Q&A Reflex)", "Tự tin trả lời 3 câu hỏi phỏng vấn ngắn quen thuộc trong đời sống.")
+                )
+                else -> listOf(
+                    Pair("Chặng 1: Chào Hỏi & Làm Quen Cơ Bản (Hello & Daily Greetings)", "Bắt đầu từ số 0 với các từ chào hỏi kinh điển Hello, Hi, Thank you, My name is."),
+                    Pair("Chặng 2: Giới Thiệu Bản Thân & Hỏi Thăm (Personal Identity & How Are You)", "Tự tin giới thiệu bản thân và hỏi thăm bạn bè: How are you, I am fine."),
+                    Pair("Chặng 3: Nhu Cầu & Đồ Vật Thiết Yếu (Everyday Essentials & Requests)", "Giao tiếp cơ bản khi xin phép, cảm ơn và gọi nước, đồ ăn hàng ngày."),
+                    Pair("Chặng 4: Số Đếm, Thời Gian & Mua Sắm Cơ Bản (Numbers, Time & Basic Requests)", "Làm quen số đếm 1-10, hỏi giờ và hỏi giá đơn giản."),
+                    Pair("Chặng 5: Đàm Thoại Ngắn Phản Xạ Đời Sống (Short Daily Dialogue & Mastery)", "Phản xạ giao tiếp tự nhiên với các hội thoại ngắn đời thường 2-3 câu.")
+                )
+            }
+        }
+
         return when (profile.goal) {
             "Grammar & Vocabulary" -> listOf(
                 Pair("Chặng 1: Củng Cố Cấu Trúc Cốt Lõi (Core Syntax)", "Xóa bỏ lỗi chia động từ và hòa hợp chủ vị cơ bản."),

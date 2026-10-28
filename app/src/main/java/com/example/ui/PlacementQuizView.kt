@@ -47,42 +47,6 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlin.math.roundToInt
 
-data class DiagnosticQuestion(
-    val id: Int,
-    val levelTag: String,
-    val question: String,
-    val options: List<String>,
-    val correctIndex: Int,
-    val explanation: String
-)
-
-val defaultDiagnosticQuestions = listOf(
-    DiagnosticQuestion(
-        id = 1,
-        levelTag = "CƠ BẢN (A1 - A2)",
-        question = "She ______ English with Kiki every day.",
-        options = listOf("practices", "practice", "practicing", "practiced"),
-        correctIndex = 0,
-        explanation = "Chủ ngữ số ít 'She' chia động từ thêm -s ở thì Hiện tại đơn."
-    ),
-    DiagnosticQuestion(
-        id = 2,
-        levelTag = "TRUNG CẤP (B1 - B2)",
-        question = "If I ______ more free time, I would travel around the world.",
-        options = listOf("have", "had", "will have", "would have"),
-        correctIndex = 1,
-        explanation = "Câu điều kiện loại 2 giả định trái với hiện tại: If + S + V(quá khứ đơn), S + would + V."
-    ),
-    DiagnosticQuestion(
-        id = 3,
-        levelTag = "NÂNG CAO (B2 - C1)",
-        question = "The scientists made a ______ breakthrough in artificial intelligence.",
-        options = listOf("groundbreaking", "rough", "heavy", "tough"),
-        correctIndex = 0,
-        explanation = "Collocation tiếng Anh học thuật chuẩn xác: 'groundbreaking breakthrough' (đột phá mang tính cách mạng)."
-    )
-)
-
 /**
  * Computerized Adaptive Diagnostic Placement Test (CAT - IRT) View
  * Tự động thích ứng 4 giai đoạn kỹ năng (Ngữ pháp, Từ vựng, Thính giác, Khẩu ngữ)

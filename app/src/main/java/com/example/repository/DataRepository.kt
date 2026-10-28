@@ -33,36 +33,45 @@ class DataRepository @Inject constructor(
     }
 
     val vocabularyPairsBank = listOf(
-        MatchingPair(1, "give up", "từ bỏ"),
-        MatchingPair(2, "turn off", "tắt (thiết bị)"),
-        MatchingPair(3, "look after", "chăm sóc"),
-        MatchingPair(4, "call off", "hủy bỏ"),
-        MatchingPair(5, "run into", "tình cờ gặp"),
-        MatchingPair(6, "carry out", "tiến hành"),
-        MatchingPair(7, "break down", "hỏng hóc"),
-        MatchingPair(8, "come across", "bắt gặp"),
-        MatchingPair(9, "look forward to", "trông đợi"),
-        MatchingPair(10, "figure out", "tìm ra / hiểu ra"),
-        MatchingPair(11, "put off", "trì hoãn"),
-        MatchingPair(12, "get along", "hòa thuận"),
-        MatchingPair(13, "fluency", "sự lưu loát"),
-        MatchingPair(14, "enthusiastic", "nhiệt tình"),
-        MatchingPair(15, "essential", "thiết yếu"),
-        MatchingPair(16, "brilliant", "tài giỏi"),
-        MatchingPair(17, "opportunity", "cơ hội"),
-        MatchingPair(18, "challenge", "thử thách"),
-        MatchingPair(19, "confidence", "sự tự tin"),
-        MatchingPair(20, "perseverance", "sự kiên trì"),
-        MatchingPair(21, "accurate", "chính xác"),
-        MatchingPair(22, "efficient", "hiệu quả"),
-        MatchingPair(23, "creative", "sáng tạo"),
-        MatchingPair(24, "inspiration", "nguồn cảm hứng"),
-        MatchingPair(25, "determination", "lòng quyết tâm"),
-        MatchingPair(26, "achievement", "thành tựu"),
-        MatchingPair(27, "knowledge", "kiến thức"),
-        MatchingPair(28, "adventure", "cuộc phiêu lưu"),
-        MatchingPair(29, "pronunciation", "phát âm"),
-        MatchingPair(30, "vocabulary", "từ vựng")
+        // Căn bản cho người mới bắt đầu (Beginner / Zero-knowledge A0-A1)
+        MatchingPair(1, "hello", "xin chào"),
+        MatchingPair(2, "thank you", "cảm ơn"),
+        MatchingPair(3, "goodbye", "tạm biệt"),
+        MatchingPair(4, "please", "làm ơn / xin vui lòng"),
+        MatchingPair(5, "sorry", "xin lỗi"),
+        MatchingPair(6, "friend", "bạn bè"),
+        MatchingPair(7, "water", "nước"),
+        MatchingPair(8, "coffee", "cà phê"),
+        MatchingPair(9, "morning", "buổi sáng"),
+        MatchingPair(10, "name", "tên"),
+        MatchingPair(11, "yes", "vâng / có"),
+        MatchingPair(12, "no", "không"),
+        // Thông dụng trung cấp & nâng cao
+        MatchingPair(13, "give up", "từ bỏ"),
+        MatchingPair(14, "turn off", "tắt (thiết bị)"),
+        MatchingPair(15, "look after", "chăm sóc"),
+        MatchingPair(16, "call off", "hủy bỏ"),
+        MatchingPair(17, "run into", "tình cờ gặp"),
+        MatchingPair(18, "carry out", "tiến hành"),
+        MatchingPair(19, "break down", "hỏng hóc"),
+        MatchingPair(20, "come across", "bắt gặp"),
+        MatchingPair(21, "look forward to", "trông đợi"),
+        MatchingPair(22, "figure out", "tìm ra / hiểu ra"),
+        MatchingPair(23, "put off", "trì hoãn"),
+        MatchingPair(24, "get along", "hòa thuận"),
+        MatchingPair(25, "fluency", "sự lưu loát"),
+        MatchingPair(26, "enthusiastic", "nhiệt tình"),
+        MatchingPair(27, "essential", "thiết yếu"),
+        MatchingPair(28, "brilliant", "tài giỏi"),
+        MatchingPair(29, "opportunity", "cơ hội"),
+        MatchingPair(30, "challenge", "thử thách"),
+        MatchingPair(31, "confidence", "sự tự tin"),
+        MatchingPair(32, "perseverance", "sự kiên trì"),
+        MatchingPair(33, "accurate", "chính xác"),
+        MatchingPair(34, "efficient", "hiệu quả"),
+        MatchingPair(35, "creative", "sáng tạo"),
+        MatchingPair(36, "inspiration", "nguồn cảm hứng"),
+        MatchingPair(37, "determination", "lòng quyết tâm")
     )
 
     suspend fun ensureSeeded() {
@@ -86,11 +95,11 @@ class DataRepository @Inject constructor(
             if (remainingChapters.isEmpty()) {
                 // Initialize default scientific stage shells with ZERO static questions
                 val defaultStages = listOf(
-                    Pair("Chặng 1: Khởi Động & Phản Xạ Đàm Thoại (Daily Greetings)", "Tự tin mở đầu câu chuyện và phản xạ chào hỏi tự nhiên không vấp."),
-                    Pair("Chặng 2: Giải Mã Nuốt Âm & Nối Âm (Connected Speech & Elision)", "Làm chủ hiện tượng nuốt âm could've, gonna trong tiếng Anh bản xứ."),
-                    Pair("Chặng 3: Đặt Câu Hỏi Gián Tiếp Lịch Sự (Polite Indirect Inquiries)", "Giao tiếp lịch thiệp khi hỏi đường, nhờ vả và gọi món."),
-                    Pair("Chặng 4: Cụm Động Từ Thông Dụng (High-Frequency Phrasal Verbs)", "Sử dụng phrasal verbs tự nhiên thay cho các từ đơn điệu."),
-                    Pair("Chặng 5: Đột Phá Đàm Thoại Trôi Chảy (Mastery Conversational Fluency)", "Phản xạ giao tiếp Native Audio trôi chảy trong mọi ngữ cảnh.")
+                    Pair("Chặng 1: Chào Hỏi & Làm Quen Cơ Bản (Hello & Daily Greetings)", "Bắt đầu từ số 0 với các từ chào hỏi kinh điển Hello, Hi, Thank you, My name is."),
+                    Pair("Chặng 2: Giới Thiệu Bản Thân & Hỏi Thăm (Personal Identity & How Are You)", "Tự tin giới thiệu bản thân và hỏi thăm bạn bè: How are you, I am fine."),
+                    Pair("Chặng 3: Nhu Cầu & Đồ Vật Thiết Yếu (Everyday Essentials & Requests)", "Giao tiếp cơ bản khi xin phép, cảm ơn và gọi nước, đồ ăn hàng ngày."),
+                    Pair("Chặng 4: Số Đếm, Thời Gian & Mua Sắm Cơ Bản (Numbers, Time & Basic Requests)", "Làm quen số đếm 1-10, hỏi giờ và hỏi giá đơn giản."),
+                    Pair("Chặng 5: Đàm Thoại Ngắn Phản Xạ Đời Sống (Short Daily Dialogue & Mastery)", "Phản xạ giao tiếp tự nhiên với các hội thoại ngắn đời thường 2-3 câu.")
                 )
                 defaultStages.forEachIndexed { cIndex, (chapterTitle, chapterDesc) ->
                     val chapter = ChapterEntity(
@@ -146,6 +155,11 @@ class DataRepository @Inject constructor(
     suspend fun getChapterIdByTitle(title: String): Long = withContext(Dispatchers.IO) {
         ensureSeeded()
         dao.getChapterIdByTitle(title) ?: -1L
+    }
+
+    suspend fun getChapterTitleById(chapterId: Long): String? = withContext(Dispatchers.IO) {
+        ensureSeeded()
+        dao.getChapterTitleById(chapterId)
     }
 
     suspend fun clearQuestionsByChapter(chapterId: Long): Int = withContext(Dispatchers.IO) {

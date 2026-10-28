@@ -48,6 +48,9 @@ interface AppDao {
     @Query("SELECT chapter_id FROM chapters WHERE title = :title LIMIT 1")
     suspend fun getChapterIdByTitle(title: String): Long?
 
+    @Query("SELECT title FROM chapters WHERE chapter_id = :chapterId LIMIT 1")
+    suspend fun getChapterTitleById(chapterId: Long): String?
+
     @Query("SELECT title FROM chapters WHERE is_active = 1 ORDER BY order_no")
     suspend fun getActiveChapters(): List<String>
 

@@ -1,6 +1,6 @@
 package com.example
 
-import com.example.ui.defaultDiagnosticQuestions
+import com.example.util.AdaptiveDiagnosticEngine
 import org.junit.Assert.*
 import org.junit.Test
 
@@ -8,14 +8,15 @@ class PlacementQuizAlgorithmTest {
 
     @Test
     fun testDiagnosticQuestionsIntegrity() {
-        assertEquals("Placement quiz must have exactly 3 questions", 3, defaultDiagnosticQuestions.size)
+        val items = AdaptiveDiagnosticEngine.itemBank
+        assertTrue("Item bank must not be empty", items.isNotEmpty())
 
-        defaultDiagnosticQuestions.forEachIndexed { index, q ->
-            assertTrue("Question ${index + 1} text must not be blank", q.question.isNotBlank())
-            assertEquals("Question ${index + 1} must have 4 options", 4, q.options.size)
-            assertTrue("CorrectIndex must be valid option index", q.correctIndex in 0..3)
-            assertTrue("Explanation must not be blank", q.explanation.isNotBlank())
-            assertTrue("LevelTag must not be blank", q.levelTag.isNotBlank())
+        items.forEachIndexed { index, item ->
+            assertTrue("Item ${index + 1} prompt must not be blank", item.questionPrompt.isNotBlank())
+            assertTrue("Item ${index + 1} must have options", item.options.isNotEmpty())
+            assertTrue("CorrectIndex must be valid", item.correctIndex in item.options.indices)
+            assertTrue("Explanation must not be blank", item.explanation.isNotBlank())
+            assertTrue("Skill tag must not be blank", item.skillTag.isNotBlank())
         }
     }
 
