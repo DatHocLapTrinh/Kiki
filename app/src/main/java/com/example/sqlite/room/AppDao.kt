@@ -60,6 +60,9 @@ interface AppDao {
     @Query("DELETE FROM questions")
     suspend fun clearQuestions()
 
+    @Query("DELETE FROM questions WHERE chapter_id = :chapterId")
+    suspend fun clearQuestionsByChapter(chapterId: Long): Int
+
     // --- Questions ---
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertQuestion(question: QuestionEntity): Long

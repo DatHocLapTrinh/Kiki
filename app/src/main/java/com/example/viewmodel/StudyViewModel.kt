@@ -64,6 +64,13 @@ import java.util.UUID
 import kotlinx.coroutines.delay
 import javax.inject.Inject
 import com.example.model.LearnerPersonaProfile
+import com.example.model.ClozeChoiceSlot
+import com.example.model.SentenceBuilderSlot
+import com.example.model.ListeningChallengeSlot
+import com.example.model.PairSlotItem
+import com.example.model.MatchingPairsSlot
+import com.example.model.SpeakingChallengeSlot
+import com.example.model.InjectedAtomicLessonUnit
 import com.squareup.moshi.Moshi
 import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
 
@@ -589,7 +596,7 @@ class StudyViewModel @Inject constructor(
         }
     }
 
-    private val _currentChapterTitle = MutableLiveData("English Fundamentals")
+    private val _currentChapterTitle = MutableLiveData("Chặng 1: Khởi Động & Phản Xạ Đàm Thoại")
     val currentChapterTitle: LiveData<String> = _currentChapterTitle
 
     private val _currentChapterIndex = MutableLiveData(1)
@@ -619,8 +626,14 @@ class StudyViewModel @Inject constructor(
         viewModelScope.launch {
             allChapterQuestions = repository.getQuestionsByChapter(chapterId)
 
+            // Thanh trừng triệt để bất kỳ câu hỏi mẫu cũ nào còn sót lại
+            if (allChapterQuestions.any { it.question.contains("______") || it.question.contains("in her crib", ignoreCase = true) || it.question.contains("by bus every morning", ignoreCase = true) }) {
+                repository.clearQuestionsByChapter(chapterId)
+                allChapterQuestions = emptyList()
+            }
+
             // JIT (Just-In-Time) AI Microlearning Question Generation:
-            // Nếu chapter chưa có câu hỏi trong Room SQLite, tự động gọi Gemini 2.5 Flash sinh ngay bộ câu hỏi 3C
+            // BẮT BUỘC ép AI Gemini 2.5 Flash sinh ngay bộ câu hỏi 3C nếu chapter chưa có câu hỏi
             if (allChapterQuestions.isEmpty()) {
                 val currentTitle = _currentChapterTitle.value ?: "Atomic Microlearning"
                 val level = _selectedLevel.value ?: "Beginner"
@@ -1448,7 +1461,8 @@ class StudyViewModel @Inject constructor(
     }
 
     /**
-     * Kiến tạo chương học cá nhân hóa hoàn chỉnh với đầy đủ 5 dạng câu hỏi theo tiêu chuẩn questions.json
+     * Kiến tạo đơn vị học cá nhân hóa bằng Hệ thống Khuôn Mẫu Rỗng (Slot-Based Templates)
+     * Tuyệt đối KHÔNG chứa câu hỏi mẫu tĩnh hay dấu gạch dưới raw (zero sample blanks).
      */
     fun generatePersonalizedChapter(
         level: String,
@@ -1460,126 +1474,59 @@ class StudyViewModel @Inject constructor(
         val cleanTopic = if (topic.isBlank()) "Daily Conversations" else topic
 
         val chapterTitle = if (isEng) "AI Roadmap: $cleanTopic ($displayLevel)" else "Lộ trình AI: $cleanTopic ($displayLevel)"
-        val chapterDesc = if (isEng) "Customized curriculum tailored by Kiki AI based on your diagnostic placement test."
-        else "Lộ trình cá nhân hóa do AI Kiki kiến tạo dựa trên bài kiểm tra chẩn đoán năng lực của bạn."
+        val chapterDesc = if (isEng) "Dynamic slot-based microlearning curriculum designed by Kiki AI based on your diagnostic placement test."
+        else "Lộ trình vi mô dựa trên khuôn mẫu động do AI Kiki thiết kế theo mục tiêu và điểm chẩn đoán của bạn."
 
-        // 1. Multiple Choice
-        val q1 = QuestionItemDto(
-            questionText = when {
-                cleanTopic.contains("Grammar", ignoreCase = true) -> "She ______ to school by bus every morning."
-                cleanTopic.contains("IELTS", ignoreCase = true) -> "The research indicates a significant ______ between study habits and performance."
-                else -> "How do you respond politely when a friend asks 'How are you today?'"
-            },
-            questionType = "MULTIPLE_CHOICE",
-            optionsJson = org.json.JSONArray(
-                when {
-                    cleanTopic.contains("Grammar", ignoreCase = true) -> listOf("goes", "go", "going", "is go")
-                    cleanTopic.contains("IELTS", ignoreCase = true) -> listOf("correlation", "distraction", "neglect", "collapse")
-                    else -> listOf("I'm doing great, thank you! How about you?", "Yes, I am.", "No, not at all.", "I go home.")
-                }
-            ).toString(),
-            correctAnswer = "0",
-            explanation = "Chọn phương án chính xác nhất để hoàn thiện câu phù hợp ngữ cảnh.",
-            points = 10,
-            difficulty = "EASY"
-        )
+        val focusWord = weakWords.firstOrNull() ?: cleanTopic.split(" ").lastOrNull()?.trim() ?: "communication"
 
-        // 2. Sentence Builder (Sắp xếp câu chuẩn mực - không dùng blank)
-        val q2 = when {
-            cleanTopic.contains("Grammar", ignoreCase = true) -> QuestionItemDto(
-                questionText = "Sắp xếp các từ thành câu điều kiện loại 2: 'Nếu tôi có thêm thời gian, tôi sẽ học tiếng Pháp.'",
-                questionType = "SENTENCE_BUILDER",
-                optionsJson = org.json.JSONArray(listOf("If", "I", "had", "more", "time", "I", "would", "learn", "French", "will")).toString(),
-                correctAnswer = "If I had more time I would learn French",
-                explanation = "Cấu trúc câu điều kiện loại 2: If + S + V2/ed, S + would + V-inf.",
-                points = 15,
-                difficulty = "MEDIUM"
-            )
-            cleanTopic.contains("IELTS", ignoreCase = true) -> QuestionItemDto(
-                questionText = "Sắp xếp các từ thành câu học thuật: 'Chính sách mới nhằm thúc đẩy tăng trưởng bền vững.'",
-                questionType = "SENTENCE_BUILDER",
-                optionsJson = org.json.JSONArray(listOf("The", "new", "policy", "aims", "to", "foster", "sustainable", "growth", "demolish")).toString(),
-                correctAnswer = "The new policy aims to foster sustainable growth",
-                explanation = "'Foster sustainable growth' là cụm collocation học thuật chuẩn trong bài thi IELTS.",
-                points = 15,
-                difficulty = "MEDIUM"
-            )
-            else -> QuestionItemDto(
-                questionText = "Sắp xếp các từ thành câu hoàn chỉnh: 'Nhìn kìa! Em bé đang ngủ say trong nôi.'",
-                questionType = "SENTENCE_BUILDER",
-                optionsJson = org.json.JSONArray(listOf("Look!", "The", "baby", "is", "sleeping", "soundly", "in", "her", "crib", "slept")).toString(),
-                correctAnswer = "Look! The baby is sleeping soundly in her crib",
-                explanation = "Thì hiện tại tiếp diễn nhấn mạnh hành động đang diễn ra tại thời điểm nói: S + is/am/are + V-ing.",
-                points = 15,
-                difficulty = "MEDIUM"
-            )
-        }
-
-        // 3. Listening Challenge
-        val q3 = QuestionItemDto(
-            questionText = "Nghe câu sau và sắp xếp lại các từ cho đúng thứ tự 🎧",
-            questionType = "LISTENING_CHALLENGE",
-            optionsJson = org.json.JSONArray(
-                when {
-                    cleanTopic.contains("Grammar", ignoreCase = true) -> listOf("They have lived in this city since 2018")
-                    cleanTopic.contains("IELTS", ignoreCase = true) -> listOf("Technological innovation has fundamentally reshaped modern global industries")
-                    else -> listOf("It is wonderful to meet you here this morning")
-                }
-            ).toString(),
-            correctAnswer = "0",
-            explanation = "Luyện kỹ năng nghe và sắp xếp các từ thành câu hoàn chỉnh.",
-            points = 10,
-            difficulty = "MEDIUM"
-        )
-
-        // 4. Matching Pairs
-        val q4 = QuestionItemDto(
-            questionText = "Ghép cặp các từ vựng tiếng Anh với nghĩa tiếng Việt tương ứng 🧩",
-            questionType = "MATCHING_PAIRS",
-            optionsJson = org.json.JSONArray(
-                when {
-                    cleanTopic.contains("Grammar", ignoreCase = true) -> listOf(
-                        "although=mặc dù", "furthermore=hơn nữa", "therefore=do đó", "meanwhile=trong khi đó"
-                    )
-                    cleanTopic.contains("IELTS", ignoreCase = true) -> listOf(
-                        "substantial=đáng kể", "crucial=tối quan trọng", "feasible=khả thi", "alleviate=làm giảm bớt"
-                    )
-                    else -> listOf(
-                        "catch up=hàn huyên", "hang out=đi chơi", "drop by=ghé thăm", "keep in touch=giữ liên lạc"
-                    )
-                }
-            ).toString(),
-            correctAnswer = "0",
-            explanation = "Ghép cặp từ vựng chính xác để ghi nhớ nghĩa.",
-            points = 10,
-            difficulty = "MEDIUM"
-        )
-
-        // 5. Speaking Challenge
-        val q5 = QuestionItemDto(
-            questionText = "Luyện nói câu tiếng Anh sau chuẩn bản xứ 🎙️",
-            questionType = "SPEAKING_CHALLENGE",
-            optionsJson = org.json.JSONArray(
-                when {
-                    cleanTopic.contains("Grammar", ignoreCase = true) -> listOf("Practice makes perfect if you stay consistent every single day.")
-                    cleanTopic.contains("IELTS", ignoreCase = true) -> listOf("Environmental conservation requires proactive collaboration across all communities.")
-                    else -> listOf("Could you please show me the way to the nearest bookstore?")
-                }
-            ).toString(),
-            correctAnswer = "0",
-            explanation = "Luyện phát âm to, rõ ràng và chuẩn ngữ điệu bản xứ.",
-            points = 10,
-            difficulty = "HARD"
-        )
-
-        return ChapterGeneratedResponse(
+        val unit = InjectedAtomicLessonUnit(
             title = chapterTitle,
             description = chapterDesc,
             level = displayLevel,
             subject = "English",
-            orderNo = 0,
-            questions = listOf(q1, q2, q3, q4, q5)
+            slot1Cloze = ClozeChoiceSlot(
+                promptQuestion = "Choose the most appropriate expression to discuss $cleanTopic:",
+                options = listOf(
+                    "Mastering $focusWord through daily active recall",
+                    "Hesitating and avoiding conversations",
+                    "Using incorrect context inappropriately",
+                    "Translating word-by-word slowly"
+                ),
+                correctIndex = 0,
+                explanation = "Lựa chọn chính xác giúp phát triển phản xạ tự nhiên trong chủ đề $cleanTopic."
+            ),
+            slot2SentenceBuilder = SentenceBuilderSlot(
+                promptInstruction = "Sắp xếp các từ thành câu hoàn chỉnh về chủ đề $cleanTopic 🧩",
+                targetSentence = "I practice English communication every single day",
+                wordTokens = listOf("I", "practice", "English", "communication", "every", "single", "day"),
+                distractorTokens = listOf("practiced", "never"),
+                explanation = "Cấu trúc câu khẳng định thì hiện tại đơn: S + V(bare) + O biểu thị thói quen tích cực."
+            ),
+            slot3Listening = ListeningChallengeSlot(
+                promptInstruction = "Nghe câu sau và sắp xếp lại các từ cho đúng thứ tự 🎧",
+                audioSentence = "Consistency and daily focus are key to speaking fluency",
+                wordTokens = listOf("Consistency", "and", "daily", "focus", "are", "key", "to", "speaking", "fluency"),
+                explanation = "Luyện khả năng lắng nghe và nhận diện âm thanh từ ngữ trong giao tiếp thực tế."
+            ),
+            slot4Matching = MatchingPairsSlot(
+                promptInstruction = "Ghép cặp các từ vựng tiếng Anh với nghĩa tiếng Việt tương ứng 🧩",
+                pairs = listOf(
+                    PairSlotItem("fluency", "sự lưu loát"),
+                    PairSlotItem("confidence", "sự tự tin"),
+                    PairSlotItem("consistency", "sự kiên trì"),
+                    PairSlotItem("opportunity", "cơ hội")
+                ),
+                explanation = "Ghi nhớ cặp từ vựng then chốt hỗ trợ trực tiếp cho chủ đề $cleanTopic."
+            ),
+            slot5Speaking = SpeakingChallengeSlot(
+                promptInstruction = "Luyện nói câu tiếng Anh sau chuẩn bản xứ 🎙️",
+                targetSentence = "I am making great progress in English conversation today",
+                phoneticFocusWord = "progress",
+                explanation = "Luyện ngữ điệu tự nhiên, nhấn trọng âm rõ ràng vào từ khóa chính."
+            )
         )
+
+        return unit.toChapterGeneratedResponse(orderNo = 0)
     }
 
     /**
@@ -1653,6 +1600,7 @@ class StudyViewModel @Inject constructor(
                 You are Kiki AI, an expert Microlearning Pedagogical Designer.
                 Create an Atomic Microlearning Unit (3-5 minutes) for the Single Learning Objective (SLO): "$topic" at level "$level".
                 $weakPrompt
+                CRITICAL INSTRUCTION: NEVER use raw blanks or underscores like '______'. All sentences and questions must be complete, natural, and engaging.
 
                 You MUST return ONLY a raw JSON object (no markdown, no backticks) with this exact schema:
                 {
@@ -1713,7 +1661,7 @@ class StudyViewModel @Inject constructor(
 
             val contents = listOf(GeminiModels.Content(role = "user", parts = listOf(GeminiModels.Part(text = prompt))))
             val systemInstruction = GeminiModels.createSystemInstruction(
-                "You are Kiki AI, an expert Microlearning Pedagogical Designer. Always output strict JSON only, without markdown fences or outside explanations."
+                "You are Kiki AI, an expert Microlearning Pedagogical Designer. Always output strict JSON only, without markdown fences or outside explanations. NEVER generate raw underscores or blanks."
             )
             val request = GeminiModels.GenerateContentRequest(
                 contents = contents,
