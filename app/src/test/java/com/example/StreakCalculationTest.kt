@@ -49,15 +49,15 @@ class StreakCalculationTest {
 
     @Test
     fun testAvatarResolutionMapsCorrectly() {
-        assertEquals(R.drawable.kiki_icon, resolveAvatarResource(null))
-        assertEquals(R.drawable.kiki_icon, resolveAvatarResource("kiki_icon"))
+        assertEquals(R.drawable.kiki_state_wave, resolveAvatarResource(null))
+        assertEquals(R.drawable.kiki_state_wave, resolveAvatarResource("kiki_icon"))
         assertEquals(R.drawable.kiki_state_wave, resolveAvatarResource("kiki_state_wave"))
         assertEquals(R.drawable.kiki_state_happy, resolveAvatarResource("kiki_state_happy"))
         assertEquals(R.drawable.kiki_state_sad, resolveAvatarResource("kiki_state_sad"))
         assertEquals(R.drawable.kiki_mascot_head, resolveAvatarResource("kiki_mascot_head"))
-        assertEquals(R.drawable.companion_mascot, resolveAvatarResource("companion_mascot"))
-        assertEquals(R.drawable.kiki_hero_intro, resolveAvatarResource("kiki_hero_intro"))
-        assertEquals(R.drawable.kiki_hero_auth, resolveAvatarResource("kiki_hero_auth"))
+        assertEquals(R.drawable.kiki_state_happy, resolveAvatarResource("companion_mascot"))
+        assertEquals(R.drawable.kiki_state_wave, resolveAvatarResource("kiki_hero_intro"))
+        assertEquals(R.drawable.kiki_state_wave, resolveAvatarResource("kiki_hero_auth"))
     }
 
     @Test

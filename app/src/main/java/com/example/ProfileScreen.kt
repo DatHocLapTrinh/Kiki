@@ -56,10 +56,10 @@ fun resolveAvatarResource(avatarUri: String?): Int {
         "kiki_state_happy" -> R.drawable.kiki_state_happy
         "kiki_state_sad" -> R.drawable.kiki_state_sad
         "kiki_mascot_head" -> R.drawable.kiki_mascot_head
-        "companion_mascot" -> R.drawable.companion_mascot
-        "kiki_hero_intro" -> R.drawable.kiki_hero_intro
-        "kiki_hero_auth" -> R.drawable.kiki_hero_auth
-        else -> R.drawable.kiki_icon
+        "companion_mascot" -> R.drawable.kiki_state_happy
+        "kiki_hero_intro" -> R.drawable.kiki_state_wave
+        "kiki_hero_auth" -> R.drawable.kiki_state_wave
+        else -> R.drawable.kiki_state_wave
     }
 }
 
@@ -619,10 +619,11 @@ private fun ProfileIdentityCard(
                             contentScale = ContentScale.Crop
                         )
                     } else {
-                        Image(
-                            painter = painterResource(resolveAvatarResource(avatarUri)),
+                        AsyncImage(
+                            model = resolveAvatarResource(avatarUri),
                             contentDescription = "Avatar",
-                            modifier = Modifier.fillMaxSize().clip(CircleShape)
+                            modifier = Modifier.fillMaxSize().clip(CircleShape),
+                            contentScale = ContentScale.Fit
                         )
                     }
                 }
@@ -799,9 +800,10 @@ fun EditProfileDialog(
                                     .padding(2.dp),
                                 contentAlignment = Alignment.Center
                             ) {
-                                Image(
-                                    painter = painterResource(resolveAvatarResource(avatarKey)),
+                                AsyncImage(
+                                    model = resolveAvatarResource(avatarKey),
                                     contentDescription = label,
+                                    contentScale = ContentScale.Fit,
                                     modifier = Modifier.fillMaxSize().clip(CircleShape)
                                 )
                                 if (isSelected) {
