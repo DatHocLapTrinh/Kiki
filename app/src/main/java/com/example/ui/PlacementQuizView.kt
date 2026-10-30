@@ -572,6 +572,20 @@ fun PlacementQuizView(
                     horizontalAlignment = Alignment.CenterHorizontally,
                     modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp)
                 ) {
+                    coil.compose.AsyncImage(
+                        model = com.example.R.drawable.kiki_state_happy,
+                        contentDescription = "Kiki AI Diagnostic Mentor",
+                        contentScale = androidx.compose.ui.layout.ContentScale.Fit,
+                        modifier = Modifier
+                            .size(92.dp)
+                            .clip(CircleShape)
+                            .background(Color(0x2600F5D4))
+                            .border(1.5.dp, Color(0xFF00F5D4), CircleShape)
+                            .padding(4.dp)
+                    )
+
+                    Spacer(modifier = Modifier.height(10.dp))
+
                     Box(
                         modifier = Modifier
                             .clip(RoundedCornerShape(20.dp))

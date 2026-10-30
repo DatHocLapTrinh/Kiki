@@ -535,15 +535,15 @@ private fun ChapterLessonNode(
             Box(
                 modifier = Modifier
                     .align(Alignment.TopCenter)
-                    .offset(y = (-6).dp)
-                    .size(38.dp)
+                    .offset(y = (-8).dp)
+                    .size(42.dp)
                     .clip(CircleShape)
-                    .background(Color(0x4420202F))
+                    .background(Color(0x66141026))
                     .border(1.5.dp, Color(0xFF51FAC1), CircleShape)
             ) {
                 Image(
-                    painter = painterResource(R.drawable.kiki_icon),
-                    contentDescription = "Kiki",
+                    painter = painterResource(R.drawable.kiki_state_wave),
+                    contentDescription = "Kiki Waving at Current Lesson",
                     modifier = Modifier.fillMaxSize()
                 )
             }

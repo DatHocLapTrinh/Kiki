@@ -786,18 +786,27 @@ fun QuestScreen(viewModel: StudyViewModel, onFinish: () -> Unit) {
                                 ) {
                                     Box(
                                         modifier = Modifier
-                                            .size(40.dp)
+                                            .size(52.dp)
                                             .clip(CircleShape)
-                                            .background(if (isCurrentCorrect) Color(0x3322C55E) else Color(0x33EF4444)),
+                                            .background(if (isCurrentCorrect) Color(0x3322C55E) else Color(0x33EF4444))
+                                            .border(
+                                                1.5.dp,
+                                                if (isCurrentCorrect) Color(0xFF22C55E) else Color(0xFFEF4444),
+                                                CircleShape
+                                            ),
                                         contentAlignment = Alignment.Center
                                     ) {
-                                        Icon(
-                                            imageVector = if (isCurrentCorrect) Icons.Default.CheckCircle else Icons.Default.Cancel,
-                                            contentDescription = null,
-                                            tint = iconTint,
-                                            modifier = Modifier.size(28.dp)
+                                        coil.compose.AsyncImage(
+                                            model = if (isCurrentCorrect) R.drawable.kiki_state_happy else R.drawable.kiki_state_sad,
+                                            contentDescription = if (isCurrentCorrect) "Kiki Happy" else "Kiki Empathetic",
+                                            contentScale = androidx.compose.ui.layout.ContentScale.Fit,
+                                            modifier = Modifier
+                                                .fillMaxSize()
+                                                .padding(2.dp)
+                                                .clip(CircleShape)
                                         )
                                     }
+                                    Spacer(modifier = Modifier.width(12.dp))
                                     Column(modifier = Modifier.weight(1f, fill = false)) {
                                         Text(
                                             text = if (isCurrentCorrect) strings.correctNotice else strings.incorrectNotice,

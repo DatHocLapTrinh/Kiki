@@ -739,17 +739,17 @@ fun EmptyAskState(
         ) {
             Box(
                 modifier = Modifier
-                    .size(46.dp)
+                    .size(64.dp)
                     .clip(CircleShape)
                     .background(Color(0x2251FAC1))
                     .border(1.dp, Color(0x6651FAC1), CircleShape),
                 contentAlignment = Alignment.Center
             ) {
-                Icon(
-                    imageVector = Icons.Default.AutoFixHigh,
-                    contentDescription = null,
-                    tint = Color(0xFF51FAC1),
-                    modifier = Modifier.size(24.dp)
+                AsyncImage(
+                    model = R.drawable.kiki_state_wave,
+                    contentDescription = "Kiki Mentor Waving",
+                    contentScale = ContentScale.Fit,
+                    modifier = Modifier.fillMaxSize().padding(3.dp).clip(CircleShape)
                 )
             }
             Spacer(modifier = Modifier.height(10.dp))
@@ -778,17 +778,17 @@ fun EmptyAskState(
         ) {
             Box(
                 modifier = Modifier
-                    .size(76.dp)
+                    .size(124.dp)
                     .clip(CircleShape)
                     .background(Color(0x2251FAC1))
                     .border(1.5.dp, Color(0x6651FAC1), CircleShape),
                 contentAlignment = Alignment.Center
             ) {
-                Icon(
-                    imageVector = Icons.Default.AutoFixHigh,
-                    contentDescription = null,
-                    tint = Color(0xFF51FAC1),
-                    modifier = Modifier.size(38.dp)
+                AsyncImage(
+                    model = R.drawable.kiki_full_wave,
+                    contentDescription = "Kiki Mentor Welcoming",
+                    contentScale = ContentScale.Fit,
+                    modifier = Modifier.fillMaxSize().padding(6.dp)
                 )
             }
             Spacer(modifier = Modifier.height(18.dp))
@@ -885,16 +885,17 @@ fun StepGlassCard(
             Box(
                 modifier = Modifier
                     .padding(top = 4.dp)
-                    .size(28.dp)
+                    .size(34.dp)
                     .clip(CircleShape)
-                    .background(Brush.linearGradient(listOf(Color(0xFF8A2BE2), Color(0xFF00F5D4)))),
+                    .background(Brush.linearGradient(listOf(Color(0xFF8A2BE2), Color(0xFF00F5D4))))
+                    .border(1.dp, Color(0xFF51FAC1), CircleShape),
                 contentAlignment = Alignment.Center
             ) {
-                Icon(
-                    imageVector = Icons.Default.AutoAwesome,
-                    contentDescription = "AI Mentor",
-                    tint = Color.White,
-                    modifier = Modifier.size(15.dp)
+                AsyncImage(
+                    model = R.drawable.kiki_state_happy,
+                    contentDescription = "AI Mentor Kiki",
+                    contentScale = ContentScale.Fit,
+                    modifier = Modifier.fillMaxSize().padding(1.5.dp).clip(CircleShape)
                 )
             }
             Spacer(modifier = Modifier.width(10.dp))

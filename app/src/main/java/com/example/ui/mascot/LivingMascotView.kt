@@ -28,14 +28,33 @@ import coil.compose.AsyncImage
 import com.example.R
 import com.example.model.MascotEmotion
 
+/**
+ * Ánh xạ cảm xúc của linh vật Kiki sang 3 trạng thái hình ảnh 3D biểu cảm:
+ * - [MascotEmotion.EMPATHY] -> Kiki buồn / đồng cảm (`R.drawable.kiki_state_sad`)
+ * - [MascotEmotion.CHEER], [MascotEmotion.STREAK], [MascotEmotion.PETTED], [MascotEmotion.LISTENING] -> Kiki vui vẻ hào hứng (`R.drawable.kiki_state_happy`)
+ * - [MascotEmotion.IDLE], [MascotEmotion.THINKING] -> Kiki vẫy tay chào / đồng hành (`R.drawable.kiki_state_wave`)
+ */
+fun resolveMascotDrawableForEmotion(emotion: MascotEmotion): Int {
+    return when (emotion) {
+        MascotEmotion.EMPATHY -> R.drawable.kiki_state_sad
+        MascotEmotion.CHEER,
+        MascotEmotion.STREAK,
+        MascotEmotion.PETTED,
+        MascotEmotion.LISTENING -> R.drawable.kiki_state_happy
+        MascotEmotion.IDLE,
+        MascotEmotion.THINKING -> R.drawable.kiki_state_wave
+    }
+}
+
 @Composable
 fun LivingMascotView(
     emotion: MascotEmotion,
     modifier: Modifier = Modifier,
     size: Dp = 48.dp,
-    avatarRes: Int = R.drawable.companion_mascot,
+    avatarRes: Int? = null,
     onClick: () -> Unit = {}
 ) {
+    val resolvedAvatarRes = avatarRes ?: resolveMascotDrawableForEmotion(emotion)
     val haptic = LocalHapticFeedback.current
 
     // 1. Nhịp thở tự nhiên (Idle Breathing)
@@ -201,14 +220,15 @@ fun LivingMascotView(
                 .rotate(animRotation),
             contentAlignment = Alignment.Center
         ) {
-            // Ảnh đại diện Kiki
+            // Ảnh đại diện Kiki tự động chuyển đổi giữa 3 trạng thái biểu cảm
             AsyncImage(
-                model = avatarRes,
+                model = resolvedAvatarRes,
                 contentDescription = "Living Kiki Mascot",
-                contentScale = ContentScale.Crop,
+                contentScale = ContentScale.Fit,
                 modifier = Modifier
                     .fillMaxSize()
                     .clip(CircleShape)
+                    .background(Color(0x33141026), CircleShape)
                     .border(
                         width = 2.dp,
                         color = when (emotion) {
@@ -216,6 +236,7 @@ fun LivingMascotView(
                             MascotEmotion.CHEER -> Color(0xFF51FAC1)
                             MascotEmotion.PETTED -> Color(0xFFFF80AB)
                             MascotEmotion.LISTENING -> Color(0xFF00E5FF)
+                            MascotEmotion.EMPATHY -> Color(0xFFFF6B6B)
                             else -> Color(0x55FFFFFF)
                         },
                         shape = CircleShape

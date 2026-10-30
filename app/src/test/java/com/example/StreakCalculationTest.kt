@@ -51,9 +51,23 @@ class StreakCalculationTest {
     fun testAvatarResolutionMapsCorrectly() {
         assertEquals(R.drawable.kiki_icon, resolveAvatarResource(null))
         assertEquals(R.drawable.kiki_icon, resolveAvatarResource("kiki_icon"))
+        assertEquals(R.drawable.kiki_state_wave, resolveAvatarResource("kiki_state_wave"))
+        assertEquals(R.drawable.kiki_state_happy, resolveAvatarResource("kiki_state_happy"))
+        assertEquals(R.drawable.kiki_state_sad, resolveAvatarResource("kiki_state_sad"))
         assertEquals(R.drawable.kiki_mascot_head, resolveAvatarResource("kiki_mascot_head"))
         assertEquals(R.drawable.companion_mascot, resolveAvatarResource("companion_mascot"))
         assertEquals(R.drawable.kiki_hero_intro, resolveAvatarResource("kiki_hero_intro"))
         assertEquals(R.drawable.kiki_hero_auth, resolveAvatarResource("kiki_hero_auth"))
+    }
+
+    @Test
+    fun testMascotEmotionResolvesThreeKikiStatesCorrectly() {
+        assertEquals(R.drawable.kiki_state_sad, com.example.ui.mascot.resolveMascotDrawableForEmotion(com.example.model.MascotEmotion.EMPATHY))
+        assertEquals(R.drawable.kiki_state_happy, com.example.ui.mascot.resolveMascotDrawableForEmotion(com.example.model.MascotEmotion.CHEER))
+        assertEquals(R.drawable.kiki_state_happy, com.example.ui.mascot.resolveMascotDrawableForEmotion(com.example.model.MascotEmotion.STREAK))
+        assertEquals(R.drawable.kiki_state_happy, com.example.ui.mascot.resolveMascotDrawableForEmotion(com.example.model.MascotEmotion.PETTED))
+        assertEquals(R.drawable.kiki_state_happy, com.example.ui.mascot.resolveMascotDrawableForEmotion(com.example.model.MascotEmotion.LISTENING))
+        assertEquals(R.drawable.kiki_state_wave, com.example.ui.mascot.resolveMascotDrawableForEmotion(com.example.model.MascotEmotion.IDLE))
+        assertEquals(R.drawable.kiki_state_wave, com.example.ui.mascot.resolveMascotDrawableForEmotion(com.example.model.MascotEmotion.THINKING))
     }
 }

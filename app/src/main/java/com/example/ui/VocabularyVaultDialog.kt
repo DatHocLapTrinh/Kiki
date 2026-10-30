@@ -253,13 +253,18 @@ private fun FlashcardDeckView(
             ) {
                 Box(
                     modifier = Modifier
-                        .size(70.dp)
+                        .size(116.dp)
                         .clip(CircleShape)
                         .background(Color(0x3322C55E))
                         .border(1.5.dp, Color(0xFF22C55E), CircleShape),
                     contentAlignment = Alignment.Center
                 ) {
-                    Icon(Icons.Default.CheckCircle, contentDescription = null, tint = Color(0xFF22C55E), modifier = Modifier.size(36.dp))
+                    coil.compose.AsyncImage(
+                        model = com.example.R.drawable.kiki_full_happy,
+                        contentDescription = "Kiki Completed All Reviews",
+                        contentScale = androidx.compose.ui.layout.ContentScale.Fit,
+                        modifier = Modifier.fillMaxSize().padding(6.dp)
+                    )
                 }
                 Spacer(modifier = Modifier.height(16.dp))
                 Text(
@@ -851,7 +856,12 @@ private fun EmptyVaultState(isEnglish: Boolean, onAddClick: () -> Unit) {
             horizontalAlignment = Alignment.CenterHorizontally,
             modifier = Modifier.padding(24.dp)
         ) {
-            Icon(Icons.Default.BookmarkBorder, contentDescription = null, tint = Color(0x6651FAC1), modifier = Modifier.size(64.dp))
+            coil.compose.AsyncImage(
+                model = com.example.R.drawable.kiki_full_wave,
+                contentDescription = "Kiki Empty Vocabulary Vault",
+                contentScale = androidx.compose.ui.layout.ContentScale.Fit,
+                modifier = Modifier.size(118.dp)
+            )
             Spacer(modifier = Modifier.height(16.dp))
             Text(
                 text = if (isEnglish) "Your Vocabulary Vault is empty" else "Sổ tay từ vựng đang trống",
