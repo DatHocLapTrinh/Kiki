@@ -219,11 +219,10 @@ fun RankRevealScreen(
                         .size(34.dp)
                 )
 
-                // Living Kiki Mascot
+                // Living Kiki Mascot (tự động đổi trạng thái Vui / Buồn theo kết quả bài học)
                 LivingMascotView(
                     emotion = mascotEmotion,
                     size = 124.dp,
-                    avatarRes = R.drawable.companion_mascot,
                     modifier = Modifier.padding(top = 18.dp)
                 )
             }

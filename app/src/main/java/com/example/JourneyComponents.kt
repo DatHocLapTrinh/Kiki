@@ -128,7 +128,12 @@ fun JourneyErrorState(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
-        Icon(Icons.Default.Warning, contentDescription = null, tint = Color(0xFFFF6B6B), modifier = Modifier.size(40.dp))
+        coil.compose.AsyncImage(
+            model = R.drawable.kiki_full_sad,
+            contentDescription = "Kiki Sad Error State",
+            contentScale = androidx.compose.ui.layout.ContentScale.Fit,
+            modifier = Modifier.size(110.dp)
+        )
         Spacer(modifier = Modifier.height(12.dp))
         Text(message, color = Color.White, fontSize = 14.sp, textAlign = TextAlign.Center)
         Spacer(modifier = Modifier.height(16.dp))
@@ -152,7 +157,12 @@ fun JourneyEmptyState(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
-        Icon(Icons.Default.Explore, contentDescription = null, tint = Color(0xFF00F5D4), modifier = Modifier.size(44.dp))
+        coil.compose.AsyncImage(
+            model = R.drawable.kiki_full_wave,
+            contentDescription = "Kiki Waving Empty State",
+            contentScale = androidx.compose.ui.layout.ContentScale.Fit,
+            modifier = Modifier.size(120.dp)
+        )
         Spacer(modifier = Modifier.height(12.dp))
         Text(strings.journeyEmptyTitle, color = Color.White, fontSize = 16.sp, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center)
         Spacer(modifier = Modifier.height(6.dp))

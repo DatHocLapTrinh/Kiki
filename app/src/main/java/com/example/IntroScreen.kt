@@ -180,11 +180,11 @@ fun CosmicScaffold(
     }
 
     LaunchedEffect(Unit) {
-        delay(300) 
+        delay(120) 
         appLaunchState = 1 
-        delay(1500) 
+        delay(450) 
         appLaunchState = 2 
-        delay(300) 
+        delay(120) 
         appLaunchState = 3 
     }
 
@@ -503,55 +503,71 @@ fun IntroContent(currentX: Float, currentY: Float, onBurst: (x: Float, y: Float)
                 screenHeight = it.size.height.toFloat()
             }
     ) {
-        // Layer 4: Kiki Masterclass
+        // Layer 4: Kiki Masterclass (3D Animated Hero with True Alpha Transparency)
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .fillMaxHeight(0.7f)
+                .fillMaxHeight(0.74f)
                 .align(Alignment.TopCenter)
                 .graphicsLayer {
-                    translationX = currentX * 70f
-                    translationY = currentY * 70f
+                    translationX = currentX * 45f
+                    translationY = currentY * 45f
                 },
             contentAlignment = Alignment.Center
         ) {
             val infiniteTransition = rememberInfiniteTransition(label = "kiki")
             val kikiFloat by infiniteTransition.animateFloat(
-                initialValue = -15f, targetValue = 15f,
+                initialValue = -10f, targetValue = 10f,
                 animationSpec = infiniteRepeatable(tween(4000, easing = LinearEasing), RepeatMode.Reverse),
                 label = "kiki_float"
             )
             val auraPulse by infiniteTransition.animateFloat(
-                initialValue = 1f, targetValue = 1.2f,
-                animationSpec = infiniteRepeatable(tween(6000, easing = LinearEasing), RepeatMode.Reverse),
+                initialValue = 0.95f, targetValue = 1.15f,
+                animationSpec = infiniteRepeatable(tween(4500, easing = LinearEasing), RepeatMode.Reverse),
                 label = "aura_pulse"
             )
 
             Box(
                 modifier = Modifier
                     .offset(y = kikiFloat.dp)
-                    .size(320.dp),
+                    .fillMaxHeight()
+                    .aspectRatio(9f / 16f),
                 contentAlignment = Alignment.Center
             ) {
+                // Hào quang vũ trụ tỏa sáng nhẹ đằng sau nhân vật
                 Box(
                     modifier = Modifier
-                        .fillMaxSize()
+                        .fillMaxSize(0.85f)
                         .scale(auraPulse)
-                        .blur(40.dp)
-                        .background(Brush.radialGradient(listOf(Color(0x66FFD166), Color(0x3300F5D4), Color.Transparent)), CircleShape)
-                )
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize(0.8f)
-                        .scale(2.2f - auraPulse)
-                        .blur(30.dp)
-                        .background(Brush.radialGradient(listOf(Color(0x4D8A2BE2), Color.Transparent)), CircleShape)
+                        .blur(50.dp)
+                        .background(
+                            Brush.radialGradient(
+                                listOf(
+                                    Color(0x55FFD166),
+                                    Color(0x3300F5D4),
+                                    Color.Transparent
+                                )
+                            ),
+                            CircleShape
+                        )
                 )
 
                 AsyncImage(
-                    model = R.drawable.kiki_hero_intro,
-                    contentDescription = "Kiki",
-                    modifier = Modifier.fillMaxSize(),
+                    model = R.drawable.kiki_full_wave,
+                    contentDescription = "Kiki Waving Welcome",
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .clickable(
+                            interactionSource = remember { MutableInteractionSource() },
+                            indication = null
+                        ) {
+                            haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                            val cx = screenWidth / 2f
+                            val cy = screenHeight * 0.35f
+                            for (i in 0 until 30) {
+                                onBurst(cx, cy)
+                            }
+                        },
                     contentScale = ContentScale.Fit
                 )
             }

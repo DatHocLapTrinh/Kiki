@@ -100,16 +100,17 @@ fun WeakPointsClinicDialog(
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 Box(
                                     modifier = Modifier
-                                        .size(42.dp)
+                                        .size(46.dp)
                                         .clip(CircleShape)
-                                        .background(Color(0x33FF6B6B)),
+                                        .background(if (weakPoints.isEmpty()) Color(0x3322C55E) else Color(0x33FF6B6B))
+                                        .border(1.dp, if (weakPoints.isEmpty()) Color(0xFF22C55E) else Color(0xFFFF6B6B), CircleShape),
                                     contentAlignment = Alignment.Center
                                 ) {
-                                    Icon(
-                                        Icons.Default.Healing,
-                                        contentDescription = null,
-                                        tint = Color(0xFFFF6B6B),
-                                        modifier = Modifier.size(24.dp)
+                                    coil.compose.AsyncImage(
+                                        model = if (weakPoints.isEmpty()) com.example.R.drawable.kiki_state_happy else com.example.R.drawable.kiki_state_sad,
+                                        contentDescription = "Kiki Clinic Status",
+                                        contentScale = androidx.compose.ui.layout.ContentScale.Fit,
+                                        modifier = Modifier.fillMaxSize().padding(2.dp).clip(CircleShape)
                                     )
                                 }
                                 Spacer(modifier = Modifier.width(12.dp))
@@ -210,16 +211,17 @@ fun WeakPointsClinicDialog(
                                 ) {
                                     Box(
                                         modifier = Modifier
-                                            .size(80.dp)
+                                            .size(128.dp)
                                             .clip(CircleShape)
-                                            .background(Color(0x2222C55E)),
+                                            .background(Color(0x2222C55E))
+                                            .border(1.5.dp, Color(0x6622C55E), CircleShape),
                                         contentAlignment = Alignment.Center
                                     ) {
-                                        Icon(
-                                            Icons.Default.Verified,
-                                            contentDescription = null,
-                                            tint = Color(0xFF22C55E),
-                                            modifier = Modifier.size(44.dp)
+                                        coil.compose.AsyncImage(
+                                            model = com.example.R.drawable.kiki_full_happy,
+                                            contentDescription = "Kiki 100% Mastery",
+                                            contentScale = androidx.compose.ui.layout.ContentScale.Fit,
+                                            modifier = Modifier.fillMaxSize().padding(6.dp)
                                         )
                                     }
                                     Spacer(modifier = Modifier.height(18.dp))
