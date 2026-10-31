@@ -1,5 +1,12 @@
 package com.example
 
+import android.content.Context
+import android.graphics.Matrix
+import android.graphics.SurfaceTexture
+import android.media.MediaPlayer
+import android.net.Uri
+import android.view.Surface
+import android.view.TextureView
 import androidx.compose.animation.*
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.Canvas
@@ -27,6 +34,7 @@ import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
@@ -37,11 +45,16 @@ import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.viewinterop.AndroidView
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import coil.compose.AsyncImage
 import kotlinx.coroutines.delay
 import kotlin.math.cos
@@ -180,11 +193,11 @@ fun CosmicScaffold(
     }
 
     LaunchedEffect(Unit) {
-        delay(300) 
+        delay(120) 
         appLaunchState = 1 
-        delay(1500) 
+        delay(450) 
         appLaunchState = 2 
-        delay(300) 
+        delay(120) 
         appLaunchState = 3 
     }
 
@@ -499,57 +512,66 @@ fun IntroContent(currentX: Float, currentY: Float, onBurst: (x: Float, y: Float)
                 screenHeight = it.size.height.toFloat()
             }
     ) {
-        // Layer 4: Kiki Masterclass
+        // Layer 4: Kiki Masterclass (1080p Opening Video)
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .fillMaxHeight(0.7f)
+                .fillMaxHeight(0.74f)
                 .align(Alignment.TopCenter)
                 .graphicsLayer {
-                    translationX = currentX * 70f
-                    translationY = currentY * 70f
+                    translationX = currentX * 45f
+                    translationY = currentY * 45f
                 },
             contentAlignment = Alignment.Center
         ) {
             val infiniteTransition = rememberInfiniteTransition(label = "kiki")
-            val kikiFloat by infiniteTransition.animateFloat(
-                initialValue = -15f, targetValue = 15f,
-                animationSpec = infiniteRepeatable(tween(4000, easing = LinearEasing), RepeatMode.Reverse),
-                label = "kiki_float"
-            )
             val auraPulse by infiniteTransition.animateFloat(
-                initialValue = 1f, targetValue = 1.2f,
-                animationSpec = infiniteRepeatable(tween(6000, easing = LinearEasing), RepeatMode.Reverse),
+                initialValue = 0.95f, targetValue = 1.12f,
+                animationSpec = infiniteRepeatable(tween(4500, easing = LinearEasing), RepeatMode.Reverse),
                 label = "aura_pulse"
             )
 
             Box(
                 modifier = Modifier
-                    .offset(y = kikiFloat.dp)
-                    .size(320.dp),
+                    .fillMaxHeight()
+                    .aspectRatio(9f / 16f),
                 contentAlignment = Alignment.Center
             ) {
-                Box(
+                KikiIntroVideoPlayer(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .clip(RoundedCornerShape(36.dp)),
+                    onTapKiki = {
+                        haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                        val cx = screenWidth / 2f
+                        val cy = screenHeight * 0.35f
+                        for (i in 0 until 25) {
+                            onBurst(cx, cy)
+                        }
+                    }
+                )
+
+                // Hào quang ánh sáng phủ nhẹ chế độ Screen quanh Kiki
+                Canvas(
                     modifier = Modifier
                         .fillMaxSize()
                         .scale(auraPulse)
-                        .blur(40.dp)
-                        .background(Brush.radialGradient(listOf(Color(0x66FFD166), Color(0x3300F5D4), Color.Transparent)), CircleShape)
-                )
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize(0.8f)
-                        .scale(2.2f - auraPulse)
-                        .blur(30.dp)
-                        .background(Brush.radialGradient(listOf(Color(0x4D8A2BE2), Color.Transparent)), CircleShape)
-                )
-
-                AsyncImage(
-                    model = R.drawable.kiki_full_wave,
-                    contentDescription = "Kiki Waving Welcome",
-                    modifier = Modifier.fillMaxSize(),
-                    contentScale = ContentScale.Fit
-                )
+                ) {
+                    drawCircle(
+                        brush = Brush.radialGradient(
+                            colors = listOf(
+                                Color(0x28FFD166),
+                                Color(0x1800F5D4),
+                                Color.Transparent
+                            ),
+                            center = Offset(size.width / 2f, size.height * 0.48f),
+                            radius = size.width * 0.62f
+                        ),
+                        radius = size.width * 0.62f,
+                        center = Offset(size.width / 2f, size.height * 0.48f),
+                        blendMode = BlendMode.Screen
+                    )
+                }
             }
         }
 
@@ -781,4 +803,188 @@ fun UltimateButton(text: String, onClick: () -> Unit) {
             Icon(Icons.Default.Bolt, contentDescription = null, tint = Color.White)
         }
     }
+}
+
+/**
+ * Trình phát video mở đầu 1080p của Kiki (`R.raw.kiki_intro_video`) sử dụng `TextureView` + `MediaPlayer`:
+ * - Phát âm thanh chào mừng vui nhộn ở lượt đầu tiên khi mở ứng dụng (nếu bật âm thanh),
+ *   sau đó tự động lặp lại mượt mà ở chế độ im lặng để không gây ồn lặp đi lặp lại.
+ * - Khi người dùng chạm vào Kiki, bật lại âm thanh cười vui nhộn trong 1 lượt phát.
+ * - Hòa trộn viền nền đen `#000000` của video tiệp hoàn toàn vào bầu trời vũ trụ.
+ */
+@Composable
+fun KikiIntroVideoPlayer(
+    modifier: Modifier = Modifier,
+    onTapKiki: () -> Unit = {}
+) {
+    val context = LocalContext.current
+    val lifecycleOwner = LocalLifecycleOwner.current
+    var isVideoReady by remember { mutableStateOf(false) }
+    val mediaPlayerRef = remember { mutableStateOf<MediaPlayer?>(null) }
+
+    val soundEnabled = remember {
+        context.getSharedPreferences("settings", Context.MODE_PRIVATE)
+            .getBoolean("sound_enabled", true)
+    }
+
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            val player = mediaPlayerRef.value
+            when (event) {
+                Lifecycle.Event.ON_PAUSE -> runCatching {
+                    if (player?.isPlaying == true) player.pause()
+                }
+                Lifecycle.Event.ON_RESUME -> runCatching {
+                    if (player != null && !player.isPlaying) player.start()
+                }
+                else -> {}
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose {
+            lifecycleOwner.lifecycle.removeObserver(observer)
+            runCatching {
+                mediaPlayerRef.value?.stop()
+                mediaPlayerRef.value?.release()
+            }
+            mediaPlayerRef.value = null
+        }
+    }
+
+    Box(
+        modifier = modifier
+            .clickable(
+                interactionSource = remember { MutableInteractionSource() },
+                indication = null
+            ) {
+                onTapKiki()
+                runCatching {
+                    val mp = mediaPlayerRef.value
+                    if (mp != null && soundEnabled) {
+                        mp.setVolume(1f, 1f)
+                        mp.seekTo(0)
+                        if (!mp.isPlaying) mp.start()
+                    }
+                }
+            }
+            .drawWithContent {
+                drawContent()
+                // Hòa trộn 4 cạnh của khung video 9:16 vào nền vũ trụ tối
+                val edgeColor = Color(0xFF05000A)
+                drawRect(
+                    brush = Brush.verticalGradient(
+                        0.0f to edgeColor,
+                        0.08f to Color.Transparent,
+                        0.88f to Color.Transparent,
+                        1.0f to edgeColor
+                    )
+                )
+                drawRect(
+                    brush = Brush.horizontalGradient(
+                        0.0f to edgeColor,
+                        0.10f to Color.Transparent,
+                        0.90f to Color.Transparent,
+                        1.0f to edgeColor
+                    )
+                )
+            },
+        contentAlignment = Alignment.Center
+    ) {
+        AndroidView(
+            modifier = Modifier.fillMaxSize(),
+            factory = { ctx ->
+                val textureView = TextureView(ctx)
+                textureView.isOpaque = false
+                textureView.surfaceTextureListener = object : TextureView.SurfaceTextureListener {
+                    override fun onSurfaceTextureAvailable(
+                        surfaceTexture: SurfaceTexture,
+                        width: Int,
+                        height: Int
+                    ) {
+                        runCatching {
+                            val surface = Surface(surfaceTexture)
+                            val videoUri = Uri.parse("android.resource://${ctx.packageName}/${R.raw.kiki_intro_video}")
+                            val mp = MediaPlayer().apply {
+                                setDataSource(ctx, videoUri)
+                                setSurface(surface)
+                                isLooping = false
+                                val initVol = if (soundEnabled) 1f else 0f
+                                setVolume(initVol, initVol)
+                                setOnVideoSizeChangedListener { _, videoW, videoH ->
+                                    updateTextureViewCenterFit(textureView, videoW, videoH)
+                                }
+                                setOnPreparedListener { player ->
+                                    isVideoReady = true
+                                    player.start()
+                                }
+                                setOnCompletionListener { player ->
+                                    // Sau lượt phát chào mừng đầu tiên, lặp lại video ở chế độ tắt tiếng
+                                    runCatching {
+                                        player.setVolume(0f, 0f)
+                                        player.seekTo(0)
+                                        player.start()
+                                    }
+                                }
+                                prepareAsync()
+                            }
+                            mediaPlayerRef.value = mp
+                        }
+                    }
+
+                    override fun onSurfaceTextureSizeChanged(
+                        surface: SurfaceTexture,
+                        width: Int,
+                        height: Int
+                    ) {
+                        val mp = mediaPlayerRef.value ?: return
+                        runCatching {
+                            updateTextureViewCenterFit(textureView, mp.videoWidth, mp.videoHeight)
+                        }
+                    }
+
+                    override fun onSurfaceTextureDestroyed(surface: SurfaceTexture): Boolean {
+                        runCatching {
+                            mediaPlayerRef.value?.stop()
+                            mediaPlayerRef.value?.release()
+                        }
+                        mediaPlayerRef.value = null
+                        return true
+                    }
+
+                    override fun onSurfaceTextureUpdated(surface: SurfaceTexture) {}
+                }
+                textureView
+            }
+        )
+
+        if (!isVideoReady) {
+            AsyncImage(
+                model = R.drawable.kiki_full_wave,
+                contentDescription = "Kiki Waving Welcome",
+                modifier = Modifier.fillMaxSize(0.85f),
+                contentScale = ContentScale.Fit
+            )
+        }
+    }
+}
+
+private fun updateTextureViewCenterFit(textureView: TextureView, videoW: Int, videoH: Int) {
+    val viewW = textureView.width.toFloat()
+    val viewH = textureView.height.toFloat()
+    if (videoW <= 0 || videoH <= 0 || viewW <= 0f || viewH <= 0f) return
+
+    val videoAspect = videoW.toFloat() / videoH.toFloat()
+    val viewAspect = viewW / viewH
+
+    var scaleX = 1f
+    var scaleY = 1f
+    if (videoAspect > viewAspect) {
+        scaleY = viewAspect / videoAspect
+    } else {
+        scaleX = videoAspect / viewAspect
+    }
+
+    val matrix = Matrix()
+    matrix.setScale(scaleX, scaleY, viewW / 2f, viewH / 2f)
+    textureView.setTransform(matrix)
 }

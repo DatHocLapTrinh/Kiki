@@ -20,6 +20,7 @@ class StudyMentorApplication : Application(), ImageLoaderFactory {
                     add(GifDecoder.Factory())
                 }
             }
+            .crossfade(true)
             .build()
     }
 }
