@@ -123,14 +123,20 @@ fun StudyMentorApp() {
                                 val targetEmail = currentUser?.email ?: lastEmail
                                 if (!targetEmail.isNullOrBlank()) {
                                     scope.launch {
-                                        isWarping = true
-                                        val userId = viewModel.loadUserData(targetEmail)
-                                        delay(800)
-                                        isWarping = false
-                                        if (userId != -1L) {
-                                            val isCompleted = viewModel.isUserOnboardingCompleted(userId)
-                                            authStep = if (!isCompleted) AuthStep.ONBOARDING else AuthStep.LOGGED_IN
-                                        } else {
+                                        try {
+                                            isWarping = true
+                                            val userId = viewModel.loadUserData(targetEmail)
+                                            delay(800)
+                                            isWarping = false
+                                            if (userId != -1L) {
+                                                val isCompleted = viewModel.isUserOnboardingCompleted(userId)
+                                                authStep = if (!isCompleted) AuthStep.ONBOARDING else AuthStep.LOGGED_IN
+                                            } else {
+                                                authStep = AuthStep.IDENTITY
+                                            }
+                                        } catch (e: Exception) {
+                                            android.util.Log.e("StudyMentorApp", "Lỗi khởi tạo dữ liệu người dùng khi nhấn Bắt đầu", e)
+                                            isWarping = false
                                             authStep = AuthStep.IDENTITY
                                         }
                                     }
@@ -145,14 +151,20 @@ fun StudyMentorApp() {
                             currentX = currentX,
                             currentY = currentY,
                             viewModel = viewModel,
-                            onLoginSuccess = { 
+                            onLoginSuccess = {
                                 scope.launch {
-                                    isWarping = true
-                                    delay(1000)
-                                    isWarping = false
-                                    val userId = viewModel.currentUserId.value ?: -1L
-                                    val isCompleted = viewModel.isUserOnboardingCompleted(userId)
-                                    authStep = if (!isCompleted) AuthStep.ONBOARDING else AuthStep.LOGGED_IN
+                                    try {
+                                        isWarping = true
+                                        delay(1000)
+                                        isWarping = false
+                                        val userId = viewModel.currentUserId.value ?: -1L
+                                        val isCompleted = viewModel.isUserOnboardingCompleted(userId)
+                                        authStep = if (!isCompleted) AuthStep.ONBOARDING else AuthStep.LOGGED_IN
+                                    } catch (e: Exception) {
+                                        android.util.Log.e("StudyMentorApp", "Lỗi điều hướng sau đăng nhập", e)
+                                        isWarping = false
+                                        authStep = AuthStep.IDENTITY
+                                    }
                                 }
                             }
                         )

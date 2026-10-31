@@ -27,6 +27,7 @@ object AppModule {
             "AIStudyMentorRoom.db"
         )
             .fallbackToDestructiveMigration(dropAllTables = true)
+            .fallbackToDestructiveMigrationOnDowngrade(dropAllTables = true)
             // Đã loại bỏ allowMainThreadQueries() để bảo vệ luồng UI
             .build()
     }

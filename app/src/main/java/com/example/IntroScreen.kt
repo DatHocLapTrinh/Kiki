@@ -218,24 +218,6 @@ fun CosmicScaffold(
             .onGloballyPositioned {
                 screenWidth = it.size.width.toFloat()
                 screenHeight = it.size.height.toFloat()
-            }
-            .pointerInput(externalTargetX, externalTargetY) {
-                if (externalTargetX == null && externalTargetY == null && appLaunchState == 3) {
-                    detectDragGestures(
-                        onDrag = { change, _ ->
-                            val w = size.width.toFloat()
-                            val h = size.height.toFloat()
-                            val cx = w / 2f
-                            val cy = h / 2f
-                            touchX = (change.position.x - cx) / cx
-                            touchY = (change.position.y - cy) / cy
-                        },
-                        onDragEnd = {
-                            touchX = 0f
-                            touchY = 0f
-                        }
-                    )
-                }
             },
         contentAlignment = Alignment.Center
     ) {
@@ -252,7 +234,29 @@ fun CosmicScaffold(
 
         // 2. The Universe 
         if (appLaunchState >= 2) {
-            Box(modifier = Modifier.fillMaxSize().alpha(bgAlpha)) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .alpha(bgAlpha)
+                    .pointerInput(externalTargetX, externalTargetY) {
+                        if (externalTargetX == null && externalTargetY == null && appLaunchState == 3) {
+                            detectDragGestures(
+                                onDrag = { change, _ ->
+                                    val w = size.width.toFloat()
+                                    val h = size.height.toFloat()
+                                    val cx = w / 2f
+                                    val cy = h / 2f
+                                    touchX = (change.position.x - cx) / cx
+                                    touchY = (change.position.y - cy) / cy
+                                },
+                                onDragEnd = {
+                                    touchX = 0f
+                                    touchY = 0f
+                                }
+                            )
+                        }
+                    }
+            ) {
                 Box(
                     modifier = Modifier.fillMaxSize()
                         .background(
