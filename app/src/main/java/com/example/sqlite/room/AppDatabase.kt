@@ -18,7 +18,7 @@ import androidx.sqlite.db.SupportSQLiteDatabase
         WeakPointEntity::class,
         ResearchTelemetryEntity::class
     ],
-    version = 6,
+    version = 7,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -77,30 +77,55 @@ abstract class AppDatabase : RoomDatabase() {
             db.execSQL("CREATE INDEX IF NOT EXISTS `index_research_telemetry_timestamp` ON `research_telemetry` (`timestamp`)")
         }
 
+        fun applySchemaUpdates(db: SupportSQLiteDatabase) {
+            addColumnIfNotExists(db, "user_profiles", "stars", "INTEGER NOT NULL DEFAULT 0")
+            addColumnIfNotExists(db, "user_profiles", "hearts", "INTEGER NOT NULL DEFAULT 5")
+            createResearchTelemetryTableIfNotExists(db)
+        }
+
         val MIGRATION_4_5 = object : Migration(4, 5) {
             override fun migrate(db: SupportSQLiteDatabase) {
-                addColumnIfNotExists(db, "user_profiles", "stars", "INTEGER NOT NULL DEFAULT 0")
-                addColumnIfNotExists(db, "user_profiles", "hearts", "INTEGER NOT NULL DEFAULT 5")
-                createResearchTelemetryTableIfNotExists(db)
+                applySchemaUpdates(db)
             }
         }
 
         val MIGRATION_5_6 = object : Migration(5, 6) {
             override fun migrate(db: SupportSQLiteDatabase) {
-                addColumnIfNotExists(db, "user_profiles", "stars", "INTEGER NOT NULL DEFAULT 0")
-                addColumnIfNotExists(db, "user_profiles", "hearts", "INTEGER NOT NULL DEFAULT 5")
-                createResearchTelemetryTableIfNotExists(db)
+                applySchemaUpdates(db)
             }
         }
 
         val MIGRATION_4_6 = object : Migration(4, 6) {
             override fun migrate(db: SupportSQLiteDatabase) {
-                addColumnIfNotExists(db, "user_profiles", "stars", "INTEGER NOT NULL DEFAULT 0")
-                addColumnIfNotExists(db, "user_profiles", "hearts", "INTEGER NOT NULL DEFAULT 5")
-                createResearchTelemetryTableIfNotExists(db)
+                applySchemaUpdates(db)
             }
         }
 
-        val ALL_MIGRATIONS = arrayOf(MIGRATION_4_5, MIGRATION_5_6, MIGRATION_4_6)
+        val MIGRATION_6_7 = object : Migration(6, 7) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                applySchemaUpdates(db)
+            }
+        }
+
+        val MIGRATION_5_7 = object : Migration(5, 7) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                applySchemaUpdates(db)
+            }
+        }
+
+        val MIGRATION_4_7 = object : Migration(4, 7) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                applySchemaUpdates(db)
+            }
+        }
+
+        val ALL_MIGRATIONS = arrayOf(
+            MIGRATION_4_5,
+            MIGRATION_5_6,
+            MIGRATION_4_6,
+            MIGRATION_6_7,
+            MIGRATION_5_7,
+            MIGRATION_4_7
+        )
     }
 }

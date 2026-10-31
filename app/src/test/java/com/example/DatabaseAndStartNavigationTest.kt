@@ -35,12 +35,18 @@ class DatabaseAndStartNavigationTest {
 
     @Test
     fun testMigrationsAreProperlyConfigured() {
-        assertEquals(3, AppDatabase.ALL_MIGRATIONS.size)
+        assertEquals(6, AppDatabase.ALL_MIGRATIONS.size)
         assertEquals(4, AppDatabase.MIGRATION_4_5.startVersion)
         assertEquals(5, AppDatabase.MIGRATION_4_5.endVersion)
         assertEquals(5, AppDatabase.MIGRATION_5_6.startVersion)
         assertEquals(6, AppDatabase.MIGRATION_5_6.endVersion)
         assertEquals(4, AppDatabase.MIGRATION_4_6.startVersion)
         assertEquals(6, AppDatabase.MIGRATION_4_6.endVersion)
+        assertEquals(6, AppDatabase.MIGRATION_6_7.startVersion)
+        assertEquals(7, AppDatabase.MIGRATION_6_7.endVersion)
+        assertEquals(5, AppDatabase.MIGRATION_5_7.startVersion)
+        assertEquals(7, AppDatabase.MIGRATION_5_7.endVersion)
+        assertEquals(4, AppDatabase.MIGRATION_4_7.startVersion)
+        assertEquals(7, AppDatabase.MIGRATION_4_7.endVersion)
     }
 }
