@@ -806,11 +806,11 @@ fun UltimateButton(text: String, onClick: () -> Unit) {
 }
 
 /**
- * Trình phát video mở đầu 1080p của Kiki (`R.raw.kiki_intro_video`) sử dụng `TextureView` + `MediaPlayer`:
+ * Trình phát video mở đầu của Kiki (`R.raw.intro_kiki` - WebM VP9) sử dụng `TextureView` + `MediaPlayer`:
  * - Phát âm thanh chào mừng vui nhộn ở lượt đầu tiên khi mở ứng dụng (nếu bật âm thanh),
  *   sau đó tự động lặp lại mượt mà ở chế độ im lặng để không gây ồn lặp đi lặp lại.
  * - Khi người dùng chạm vào Kiki, bật lại âm thanh cười vui nhộn trong 1 lượt phát.
- * - Hòa trộn viền nền đen `#000000` của video tiệp hoàn toàn vào bầu trời vũ trụ.
+ * - Hòa trộn viền nền của video tiệp hoàn toàn vào bầu trời vũ trụ.
  */
 @Composable
 fun KikiIntroVideoPlayer(
@@ -903,9 +903,15 @@ fun KikiIntroVideoPlayer(
                     ) {
                         runCatching {
                             val surface = Surface(surfaceTexture)
-                            val videoUri = Uri.parse("android.resource://${ctx.packageName}/${R.raw.kiki_intro_video}")
                             val mp = MediaPlayer().apply {
-                                setDataSource(ctx, videoUri)
+                                val afd = runCatching { ctx.resources.openRawResourceFd(R.raw.intro_kiki) }.getOrNull()
+                                if (afd != null) {
+                                    setDataSource(afd.fileDescriptor, afd.startOffset, afd.length)
+                                    afd.close()
+                                } else {
+                                    val videoUri = Uri.parse("android.resource://${ctx.packageName}/${R.raw.intro_kiki}")
+                                    setDataSource(ctx, videoUri)
+                                }
                                 setSurface(surface)
                                 isLooping = false
                                 val initVol = if (soundEnabled) 1f else 0f
