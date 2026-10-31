@@ -67,6 +67,7 @@ class DailyReminderReceiver : BroadcastReceiver() {
                     AppDatabase::class.java,
                     "AIStudyMentorRoom.db"
                 )
+                    .addMigrations(*AppDatabase.ALL_MIGRATIONS)
                     .fallbackToDestructiveMigration(dropAllTables = true)
                     .fallbackToDestructiveMigrationOnDowngrade(dropAllTables = true)
                     .build()

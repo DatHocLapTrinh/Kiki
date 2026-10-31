@@ -26,6 +26,7 @@ object AppModule {
             AppDatabase::class.java,
             "AIStudyMentorRoom.db"
         )
+            .addMigrations(*AppDatabase.ALL_MIGRATIONS)
             .fallbackToDestructiveMigration(dropAllTables = true)
             .fallbackToDestructiveMigrationOnDowngrade(dropAllTables = true)
             // Đã loại bỏ allowMainThreadQueries() để bảo vệ luồng UI
