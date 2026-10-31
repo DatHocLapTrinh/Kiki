@@ -1,7 +1,5 @@
 package com.example
 
-import android.content.Context
-import android.media.MediaPlayer
 import androidx.compose.animation.*
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.Canvas
@@ -39,15 +37,11 @@ import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onGloballyPositioned
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.LifecycleEventObserver
-import androidx.lifecycle.compose.LocalLifecycleOwner
 import coil.compose.AsyncImage
 import kotlinx.coroutines.delay
 import kotlin.math.cos
@@ -554,16 +548,23 @@ fun IntroContent(currentX: Float, currentY: Float, onBurst: (x: Float, y: Float)
                         )
                 )
 
-                KikiIntroHeroView(
-                    modifier = Modifier.fillMaxSize(),
-                    onTapKiki = {
-                        haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                        val cx = screenWidth / 2f
-                        val cy = screenHeight * 0.35f
-                        for (i in 0 until 30) {
-                            onBurst(cx, cy)
-                        }
-                    }
+                AsyncImage(
+                    model = R.drawable.kiki_full_wave,
+                    contentDescription = "Kiki Waving Welcome",
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .clickable(
+                            interactionSource = remember { MutableInteractionSource() },
+                            indication = null
+                        ) {
+                            haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                            val cx = screenWidth / 2f
+                            val cy = screenHeight * 0.35f
+                            for (i in 0 until 30) {
+                                onBurst(cx, cy)
+                            }
+                        },
+                    contentScale = ContentScale.Fit
                 )
             }
         }
@@ -795,106 +796,5 @@ fun UltimateButton(text: String, onClick: () -> Unit) {
             Spacer(modifier = Modifier.width(12.dp))
             Icon(Icons.Default.Bolt, contentDescription = null, tint = Color.White)
         }
-    }
-}
-
-/**
- * Trình phát hoạt ảnh Kiki mở đầu chuẩn 3D với nền trong suốt 100% (`R.drawable.kiki_intro_animated`)
- * kết hợp âm thanh chào mừng vui nhộn (`R.raw.intro_kiki_audio`):
- * - Hoạt ảnh 30 FPS mượt mà với kênh alpha trong suốt tuyệt đối (Alpha Channel), tiệp hoàn hảo vào không gian vũ trụ (không hề có viền/hộp đen).
- * - Tự động phát âm thanh vui nhộn khi vào app (nếu bật sound_enabled).
- * - Tương tác chạm: Người học chạm vào Kiki sẽ kích hoạt hiệu ứng pháo hoa hạt ma thuật và phát lại tiếng cười.
- */
-@Composable
-fun KikiIntroHeroView(
-    modifier: Modifier = Modifier,
-    onTapKiki: () -> Unit = {}
-) {
-    val context = LocalContext.current
-    val lifecycleOwner = LocalLifecycleOwner.current
-    val mediaPlayerRef = remember { mutableStateOf<MediaPlayer?>(null) }
-
-    val soundEnabled = remember {
-        context.getSharedPreferences("settings", Context.MODE_PRIVATE)
-            .getBoolean("sound_enabled", true)
-    }
-
-    LaunchedEffect(Unit) {
-        if (soundEnabled) {
-            runCatching {
-                val mp = MediaPlayer.create(context, R.raw.intro_kiki_audio)
-                mp?.apply {
-                    setVolume(0.9f, 0.9f)
-                    isLooping = false
-                    setOnCompletionListener {
-                        runCatching { it.release() }
-                        if (mediaPlayerRef.value == it) mediaPlayerRef.value = null
-                    }
-                    start()
-                }
-                mediaPlayerRef.value = mp
-            }
-        }
-    }
-
-    DisposableEffect(lifecycleOwner) {
-        val observer = LifecycleEventObserver { _, event ->
-            val player = mediaPlayerRef.value
-            when (event) {
-                Lifecycle.Event.ON_PAUSE -> runCatching {
-                    if (player?.isPlaying == true) player.pause()
-                }
-                Lifecycle.Event.ON_RESUME -> runCatching {
-                    if (player != null && !player.isPlaying) player.start()
-                }
-                else -> {}
-            }
-        }
-        lifecycleOwner.lifecycle.addObserver(observer)
-        onDispose {
-            lifecycleOwner.lifecycle.removeObserver(observer)
-            runCatching {
-                mediaPlayerRef.value?.stop()
-                mediaPlayerRef.value?.release()
-            }
-            mediaPlayerRef.value = null
-        }
-    }
-
-    Box(
-        modifier = modifier
-            .clickable(
-                interactionSource = remember { MutableInteractionSource() },
-                indication = null
-            ) {
-                onTapKiki()
-                if (soundEnabled) {
-                    runCatching {
-                        val currentPlayer = mediaPlayerRef.value
-                        if (currentPlayer != null && currentPlayer.isPlaying) {
-                            currentPlayer.seekTo(0)
-                        } else {
-                            val newPlayer = MediaPlayer.create(context, R.raw.intro_kiki_audio)
-                            newPlayer?.apply {
-                                setVolume(1f, 1f)
-                                setOnCompletionListener {
-                                    runCatching { it.release() }
-                                    if (mediaPlayerRef.value == it) mediaPlayerRef.value = null
-                                }
-                                start()
-                            }
-                            mediaPlayerRef.value = newPlayer
-                        }
-                    }
-                }
-            },
-        contentAlignment = Alignment.Center
-    ) {
-        AsyncImage(
-            model = R.drawable.kiki_intro_animated,
-            contentDescription = "Kiki Animated Intro",
-            modifier = Modifier.fillMaxSize(),
-            contentScale = ContentScale.Fit
-        )
     }
 }

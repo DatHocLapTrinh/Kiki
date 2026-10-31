@@ -81,23 +81,23 @@ fun LivingMascotView(
     }
 
     val targetScaleX = when (emotion) {
-        MascotEmotion.CHEER -> if (isSquashing) 1.08f else 1.03f
-        MascotEmotion.STREAK -> if (isSquashing) 1.08f else 1.04f
-        MascotEmotion.EMPATHY -> 1.0f
-        MascotEmotion.THINKING -> 1.0f
-        MascotEmotion.PETTED -> if (isSquashing) 1.08f else 1.03f
+        MascotEmotion.CHEER -> if (isSquashing) 1.25f else 1.05f
+        MascotEmotion.STREAK -> if (isSquashing) 1.2f else 1.08f
+        MascotEmotion.EMPATHY -> 1.05f
+        MascotEmotion.THINKING -> 0.98f
+        MascotEmotion.PETTED -> if (isSquashing) 1.22f else 1.05f
         MascotEmotion.LISTENING -> 1.02f
         MascotEmotion.IDLE -> 1.0f
     }
 
     val targetScaleY = when (emotion) {
-        MascotEmotion.CHEER -> if (isSquashing) 1.08f else 1.03f
-        MascotEmotion.STREAK -> if (isSquashing) 1.08f else 1.04f
-        MascotEmotion.EMPATHY -> 1.0f
+        MascotEmotion.CHEER -> if (isSquashing) 0.80f else 1.15f
+        MascotEmotion.STREAK -> if (isSquashing) 0.85f else 1.12f
+        MascotEmotion.EMPATHY -> 0.92f
         MascotEmotion.THINKING -> 1.0f
-        MascotEmotion.PETTED -> if (isSquashing) 1.08f else 1.03f
+        MascotEmotion.PETTED -> if (isSquashing) 0.82f else 1.12f
         MascotEmotion.LISTENING -> 1.02f
-        MascotEmotion.IDLE -> 1.0f
+        MascotEmotion.IDLE -> idleBreathY
     }
 
     val animScaleX by animateFloatAsState(
@@ -118,8 +118,15 @@ fun LivingMascotView(
         label = "StretchY"
     )
 
-    // 3. Góc xoay cơ thể (Giữ khung 0 độ để phát trọn vẹn chuyển động 3D của GIF)
-    val targetRotation = 0f
+    // 3. Góc xoay cơ thể (Tilt & Wiggle)
+    val targetRotation = when (emotion) {
+        MascotEmotion.THINKING -> 12f
+        MascotEmotion.CHEER -> -8f
+        MascotEmotion.EMPATHY -> -6f
+        MascotEmotion.PETTED -> 10f
+        MascotEmotion.LISTENING -> 4f
+        else -> 0f
+    }
 
     val animRotation by animateFloatAsState(
         targetValue = targetRotation,
