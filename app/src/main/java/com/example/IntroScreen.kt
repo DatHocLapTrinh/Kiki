@@ -43,6 +43,9 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
+import com.example.model.MascotEmotion
+import com.example.model.KikiAnimationUrls
+import com.example.ui.mascot.LivingMascotView
 import kotlinx.coroutines.delay
 import kotlin.math.cos
 import kotlin.math.sin
@@ -490,6 +493,7 @@ fun IntroContent(currentX: Float, currentY: Float, onBurst: (x: Float, y: Float)
     var screenWidth by remember { mutableFloatStateOf(1000f) }
     var screenHeight by remember { mutableFloatStateOf(2000f) }
     val haptic = LocalHapticFeedback.current
+    var greetingTriggerKey by remember { mutableIntStateOf(0) }
 
     Box(
         modifier = Modifier
@@ -499,56 +503,43 @@ fun IntroContent(currentX: Float, currentY: Float, onBurst: (x: Float, y: Float)
                 screenHeight = it.size.height.toFloat()
             }
     ) {
-        // Layer 4: Kiki Masterclass
+        // Layer 4: Kiki Masterclass (Hoạt ảnh chào khi vào app & click chào lại)
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .fillMaxHeight(0.7f)
+                .fillMaxHeight(0.64f)
                 .align(Alignment.TopCenter)
                 .graphicsLayer {
-                    translationX = currentX * 70f
-                    translationY = currentY * 70f
+                    translationX = currentX * 50f
+                    translationY = currentY * 50f
                 },
             contentAlignment = Alignment.Center
         ) {
             val infiniteTransition = rememberInfiniteTransition(label = "kiki")
             val kikiFloat by infiniteTransition.animateFloat(
-                initialValue = -15f, targetValue = 15f,
+                initialValue = -12f, targetValue = 12f,
                 animationSpec = infiniteRepeatable(tween(4000, easing = LinearEasing), RepeatMode.Reverse),
                 label = "kiki_float"
             )
-            val auraPulse by infiniteTransition.animateFloat(
-                initialValue = 1f, targetValue = 1.2f,
-                animationSpec = infiniteRepeatable(tween(6000, easing = LinearEasing), RepeatMode.Reverse),
-                label = "aura_pulse"
-            )
 
-            Box(
-                modifier = Modifier
-                    .offset(y = kikiFloat.dp)
-                    .size(320.dp),
-                contentAlignment = Alignment.Center
-            ) {
-                Box(
+            key(greetingTriggerKey) {
+                LivingMascotView(
+                    emotion = MascotEmotion.GREETING,
+                    isFullBody = true,
+                    avatarRes = R.drawable.kiki_hero_intro,
                     modifier = Modifier
-                        .fillMaxSize()
-                        .scale(auraPulse)
-                        .blur(40.dp)
-                        .background(Brush.radialGradient(listOf(Color(0x66FFD166), Color(0x3300F5D4), Color.Transparent)), CircleShape)
-                )
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize(0.8f)
-                        .scale(2.2f - auraPulse)
-                        .blur(30.dp)
-                        .background(Brush.radialGradient(listOf(Color(0x4D8A2BE2), Color.Transparent)), CircleShape)
-                )
-
-                AsyncImage(
-                    model = R.drawable.kiki_hero_intro,
-                    contentDescription = "Kiki",
-                    modifier = Modifier.fillMaxSize(),
-                    contentScale = ContentScale.Fit
+                        .offset(y = kikiFloat.dp)
+                        .fillMaxHeight(0.88f)
+                        .aspectRatio(9f / 16f)
+                        .padding(horizontal = 8.dp),
+                    onClick = {
+                        greetingTriggerKey++
+                        val cx = screenWidth / 2f
+                        val cy = screenHeight * 0.3f
+                        for (i in 0 until 30) {
+                            onBurst(cx, cy)
+                        }
+                    }
                 )
             }
         }

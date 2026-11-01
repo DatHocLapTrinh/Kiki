@@ -117,10 +117,10 @@ fun QuestScreen(viewModel: StudyViewModel, onFinish: () -> Unit) {
         when {
             isPetted -> MascotEmotion.PETTED
             isListeningActive -> MascotEmotion.LISTENING
-            isChecked && isCurrentCorrect && consecutiveCorrect >= 3 -> MascotEmotion.STREAK
+            isChecked && isCurrentCorrect && consecutiveCorrect >= 5 -> MascotEmotion.STREAK
             isChecked && isCurrentCorrect -> MascotEmotion.CHEER
             isChecked && !isCurrentCorrect -> MascotEmotion.EMPATHY
-            idleSeconds >= 14 -> MascotEmotion.THINKING
+            idleSeconds >= 5 -> MascotEmotion.THINKING
             else -> MascotEmotion.IDLE
         }
     }
@@ -225,7 +225,7 @@ fun QuestScreen(viewModel: StudyViewModel, onFinish: () -> Unit) {
                         coroutineScope.launch {
                             isPetted = true
                             val quoteEmotion = when {
-                                isChecked && isCurrentCorrect && consecutiveCorrect >= 3 -> MascotEmotion.STREAK
+                                isChecked && isCurrentCorrect && consecutiveCorrect >= 5 -> MascotEmotion.STREAK
                                 isChecked && isCurrentCorrect -> MascotEmotion.CHEER
                                 isChecked && !isCurrentCorrect -> MascotEmotion.EMPATHY
                                 currentEmotion == MascotEmotion.THINKING -> MascotEmotion.THINKING
@@ -261,7 +261,47 @@ fun QuestScreen(viewModel: StudyViewModel, onFinish: () -> Unit) {
                     .verticalScroll(rememberScrollState()),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                Spacer(modifier = Modifier.height(16.dp))
+                // Hiển thị linh vật Kiki đọc đề khi ở trong câu hỏi quá lâu (>5s)
+                AnimatedVisibility(
+                    visible = idleSeconds >= 5 && !isChecked,
+                    enter = fadeIn(tween(350)) + expandVertically(),
+                    exit = fadeOut(tween(250)) + shrinkVertically()
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 4.dp, vertical = 6.dp)
+                            .clip(RoundedCornerShape(20.dp))
+                            .background(Color(0x33FFCA28))
+                            .border(1.dp, Color(0x66FFCA28), RoundedCornerShape(20.dp))
+                            .padding(horizontal = 14.dp, vertical = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        LivingMascotView(
+                            emotion = MascotEmotion.THINKING,
+                            isFullBody = true,
+                            modifier = Modifier
+                                .height(68.dp)
+                                .aspectRatio(9f / 16f)
+                        )
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = if (isEnglish) "Kiki is reading the question with you 💡" else "Kiki đang đọc đề cùng bạn nè 💡",
+                                color = Color(0xFFFFD166),
+                                fontSize = 13.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                            Text(
+                                text = if (isEnglish) "Take your time and think carefully!" else "Cứ bình tĩnh suy nghĩ và chọn đáp án chuẩn xác nhé!",
+                                color = Color.White.copy(alpha = 0.85f),
+                                fontSize = 11.5.sp
+                            )
+                        }
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(10.dp))
 
                 // Card câu hỏi chính
                 AnimatedContent(
@@ -779,25 +819,26 @@ fun QuestScreen(viewModel: StudyViewModel, onFinish: () -> Unit) {
                                     verticalAlignment = Alignment.CenterVertically,
                                     modifier = Modifier.weight(1f)
                                 ) {
-                                    Box(
+                                    // Linh vật Kiki sống động vỗ tay ăn mừng / chia buồn
+                                    LivingMascotView(
+                                        emotion = if (isCurrentCorrect && consecutiveCorrect >= 5) MascotEmotion.STREAK
+                                                  else if (isCurrentCorrect) MascotEmotion.CHEER
+                                                  else MascotEmotion.EMPATHY,
+                                        isFullBody = true,
                                         modifier = Modifier
-                                            .size(40.dp)
-                                            .clip(CircleShape)
-                                            .background(if (isCurrentCorrect) Color(0x3322C55E) else Color(0x33EF4444)),
-                                        contentAlignment = Alignment.Center
-                                    ) {
-                                        Icon(
-                                            imageVector = if (isCurrentCorrect) Icons.Default.CheckCircle else Icons.Default.Cancel,
-                                            contentDescription = null,
-                                            tint = iconTint,
-                                            modifier = Modifier.size(28.dp)
-                                        )
-                                    }
+                                            .height(84.dp)
+                                            .aspectRatio(9f / 16f)
+                                            .padding(end = 12.dp)
+                                    )
                                     Column(modifier = Modifier.weight(1f, fill = false)) {
                                         Text(
-                                            text = if (isCurrentCorrect) strings.correctNotice else strings.incorrectNotice,
+                                            text = if (isCurrentCorrect) {
+                                                if (consecutiveCorrect >= 5) {
+                                                    if (isEnglish) "🎉 AMAZING! 5 STREAK CLAP! 👏" else "🎉 ĐỈNH CAO! 5 CÂU LIÊN TIẾP! 👏"
+                                                } else strings.correctNotice
+                                            } else strings.incorrectNotice,
                                             color = Color.White,
-                                            fontSize = 18.sp,
+                                            fontSize = 17.sp,
                                             fontWeight = FontWeight.ExtraBold
                                         )
                                         val encouragementText = when (currentQ.type) {

@@ -28,23 +28,29 @@ import coil.compose.AsyncImage
 import com.example.R
 import com.example.model.MascotEmotion
 
+import androidx.compose.ui.platform.LocalContext
+import coil.request.ImageRequest
+import com.example.model.KikiAnimationUrls
+
 @Composable
 fun LivingMascotView(
     emotion: MascotEmotion,
     modifier: Modifier = Modifier,
     size: Dp = 48.dp,
+    isFullBody: Boolean = false,
     avatarRes: Int = R.drawable.companion_mascot,
     onClick: () -> Unit = {}
 ) {
+    val context = LocalContext.current
     val haptic = LocalHapticFeedback.current
 
     // 1. Nhịp thở tự nhiên (Idle Breathing)
     val infiniteTransition = rememberInfiniteTransition(label = "LivingMascotInfinite")
     val idleBreathY by infiniteTransition.animateFloat(
         initialValue = 1.0f,
-        targetValue = 1.045f,
+        targetValue = 1.035f,
         animationSpec = infiniteRepeatable(
-            animation = tween(1400, easing = FastOutSlowInEasing),
+            animation = tween(1600, easing = FastOutSlowInEasing),
             repeatMode = RepeatMode.Reverse
         ),
         label = "IdleBreath"
@@ -54,17 +60,18 @@ fun LivingMascotView(
     var isSquashing by remember { mutableStateOf(false) }
 
     LaunchedEffect(emotion) {
-        if (emotion == MascotEmotion.CHEER || emotion == MascotEmotion.PETTED || emotion == MascotEmotion.STREAK) {
+        if (emotion == MascotEmotion.CHEER || emotion == MascotEmotion.PETTED || emotion == MascotEmotion.STREAK || emotion == MascotEmotion.GREETING) {
             isSquashing = true
-            kotlinx.coroutines.delay(120)
+            kotlinx.coroutines.delay(140)
             isSquashing = false
         }
     }
 
     val targetScaleX = when (emotion) {
+        MascotEmotion.GREETING -> if (isSquashing) 1.15f else 1.03f
         MascotEmotion.CHEER -> if (isSquashing) 1.25f else 1.05f
         MascotEmotion.STREAK -> if (isSquashing) 1.2f else 1.08f
-        MascotEmotion.EMPATHY -> 1.05f
+        MascotEmotion.EMPATHY -> 1.03f
         MascotEmotion.THINKING -> 0.98f
         MascotEmotion.PETTED -> if (isSquashing) 1.22f else 1.05f
         MascotEmotion.LISTENING -> 1.02f
@@ -72,9 +79,10 @@ fun LivingMascotView(
     }
 
     val targetScaleY = when (emotion) {
+        MascotEmotion.GREETING -> if (isSquashing) 0.88f else 1.08f
         MascotEmotion.CHEER -> if (isSquashing) 0.80f else 1.15f
         MascotEmotion.STREAK -> if (isSquashing) 0.85f else 1.12f
-        MascotEmotion.EMPATHY -> 0.92f
+        MascotEmotion.EMPATHY -> 0.94f
         MascotEmotion.THINKING -> 1.0f
         MascotEmotion.PETTED -> if (isSquashing) 0.82f else 1.12f
         MascotEmotion.LISTENING -> 1.02f
@@ -101,10 +109,11 @@ fun LivingMascotView(
 
     // 3. Góc xoay cơ thể (Tilt & Wiggle)
     val targetRotation = when (emotion) {
-        MascotEmotion.THINKING -> 12f
+        MascotEmotion.GREETING -> 6f
+        MascotEmotion.THINKING -> 10f
         MascotEmotion.CHEER -> -8f
-        MascotEmotion.EMPATHY -> -6f
-        MascotEmotion.PETTED -> 10f
+        MascotEmotion.EMPATHY -> -5f
+        MascotEmotion.PETTED -> 8f
         MascotEmotion.LISTENING -> 4f
         else -> 0f
     }
@@ -121,8 +130,11 @@ fun LivingMascotView(
     // 4. Hào quang tỏa sáng (Aura Glow Colors)
     val auraBrush = remember(emotion) {
         when (emotion) {
+            MascotEmotion.GREETING -> Brush.radialGradient(
+                listOf(Color(0xFFFFD166).copy(alpha = 0.7f), Color(0xFF00F5D4).copy(alpha = 0.4f), Color.Transparent)
+            )
             MascotEmotion.STREAK -> Brush.radialGradient(
-                listOf(Color(0xFFFF3D00), Color(0xFFFF9100), Color(0xFFFFD600).copy(alpha = 0.2f))
+                listOf(Color(0xFFFF3D00), Color(0xFFFF9100), Color(0xFFFFD600).copy(alpha = 0.3f), Color.Transparent)
             )
             MascotEmotion.CHEER -> Brush.radialGradient(
                 listOf(Color(0xFFFFD700), Color(0xFF51FAC1), Color.Transparent)
@@ -147,6 +159,7 @@ fun LivingMascotView(
 
     // 5. Emote Badge biểu tượng
     val emoteBadge = when (emotion) {
+        MascotEmotion.GREETING -> "👋"
         MascotEmotion.CHEER -> "⭐"
         MascotEmotion.STREAK -> "🔥"
         MascotEmotion.EMPATHY -> "💖"
@@ -157,6 +170,7 @@ fun LivingMascotView(
     }
 
     val emoteBadgeBg = when (emotion) {
+        MascotEmotion.GREETING -> Color(0xFF00F5D4)
         MascotEmotion.STREAK -> Color(0xFFFF5722)
         MascotEmotion.CHEER -> Color(0xFFFFB300)
         MascotEmotion.PETTED -> Color(0xFFE91E63)
@@ -166,78 +180,131 @@ fun LivingMascotView(
         MascotEmotion.IDLE -> Color(0xFF27E0A9)
     }
 
-    Box(
-        modifier = modifier
-            .size(size + 36.dp) // Dành không gian cho Aura và Particles
-            .clickable(
-                interactionSource = remember { MutableInteractionSource() },
-                indication = null
-            ) {
-                haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                onClick()
-            },
-        contentAlignment = Alignment.Center
-    ) {
-        // Lớp hiệu ứng hạt Canvas (Mascot Particle Canvas)
-        MascotParticleCanvas(
-            emotion = emotion,
-            modifier = Modifier.fillMaxSize()
-        )
+    val gifUrl = remember(emotion) { KikiAnimationUrls.getAnimationUrl(emotion) }
+    val imageRequest = remember(gifUrl) {
+        ImageRequest.Builder(context)
+            .data(gifUrl)
+            .crossfade(true)
+            .placeholder(avatarRes)
+            .error(avatarRes)
+            .build()
+    }
 
-        // Hào quang tỏa sáng phát quang (Aura Glow)
+    if (isFullBody) {
+        // --- Hiển thị toàn thân nhân vật Kiki với tỉ lệ dọc 9:16 ---
         Box(
-            modifier = Modifier
-                .size(size + 14.dp)
-                .scale(if (emotion == MascotEmotion.STREAK) 1.25f else 1.12f)
-                .background(auraBrush, CircleShape)
-                .blur(10.dp)
-        )
-
-        // Khung hình linh vật Kiki với biến dạng Squash & Stretch
-        Box(
-            modifier = Modifier
-                .size(size)
-                .scale(scaleX = animScaleX, scaleY = animScaleY)
-                .rotate(animRotation),
+            modifier = modifier
+                .clickable(
+                    interactionSource = remember { MutableInteractionSource() },
+                    indication = null
+                ) {
+                    haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                    onClick()
+                },
             contentAlignment = Alignment.Center
         ) {
-            // Ảnh đại diện Kiki
-            AsyncImage(
-                model = avatarRes,
-                contentDescription = "Living Kiki Mascot",
-                contentScale = ContentScale.Crop,
-                modifier = Modifier
-                    .fillMaxSize()
-                    .clip(CircleShape)
-                    .border(
-                        width = 2.dp,
-                        color = when (emotion) {
-                            MascotEmotion.STREAK -> Color(0xFFFFD600)
-                            MascotEmotion.CHEER -> Color(0xFF51FAC1)
-                            MascotEmotion.PETTED -> Color(0xFFFF80AB)
-                            MascotEmotion.LISTENING -> Color(0xFF00E5FF)
-                            else -> Color(0x55FFFFFF)
-                        },
-                        shape = CircleShape
-                    )
-            )
-
-            // Emote Badge nổi bật ở góc phải trên (Floating Emote Badge)
+            // Hào quang tỏa sáng phát quang (Full body Aura Glow)
             Box(
                 modifier = Modifier
-                    .align(Alignment.TopEnd)
-                    .offset(x = 4.dp, y = (-2).dp)
-                    .size(20.dp)
-                    .clip(CircleShape)
-                    .background(emoteBadgeBg)
-                    .border(1.5.dp, Color(0xFF0A0A12), CircleShape),
+                    .fillMaxSize(0.85f)
+                    .scale(if (emotion == MascotEmotion.STREAK) 1.2f else 1.05f)
+                    .background(auraBrush, CircleShape)
+                    .blur(36.dp)
+            )
+
+            // Khung hình linh vật Kiki toàn thân với biến dạng Squash & Stretch
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .scale(scaleX = animScaleX, scaleY = animScaleY)
+                    .rotate(animRotation),
                 contentAlignment = Alignment.Center
             ) {
-                Text(
-                    text = emoteBadge,
-                    fontSize = 11.sp,
-                    lineHeight = 11.sp
+                AsyncImage(
+                    model = imageRequest,
+                    contentDescription = "Living Kiki Mascot Full Body",
+                    contentScale = ContentScale.Fit,
+                    modifier = Modifier.fillMaxSize()
                 )
+            }
+        }
+    } else {
+        // --- Hiển thị Avatar tròn nhỏ (cho Top bar, thanh tiến độ...) ---
+        Box(
+            modifier = modifier
+                .size(size + 36.dp) // Dành không gian cho Aura và Particles
+                .clickable(
+                    interactionSource = remember { MutableInteractionSource() },
+                    indication = null
+                ) {
+                    haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                    onClick()
+                },
+            contentAlignment = Alignment.Center
+        ) {
+            // Lớp hiệu ứng hạt Canvas (Mascot Particle Canvas)
+            MascotParticleCanvas(
+                emotion = emotion,
+                modifier = Modifier.fillMaxSize()
+            )
+
+            // Hào quang tỏa sáng phát quang (Aura Glow)
+            Box(
+                modifier = Modifier
+                    .size(size + 14.dp)
+                    .scale(if (emotion == MascotEmotion.STREAK) 1.25f else 1.12f)
+                    .background(auraBrush, CircleShape)
+                    .blur(10.dp)
+            )
+
+            // Khung hình linh vật Kiki với biến dạng Squash & Stretch
+            Box(
+                modifier = Modifier
+                    .size(size)
+                    .scale(scaleX = animScaleX, scaleY = animScaleY)
+                    .rotate(animRotation),
+                contentAlignment = Alignment.Center
+            ) {
+                // Ảnh đại diện Kiki (lấy phần thân trên khuôn mặt)
+                AsyncImage(
+                    model = imageRequest,
+                    contentDescription = "Living Kiki Mascot",
+                    contentScale = ContentScale.Crop,
+                    alignment = Alignment.TopCenter,
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .clip(CircleShape)
+                        .border(
+                            width = 2.dp,
+                            color = when (emotion) {
+                                MascotEmotion.GREETING -> Color(0xFF00F5D4)
+                                MascotEmotion.STREAK -> Color(0xFFFFD600)
+                                MascotEmotion.CHEER -> Color(0xFF51FAC1)
+                                MascotEmotion.PETTED -> Color(0xFFFF80AB)
+                                MascotEmotion.LISTENING -> Color(0xFF00E5FF)
+                                else -> Color(0x55FFFFFF)
+                            },
+                            shape = CircleShape
+                        )
+                )
+
+                // Emote Badge nổi bật ở góc phải trên (Floating Emote Badge)
+                Box(
+                    modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .offset(x = 4.dp, y = (-2).dp)
+                        .size(20.dp)
+                        .clip(CircleShape)
+                        .background(emoteBadgeBg)
+                        .border(1.5.dp, Color(0xFF0A0A12), CircleShape),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = emoteBadge,
+                        fontSize = 11.sp,
+                        lineHeight = 11.sp
+                    )
+                }
             }
         }
     }
