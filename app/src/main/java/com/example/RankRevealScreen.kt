@@ -181,9 +181,7 @@ fun RankRevealScreen(
 
             // Avatar Section với LivingMascotView
             Box(
-                modifier = Modifier
-                    .size(200.dp)
-                    .offset(y = floatAnimSlow.dp),
+                modifier = Modifier.size(200.dp),
                 contentAlignment = Alignment.Center
             ) {
                 // Outer Glow

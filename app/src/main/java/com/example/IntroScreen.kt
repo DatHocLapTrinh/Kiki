@@ -515,20 +515,12 @@ fun IntroContent(currentX: Float, currentY: Float, onBurst: (x: Float, y: Float)
                 },
             contentAlignment = Alignment.Center
         ) {
-            val infiniteTransition = rememberInfiniteTransition(label = "kiki")
-            val kikiFloat by infiniteTransition.animateFloat(
-                initialValue = -12f, targetValue = 12f,
-                animationSpec = infiniteRepeatable(tween(4000, easing = LinearEasing), RepeatMode.Reverse),
-                label = "kiki_float"
-            )
-
             key(greetingTriggerKey) {
                 LivingMascotView(
                     emotion = MascotEmotion.GREETING,
                     isFullBody = true,
                     avatarRes = R.drawable.kiki_hero_intro,
                     modifier = Modifier
-                        .offset(y = kikiFloat.dp)
                         .fillMaxHeight(0.88f)
                         .aspectRatio(9f / 16f)
                         .padding(horizontal = 8.dp),
