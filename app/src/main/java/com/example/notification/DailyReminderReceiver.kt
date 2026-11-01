@@ -66,7 +66,11 @@ class DailyReminderReceiver : BroadcastReceiver() {
                     context.applicationContext,
                     AppDatabase::class.java,
                     "AIStudyMentorRoom.db"
-                ).fallbackToDestructiveMigration(dropAllTables = true).build()
+                )
+                    .addMigrations(*AppDatabase.ALL_MIGRATIONS)
+                    .fallbackToDestructiveMigration(dropAllTables = true)
+                    .fallbackToDestructiveMigrationOnDowngrade(dropAllTables = true)
+                    .build()
 
                 val profile = db.appDao().getAnyUserProfile()
                 val todayStr = SimpleDateFormat("yyyy-MM-dd", Locale.US).format(Date())

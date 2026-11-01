@@ -248,7 +248,7 @@ fun AskScreen(viewModel: StudyViewModel) {
                         val strings = LocalAppStrings.current
                         Text(strings.knowledgeDecoder, color = Color.White, fontWeight = FontWeight.Bold, fontSize = 18.sp)
                     }
-                    val activeProviderTitle by viewModel.activeProviderDisplayTitle.observeAsState("✨ Kiki AI Mentor")
+                    val activeProviderTitle by viewModel.activeProviderDisplayTitle.observeAsState("🧠 Gemini 2.5 Flash Native Dialog")
                     val effectiveProvider = viewModel.getEffectiveActiveProvider()
                     val indicatorColor = when (effectiveProvider) {
                         StudyViewModel.PROVIDER_GROQ -> Color(0xFFFF9E00)
@@ -794,17 +794,17 @@ fun EmptyAskState(
         ) {
             Box(
                 modifier = Modifier
-                    .size(46.dp)
+                    .size(64.dp)
                     .clip(CircleShape)
                     .background(Color(0x2251FAC1))
                     .border(1.dp, Color(0x6651FAC1), CircleShape),
                 contentAlignment = Alignment.Center
             ) {
-                Icon(
-                    imageVector = Icons.Default.AutoFixHigh,
-                    contentDescription = null,
-                    tint = Color(0xFF51FAC1),
-                    modifier = Modifier.size(24.dp)
+                AsyncImage(
+                    model = R.drawable.kiki_state_wave,
+                    contentDescription = "Kiki Mentor Waving",
+                    contentScale = ContentScale.Fit,
+                    modifier = Modifier.fillMaxSize().padding(3.dp).clip(CircleShape)
                 )
             }
             Spacer(modifier = Modifier.height(10.dp))
@@ -833,17 +833,17 @@ fun EmptyAskState(
         ) {
             Box(
                 modifier = Modifier
-                    .size(76.dp)
+                    .size(124.dp)
                     .clip(CircleShape)
                     .background(Color(0x2251FAC1))
                     .border(1.5.dp, Color(0x6651FAC1), CircleShape),
                 contentAlignment = Alignment.Center
             ) {
-                Icon(
-                    imageVector = Icons.Default.AutoFixHigh,
-                    contentDescription = null,
-                    tint = Color(0xFF51FAC1),
-                    modifier = Modifier.size(38.dp)
+                AsyncImage(
+                    model = R.drawable.kiki_full_wave,
+                    contentDescription = "Kiki Mentor Welcoming",
+                    contentScale = ContentScale.Fit,
+                    modifier = Modifier.fillMaxSize().padding(6.dp)
                 )
             }
             Spacer(modifier = Modifier.height(18.dp))
@@ -1042,16 +1042,17 @@ fun StepGlassCard(
         Box(
             modifier = Modifier
                 .padding(top = 4.dp)
-                .size(28.dp)
+                .size(34.dp)
                 .clip(CircleShape)
-                .background(Brush.linearGradient(listOf(Color(0xFF8A2BE2), Color(0xFF00F5D4)))),
+                .background(Brush.linearGradient(listOf(Color(0xFF8A2BE2), Color(0xFF00F5D4))))
+                .border(1.dp, Color(0xFF51FAC1), CircleShape),
             contentAlignment = Alignment.Center
         ) {
-            Icon(
-                imageVector = Icons.Default.AutoAwesome,
-                contentDescription = "AI Mentor",
-                tint = Color.White,
-                modifier = Modifier.size(15.dp)
+            AsyncImage(
+                model = R.drawable.kiki_state_happy,
+                contentDescription = "AI Mentor Kiki",
+                contentScale = ContentScale.Fit,
+                modifier = Modifier.fillMaxSize().padding(1.5.dp).clip(CircleShape)
             )
         }
         Spacer(modifier = Modifier.width(10.dp))
@@ -1078,7 +1079,7 @@ fun StepGlassCard(
                         }
                         Spacer(modifier = Modifier.width(8.dp))
                         IconButton(onClick = onSpeak, modifier = Modifier.size(26.dp)) {
-                            Icon(Icons.AutoMirrored.Filled.VolumeUp, contentDescription = "Pronounce", tint = Color(0xFF51FAC1), modifier = Modifier.size(16.dp))
+                            Icon(Icons.Default.VolumeUp, contentDescription = "Pronounce", tint = Color(0xFF51FAC1), modifier = Modifier.size(16.dp))
                         }
                     }
                 }
@@ -1087,13 +1088,7 @@ fun StepGlassCard(
     }
 }
 
-/**
- * Renders AI mentor text with proper formatting:
- * - Strips **bold** markdown asterisks
- * - Renders • bullet points as visual list items with gold labels
- * - Highlights word/IPA transcription headers
- * - Handles numbered lists (1. 2. 3.)
- */
+
 @Composable
 fun FormattedAiText(
     text: String,

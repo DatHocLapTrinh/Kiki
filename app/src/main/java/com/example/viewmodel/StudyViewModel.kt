@@ -18,6 +18,7 @@ import okhttp3.RequestBody.Companion.toRequestBody
 import java.util.concurrent.TimeUnit
 import org.json.JSONObject
 import org.json.JSONArray
+import com.example.KikiExplorerSection
 import com.example.model.AchievementBadge
 import com.example.model.AchievementRegistry
 import com.example.model.BadgeId
@@ -56,8 +57,23 @@ import com.example.model.ChapterGeneratedResponse
 import com.example.model.QuestionItemDto
 import com.example.model.MentorChatRequest
 import com.example.model.VocabularyCardDto
+import com.example.sqlite.room.ResearchTelemetryEntity
+import com.example.util.Sm2Algorithm
+import com.example.util.Sm2State
+import com.example.util.ResearchTelemetryExporter
+import java.util.UUID
 import kotlinx.coroutines.delay
 import javax.inject.Inject
+import com.example.model.LearnerPersonaProfile
+import com.example.model.ClozeChoiceSlot
+import com.example.model.SentenceBuilderSlot
+import com.example.model.ListeningChallengeSlot
+import com.example.model.PairSlotItem
+import com.example.model.MatchingPairsSlot
+import com.example.model.SpeakingChallengeSlot
+import com.example.model.InjectedAtomicLessonUnit
+import com.squareup.moshi.Moshi
+import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
 
 @HiltViewModel
 class StudyViewModel @Inject constructor(
@@ -83,6 +99,10 @@ class StudyViewModel @Inject constructor(
     val isEnglish: LiveData<Boolean> = _isEnglish
     fun setEnglish(isEnglish: Boolean) { _isEnglish.value = isEnglish }
 
+    private val _kikiExplorerSection = MutableLiveData(KikiExplorerSection.HUB)
+    val kikiExplorerSection: LiveData<KikiExplorerSection> = _kikiExplorerSection
+    fun setKikiExplorerSection(section: KikiExplorerSection) { _kikiExplorerSection.value = section }
+
     private val _batterySaver = MutableLiveData(prefs.getBoolean("battery_saver_mode", false))
     val batterySaver: LiveData<Boolean> = _batterySaver
     fun setBatterySaver(enabled: Boolean) {
@@ -102,22 +122,22 @@ class StudyViewModel @Inject constructor(
         fun detectAiProvider(key: String): String {
             val clean = key.trim()
             return when {
+                clean.startsWith("AQ.") || clean.startsWith("AIza") -> PROVIDER_GEMINI
                 clean.startsWith("gsk_") -> PROVIDER_GROQ
-                clean.startsWith("AIza") -> PROVIDER_GEMINI
                 clean.startsWith("sk-ant-") -> PROVIDER_CLAUDE
                 clean.startsWith("sk-") -> PROVIDER_OPENAI
-                else -> PROVIDER_GROQ
+                else -> PROVIDER_GEMINI
             }
         }
 
         fun getProviderDisplayName(provider: String): String {
             return when (provider) {
-                PROVIDER_GROQ -> "⚡ Groq (Llama 3.3 70B)"
                 PROVIDER_GEMINI -> "🧠 Gemini 2.5 Flash Native Dialog"
+                PROVIDER_GROQ -> "⚡ Groq (Llama 3.3 70B)"
                 PROVIDER_CLAUDE -> "🎭 Claude 3.5 Sonnet"
                 PROVIDER_OPENAI -> "🤖 OpenAI GPT-4o"
-                PROVIDER_AUTO -> "✨ Tự Động Nhận Diện"
-                else -> "✨ Kiki AI Mentor"
+                PROVIDER_AUTO -> "🧠 Gemini 2.5 Flash (Tự Động)"
+                else -> "🧠 Gemini 2.5 Flash Mentor"
             }
         }
 
@@ -175,9 +195,10 @@ class StudyViewModel @Inject constructor(
         .build()
 
     private val _universalAiKey = MutableLiveData(
-        prefs.getString("kiki_universal_ai_api_key", "")
-            ?.ifBlank { prefs.getString("groq_custom_api_key", "") }
-            ?.ifBlank { prefs.getString("gemini_custom_api_key", "") }
+        prefs.getString("gemini_custom_api_key", "")
+            ?.trim()?.takeIf { !it.startsWith("sk-") && !it.startsWith("gsk_") }
+            ?: prefs.getString("kiki_universal_ai_api_key", "")
+            ?.trim()?.takeIf { !it.startsWith("sk-") && !it.startsWith("gsk_") }
             ?: ""
     )
     val universalAiKey: LiveData<String> = _universalAiKey
@@ -200,13 +221,17 @@ class StudyViewModel @Inject constructor(
         setUniversalAiApiKey(key)
     }
 
-    private val _geminiApiKey = MutableLiveData(prefs.getString("gemini_custom_api_key", "") ?: "")
+    private val _geminiApiKey = MutableLiveData(
+        prefs.getString("gemini_custom_api_key", "")
+            ?.trim()?.takeIf { !it.startsWith("sk-") && !it.startsWith("gsk_") }
+            ?: ""
+    )
     val geminiApiKey: LiveData<String> = _geminiApiKey
     fun setGeminiApiKey(key: String) {
         setUniversalAiApiKey(key)
     }
 
-    private val _aiProvider = MutableLiveData(prefs.getString("ai_provider", PROVIDER_AUTO) ?: PROVIDER_AUTO)
+    private val _aiProvider = MutableLiveData(PROVIDER_GEMINI)
     val aiProvider: LiveData<String> = _aiProvider
     fun setAiProvider(provider: String) {
         prefs.edit().putString("ai_provider", provider).apply()
@@ -227,57 +252,52 @@ class StudyViewModel @Inject constructor(
         _audioDialogAutoTts.value = enabled
     }
 
-    fun getEffectiveUniversalApiKey(): String {
-        val custom = _universalAiKey.value?.trim()
-        if (!custom.isNullOrBlank()) return custom
-        val customUser = _userApiKey.value?.trim()
-        if (!customUser.isNullOrBlank()) return customUser
-        val customGemini = _geminiApiKey.value?.trim()
-        if (!customGemini.isNullOrBlank()) return customGemini
+    private val aiQueryCache = java.util.concurrent.ConcurrentHashMap<String, String>()
 
-        return try {
-            val envUniversal = try {
-                val f = BuildConfig::class.java.getField("AI_API_KEY")
-                f.get(null) as? String ?: ""
-            } catch (_: Exception) { "" }
-            if (envUniversal.isNotBlank() && !envUniversal.contains("your_") && !envUniversal.contains("here")) {
-                return envUniversal.trim()
-            }
-
-            val envGroq = try {
-                val f = BuildConfig::class.java.getField("GROQ_API_KEY")
-                f.get(null) as? String ?: ""
-            } catch (_: Exception) { "" }
-            if (envGroq.isNotBlank() && !envGroq.contains("your_") && !envGroq.contains("here")) {
-                return envGroq.trim()
-            }
-
-            val envGemini = try {
-                val f = BuildConfig::class.java.getField("GEMINI_API_KEY")
-                f.get(null) as? String ?: ""
-            } catch (_: Exception) { "" }
-            if (envGemini.isNotBlank() && !envGemini.contains("your_") && !envGemini.contains("here")) {
-                return envGemini.trim()
-            }
-            ""
-        } catch (_: Exception) {
-            ""
+    fun getEffectiveGeminiApiKey(): String {
+        // 1. Luôn ưu tiên tuyệt đối biến môi trường GEMINI_API_KEY từ file .env / BuildConfig
+        val envGemini = try {
+            val f = BuildConfig::class.java.getField("GEMINI_API_KEY")
+            f.get(null) as? String ?: ""
+        } catch (_: Exception) { "" }
+        if (envGemini.isNotBlank() && !envGemini.contains("your_") && !envGemini.contains("here")) {
+            return envGemini.trim()
         }
+
+        // 2. Custom key người dùng dán (chỉ chấp nhận key Gemini hợp lệ, bỏ qua key OpenAI sk- hoặc Groq gsk_)
+        val customGemini = _geminiApiKey.value?.trim()
+        if (!customGemini.isNullOrBlank() && !customGemini.startsWith("sk-") && !customGemini.startsWith("gsk_")) {
+            return customGemini
+        }
+
+        val custom = _universalAiKey.value?.trim()
+        if (!custom.isNullOrBlank() && !custom.startsWith("sk-") && !custom.startsWith("gsk_")) {
+            return custom
+        }
+
+        // 3. Fallback sang biến AI_API_KEY nếu không phải OpenAI/Groq
+        val envUniversal = try {
+            val f = BuildConfig::class.java.getField("AI_API_KEY")
+            f.get(null) as? String ?: ""
+        } catch (_: Exception) { "" }
+        if (envUniversal.isNotBlank() && !envUniversal.contains("your_") && !envUniversal.contains("here") && !envUniversal.startsWith("sk-") && !envUniversal.startsWith("gsk_")) {
+            return envUniversal.trim()
+        }
+
+        return ""
+    }
+
+    fun getEffectiveUniversalApiKey(): String {
+        return getEffectiveGeminiApiKey()
     }
 
     fun getEffectiveActiveProvider(): String {
-        val userChoice = _aiProvider.value ?: PROVIDER_AUTO
-        if (userChoice != PROVIDER_AUTO) {
-            return userChoice
-        }
-        val key = getEffectiveUniversalApiKey()
-        return if (key.isNotBlank()) detectAiProvider(key) else PROVIDER_GEMINI
+        return PROVIDER_GEMINI
     }
 
     val activeProviderDisplayTitle: LiveData<String> = MediatorLiveData<String>().apply {
         val update = {
-            val active = getEffectiveActiveProvider()
-            value = getProviderDisplayName(active)
+            value = getProviderDisplayName(PROVIDER_GEMINI)
         }
         addSource(_aiProvider) { update() }
         addSource(_universalAiKey) { update() }
@@ -286,16 +306,8 @@ class StudyViewModel @Inject constructor(
         update()
     }
 
-    fun getEffectiveGeminiApiKey(): String {
-        val key = getEffectiveUniversalApiKey()
-        if (key.startsWith("AIza")) return key
-        val custom = _geminiApiKey.value?.trim()
-        if (!custom.isNullOrBlank() && custom.startsWith("AIza")) return custom
-        return ""
-    }
-
     fun getEffectiveApiKey(): String {
-        return getEffectiveUniversalApiKey()
+        return getEffectiveGeminiApiKey()
     }
 
     private val _userName = MutableLiveData("Adventurer")
@@ -441,6 +453,89 @@ class StudyViewModel @Inject constructor(
     private val _selectedSubject = MutableLiveData("English")
     val selectedSubject: LiveData<String> = _selectedSubject
 
+    private val _learnerPersonaProfile = MutableLiveData<LearnerPersonaProfile?>(null)
+    val learnerPersonaProfile: LiveData<LearnerPersonaProfile?> = _learnerPersonaProfile
+
+    fun saveLearnerPersonaProfile(profile: LearnerPersonaProfile) {
+        val userId = _currentUserId.value?.takeIf { it > 0 } ?: profile.userId
+        val updatedProfile = profile.copy(userId = userId)
+        _learnerPersonaProfile.postValue(updatedProfile)
+
+        // 1. SharedPreferences persistence (Moshi)
+        try {
+            val moshi = Moshi.Builder().add(KotlinJsonAdapterFactory()).build()
+            val adapter = moshi.adapter(LearnerPersonaProfile::class.java)
+            val json = adapter.toJson(updatedProfile)
+            prefs.edit().putString("learner_persona_$userId", json).apply()
+        } catch (_: Exception) {}
+
+        // 2. Set learning preferences
+        setPreferences(updatedProfile.evaluatedCefr, "English")
+
+        // 3. Save baseline weak points into Room so SM-2 and adaptive chapter generators pick them up immediately
+        viewModelScope.launch {
+            try {
+                for (weakTag in updatedProfile.baselineWeakPoints) {
+                    val prompt = when (weakTag) {
+                        "Present_Simple_Agreement" -> "Chủ ngữ số ít 'She' chia động từ ở thì Hiện tại đơn"
+                        "Conditional_Type_2" -> "Câu điều kiện loại 2 (If + S + V2/ed, S + would + V)"
+                        "Negative_Inversion" -> "Đảo ngữ câu khẳng định với trạng từ phủ định (Scarcely had he...)"
+                        "Basic_Collocation" -> "Cụm kết hợp từ tự nhiên: have dinner, make an effort"
+                        "Phrasal_Verbs" -> "Cụm động từ thông dụng: drop by, look forward to"
+                        "Academic_Collocation" -> "Cụm từ học thuật chuẩn xác: groundbreaking breakthrough"
+                        "Acoustic_Everyday_Greeting" -> "Nhận diện ngữ âm câu chào hỏi cơ bản"
+                        "Acoustic_Connected_Speech" -> "Nhận diện hiện tượng nuốt âm & nối âm (Connected Speech)"
+                        "Acoustic_Academic_Cadence" -> "Nghe hiểu câu học thuật tốc độ tự nhiên bản xứ"
+                        "Spoken_Greeting_Fluency" -> "Luyện phát âm câu giao tiếp hàng ngày"
+                        "Spoken_Polite_Inquiry" -> "Luyện ngữ điệu câu hỏi lịch sự"
+                        "Spoken_Rhythm_Connected" -> "Luyện nhịp điệu trọng âm câu phức"
+                        else -> "Kỹ năng cần củng cố: $weakTag"
+                    }
+                    repository.recordWeakPoint(
+                        userId = userId,
+                        question = prompt,
+                        options = listOf("Luyện phản xạ âm thanh", "Ôn tập cấu trúc câu", "Ứng dụng trong ngữ cảnh"),
+                        correctIndex = 0
+                    )
+                }
+                refreshWeakPoints()
+            } catch (_: Exception) {}
+
+            // 4. Record baseline diagnostic telemetry entry
+            try {
+                val nowStr = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.US).format(Date())
+                val telemetry = ResearchTelemetryEntity(
+                    sessionId = "cat_placement_${System.currentTimeMillis()}",
+                    userId = userId,
+                    timestamp = nowStr,
+                    sloTopic = "CAT_DIAGNOSTIC_PLACEMENT",
+                    challengeType = "ADAPTIVE_TEST",
+                    itemIdentifier = "Theta=${updatedProfile.thetaAbility};CEFR=${updatedProfile.evaluatedCefr};Goal=${updatedProfile.goal};Pace=${updatedProfile.dailyTargetMinutes}m",
+                    responseLatencyMs = 0L,
+                    isCorrect = true,
+                    usedHint = false,
+                    isDistracted = false,
+                    objectiveQuality = 5,
+                    easinessFactor = updatedProfile.initialEasinessFactor,
+                    intervalDays = 1,
+                    retentionProbability = 1.0f
+                )
+                repository.saveTelemetry(telemetry)
+            } catch (_: Exception) {}
+        }
+    }
+
+    fun loadLearnerPersonaProfile(userId: Long? = null): LearnerPersonaProfile? {
+        val targetId = userId ?: _currentUserId.value?.takeIf { it > 0 } ?: return null
+        val json = prefs.getString("learner_persona_$targetId", null) ?: return null
+        return try {
+            val moshi = Moshi.Builder().add(KotlinJsonAdapterFactory()).build()
+            moshi.adapter(LearnerPersonaProfile::class.java).fromJson(json)?.also {
+                _learnerPersonaProfile.postValue(it)
+            }
+        } catch (_: Exception) { null }
+    }
+
     fun setPreferences(level: String, subject: String) {
         _selectedLevel.value = level
         _selectedSubject.value = if (subject.isBlank() || subject != "English") "English" else subject
@@ -513,7 +608,7 @@ class StudyViewModel @Inject constructor(
         }
     }
 
-    private val _currentChapterTitle = MutableLiveData("English Fundamentals")
+    private val _currentChapterTitle = MutableLiveData("Chặng 1: Chào Hỏi & Làm Quen Cơ Bản (Hello & Daily Greetings)")
     val currentChapterTitle: LiveData<String> = _currentChapterTitle
 
     private val _currentChapterIndex = MutableLiveData(1)
@@ -542,17 +637,57 @@ class StudyViewModel @Inject constructor(
     fun loadQuestions(chapterId: Long, lessonIndex: Int = 1) {
         viewModelScope.launch {
             allChapterQuestions = repository.getQuestionsByChapter(chapterId)
+
+            // Thanh trừng triệt để bất kỳ câu hỏi mẫu cũ nào còn sót lại HOẶC nếu chapter chưa đủ 25 câu (kẹt 5 câu cũ)
+            if (allChapterQuestions.any { it.question.contains("______") || it.question.contains("in her crib", ignoreCase = true) || it.question.contains("by bus every morning", ignoreCase = true) }
+                || (allChapterQuestions.isNotEmpty() && allChapterQuestions.size < 25)) {
+                repository.clearQuestionsByChapter(chapterId)
+                allChapterQuestions = emptyList()
+            }
+
+            // JIT (Just-In-Time) AI Microlearning Question Generation:
+            // Sinh trọn vẹn 25 câu hỏi (5 bài học x 5 câu) phân tầng từ từ vựng đơn đến hội thoại
+            if (allChapterQuestions.isEmpty()) {
+                val currentTitle = repository.getChapterTitleById(chapterId)
+                    ?: _currentChapterTitle.value
+                    ?: "Chặng 1: Chào Hỏi & Làm Quen Cơ Bản (Hello & Daily Greetings)"
+                val level = _selectedLevel.value ?: "Beginner"
+                val userId = _currentUserId.value ?: 0L
+                val weakPointsList = if (userId > 0) repository.getWeakPoints(userId) else emptyList()
+                val weakWords = extractWeakKeywords(weakPointsList)
+
+                val generated = generate3CMicrolearningWithGemini(currentTitle, level, weakWords)
+                    ?.takeIf { it.questions.size >= 25 }
+                    ?: generatePersonalizedChapter(level, currentTitle, weakWords)
+
+                generated.questions.forEach { qDto ->
+                    val question = com.example.sqlite.room.QuestionEntity(
+                        chapterId = chapterId,
+                        questionText = qDto.questionText,
+                        questionType = qDto.questionType ?: "MULTIPLE_CHOICE",
+                        optionsJson = qDto.optionsJson,
+                        correctAnswer = qDto.correctAnswer,
+                        explanation = qDto.explanation,
+                        points = qDto.points,
+                        difficulty = qDto.difficulty ?: "MEDIUM"
+                    )
+                    repository.insertQuestion(question)
+                }
+                allChapterQuestions = repository.getQuestionsByChapter(chapterId)
+            }
+
             startLesson(lessonIndex)
         }
     }
 
     fun startLesson(lessonIndex: Int) {
         val safeLesson = lessonIndex.coerceIn(1, 5)
-        val startIndex = (safeLesson - 1) * 10
+        val pageSize = 5 // Tiêu chuẩn 3C Microlearning: 5 câu hỏi nguyên tử / bài học
+        val rawStartIndex = (safeLesson - 1) * pageSize
         if (allChapterQuestions.isNotEmpty()) {
-            val safeStart = if (startIndex in 0 until allChapterQuestions.size) startIndex else 0
-            val endIndex = (safeStart + 10).coerceAtMost(allChapterQuestions.size)
-            _questions.value = allChapterQuestions.subList(safeStart, endIndex)
+            val safeStart = if (rawStartIndex in 0 until allChapterQuestions.size) rawStartIndex else (rawStartIndex % allChapterQuestions.size)
+            val endIndex = (safeStart + pageSize).coerceAtMost(allChapterQuestions.size)
+            _questions.value = allChapterQuestions.subList(safeStart, if (endIndex > safeStart) endIndex else allChapterQuestions.size)
         } else {
             // Asynchronous fallback: đảm bảo nạp câu hỏi an toàn không bị kẹt spinner
             viewModelScope.launch {
@@ -564,8 +699,8 @@ class StudyViewModel @Inject constructor(
                 if (chapterId != -1L) {
                     allChapterQuestions = repository.getQuestionsByChapter(chapterId)
                 } else {
-                    val defaultChapters = repository.getChaptersByPreference("Beginner", "English")
-                    val defaultTitle = defaultChapters.firstOrNull() ?: "English Fundamentals"
+                    val defaultChapters = repository.getChaptersByPreference(_selectedLevel.value ?: "Beginner", "English")
+                    val defaultTitle = defaultChapters.firstOrNull() ?: "Atomic Microlearning"
                     val defId = repository.getChapterIdByTitle(defaultTitle)
                     if (defId != -1L) {
                         allChapterQuestions = repository.getQuestionsByChapter(defId)
@@ -573,9 +708,9 @@ class StudyViewModel @Inject constructor(
                 }
 
                 if (allChapterQuestions.isNotEmpty()) {
-                    val safeStart = if (startIndex in 0 until allChapterQuestions.size) startIndex else 0
-                    val endIndex = (safeStart + 10).coerceAtMost(allChapterQuestions.size)
-                    _questions.value = allChapterQuestions.subList(safeStart, endIndex)
+                    val safeStart = if (rawStartIndex in 0 until allChapterQuestions.size) rawStartIndex else (rawStartIndex % allChapterQuestions.size)
+                    val endIndex = (safeStart + pageSize).coerceAtMost(allChapterQuestions.size)
+                    _questions.value = allChapterQuestions.subList(safeStart, if (endIndex > safeStart) endIndex else allChapterQuestions.size)
                 } else {
                     _questions.value = emptyList()
                 }
@@ -651,6 +786,51 @@ class StudyViewModel @Inject constructor(
                 if (chapterId != -1L) {
                     repository.saveQuizAttempt(userId, chapterId, totalCount, correctCount)
                 }
+
+                // Ghi nhận dữ liệu thực nghiệm thụ động (Passive Research Telemetry)
+                val sessionTimestamp = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.US).format(Date())
+                val sessionId = "SES_" + SimpleDateFormat("yyyyMMdd_HHmmss", Locale.US).format(Date()) + "_" + UUID.randomUUID().toString().take(6)
+                val currentChapter = _currentChapterTitle.value ?: "Microlearning Unit"
+
+                val telemetryList = results.map { item ->
+                    val isItemCorrect = item.selectedIndex == item.correctIndex
+                    val latency = if (item.responseLatencyMs > 0) item.responseLatencyMs else 2500L
+                    val isDistracted = item.isDistracted || (latency > Sm2Algorithm.DISTRACTION_LATENCY_THRESHOLD_MS)
+                    val q = if (item.objectiveQuality > 0) item.objectiveQuality
+                            else Sm2Algorithm.calculateObjectiveQuality(
+                                isCorrect = isItemCorrect,
+                                responseLatencyMs = latency,
+                                usedHint = item.usedHint,
+                                isDistracted = isDistracted
+                            )
+                    val pseudoNextState = Sm2Algorithm.calculateNextReview(
+                        Sm2State(repetition = 0, intervalDays = 1, easinessFactor = 2.5f),
+                        q
+                    )
+                    val retentionR = Sm2Algorithm.calculateRetentionProbability(0.0, pseudoNextState.intervalDays.toDouble()).toFloat()
+
+                    ResearchTelemetryEntity(
+                        sessionId = sessionId,
+                        userId = userId,
+                        timestamp = sessionTimestamp,
+                        sloTopic = if (item.sloTopic.isNotBlank()) item.sloTopic else currentChapter,
+                        challengeType = item.type.name,
+                        itemIdentifier = item.question.take(100),
+                        responseLatencyMs = latency,
+                        isCorrect = isItemCorrect,
+                        usedHint = item.usedHint,
+                        isDistracted = isDistracted,
+                        objectiveQuality = q,
+                        easinessFactor = pseudoNextState.easinessFactor,
+                        intervalDays = pseudoNextState.intervalDays,
+                        retentionProbability = retentionR
+                    )
+                }
+                repository.saveTelemetryBatch(telemetryList)
+
+                // Kích hoạt cơ chế nạp trước dự đoán (Predictive Prefetching) ở chế độ nền
+                prefetchNextMicrolearningUnit(userId, currentChapter)
+
                 recordDailyTaskProgress(userId, "LESSON_COMPLETE", 1)
                 recordDailyTaskProgress(userId, "LESSON_COMPLETE_2", 1)
                 recordDailyTaskProgress(userId, "ANSWER_QUESTIONS", results.size)
@@ -903,6 +1083,7 @@ class StudyViewModel @Inject constructor(
             refreshVocabulary()
             refreshWeakPoints()
             refreshBadges(userId)
+            loadLearnerPersonaProfile(userId)
 
             // Tự động đồng bộ toàn bộ dữ liệu lên Cloud Firestore ngầm
             firestoreSyncManager.syncAllToCloud(userId)
@@ -1097,6 +1278,28 @@ class StudyViewModel @Inject constructor(
 
                 if (imageUri != null) {
                     answer = fetchAnswerFromAI(context, question, imageUri)
+                } else if (getEffectiveActiveProvider() == PROVIDER_GEMINI) {
+                    // Trực tiếp dùng Gemini 2.5 Flash Native Audio Dialog để tối ưu tốc độ và độ chính xác
+                    answer = fetchAnswerFromGemini(context, promptForAi, null)
+                    if (answer.startsWith("Lỗi kết nối") || answer.startsWith("⚠️")) {
+                        try {
+                            val token = authManager.getIdToken() ?: "mock_dev_token_kiki_explorer"
+                            val weakPoints = _weakPoints.value?.take(5)?.map { it.question } ?: emptyList()
+                            val request = MentorChatRequest(
+                                message = promptForAi,
+                                userLevel = _selectedLevel.value ?: "Intermediate",
+                                currentChapter = _currentChapterTitle.value ?: "English Fundamentals",
+                                recentWeakPoints = weakPoints
+                            )
+                            val response = backendApiService.mentorChat("Bearer $token", request)
+                            if (response.isSuccessful && response.body() != null) {
+                                val body = response.body()!!
+                                answer = body.reply
+                                grammarTip = body.grammarTip
+                                vocabularies = body.detectedVocabularies
+                            }
+                        } catch (_: Exception) {}
+                    }
                 } else {
                     try {
                         val token = authManager.getIdToken() ?: "mock_dev_token_kiki_explorer"
@@ -1125,8 +1328,36 @@ class StudyViewModel @Inject constructor(
                     grammarTip = sanitizeAiMentorReply(grammarTip)
                 }
 
+                // Trích xuất thẻ từ vựng tự động từ kết quả Gemini nếu backend offline
+                if (vocabularies.isEmpty() && isLookup && !answer.startsWith("Lỗi") && !answer.startsWith("⚠️")) {
+                    val lines = answer.lines()
+                    val headerLine = lines.firstOrNull { it.isNotBlank() } ?: ""
+                    val phoneticMatch = Regex("/([^/]+)/").find(headerLine)?.value
+                    val meaningLine = lines.firstOrNull { it.contains("Nghĩa:", ignoreCase = true) }
+                        ?.replace(Regex("^•?\\s*Nghĩa:\\s*", RegexOption.IGNORE_CASE), "")?.trim()
+                    val exampleLine = lines.firstOrNull { it.contains("Ví dụ:", ignoreCase = true) }
+                        ?.replace(Regex("^•?\\s*Ví dụ:\\s*", RegexOption.IGNORE_CASE), "")?.trim()
+                    if (!meaningLine.isNullOrBlank()) {
+                        val targetWord = cleanQuestion
+                            .replace(Regex("^🔍\\s*(Tra từ|Tra thành ngữ|Look up word|Look up idiom):?\\s*"), "")
+                            .replace(Regex("['\"]"), "")
+                            .replace(Regex("&\\s*ví dụ.*", RegexOption.IGNORE_CASE), "")
+                            .replace(Regex("in context.*", RegexOption.IGNORE_CASE), "")
+                            .trim()
+                        vocabularies = listOf(
+                            VocabularyCardDto(
+                                word = targetWord,
+                                phonetic = phoneticMatch,
+                                meaning = meaningLine,
+                                example = exampleLine
+                            )
+                        )
+                    }
+                }
+
                 // Bước 2: Hiển thị dần nội dung câu trả lời (streaming / typewriter)
                 streamAnswerProgressively(tempId, answer)
+
 
                 val userId = _currentUserId.value
                 if (userId != null && userId != -1L) {
@@ -1161,7 +1392,10 @@ class StudyViewModel @Inject constructor(
                 }
 
                 if (isAudioDialog && (_audioDialogAutoTts.value == true)) {
-                    ttsManager.speak(answer)
+                    val spokenText = GeminiModels.formatForAudioSpeech(answer)
+                    if (spokenText.isNotBlank()) {
+                        ttsManager.speak(spokenText)
+                    }
                 }
             } catch (e: Exception) {
                 // Xóa pendingItem nếu xảy ra lỗi
@@ -1327,27 +1561,33 @@ class StudyViewModel @Inject constructor(
         viewModelScope.launch {
             try {
                 var chapterData: ChapterGeneratedResponse? = null
-                // 1. Thử gọi Backend với timeout 3.5s
-                try {
-                    val token = authManager.getIdToken() ?: "mock_dev_token_kiki_explorer"
-                    val request = GenerateChapterRequest(
-                        userId = _currentUserId.value?.toString(),
-                        level = level,
-                        topic = topic,
-                        weakWords = weakWords,
-                        questionCount = 5
-                    )
-                    val response = withContext(Dispatchers.IO) {
-                        kotlinx.coroutines.withTimeoutOrNull(3500) {
-                            backendApiService.generateChapter("Bearer $token", request)
-                        }
-                    }
-                    if (response != null && response.isSuccessful && response.body() != null) {
-                        chapterData = response.body()
-                    }
-                } catch (_: Exception) {}
 
-                // 2. Nếu Backend offline hoặc quá tải: Dùng bộ kiến tạo lộ trình cá nhân hóa Kiki AI
+                // 1. ƯU TIÊN SỐ 1: GỌI TRỰC TIẾP GEMINI 2.5 FLASH NATIVE AUDIO MICROLEARNING ENGINE
+                chapterData = generate3CMicrolearningWithGemini(topic, level, weakWords)
+
+                // 2. Thử gọi Backend nếu Gemini chưa trả về
+                if (chapterData == null) {
+                    try {
+                        val token = authManager.getIdToken() ?: "mock_dev_token_kiki_explorer"
+                        val request = GenerateChapterRequest(
+                            userId = _currentUserId.value?.toString(),
+                            level = level,
+                            topic = topic,
+                            weakWords = weakWords,
+                            questionCount = 5
+                        )
+                        val response = withContext(Dispatchers.IO) {
+                            kotlinx.coroutines.withTimeoutOrNull(3000) {
+                                backendApiService.generateChapter("Bearer $token", request)
+                            }
+                        }
+                        if (response != null && response.isSuccessful && response.body() != null) {
+                            chapterData = response.body()
+                        }
+                    } catch (_: Exception) {}
+                }
+
+                // 3. Fallback thông minh nội bộ
                 if (chapterData == null) {
                     chapterData = generatePersonalizedChapter(level, topic, weakWords)
                 }
@@ -1369,7 +1609,9 @@ class StudyViewModel @Inject constructor(
     }
 
     /**
-     * Kiến tạo chương học cá nhân hóa hoàn chỉnh với đầy đủ 5 dạng câu hỏi theo tiêu chuẩn questions.json
+     * Kiến tạo đơn vị học cá nhân hóa bằng Hệ thống Khuôn Mẫu Rỗng Xoắn Ốc (Spiral Slot-Based Blueprint).
+     * Phân hóa triệt để theo TỪNG CHỦ ĐỀ (Topic-Aware) và TỪNG CẤP ĐỘ CEFR (A0 -> A1 -> A2 -> B1 -> B2 -> C1),
+     * đảm bảo mỗi chặng có đúng 25 câu hỏi tuần tự (5 bài học x 5 câu) theo quy tắc Bắc cầu (Scaffolding 5 bước).
      */
     fun generatePersonalizedChapter(
         level: String,
@@ -1377,119 +1619,11 @@ class StudyViewModel @Inject constructor(
         weakWords: List<String> = emptyList()
     ): ChapterGeneratedResponse {
         val isEng = _isEnglish.value ?: false
-        val displayLevel = if (level.isBlank()) "Beginner" else level
-        val cleanTopic = if (topic.isBlank()) "Daily Conversations" else topic
-
-        val chapterTitle = if (isEng) "AI Roadmap: $cleanTopic ($displayLevel)" else "Lộ trình AI: $cleanTopic ($displayLevel)"
-        val chapterDesc = if (isEng) "Customized curriculum tailored by Kiki AI based on your diagnostic placement test."
-        else "Lộ trình cá nhân hóa do AI Kiki kiến tạo dựa trên bài kiểm tra chẩn đoán năng lực của bạn."
-
-        // 1. Multiple Choice
-        val q1 = QuestionItemDto(
-            questionText = when {
-                cleanTopic.contains("Grammar", ignoreCase = true) -> "She ______ to school by bus every morning."
-                cleanTopic.contains("IELTS", ignoreCase = true) -> "The research indicates a significant ______ between study habits and performance."
-                else -> "How do you respond politely when a friend asks 'How are you today?'"
-            },
-            questionType = "MULTIPLE_CHOICE",
-            optionsJson = org.json.JSONArray(
-                when {
-                    cleanTopic.contains("Grammar", ignoreCase = true) -> listOf("goes", "go", "going", "is go")
-                    cleanTopic.contains("IELTS", ignoreCase = true) -> listOf("correlation", "distraction", "neglect", "collapse")
-                    else -> listOf("I'm doing great, thank you! How about you?", "Yes, I am.", "No, not at all.", "I go home.")
-                }
-            ).toString(),
-            correctAnswer = "0",
-            explanation = "Chọn phương án chính xác nhất để hoàn thiện câu phù hợp ngữ cảnh.",
-            points = 10,
-            difficulty = "EASY"
-        )
-
-        // 2. Sentence Builder
-        val q2 = QuestionItemDto(
-            questionText = when {
-                cleanTopic.contains("Grammar", ignoreCase = true) -> "If I had more free time, I ______ learn another foreign language."
-                cleanTopic.contains("IELTS", ignoreCase = true) -> "The new economic policy was designed to ______ sustainable development."
-                else -> "Look! The children ______ happily in the school playground."
-            },
-            questionType = "SENTENCE_BUILDER",
-            optionsJson = org.json.JSONArray(
-                when {
-                    cleanTopic.contains("Grammar", ignoreCase = true) -> listOf("would", "will", "am", "have")
-                    cleanTopic.contains("IELTS", ignoreCase = true) -> listOf("foster", "demolish", "stagnate", "diminish")
-                    else -> listOf("are playing", "plays", "played", "play")
-                }
-            ).toString(),
-            correctAnswer = "0",
-            explanation = "Sắp xếp và điền từ chính xác vào chỗ trống.",
-            points = 10,
-            difficulty = "MEDIUM"
-        )
-
-        // 3. Listening Challenge
-        val q3 = QuestionItemDto(
-            questionText = "Nghe câu sau và sắp xếp lại các từ cho đúng thứ tự 🎧",
-            questionType = "LISTENING_CHALLENGE",
-            optionsJson = org.json.JSONArray(
-                when {
-                    cleanTopic.contains("Grammar", ignoreCase = true) -> listOf("They have lived in this city since 2018")
-                    cleanTopic.contains("IELTS", ignoreCase = true) -> listOf("Technological innovation has fundamentally reshaped modern global industries")
-                    else -> listOf("It is wonderful to meet you here this morning")
-                }
-            ).toString(),
-            correctAnswer = "0",
-            explanation = "Luyện kỹ năng nghe và sắp xếp các từ thành câu hoàn chỉnh.",
-            points = 10,
-            difficulty = "MEDIUM"
-        )
-
-        // 4. Matching Pairs
-        val q4 = QuestionItemDto(
-            questionText = "Ghép cặp các từ vựng tiếng Anh với nghĩa tiếng Việt tương ứng 🧩",
-            questionType = "MATCHING_PAIRS",
-            optionsJson = org.json.JSONArray(
-                when {
-                    cleanTopic.contains("Grammar", ignoreCase = true) -> listOf(
-                        "although=mặc dù", "furthermore=hơn nữa", "therefore=do đó", "meanwhile=trong khi đó"
-                    )
-                    cleanTopic.contains("IELTS", ignoreCase = true) -> listOf(
-                        "substantial=đáng kể", "crucial=tối quan trọng", "feasible=khả thi", "alleviate=làm giảm bớt"
-                    )
-                    else -> listOf(
-                        "catch up=hàn huyên", "hang out=đi chơi", "drop by=ghé thăm", "keep in touch=giữ liên lạc"
-                    )
-                }
-            ).toString(),
-            correctAnswer = "0",
-            explanation = "Ghép cặp từ vựng chính xác để ghi nhớ nghĩa.",
-            points = 10,
-            difficulty = "MEDIUM"
-        )
-
-        // 5. Speaking Challenge
-        val q5 = QuestionItemDto(
-            questionText = "Luyện nói câu tiếng Anh sau chuẩn bản xứ 🎙️",
-            questionType = "SPEAKING_CHALLENGE",
-            optionsJson = org.json.JSONArray(
-                when {
-                    cleanTopic.contains("Grammar", ignoreCase = true) -> listOf("Practice makes perfect if you stay consistent every single day.")
-                    cleanTopic.contains("IELTS", ignoreCase = true) -> listOf("Environmental conservation requires proactive collaboration across all communities.")
-                    else -> listOf("Could you please show me the way to the nearest bookstore?")
-                }
-            ).toString(),
-            correctAnswer = "0",
-            explanation = "Luyện phát âm to, rõ ràng và chuẩn ngữ điệu bản xứ.",
-            points = 10,
-            difficulty = "HARD"
-        )
-
-        return ChapterGeneratedResponse(
-            title = chapterTitle,
-            description = chapterDesc,
-            level = displayLevel,
-            subject = "English",
-            orderNo = 0,
-            questions = listOf(q1, q2, q3, q4, q5)
+        return com.example.model.SpiralCurriculumBlueprint.generateTopicAwareChapter(
+            level = level,
+            topic = topic,
+            weakWords = weakWords,
+            isEng = isEng
         )
     }
 
@@ -1523,8 +1657,497 @@ class StudyViewModel @Inject constructor(
         }
     }
 
+    val prefetchedMicrolearningCache = java.util.concurrent.ConcurrentHashMap<String, ChapterGeneratedResponse>()
+
+    fun prefetchNextMicrolearningUnit(userId: Long, currentTopic: String) {
+        viewModelScope.launch(Dispatchers.IO) {
+            try {
+                val chapters = _availableChapters.value?.takeIf { it.isNotEmpty() }
+                    ?: repository.getChaptersByPreference(_selectedLevel.value, _selectedSubject.value)
+                val targetLevel = _selectedLevel.value ?: "Beginner"
+                val nextTopic = determineNextTopic(chapters, targetLevel)
+                if (prefetchedMicrolearningCache.containsKey(nextTopic)) return@launch
+
+                val weakPointsList = repository.getWeakPoints(userId)
+                val weakWords = extractWeakKeywords(weakPointsList)
+
+                val generated = generate3CMicrolearningWithGemini(nextTopic, targetLevel, weakWords)
+                if (generated != null) {
+                    prefetchedMicrolearningCache[nextTopic] = generated
+                }
+            } catch (_: Exception) {}
+        }
+    }
+
+    suspend fun generate3CMicrolearningWithGemini(
+        topic: String,
+        level: String,
+        weakWords: List<String>
+    ): ChapterGeneratedResponse? = withContext(Dispatchers.IO) {
+        try {
+            val apiKey = getEffectiveGeminiApiKey()
+            if (apiKey.isBlank() || apiKey.startsWith("sk-")) return@withContext null
+
+            val weakPrompt = if (weakWords.isNotEmpty()) {
+                "Remediate these weak vocabulary/grammar items: ${weakWords.joinToString(", ")}."
+            } else {
+                "Focus on high-yield communicative proficiency."
+            }
+
+            val isBeginnerLevel = level.equals("Beginner", ignoreCase = true) ||
+                                  level.equals("A1", ignoreCase = true) ||
+                                  level.equals("A0", ignoreCase = true)
+
+            val isAdvancedLevel = level.equals("Advanced", ignoreCase = true) ||
+                                  level.equals("C1", ignoreCase = true) ||
+                                  level.equals("B2", ignoreCase = true)
+
+            val topicSpecificGuidance = com.example.model.SpiralCurriculumBlueprint.buildTopicSpecificGeminiGuidance(level, topic)
+
+            val levelQuestionConstraints = when {
+                isBeginnerLevel -> """
+                    PEDAGOGICAL CONSTRAINT: BEGINNER SPIRAL PROGRESSION (A0 -> A1 -> A2):
+                    - Teach the specific vocabulary and sentences of the target topic "$topic" following the Topic Focus below, while recycling earlier basic words!
+                    - Keep sentences short and clear (2 words in Lesson 1-2, 2-3 words in Lesson 3, 3-4 words in Lesson 4, 4-5 words in Lesson 5).
+                    - MULTIPLE_CHOICE: Prompt in Vietnamese explaining a clear situation for "$topic".
+                    - SENTENCE_BUILDER: Target sentence must match the lesson's scaffolding step (2 tokens in L1-L2, 3 tokens in L3, 4 tokens in L4, 4-5 tokens in L5).
+                    - LISTENING_CHALLENGE: Short, clear audio sentence matching the target topic.
+                    - MATCHING_PAIRS: 4 vocabulary/phrase pairs ("english=vietnamese") directly teaching "$topic".
+                    - SPEAKING_CHALLENGE: Short word/phrase/sentence from "$topic".
+                    - STRICTLY FORBIDDEN: No complex clauses, no idioms, no connected speech reductions (could've, gonna), no passive voice!
+                """.trimIndent()
+                isAdvancedLevel -> """
+                    PEDAGOGICAL CONSTRAINT: ADVANCED LEARNER (B2-C1):
+                    - Challenge the learner with sophisticated lexical nuances, academic idioms, syntactic inversion, diplomatic hedging, and complex sentence structures tailored to "$topic".
+                    - MULTIPLE_CHOICE: Nuanced distinction between C1 academic or executive expressions.
+                    - SENTENCE_BUILDER: 6-9 tokens with inverted syntax or strategic clauses.
+                    - LISTENING_CHALLENGE: High-register executive or academic discourse.
+                    - MATCHING_PAIRS: 4 advanced C1 collocations or terminology ("english=vietnamese").
+                    - SPEAKING_CHALLENGE: Executive leadership cadence and persuasive rhetoric.
+                """.trimIndent()
+                else -> """
+                    PEDAGOGICAL CONSTRAINT: INTERMEDIATE LEARNER (B1-B2):
+                    - Focus on practical conversational fluency, natural collocations, phrasal verbs, polite indirect inquiries, and conditionals tailored to "$topic".
+                    - MULTIPLE_CHOICE: Practical communicative or grammatical dilemma in everyday/work context.
+                    - SENTENCE_BUILDER: 4-7 words forming a natural sentence for "$topic".
+                    - LISTENING_CHALLENGE: Everyday conversational or workplace sentence.
+                    - MATCHING_PAIRS: 4 practical B1-B2 collocations or phrasal verbs ("english=vietnamese").
+                    - SPEAKING_CHALLENGE: Natural pronunciation of daily/workplace expressions.
+                """.trimIndent()
+            }
+
+            val prompt = """
+                You are Kiki AI, an expert Microlearning Pedagogical Designer modeled after Duolingo's Spiral Curriculum.
+                Create a complete 5-Lesson Chapter Curriculum with exactly 25 progressive questions (5 lessons x 5 questions per lesson) for the topic: "$topic" at level "$level".
+                $weakPrompt
+                $levelQuestionConstraints
+                $topicSpecificGuidance
+                CRITICAL INSTRUCTION: NEVER use raw blanks or underscores like '______'. All sentences and questions must be complete, natural, and engaging.
+
+                SCAFFOLDING LESSON STRUCTURE (EXACTLY 25 QUESTIONS SPECIFIC TO "$topic"):
+                - Lesson 1 (Questions 1-5): Step 1 Foundation - Core single words/concepts of "$topic". 1 MULTIPLE_CHOICE, 1 SENTENCE_BUILDER, 1 LISTENING_CHALLENGE, 1 MATCHING_PAIRS (4 pairs), 1 SPEAKING_CHALLENGE.
+                - Lesson 2 (Questions 6-10): Step 2 Expansion - Action verbs, modifiers, or reactions of "$topic". 1 MULTIPLE_CHOICE, 1 SENTENCE_BUILDER, 1 LISTENING_CHALLENGE, 1 MATCHING_PAIRS, 1 SPEAKING_CHALLENGE.
+                - Lesson 3 (Questions 11-15): Step 3 Phrase & Chunk Assembly - 2-3 word collocations/phrases of "$topic". 1 MULTIPLE_CHOICE, 1 SENTENCE_BUILDER, 1 LISTENING_CHALLENGE, 1 MATCHING_PAIRS, 1 SPEAKING_CHALLENGE.
+                - Lesson 4 (Questions 16-20): Step 4 Sentence Construction - Complete sentences applying "$topic". 1 MULTIPLE_CHOICE, 1 SENTENCE_BUILDER, 1 LISTENING_CHALLENGE, 1 MATCHING_PAIRS, 1 SPEAKING_CHALLENGE.
+                - Lesson 5 (Questions 21-25): Step 5 Reflex Dialogue & Mastery - Real-world Q&A dialogue mastering "$topic". 1 MULTIPLE_CHOICE, 1 SENTENCE_BUILDER, 1 LISTENING_CHALLENGE, 1 MATCHING_PAIRS, 1 SPEAKING_CHALLENGE.
+
+                You MUST return ONLY a raw JSON object (no markdown, no backticks) with this exact schema:
+                {
+                  "title": "$topic",
+                  "description": "5-Lesson progressive microlearning roadmap designed by Kiki AI.",
+                  "level": "$level",
+                  "subject": "English",
+                  "orderNo": 0,
+                  "questions": [
+                    {
+                      "questionText": "Prompt in Vietnamese or clear English instruction",
+                      "questionType": "MULTIPLE_CHOICE",
+                      "optionsJson": "[\"option A\", \"option B\", \"option C\", \"option D\"]",
+                      "correctAnswer": "0",
+                      "explanation": "Pedagogical explanation in Vietnamese",
+                      "points": 10,
+                      "difficulty": "EASY"
+                    }
+                  ]
+                }
+            """.trimIndent()
+
+            val contents = listOf(GeminiModels.Content(role = "user", parts = listOf(GeminiModels.Part(text = prompt))))
+            val systemInstruction = GeminiModels.createSystemInstruction(
+                "You are Kiki AI, an expert Microlearning Pedagogical Designer. Always output strict JSON only, without markdown fences or outside explanations. NEVER generate raw underscores or blanks. Strictly teach the vocabulary and grammar of the requested topic '$topic' at CEFR level '$level' across all 25 progressive questions (5 lessons x 5 questions)."
+            )
+            val request = GeminiModels.GenerateContentRequest(
+                contents = contents,
+                systemInstruction = systemInstruction,
+                generationConfig = GeminiModels.GenerationConfig(
+                    temperature = 0.4,
+                    maxOutputTokens = 4096,
+                    topP = 0.95,
+                    topK = 40
+                )
+            )
+
+            val response = geminiApiService.generateContent(GeminiModels.MODEL_GEMINI_2_5_FLASH, apiKey, request)
+            if (response.isSuccessful) {
+                val rawText = GeminiModels.extractResponseText(response.body()) ?: ""
+                val cleanJson = rawText
+                    .replace(Regex("^```(?:json)?\\s*"), "")
+                    .replace(Regex("\\s*```$"), "")
+                    .trim()
+
+                val jsonObj = JSONObject(cleanJson)
+                val title = jsonObj.optString("title", topic).ifBlank { topic }
+                val desc = jsonObj.optString("description", "Bài học Microlearning 3C tối ưu theo mục tiêu học tập.")
+                val questionsArr = jsonObj.optJSONArray("questions")
+                val questionList = mutableListOf<QuestionItemDto>()
+
+                if (questionsArr != null) {
+                    for (i in 0 until questionsArr.length()) {
+                        val qObj = questionsArr.getJSONObject(i)
+                        val qText = qObj.optString("questionText", "").trim()
+                        if (qText.isBlank() || qText.contains("______")) continue
+                        val rawOpts = qObj.opt("optionsJson") ?: qObj.opt("options")
+                        val finalOptionsJson = when (rawOpts) {
+                            is org.json.JSONArray -> rawOpts.toString()
+                            is String -> rawOpts
+                            else -> "[\"A\", \"B\"]"
+                        }
+                        questionList.add(
+                            QuestionItemDto(
+                                questionText = qText,
+                                questionType = qObj.optString("questionType", "MULTIPLE_CHOICE"),
+                                optionsJson = finalOptionsJson,
+                                correctAnswer = qObj.optString("correctAnswer", "0"),
+                                explanation = qObj.optString("explanation", "Giải thích chi tiết từ Kiki AI."),
+                                points = qObj.optInt("points", 10),
+                                difficulty = qObj.optString("difficulty", "MEDIUM")
+                            )
+                        )
+                    }
+                }
+
+                if (questionList.isNotEmpty()) {
+                    // Smart Hybrid Supplement: nếu Gemini trả về ít hơn 25 câu (do giới hạn token),
+                    // tự động bù đắp các bài học còn thiếu từ khung chương trình chuẩn theo đúng chủ đề (Topic-Aware Blueprint)
+                    val completeQuestions = if (questionList.size >= 25) {
+                        questionList.take(25)
+                    } else {
+                        val blueprint = generatePersonalizedChapter(level, topic, weakWords).questions
+                        (questionList + blueprint.drop(questionList.size)).take(25)
+                    }
+                    return@withContext ChapterGeneratedResponse(
+                        title = title,
+                        description = desc,
+                        level = level,
+                        subject = "English",
+                        orderNo = 0,
+                        questions = completeQuestions
+                    )
+                }
+            }
+            null
+        } catch (_: Exception) {
+            null
+        }
+    }
+
+    suspend fun generate5StageMicrolearningRoadmapWithGemini(
+        profile: LearnerPersonaProfile
+    ): List<Pair<String, String>> = withContext(Dispatchers.IO) {
+        try {
+            val apiKey = getEffectiveGeminiApiKey()
+            if (apiKey.isBlank() || apiKey.startsWith("sk-")) return@withContext getScientificDefaultStages(profile)
+
+            val weakPrompt = if (profile.baselineWeakPoints.isNotEmpty()) {
+                "Remediate these diagnosed weak points in early stages: ${profile.baselineWeakPoints.joinToString(", ")}."
+            } else {
+                "Focus on accelerating conversational fluency and natural language intuition."
+            }
+
+            val isBeginner = profile.evaluatedCefr.equals("Beginner", ignoreCase = true) ||
+                             profile.evaluatedCefr.equals("A1", ignoreCase = true) ||
+                             profile.evaluatedCefr.equals("A0", ignoreCase = true) ||
+                             profile.thetaAbility < -0.3f ||
+                             profile.selfEfficacy.equals("NEWCOMER", ignoreCase = true)
+
+            val isAdvanced = profile.evaluatedCefr.equals("Advanced", ignoreCase = true) ||
+                             profile.evaluatedCefr.equals("B2", ignoreCase = true) ||
+                             profile.evaluatedCefr.equals("C1", ignoreCase = true) ||
+                             profile.thetaAbility >= 0.7f
+
+            val levelPedagogyGuidance = when {
+                isBeginner -> """
+                    CRITICAL PEDAGOGICAL LEVEL CONSTRAINT: ZERO-KNOWLEDGE BEGINNER (A0-A1).
+                    - The learner knows ALMOST ZERO ENGLISH (bắt đầu học từ con số 0).
+                    - Stage 1 MUST start with basic greetings & introduction: "Hello", "Hi", "My name is...", "Nice to meet you".
+                    - Stage 2 MUST cover personal status & asking: "How are you", "I am fine", "Thank you".
+                    - Stage 3 MUST focus on essential daily items & requests: "Water", "Coffee", "Please", "Excuse me".
+                    - Stage 4 MUST cover basic numbers 1-10 & simple time/price asking.
+                    - Stage 5 MUST synthesize short 2-3 word daily dialogues.
+                    - STRICT NEGATIVE CONSTRAINT: DO NOT teach idioms, DO NOT teach connected speech/elision/nuốt âm (could've/gonna), DO NOT teach complex clauses or inversion! Keep vocabulary strictly elementary.
+                """.trimIndent()
+                isAdvanced -> """
+                    CRITICAL PEDAGOGICAL LEVEL CONSTRAINT: ADVANCED (B2-C1).
+                    - The learner has high English proficiency and demands advanced nuances, idioms, connected speech, elision, debate arguments, and executive eloquence.
+                    - Stage 1: Nuanced idiom & academic collocation precision.
+                    - Stage 2: Complex syntactic inversion & subjunctive discourse.
+                    - Stage 3: Connected speech decoding, native reductions (could've, gonna), and cadence.
+                    - Stage 4: Strategic negotiation & persuasive argumentation.
+                    - Stage 5: Executive fluency & high-stakes communication synthesis.
+                """.trimIndent()
+                else -> """
+                    CRITICAL PEDAGOGICAL LEVEL CONSTRAINT: INTERMEDIATE (B1-B2).
+                    - The learner has basic English knowledge and wants to build conversational flow, phrasal verbs, polite indirect questions, and work/travel dialogues.
+                    - Stage 1: Active conversational starters & daily collocations.
+                    - Stage 2: High-frequency phrasal verbs & natural expressions.
+                    - Stage 3: Polite indirect inquiries & listening comprehension.
+                    - Stage 4: Storytelling & past/future discourse.
+                    - Stage 5: Spontaneous conversation synthesis.
+                """.trimIndent()
+            }
+
+            val prompt = """
+                You are Kiki AI, an elite Microlearning Pedagogical Curriculum Architect.
+                Design a 5-Stage Scientific Competency Roadmap for a learner with:
+                - Goal: "${profile.goal}"
+                - Target CEFR Level: "${profile.evaluatedCefr}"
+                - Ability parameter Theta: ${profile.thetaAbility}
+                - Pacing: ${profile.dailyTargetMinutes} minutes/day (Atomic Microlearning)
+                - Modality: ${profile.priorityModality}
+                $weakPrompt
+
+                $levelPedagogyGuidance
+
+                Return ONLY a raw JSON array of 5 objects (no markdown, no backticks) with this exact schema:
+                [
+                  {
+                    "title": "Stage 1 Short Title in Vietnamese with English subtitle",
+                    "description": "Pedagogical single learning objective in Vietnamese (1 concise sentence)"
+                  },
+                  {
+                    "title": "Stage 2 Short Title in Vietnamese with English subtitle",
+                    "description": "Pedagogical single learning objective in Vietnamese (1 concise sentence)"
+                  },
+                  {
+                    "title": "Stage 3 Short Title in Vietnamese with English subtitle",
+                    "description": "Pedagogical single learning objective in Vietnamese (1 concise sentence)"
+                  },
+                  {
+                    "title": "Stage 4 Short Title in Vietnamese with English subtitle",
+                    "description": "Pedagogical single learning objective in Vietnamese (1 concise sentence)"
+                  },
+                  {
+                    "title": "Stage 5 Short Title in Vietnamese with English subtitle",
+                    "description": "Pedagogical single learning objective in Vietnamese (1 concise sentence)"
+                  }
+                ]
+            """.trimIndent()
+
+            val contents = listOf(GeminiModels.Content(role = "user", parts = listOf(GeminiModels.Part(text = prompt))))
+            val systemInstruction = GeminiModels.createSystemInstruction(
+                "You are Kiki AI, an expert Microlearning Curriculum Designer. Return ONLY raw JSON array containing exactly 5 stage objects. Strictly tailor the curriculum difficulty to the specified CEFR level: beginners MUST start from basic greetings (Hello/Hi/My name is) and must NOT receive idioms or connected speech."
+            )
+            val request = GeminiModels.GenerateContentRequest(
+                contents = contents,
+                systemInstruction = systemInstruction,
+                generationConfig = GeminiModels.GenerationConfig(
+                    temperature = 0.3,
+                    maxOutputTokens = 1024,
+                    topP = 0.95,
+                    topK = 40
+                )
+            )
+
+            val response = geminiApiService.generateContent(GeminiModels.MODEL_GEMINI_2_5_FLASH, apiKey, request)
+            if (response.isSuccessful) {
+                val rawText = GeminiModels.extractResponseText(response.body()) ?: ""
+                val cleanJson = rawText
+                    .replace(Regex("^```(?:json)?\\s*"), "")
+                    .replace(Regex("\\s*```$"), "")
+                    .trim()
+
+                val jsonArr = org.json.JSONArray(cleanJson)
+                val stages = mutableListOf<Pair<String, String>>()
+                for (i in 0 until jsonArr.length()) {
+                    val obj = jsonArr.getJSONObject(i)
+                    val title = obj.optString("title", "Chặng ${i + 1}")
+                    val desc = obj.optString("description", "Bài học Microlearning 3C tối ưu theo mục tiêu học.")
+                    stages.add(Pair(title, desc))
+                }
+                if (stages.size >= 3) return@withContext stages
+            }
+        } catch (_: Exception) {}
+
+        return@withContext getScientificDefaultStages(profile)
+    }
+
+    fun getScientificDefaultStages(profile: LearnerPersonaProfile): List<Pair<String, String>> {
+        val isBeginner = profile.evaluatedCefr.equals("Beginner", ignoreCase = true) ||
+                         profile.evaluatedCefr.equals("A1", ignoreCase = true) ||
+                         profile.evaluatedCefr.equals("A0", ignoreCase = true) ||
+                         profile.thetaAbility < -0.3f ||
+                         profile.selfEfficacy.equals("NEWCOMER", ignoreCase = true)
+
+        if (isBeginner) {
+            return when (profile.goal) {
+                "Career & Business" -> listOf(
+                    Pair("Chặng 1: Chào Hỏi Đồng Nghiệp & Làm Quen Cơ Bản (Office Greetings & Intro)", "Bắt đầu từ số 0 với Hello, Hi, Good morning, My name is nơi công sở."),
+                    Pair("Chặng 2: Giới Thiệu Chức Danh & Phòng Ban (Job Titles & Who I Am)", "Học nói về tên và công việc đơn giản: I am a / My job is..."),
+                    Pair("Chặng 3: Đồ Dùng Văn Phòng & Nhờ Vả Cơ Bản (Office Items & Polite Requests)", "Nhờ vả đơn giản với Please, Thank you, Coffee, Water, Laptop."),
+                    Pair("Chặng 4: Số Đếm, Giờ Giấc & Lịch Hẹn Đơn Giản (Numbers, Time & Schedules)", "Làm quen số đếm 1-100 và hỏi giờ họp đơn giản: What time is the meeting?"),
+                    Pair("Chặng 5: Đàm Thoại Ngắn Phản Xạ Nơi Làm Việc (Short Workplace Dialogues)", "Phản xạ giao tiếp 2-3 câu hàng ngày tự tin không vấp.")
+                )
+                "Grammar & Vocabulary" -> listOf(
+                    Pair("Chặng 1: Làm Quen Từ Vựng & Lời Chào Số 0 (Greetings & Daily Words)", "Bắt đầu từ số 0: Hello, Hi, Thank you, Yes, No, các từ căn bản nhất."),
+                    Pair("Chặng 2: Đại Từ Nhân Xưng & Động Từ To Be (I am, You are, He is)", "Nắm vững bản chất I am, You are, He is với tên và nghề nghiệp cơ bản."),
+                    Pair("Chặng 3: Đồ Vật Quanh Ta & Số Ít Số Nhiều (This, That, A, An)", "Nhận biết danh từ hàng ngày: a book, a pen, this is, that is."),
+                    Pair("Chặng 4: Động Từ Hành Động Hàng Ngày (Action Verbs: Go, Like, Eat)", "Tạo câu 3 từ đơn giản: I like coffee, I go to work."),
+                    Pair("Chặng 5: Hỏi Đáp Đơn Giản Có/Không (Basic Yes/No Questions)", "Tự tin hỏi và trả lời câu hỏi Yes/No ngắn: Are you ready? Do you like tea?")
+                )
+                "IELTS & TOEIC" -> listOf(
+                    Pair("Chặng 1: Chào Hỏi & Giới Thiệu Bản Thân Đơn Giản (Speaking Part 1 Starter)", "Làm quen cách nói tên, tuổi và quê quán bằng các câu ngắn 3-4 từ."),
+                    Pair("Chặng 2: Từ Vựng Gia Đình & Sở Thích Số 0 (Family & Basic Hobbies)", "Học từ vựng và câu đơn giản mô tả người thân và sở thích hàng ngày."),
+                    Pair("Chặng 3: Nhận Diện Chữ Cái & Số Đếm Nghe Cơ Bản (Letters & Numbers Dictation)", "Luyện nghe bắt số điện thoại, ngày tháng và đánh vần tên cơ bản."),
+                    Pair("Chặng 4: Mô Tả Đồ Vật & Vị Trí Đơn Giản (Describing Objects & Places)", "Cấu trúc There is / There are và các giới từ vị trí cơ bản in, on, at."),
+                    Pair("Chặng 5: Phản Xạ Trả Lời Câu Hỏi Ngắn (Short Q&A Reflex)", "Tự tin trả lời 3 câu hỏi phỏng vấn ngắn quen thuộc trong đời sống.")
+                )
+                else -> listOf(
+                    Pair("Chặng 1: Chào Hỏi & Làm Quen Cơ Bản (Hello & Daily Greetings)", "Bắt đầu từ số 0 với các từ chào hỏi kinh điển Hello, Hi, Thank you, My name is."),
+                    Pair("Chặng 2: Giới Thiệu Bản Thân & Hỏi Thăm (Personal Identity & How Are You)", "Tự tin giới thiệu bản thân và hỏi thăm bạn bè: How are you, I am fine."),
+                    Pair("Chặng 3: Nhu Cầu & Đồ Vật Thiết Yếu (Everyday Essentials & Requests)", "Giao tiếp cơ bản khi xin phép, cảm ơn và gọi nước, đồ ăn hàng ngày."),
+                    Pair("Chặng 4: Số Đếm, Thời Gian & Mua Sắm Cơ Bản (Numbers, Time & Basic Requests)", "Làm quen số đếm 1-10, hỏi giờ và hỏi giá đơn giản."),
+                    Pair("Chặng 5: Đàm Thoại Ngắn Phản Xạ Đời Sống (Short Daily Dialogue & Mastery)", "Phản xạ giao tiếp tự nhiên với các hội thoại ngắn đời thường 2-3 câu.")
+                )
+            }
+        }
+
+        return when (profile.goal) {
+            "Grammar & Vocabulary" -> listOf(
+                Pair("Chặng 1: Củng Cố Cấu Trúc Cốt Lõi (Core Syntax)", "Xóa bỏ lỗi chia động từ và hòa hợp chủ vị cơ bản."),
+                Pair("Chặng 2: Làm Chủ Câu Điều Kiện Giả Định (Conditionals)", "Nắm vững bản chất câu điều kiện loại 2 và 3 trong giao tiếp."),
+                Pair("Chặng 3: Đảo Ngữ & Trạng Từ Nhấn Mạnh (Inversion)", "Sử dụng các trạng từ phủ định đảo ngữ để nâng cao sắc thái biểu đạt."),
+                Pair("Chặng 4: Mệnh Đề Rút Gọn & Cú Pháp Nâng Cao (Reduced Clauses)", "Rút gọn mệnh đề quan hệ và mệnh đề trạng ngữ linh hoạt."),
+                Pair("Chặng 5: Tổng Hợp Ngữ Pháp Đỉnh Cao (Mastery Synthesis)", "Chinh phục bài tập phản xạ ngữ pháp tổng hợp toàn diện.")
+            )
+            "IELTS & TOEIC" -> listOf(
+                Pair("Chặng 1: Nền Tảng Từ Vựng Học Thuật (Academic Lexicon)", "Làm chủ 20 collocations học thuật xuất hiện thường trực trong đề thi."),
+                Pair("Chặng 2: Nhận Diện Cấu Trúc Câu Phức Đề Thi (Complex Structures)", "Phân tích và dựng câu phức chuẩn mực cho bài thi viết và đọc."),
+                Pair("Chặng 3: Kỹ Thuật Nghe Bắt Ý Chính (Audio Gist Extraction)", "Rèn luyện tai nhận diện bẫy âm thanh và từ đồng nghĩa trong bài nghe."),
+                Pair("Chặng 4: Diễn Đạt Ý Nghĩa Đa Chiều (Paraphrasing Mastery)", "Kỹ năng biến đổi từ loại và cấu trúc câu tương đương tức thì."),
+                Pair("Chặng 5: Luyện Đề Bứt Phá Band Điểm (Exam Mastery Simulation)", "Thử thách phản xạ câu hỏi đề thi chuẩn hóa thời gian thực.")
+            )
+            "Career & Business" -> listOf(
+                Pair("Chặng 1: Giao Tiếp Công Sở & Email Chuẩn Mực (Workplace Etiquette)", "Sử dụng văn phong trang trọng và lịch thiệp trong trao đổi công việc."),
+                Pair("Chặng 2: Đàm Thoại & Thuyết Trình Dự Án (Business Pitching)", "Cấu trúc hóa luận điểm và trình bày báo cáo ngắn gọn, thuyết phục."),
+                Pair("Chặng 3: Thảo Luận & Từ Chối Khéo Léo (Professional Diplomacy)", "Nghệ thuật phản hồi bất đồng và thương lượng trong cuộc họp."),
+                Pair("Chặng 4: Đàm Phán & Thuyết Phục Đối Tác (Strategic Negotiation)", "Vận dụng các thuật ngữ nhượng bộ và chốt thỏa thuận kinh doanh."),
+                Pair("Chặng 5: Khẩu Ngữ Lãnh Đạo Chuyên Nghiệp (Executive Fluency)", "Nâng tầm phong thái phát âm và giao tiếp bản lĩnh.")
+            )
+            else -> listOf(
+                Pair("Chặng 1: Khởi Động & Phản Xạ Đàm Thoại (Daily Greetings)", "Tự tin mở đầu câu chuyện và phản xạ chào hỏi tự nhiên không vấp."),
+                Pair("Chặng 2: Giải Mã Nuốt Âm & Nối Âm (Connected Speech & Elision)", "Làm chủ hiện tượng nuốt âm could've, gonna trong tiếng Anh bản xứ."),
+                Pair("Chặng 3: Đặt Câu Hỏi Gián Tiếp Lịch Sự (Polite Indirect Inquiries)", "Giao tiếp lịch thiệp khi hỏi đường, nhờ vả và gọi món."),
+                Pair("Chặng 4: Cụm Động Từ Thông Dụng (High-Frequency Phrasal Verbs)", "Sử dụng phrasal verbs tự nhiên thay cho các từ đơn điệu."),
+                Pair("Chặng 5: Đột Phá Đàm Thoại Trôi Chảy (Mastery Conversational Fluency)", "Phản xạ giao tiếp Native Audio trôi chảy trong mọi ngữ cảnh.")
+            )
+        }
+    }
+
+    fun initializeAiMicrolearningRoadmap(
+        userId: Long,
+        profile: LearnerPersonaProfile,
+        onComplete: (Boolean) -> Unit = {}
+    ) {
+        viewModelScope.launch {
+            try {
+                // 1. Sinh 5 chặng lộ trình bằng Gemini 2.5 Flash
+                val stages = generate5StageMicrolearningRoadmapWithGemini(profile)
+
+                // 2. Sinh đơn vị bài học 3C đầu tiên cho Chặng 1 bằng Gemini 2.5 Flash
+                val firstStageTitle = stages.firstOrNull()?.first ?: profile.goal
+                val chapter1Units = generate3CMicrolearningWithGemini(
+                    topic = firstStageTitle,
+                    level = profile.evaluatedCefr,
+                    weakWords = profile.baselineWeakPoints
+                ) ?: generatePersonalizedChapter(profile.evaluatedCefr, firstStageTitle, profile.baselineWeakPoints)
+
+                // 3. Xóa các chapter tĩnh cũ và nạp lộ trình 100% AI vào Room SQLite
+                val targetUserId = if (userId > 0) userId else _currentUserId.value ?: 0L
+                repository.resetWithAiMicrolearningRoadmap(
+                    level = profile.evaluatedCefr,
+                    stages = stages,
+                    firstChapterUnits = chapter1Units
+                )
+
+                // 4. Lưu hồ sơ cá nhân hóa
+                saveLearnerPersonaProfile(profile)
+
+                // 5. Cập nhật trạng thái
+                refreshChapters()
+
+                // 6. Prefetch trước Chặng 2 ngầm bằng Gemini 2.5 Flash
+                if (stages.size > 1) {
+                    val secondStageTitle = stages[1].first
+                    prefetchNextMicrolearningUnit(targetUserId, secondStageTitle)
+                }
+
+                onComplete(true)
+            } catch (e: Exception) {
+                onComplete(false)
+            }
+        }
+    }
+
+    fun exportResearchTelemetryCsv(
+        context: Context,
+        onResult: (Boolean, String, java.io.File?) -> Unit
+    ) {
+        val userId = _currentUserId.value ?: return
+        if (userId == -1L) {
+            onResult(false, "Vui lòng đăng nhập để xuất dữ liệu nghiên cứu.", null)
+            return
+        }
+        viewModelScope.launch {
+            try {
+                val list = repository.getAllTelemetry(userId)
+                if (list.isEmpty()) {
+                    onResult(false, "Chưa có dữ liệu đo lường thực nghiệm. Hãy làm thêm một số bài học và luyện tập thẻ!", null)
+                    return@launch
+                }
+                val file = ResearchTelemetryExporter.saveCsvToFile(context, list)
+                onResult(true, "Đã xuất thành công ${list.size} bản ghi dữ liệu thực nghiệm!", file)
+            } catch (e: Exception) {
+                onResult(false, "Lỗi khi xuất file CSV: ${e.localizedMessage ?: e.message}", null)
+            }
+        }
+    }
+
     /**
-     * Tự động hoặc chủ động gọi AI sinh chương học tiếp theo dựa trên Kho Điểm Yếu
+     * Tự động thăng cấp trình độ CEFR (Automatic Spiral Level-Up) khi người học hoàn thành các cột mốc chặng:
+     * - Beginner (A0-A1): Sau khi hoàn thành >= 6 chặng nền tảng (150 câu hỏi từ vựng, câu ngắn, hỏi đường),
+     *   tự động thăng cấp lên Intermediate (B1-B2).
+     * - Intermediate (B1-B2): Sau khi hoàn thành >= 10 chặng (250 câu hỏi),
+     *   tự động thăng cấp lên Advanced (B2-C1).
+     */
+    fun resolveProgressedLevel(existingChaptersCount: Int, currentLevel: String): String {
+        val isBeginner = currentLevel.equals("Beginner", ignoreCase = true) ||
+                         currentLevel.equals("A1", ignoreCase = true) ||
+                         currentLevel.equals("A0", ignoreCase = true)
+        val isIntermediate = currentLevel.equals("Intermediate", ignoreCase = true) ||
+                             currentLevel.equals("B1", ignoreCase = true) ||
+                             currentLevel.equals("A2", ignoreCase = true)
+
+        return when {
+            isBeginner && existingChaptersCount >= 6 -> "Intermediate"
+            isIntermediate && existingChaptersCount >= 10 -> "Advanced"
+            currentLevel.isBlank() -> "Beginner"
+            else -> currentLevel
+        }
+    }
+
+    /**
+     * Tự động hoặc chủ động gọi AI sinh chương học tiếp theo dựa trên Kho Điểm Yếu & Lộ Trình Xoắn Ốc
+     * Ưu tiên tuyệt đối: Bộ nhớ đệm dự đoán (Predictive Prefetched) -> Gemini 2.5 Flash -> Backend -> Fallback
      */
     fun generateNextChapterOnDemand(
         userId: Long? = _currentUserId.value,
@@ -1543,21 +2166,70 @@ class StudyViewModel @Inject constructor(
                 val weakWords = extractWeakKeywords(weakPointsList)
                 val chapters = _availableChapters.value?.takeIf { it.isNotEmpty() }
                     ?: repository.getChaptersByPreference(_selectedLevel.value, _selectedSubject.value)
-                val targetLevel = _selectedLevel.value ?: "Beginner"
+                val rawLevel = _selectedLevel.value ?: "Beginner"
+                val targetLevel = resolveProgressedLevel(chapters.size, rawLevel)
+                if (!targetLevel.equals(rawLevel, ignoreCase = true)) {
+                    _selectedLevel.postValue(targetLevel)
+                }
                 val nextTopic = determineNextTopic(chapters, targetLevel)
 
+                // 1. Kiểm tra bộ nhớ đệm nạp trước (Zero Latency UX)
+                val prefetched = prefetchedMicrolearningCache.remove(nextTopic)?.takeIf { it.questions.size >= 25 }
+                if (prefetched != null) {
+                    val newChapterId = repository.saveAiGeneratedChapter(prefetched)
+                    if (newChapterId != -1L) {
+                        refreshChapters()
+                        _chapterUnlockEvent.postValue(
+                            ChapterUnlockEvent(
+                                completedChapterTitle = completedChapterTitle,
+                                nextChapterTitle = prefetched.title,
+                                isAiGenerated = true,
+                                weakPointsAddressedCount = weakWords.size
+                            )
+                        )
+                        onComplete(true, prefetched.title)
+                        return@launch
+                    }
+                }
+
+                // 2. Trực tiếp kích hoạt Gemini 2.5 Flash Microlearning Engine trên thiết bị
+                val geminiChapter = generate3CMicrolearningWithGemini(nextTopic, targetLevel, weakWords)
+                if (geminiChapter != null) {
+                    val newChapterId = repository.saveAiGeneratedChapter(geminiChapter)
+                    if (newChapterId != -1L) {
+                        refreshChapters()
+                        _chapterUnlockEvent.postValue(
+                            ChapterUnlockEvent(
+                                completedChapterTitle = completedChapterTitle,
+                                nextChapterTitle = geminiChapter.title,
+                                isAiGenerated = true,
+                                weakPointsAddressedCount = weakWords.size
+                            )
+                        )
+                        onComplete(true, geminiChapter.title)
+                        return@launch
+                    }
+                }
+
+                // 3. Fallback Backend API
                 val token = authManager.getIdToken() ?: "mock_dev_token_kiki_explorer"
                 val request = GenerateChapterRequest(
                     userId = targetUserId.toString(),
                     level = targetLevel,
                     topic = nextTopic,
                     weakWords = weakWords,
-                    questionCount = 5
+                    questionCount = 25
                 )
 
                 val response = backendApiService.generateChapter("Bearer $token", request)
                 if (response.isSuccessful && response.body() != null) {
-                    val chapterData = response.body()!!
+                    val rawData = response.body()!!
+                    val chapterData = if (rawData.questions.size >= 25) {
+                        rawData
+                    } else {
+                        val blueprint = generatePersonalizedChapter(targetLevel, nextTopic, weakWords).questions
+                        rawData.copy(questions = (rawData.questions + blueprint.drop(rawData.questions.size)).take(25))
+                    }
                     val newChapterId = repository.saveAiGeneratedChapter(chapterData)
                     if (newChapterId != -1L) {
                         refreshChapters()
@@ -1580,7 +2252,8 @@ class StudyViewModel @Inject constructor(
                 }
             } catch (e: Exception) {
                 val chapters = _availableChapters.value ?: emptyList()
-                val targetLevel = _selectedLevel.value ?: "Beginner"
+                val rawLevel = _selectedLevel.value ?: "Beginner"
+                val targetLevel = resolveProgressedLevel(chapters.size, rawLevel)
                 val nextTopic = determineNextTopic(chapters, targetLevel)
                 val weakPointsList = repository.getWeakPoints(targetUserId)
                 val weakWords = extractWeakKeywords(weakPointsList)
@@ -1593,24 +2266,57 @@ class StudyViewModel @Inject constructor(
     }
 
     fun determineNextTopic(existingChapters: List<String>, level: String): String {
-        val syllabus = listOf(
-            "English Fundamentals",
-            "Vocabulary & Daily Idioms",
-            "Syntax & Sentence Mastery",
-            "Conversational Fluency",
-            "Academic & IELTS Mastery",
-            "Professional & Business Communication",
-            "Travel & Cultural Encounters",
-            "Advanced Discourse & Critical Thinking",
-            "Nuanced Collocations & Phrasal Verbs",
-            "Mastery Summit & Fluency Capstone"
+        val progressedLevel = resolveProgressedLevel(existingChapters.size, level)
+        val isBeginner = progressedLevel.equals("Beginner", ignoreCase = true) ||
+                         progressedLevel.equals("A1", ignoreCase = true) ||
+                         progressedLevel.equals("A0", ignoreCase = true)
+        val isAdvanced = progressedLevel.equals("Advanced", ignoreCase = true) ||
+                         progressedLevel.equals("C1", ignoreCase = true) ||
+                         progressedLevel.equals("B2", ignoreCase = true)
+
+        val beginnerSyllabus = listOf(
+            "Chào Hỏi & Làm Quen Cơ Bản (Hello & Daily Greetings)",
+            "Giới Thiệu Bản Thân & Hỏi Thăm (Personal Identity & How Are You)",
+            "Nhu Cầu & Đồ Vật Thiết Yếu (Everyday Essentials & Requests)",
+            "Số Đếm, Thời Gian & Mua Sắm Cơ Bản (Numbers, Time & Basic Requests)",
+            "Đàm Thoại Ngắn Phản Xạ Đời Sống (Short Daily Dialogue & Mastery)",
+            "Hỏi Đường & Nơi Chốn Đơn Giản (Places & Directions)"
         )
-        for (topic in syllabus) {
-            if (!existingChapters.any { it.contains(topic, ignoreCase = true) }) {
-                return topic
+
+        val intermediateSyllabus = listOf(
+            "Giải Mã Nuốt Âm & Nối Âm (Connected Speech & Elision)",
+            "Đặt Câu Hỏi Gián Tiếp Lịch Sự (Polite Indirect Inquiries)",
+            "Cụm Động Từ Thông Dụng (High-Frequency Phrasal Verbs)",
+            "Làm Chủ Câu Điều Kiện Giả Định (Conditionals & Complex Syntax)",
+            "Giao Tiếp Công Sở & Email Chuẩn Mực (Workplace Etiquette)",
+            "Đàm Thoại & Thuyết Trình Dự Án (Business Pitching)"
+        )
+
+        val advancedSyllabus = listOf(
+            "Đảo Ngữ & Trạng Từ Nhấn Mạnh (Inversion & Complex Syntax)",
+            "Đàm Phán & Thuyết Phục Đối Tác (Strategic Negotiation & Diplomacy)",
+            "Nền Tảng Từ Vựng Học Thuật (Academic & IELTS Lexicon)",
+            "Khẩu Ngữ Lãnh Đạo Chuyên Nghiệp (Executive Fluency & Rhetoric)"
+        )
+
+        val fullSpiralCurriculum = when {
+            isBeginner -> beginnerSyllabus + intermediateSyllabus + advancedSyllabus
+            isAdvanced -> advancedSyllabus + intermediateSyllabus
+            else -> intermediateSyllabus + advancedSyllabus
+        }
+
+        val stageNumber = existingChapters.size + 1
+        for (topic in fullSpiralCurriculum) {
+            val coreName = topic.substringBefore("(").trim()
+            val alreadyExists = existingChapters.any { existing ->
+                existing.contains(topic, ignoreCase = true) ||
+                (coreName.length > 5 && existing.contains(coreName, ignoreCase = true))
+            }
+            if (!alreadyExists) {
+                return "Chặng $stageNumber: $topic"
             }
         }
-        return "Adaptive Mastery: Level $level Stage ${existingChapters.size + 1}"
+        return "Chặng $stageNumber: Đàm Phán & Thuyết Phục Đối Tác (Strategic Negotiation Stage $stageNumber)"
     }
 
     fun extractWeakKeywords(weakPoints: List<WeakPointEntity>): List<String> {
@@ -1653,82 +2359,14 @@ class StudyViewModel @Inject constructor(
         level: String,
         weakWords: List<String>
     ) {
-        val fallbackTitle = if (weakWords.isNotEmpty()) {
-            "Reinforcement: $topic"
-        } else {
-            topic
-        }
-
-        val questions = (1..5).map { index ->
-            val targetWord = weakWords.getOrNull(index - 1)
-            val qText = if (targetWord != null) {
-                "Reinforce target concept: Which sentence uses '$targetWord' correctly in context?"
-            } else {
-                "Challenge question $index for topic: $topic"
-            }
-            val options = if (targetWord != null) {
-                listOf(
-                    "This is the correct sentence utilizing '$targetWord' in proper context.",
-                    "This sentence mistakenly uses '$targetWord' with incorrect grammar.",
-                    "An alternative option that does not fit the context properly.",
-                    "None of the above choices are correct."
-                )
-            } else {
-                listOf(
-                    "Correct contextual usage for $topic.",
-                    "Incorrect phrasing.",
-                    "Distractor choice.",
-                    "Grammatically incomplete."
-                )
-            }
-            val qType = when (index) {
-                1 -> "MULTIPLE_CHOICE"
-                2 -> "SENTENCE_BUILDER"
-                3 -> "LISTENING_CHALLENGE"
-                4 -> "MATCHING_PAIRS"
-                5 -> "SPEAKING_CHALLENGE"
-                else -> "MULTIPLE_CHOICE"
-            }
-            val finalOptions = when (qType) {
-                "LISTENING_CHALLENGE" -> listOf("Consistent daily practice develops natural language intuition")
-                "MATCHING_PAIRS" -> listOf("confidence=tự tin", "achievement=thành tựu", "progress=tiến bộ", "dedication=sự cống hiến")
-                "SPEAKING_CHALLENGE" -> listOf("Consistency is the key to mastering English fluency.")
-                else -> options
-            }
-            val finalQText = when (qType) {
-                "LISTENING_CHALLENGE" -> "Nghe câu sau và sắp xếp lại các từ cho đúng thứ tự 🎧"
-                "MATCHING_PAIRS" -> "Ghép cặp các từ vựng tiếng Anh với nghĩa tiếng Việt tương ứng 🧩"
-                "SPEAKING_CHALLENGE" -> "Luyện nói câu tiếng Anh sau chuẩn bản xứ 🎙️"
-                else -> qText
-            }
-            val optionsJson = org.json.JSONArray(finalOptions).toString()
-            QuestionItemDto(
-                questionText = finalQText,
-                questionType = qType,
-                optionsJson = optionsJson,
-                correctAnswer = "0",
-                explanation = "Lựa chọn phương án chính xác nhất để hoàn thiện câu và củng cố lỗ hổng kiến thức.",
-                points = 10,
-                difficulty = "MEDIUM"
-            )
-        }
-
-        val generated = ChapterGeneratedResponse(
-            title = fallbackTitle,
-            description = "Chương học cá nhân hóa được tạo tự động nhằm củng cố kiến thức và mở rộng vốn từ.",
-            level = level,
-            subject = "English",
-            orderNo = null,
-            questions = questions
-        )
-
+        val generated = generatePersonalizedChapter(level, topic, weakWords)
         val newId = repository.saveAiGeneratedChapter(generated)
         if (newId != -1L) {
             refreshChapters()
             _chapterUnlockEvent.postValue(
                 ChapterUnlockEvent(
                     completedChapterTitle = completedChapterTitle,
-                    nextChapterTitle = fallbackTitle,
+                    nextChapterTitle = generated.title,
                     isAiGenerated = true,
                     weakPointsAddressedCount = weakWords.size
                 )
@@ -1868,11 +2506,34 @@ class StudyViewModel @Inject constructor(
         }
     }
 
-    fun reviewVocabularySm2(entity: VocabularyEntity, quality: Int) {
+    fun reviewVocabularySm2(entity: VocabularyEntity, quality: Int, latencyMs: Long = 2500L) {
         viewModelScope.launch {
-            repository.processVocabularySm2Review(entity.vocabId, quality, entity)
+            val newState = repository.processVocabularySm2Review(entity.vocabId, quality, entity)
             val userId = _currentUserId.value
             if (userId != null && userId != -1L) {
+                // Ghi nhận telemetry thẻ từ vựng phục vụ nghiên cứu
+                val nowStr = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.US).format(Date())
+                val isDistracted = latencyMs > Sm2Algorithm.DISTRACTION_LATENCY_THRESHOLD_MS
+                val retentionR = Sm2Algorithm.calculateRetentionProbability(0.0, newState.intervalDays.toDouble()).toFloat()
+
+                val telemetry = ResearchTelemetryEntity(
+                    sessionId = "VOCAB_" + SimpleDateFormat("yyyyMMdd_HHmmss", Locale.US).format(Date()),
+                    userId = userId,
+                    timestamp = nowStr,
+                    sloTopic = "Vocabulary Vault",
+                    challengeType = "FLASHCARD",
+                    itemIdentifier = entity.word,
+                    responseLatencyMs = latencyMs,
+                    isCorrect = quality >= 3,
+                    usedHint = false,
+                    isDistracted = isDistracted,
+                    objectiveQuality = quality,
+                    easinessFactor = newState.easinessFactor,
+                    intervalDays = newState.intervalDays,
+                    retentionProbability = retentionR
+                )
+                repository.saveTelemetry(telemetry)
+
                 refreshVocabulary()
                 val masteredCount = repository.getMasteredVocabularyCount(userId)
                 _masteredVocabCount.value = masteredCount
@@ -1934,44 +2595,13 @@ class StudyViewModel @Inject constructor(
         prompt: String,
         uri: Uri?
     ): String {
-        val apiKey = getEffectiveUniversalApiKey()
-        if (apiKey.isBlank()) {
-            return "⚠️ Bạn chưa cài đặt AI API Key.\n\n• Vui lòng mở Menu (Cài đặt) và dán API Key của bạn (hỗ trợ Groq, Gemini, Claude, OpenAI).\n• Hoặc cấu hình biến AI_API_KEY trong file .env để kích hoạt ngay lập tức."
+        val geminiKey = getEffectiveGeminiApiKey()
+        if (geminiKey.isBlank()) {
+            return "⚠️ Bạn chưa cài đặt GEMINI_API_KEY.\n\n• Vui lòng cấu hình biến GEMINI_API_KEY trong file .env để kích hoạt Gemini 2.5 Flash Native Audio Dialog.\n• Hoặc mở Cài đặt và dán khóa API của bạn."
         }
 
-        val activeProvider = getEffectiveActiveProvider()
-        val answer = when (activeProvider) {
-            PROVIDER_GROQ -> fetchAnswerFromGroq(context, prompt, uri, apiKey)
-            PROVIDER_GEMINI -> fetchAnswerFromGemini(context, prompt, uri, apiKey = apiKey)
-            PROVIDER_CLAUDE -> fetchAnswerFromClaude(context, prompt, uri, apiKey)
-            PROVIDER_OPENAI -> fetchAnswerFromOpenAI(context, prompt, uri, apiKey)
-            else -> fetchAnswerFromGroq(context, prompt, uri, apiKey)
-        }
-
-        val isError = answer.startsWith("Lỗi kết nối") ||
-                answer.startsWith("⚠️ Bạn chưa cài đặt") ||
-                answer.startsWith("⚡ Máy chủ AI")
-
-        if (!isError) {
-            return sanitizeAiMentorReply(answer)
-        }
-
-        // Tự động chuyển provider dựa trên format key nếu provider đã chọn gặp sự cố
-        val detected = detectAiProvider(apiKey)
-        if (detected != activeProvider) {
-            val fallbackAnswer = when (detected) {
-                PROVIDER_GROQ -> fetchAnswerFromGroq(context, prompt, uri, apiKey)
-                PROVIDER_GEMINI -> fetchAnswerFromGemini(context, prompt, uri, apiKey = apiKey)
-                PROVIDER_CLAUDE -> fetchAnswerFromClaude(context, prompt, uri, apiKey)
-                PROVIDER_OPENAI -> fetchAnswerFromOpenAI(context, prompt, uri, apiKey)
-                else -> answer
-            }
-            if (!fallbackAnswer.startsWith("Lỗi kết nối") && !fallbackAnswer.startsWith("⚠️")) {
-                return sanitizeAiMentorReply(fallbackAnswer)
-            }
-        }
-
-        return answer
+        val answer = fetchAnswerFromGemini(context, prompt, uri, apiKey = geminiKey)
+        return sanitizeAiMentorReply(answer)
     }
 
     private suspend fun fetchAnswerFromGemini(
@@ -1984,19 +2614,8 @@ class StudyViewModel @Inject constructor(
     ): String = withContext(Dispatchers.IO) {
         try {
             val effectiveKey = if (!apiKey.isNullOrBlank()) apiKey else getEffectiveGeminiApiKey()
-            if (effectiveKey.isBlank()) {
-                return@withContext "⚠️ Bạn chưa cài đặt AI API Key.\n\nVui lòng mở Cài đặt và dán API Key của bạn (hỗ trợ Groq, Gemini, Claude, OpenAI) hoặc cấu hình AI_API_KEY trong file .env."
-            }
-
-            // Cross-provider auto redirection:
-            if (effectiveKey.startsWith("gsk_")) {
-                return@withContext fetchAnswerFromGroq(context, prompt, uri, effectiveKey)
-            }
-            if (effectiveKey.startsWith("sk-ant-")) {
-                return@withContext fetchAnswerFromClaude(context, prompt, uri, effectiveKey)
-            }
-            if (effectiveKey.startsWith("sk-")) {
-                return@withContext fetchAnswerFromOpenAI(context, prompt, uri, effectiveKey)
+            if (effectiveKey.isBlank() || effectiveKey.startsWith("sk-")) {
+                return@withContext "⚠️ Khóa API không hợp lệ cho Google Gemini. Vui lòng cấu hình GEMINI_API_KEY trong file .env để sử dụng Gemini 2.5 Flash Native Audio Dialog."
             }
 
             val actualPrompt = if (prompt.isBlank() && uri != null) {
@@ -2005,6 +2624,12 @@ class StudyViewModel @Inject constructor(
                 "Lắng nghe đoạn ghi âm giọng nói tiếng Anh này của tôi, nhận xét phát âm, ngữ pháp và gợi ý cải thiện ngắn gọn."
             } else {
                 prompt
+            }
+
+            // Bộ nhớ đệm InMemory (Zero latency & Zero token khi hỏi lặp lại trong phiên học)
+            val cacheKey = "${actualPrompt.trim().lowercase()}_${uri != null}_${audioBytes != null}"
+            aiQueryCache[cacheKey]?.let { cached ->
+                return@withContext cached
             }
 
             val parts = mutableListOf<GeminiModels.Part>()
@@ -2029,8 +2654,10 @@ class StudyViewModel @Inject constructor(
                 contents = contents,
                 systemInstruction = systemInstruction,
                 generationConfig = GeminiModels.GenerationConfig(
-                    temperature = 0.7,
-                    maxOutputTokens = 2048
+                    temperature = 0.6,
+                    maxOutputTokens = 1024,
+                    topP = 0.95,
+                    topK = 40
                 )
             )
 
@@ -2046,13 +2673,14 @@ class StudyViewModel @Inject constructor(
                     if (response.isSuccessful) {
                         val text = GeminiModels.extractResponseText(response.body())
                         if (!text.isNullOrBlank()) {
+                            aiQueryCache[cacheKey] = text
                             return@withContext text
                         }
                     }
                     val code = response.code()
                     val errorDetail = response.errorBody()?.string() ?: "Code $code"
                     if (code == 400 && errorDetail.contains("API_KEY_INVALID")) {
-                        lastError = "Khóa API không hợp lệ cho dịch vụ Google Gemini. Vui lòng kiểm tra lại khóa trong Cài đặt (nếu bạn sử dụng Groq, Claude hoặc OpenAI, hệ thống sẽ tự động chuyển đổi sang dịch vụ tương ứng)."
+                        lastError = "Khóa API không hợp lệ cho dịch vụ Google Gemini. Vui lòng kiểm tra lại khóa trong Cài đặt hoặc file .env."
                         break
                     }
                     lastError = "Gemini ($model): $errorDetail"
@@ -2073,7 +2701,7 @@ class StudyViewModel @Inject constructor(
             }
 
             if (hasHighDemand) {
-                "⚡ Máy chủ AI Gemini hiện đang chịu tải cao tạm thời. Hệ thống đã tự động thử các mô hình dự phòng. Bạn vui lòng thử lại sau vài giây hoặc chuyển sang Groq AI trong Cài đặt."
+                "⚡ Máy chủ AI Gemini hiện đang chịu tải cao tạm thời. Hệ thống đã tự động thử các mô hình Flash dự phòng. Bạn vui lòng thử lại sau vài giây."
             } else {
                 "Lỗi kết nối Gemini API: $lastError"
             }

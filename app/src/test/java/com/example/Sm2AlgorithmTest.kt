@@ -124,4 +124,102 @@ class Sm2AlgorithmTest {
         assertTrue("Today date is due", Sm2Algorithm.isDue("2026-10-02", todayStr))
         assertFalse("Future date is not due", Sm2Algorithm.isDue("2026-10-03", todayStr))
     }
+
+    @Test
+    fun testObjectiveQuality_FastCorrectYieldsGrade5() {
+        val q = Sm2Algorithm.calculateObjectiveQuality(
+            isCorrect = true,
+            responseLatencyMs = 2100L,
+            usedHint = false
+        )
+        assertEquals("Fast response under 3s should yield grade 5 (Easy/Reflex)", 5, q)
+    }
+
+    @Test
+    fun testObjectiveQuality_NormalCorrectYieldsGrade4() {
+        val q = Sm2Algorithm.calculateObjectiveQuality(
+            isCorrect = true,
+            responseLatencyMs = 4500L,
+            usedHint = false
+        )
+        assertEquals("Normal response between 3s and 6s should yield grade 4 (Good)", 4, q)
+    }
+
+    @Test
+    fun testObjectiveQuality_SlowCorrectYieldsGrade3() {
+        val q = Sm2Algorithm.calculateObjectiveQuality(
+            isCorrect = true,
+            responseLatencyMs = 8000L,
+            usedHint = false
+        )
+        assertEquals("Slow cognitive retrieval over 6s should yield grade 3 (Hard)", 3, q)
+    }
+
+    @Test
+    fun testObjectiveQuality_HintUsedYieldsGrade2() {
+        val q = Sm2Algorithm.calculateObjectiveQuality(
+            isCorrect = true,
+            responseLatencyMs = 2000L,
+            usedHint = true
+        )
+        assertEquals("Correct answer with hint assistance must yield grade 2", 2, q)
+    }
+
+    @Test
+    fun testObjectiveQuality_IncorrectYieldsGrade1() {
+        val q = Sm2Algorithm.calculateObjectiveQuality(
+            isCorrect = false,
+            responseLatencyMs = 2500L
+        )
+        assertEquals("Incorrect response must yield grade 1 (Again)", 1, q)
+    }
+
+    @Test
+    fun testObjectiveQuality_GiveUpYieldsGrade0() {
+        val q = Sm2Algorithm.calculateObjectiveQuality(
+            isCorrect = false,
+            responseLatencyMs = 5000L,
+            isGiveUp = true
+        )
+        assertEquals("Giving up or blackout must yield grade 0", 0, q)
+    }
+
+    @Test
+    fun testObjectiveQuality_DistractionOutlierCapsAtGrade3() {
+        // Latency > 30s is classified as distracted
+        val q = Sm2Algorithm.calculateObjectiveQuality(
+            isCorrect = true,
+            responseLatencyMs = 35_000L,
+            usedHint = false
+        )
+        assertEquals("Outlier response (>30s) must be capped at grade 3 to prevent skewing EF", 3, q)
+    }
+
+    @Test
+    fun testEbbinghausRetentionProbability_DecaysExponentially() {
+        val stability = 10.0 // 10 days
+        val rAtDay0 = Sm2Algorithm.calculateRetentionProbability(0.0, stability)
+        assertEquals(1.0, rAtDay0, 0.001)
+
+        val rAtDay10 = Sm2Algorithm.calculateRetentionProbability(10.0, stability)
+        // e^(-1) is approximately 0.367879
+        assertEquals(0.368, rAtDay10, 0.005)
+
+        val rAtDay1 = Sm2Algorithm.calculateRetentionProbability(1.0, stability)
+        // e^(-0.1) is approx 0.9048
+        assertTrue("Retention after 1 day with 10d stability should be > 90%", rAtDay1 > 0.90)
+    }
+
+    @Test
+    fun testIsDueByRetention() {
+        // With interval = 5 days and threshold = 0.85
+        // At day 0: R = 1.0 -> not due
+        assertFalse(Sm2Algorithm.isDueByRetention(elapsedDays = 0.0, intervalDays = 5, retentionThreshold = 0.85))
+
+        // At day 5: elapsed >= interval -> due
+        assertTrue(Sm2Algorithm.isDueByRetention(elapsedDays = 5.0, intervalDays = 5, retentionThreshold = 0.85))
+
+        // If elapsed is 1 day with interval = 2 days: R = e^(-0.5) ~ 0.606 < 0.85 -> due!
+        assertTrue(Sm2Algorithm.isDueByRetention(elapsedDays = 1.0, intervalDays = 2, retentionThreshold = 0.85))
+    }
 }

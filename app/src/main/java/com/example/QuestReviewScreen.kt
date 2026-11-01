@@ -126,15 +126,37 @@ fun QuestReviewScreen(viewModel: StudyViewModel, onBack: () -> Unit) {
                     
                     Spacer(modifier = Modifier.width(12.dp))
 
-                    Box(
-                        modifier = Modifier
-                            .size(64.dp)
-                            .clip(CircleShape)
-                            .background(Color(0x3351FAC1))
-                            .border(2.dp, Color(0xFF51FAC1), CircleShape),
-                        contentAlignment = Alignment.Center
+                    val kikiGradeStateRes = when (grade) {
+                        "S", "A" -> R.drawable.kiki_state_happy
+                        "B" -> R.drawable.kiki_state_wave
+                        else -> R.drawable.kiki_state_sad
+                    }
+
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        Text(grade, color = Color(0xFF51FAC1), fontSize = 32.sp, fontWeight = FontWeight.Black)
+                        coil.compose.AsyncImage(
+                            model = kikiGradeStateRes,
+                            contentDescription = "Kiki Grade Reaction",
+                            contentScale = androidx.compose.ui.layout.ContentScale.Fit,
+                            modifier = Modifier
+                                .size(62.dp)
+                                .clip(CircleShape)
+                                .background(Color(0x22FFFFFF))
+                                .border(1.5.dp, Color(0x6651FAC1), CircleShape)
+                                .padding(2.dp)
+                        )
+                        Box(
+                            modifier = Modifier
+                                .size(60.dp)
+                                .clip(CircleShape)
+                                .background(Color(0x3351FAC1))
+                                .border(2.dp, Color(0xFF51FAC1), CircleShape),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(grade, color = Color(0xFF51FAC1), fontSize = 30.sp, fontWeight = FontWeight.Black)
+                        }
                     }
                 }
             }

@@ -48,6 +48,9 @@ interface AppDao {
     @Query("SELECT chapter_id FROM chapters WHERE title = :title LIMIT 1")
     suspend fun getChapterIdByTitle(title: String): Long?
 
+    @Query("SELECT title FROM chapters WHERE chapter_id = :chapterId LIMIT 1")
+    suspend fun getChapterTitleById(chapterId: Long): String?
+
     @Query("SELECT title FROM chapters WHERE is_active = 1 ORDER BY order_no")
     suspend fun getActiveChapters(): List<String>
 
@@ -59,6 +62,9 @@ interface AppDao {
 
     @Query("DELETE FROM questions")
     suspend fun clearQuestions()
+
+    @Query("DELETE FROM questions WHERE chapter_id = :chapterId")
+    suspend fun clearQuestionsByChapter(chapterId: Long): Int
 
     // --- Questions ---
     @Insert(onConflict = OnConflictStrategy.REPLACE)
@@ -186,6 +192,24 @@ interface AppDao {
 
     @Query("SELECT hearts FROM user_profiles WHERE user_id = :userId")
     suspend fun getHearts(userId: Long): Int?
+
+    // --- Research Telemetry ---
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertTelemetry(entry: ResearchTelemetryEntity): Long
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertTelemetryList(entries: List<ResearchTelemetryEntity>): List<Long>
+
+    @Query("SELECT * FROM research_telemetry WHERE user_id = :userId ORDER BY timestamp ASC")
+    suspend fun getAllTelemetry(userId: Long): List<ResearchTelemetryEntity>
+
+    @Query("SELECT COUNT(*) FROM research_telemetry WHERE user_id = :userId")
+    suspend fun getTelemetryCount(userId: Long): Int
+
+    @Query("DELETE FROM research_telemetry WHERE user_id = :userId")
+    suspend fun clearTelemetry(userId: Long): Int
+
 }
+
 
 

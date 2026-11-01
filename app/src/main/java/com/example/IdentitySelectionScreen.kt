@@ -606,10 +606,10 @@ fun HeroCharacter() {
                 .clip(CircleShape)
         ) {
             AsyncImage(
-                model = R.drawable.kiki_hero_auth,
-                contentDescription = "Kiki Avatar",
+                model = R.drawable.kiki_state_wave,
+                contentDescription = "Kiki Avatar Waving",
                 modifier = Modifier.fillMaxSize(),
-                contentScale = ContentScale.Crop
+                contentScale = ContentScale.Fit
             )
         }
     }
