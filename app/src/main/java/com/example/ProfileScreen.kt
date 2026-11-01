@@ -7,6 +7,7 @@ import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -48,6 +49,14 @@ import com.example.notification.KikiDailyReminderScheduler
 import coil.compose.AsyncImage
 import com.example.ui.VocabularyVaultDialog
 import com.example.ui.WeakPointsClinicDialog
+import com.example.ui.AddWordDialog
+import com.example.sqlite.room.VocabularyEntity
+import com.example.sqlite.room.WeakPointEntity
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.togetherWith
+import androidx.compose.foundation.horizontalScroll
 import com.example.viewmodel.StudyViewModel
 
 fun resolveAvatarResource(avatarUri: String?): Int {
@@ -63,8 +72,20 @@ fun resolveAvatarResource(avatarUri: String?): Int {
     }
 }
 
+enum class KikiExplorerSection {
+    HUB,
+    PROFILE,
+    VOCABULARY,
+    MISTAKES,
+    ACHIEVEMENTS
+}
+
 @Composable
-fun ProfileScreen(viewModel: StudyViewModel, onLogout: () -> Unit = {}) {
+fun ProfileScreen(
+    viewModel: StudyViewModel, 
+    onLogout: () -> Unit = {},
+    onNavigateToRoadmap: () -> Unit = {}
+) {
     val strings = LocalAppStrings.current
     val context = LocalContext.current
     val scrollState = rememberScrollState()
@@ -112,6 +133,9 @@ fun ProfileScreen(viewModel: StudyViewModel, onLogout: () -> Unit = {}) {
     var showLevelDialog by remember { mutableStateOf(false) }
     var showEditProfileDialog by remember { mutableStateOf(false) }
     var showVaultDialog by remember { mutableStateOf(false) }
+    var showAddWordDialog by remember { mutableStateOf(false) }
+    var showNavDrawer by remember { mutableStateOf(false) }
+    val currentSection by viewModel.kikiExplorerSection.observeAsState(KikiExplorerSection.HUB)
     val haptic = androidx.compose.ui.platform.LocalHapticFeedback.current
 
     LaunchedEffect(userId) {
@@ -156,166 +180,144 @@ fun ProfileScreen(viewModel: StudyViewModel, onLogout: () -> Unit = {}) {
                 .verticalScroll(scrollState)
                 .statusBarsPadding()
                 .padding(horizontal = 18.dp, vertical = 14.dp)
-                .padding(bottom = 116.dp),
+                .padding(bottom = 150.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            ProfileHeader(
-                userName = userName,
-                earnedStars = earnedStars,
-                isEnglish = isEnglish,
-                onSettingsClick = {
-                    haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.TextHandleMove)
-                    showSettingsSheet = true
-                }
-            )
-            Spacer(modifier = Modifier.height(16.dp))
-
-            ProfileIdentityCard(
-                userName = userName,
-                rankTitle = rankTitle,
-                level = level,
-                xp = xp,
-                xpProgress = xpProgress,
-                xpToNextLevel = xpToNextLevel,
-                avatarUri = avatarUri,
-                studyMotto = studyMotto,
-                isEnglish = isEnglish,
-                onEditClick = {
-                    haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.TextHandleMove)
-                    showEditProfileDialog = true
-                }
-            )
-            Spacer(modifier = Modifier.height(16.dp))
-
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                ProfileStatCard(Modifier.weight(1f), strings.xpLabel, "$xp", Icons.Default.AutoAwesome, Color(0xFFFFD166))
-                ProfileStatCard(Modifier.weight(1f), isEnglishText("Chuỗi ngày", "Streak"), "$streak 🔥 (🛡️ $streakShields)", Icons.Default.LocalFireDepartment, Color(0xFFFF9E00))
-            }
-            Spacer(modifier = Modifier.height(10.dp))
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                ProfileStatCard(Modifier.weight(1f), isEnglishText("Bài học", "Lessons"), "$completedLessons/$totalLessons", Icons.AutoMirrored.Filled.MenuBook, Color(0xFF51FAC1))
-                ProfileStatCard(Modifier.weight(1f), strings.starsLabel, "$earnedStars", Icons.Default.Star, Color(0xFFC68CFF))
-            }
-            Spacer(modifier = Modifier.height(14.dp))
-
-            // Thẻ Sổ tay từ vựng & Flashcards
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clip(RoundedCornerShape(20.dp))
-                    .background(Brush.horizontalGradient(listOf(Color(0xFF132729), Color(0xFF1B1538))))
-                    .border(1.dp, Color(0x6651FAC1), RoundedCornerShape(20.dp))
-                    .clickable {
+            if (currentSection != KikiExplorerSection.HUB) {
+                ProfileHeader(
+                    userName = userName,
+                    earnedStars = earnedStars,
+                    isEnglish = isEnglish,
+                    currentSection = currentSection,
+                    onSettingsClick = {
                         haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.TextHandleMove)
-                        showVaultDialog = true
+                        showSettingsSheet = true
                     }
-                    .padding(16.dp)
-            ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Box(
-                            modifier = Modifier
-                                .size(46.dp)
-                                .clip(CircleShape)
-                                .background(Color(0x3351FAC1)),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(Icons.Default.CollectionsBookmark, contentDescription = null, tint = Color(0xFF51FAC1), modifier = Modifier.size(24.dp))
-                        }
-                        Spacer(modifier = Modifier.width(14.dp))
-                        Column {
-                            Text(
-                                text = if (isEnglish) "VOCABULARY VAULT" else "SỔ TAY TỪ VỰNG",
-                                color = Color(0xFF51FAC1),
-                                fontSize = 10.sp,
-                                fontWeight = FontWeight.Bold,
-                                letterSpacing = 1.sp
-                            )
-                            Text(
-                                text = if (isEnglish) "${vocabularyList.size} Saved Words & Flashcards" else "${vocabularyList.size} Từ Đã Lưu & Flashcard 3D",
-                                color = Color.White,
-                                fontSize = 14.sp,
-                                fontWeight = FontWeight.Bold
-                            )
-                        }
+                )
+                Spacer(modifier = Modifier.height(14.dp))
+            }
+
+            // Animated Content for selected section
+            AnimatedContent(
+                targetState = currentSection,
+                transitionSpec = { fadeIn(tween(240)) togetherWith fadeOut(tween(180)) },
+                label = "kiki_explorer_section"
+            ) { section ->
+                when (section) {
+                    KikiExplorerSection.HUB -> {
+                        KikiExplorerHubView(
+                            userName = userName,
+                            rankTitle = rankTitle,
+                            level = level,
+                            avatarUri = avatarUri,
+                            earnedStars = earnedStars,
+                            vocabCount = vocabularyList.size,
+                            weakPointsCount = weakPoints.size,
+                            unlockedBadgeCount = unlockedBadgeIds.size,
+                            totalBadgeCount = allBadges.size,
+                            isEnglish = isEnglish,
+                            onSectionSelect = { targetSection ->
+                                haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.TextHandleMove)
+                                viewModel.setKikiExplorerSection(targetSection)
+                            },
+                            onSettingsClick = {
+                                haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.TextHandleMove)
+                                showSettingsSheet = true
+                            },
+                            onLogoutClick = {
+                                haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.TextHandleMove)
+                                showLogoutDialog = true
+                            }
+                        )
                     }
-                    Icon(Icons.AutoMirrored.Filled.ArrowForward, contentDescription = null, tint = Color(0xFF51FAC1), modifier = Modifier.size(20.dp))
+                    KikiExplorerSection.PROFILE -> {
+                        ProfileSectionView(
+                            userName = userName,
+                            rankTitle = rankTitle,
+                            level = level,
+                            xp = xp,
+                            xpProgress = xpProgress,
+                            xpToNextLevel = xpToNextLevel,
+                            avatarUri = avatarUri,
+                            studyMotto = studyMotto,
+                            isEnglish = isEnglish,
+                            streak = streak,
+                            streakShields = streakShields,
+                            completedLessons = completedLessons,
+                            totalLessons = totalLessons,
+                            earnedStars = earnedStars,
+                            selectedLevel = selectedLevel,
+                            onEditClick = {
+                                haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.TextHandleMove)
+                                showEditProfileDialog = true
+                            },
+                            onNavigateToRoadmap = onNavigateToRoadmap,
+                            onOpenLevelDialog = {
+                                haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.TextHandleMove)
+                                showLevelDialog = true
+                            },
+                            onOpenSettings = {
+                                haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.TextHandleMove)
+                                showSettingsSheet = true
+                            },
+                            onLogoutClick = {
+                                haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.TextHandleMove)
+                                showLogoutDialog = true
+                            }
+                        )
+                    }
+                    KikiExplorerSection.VOCABULARY -> {
+                        ProfileVocabularySection(
+                            vocabularyList = vocabularyList,
+                            masteredCount = masteredVocabCount,
+                            isEnglish = isEnglish,
+                            onOpenFlashcards = {
+                                haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.TextHandleMove)
+                                showVaultDialog = true
+                            },
+                            onAddWord = {
+                                haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.TextHandleMove)
+                                showAddWordDialog = true
+                            },
+                            onSpeakWord = { word ->
+                                viewModel.ttsManager.speak(word)
+                            },
+                            onToggleMastered = { vocabId, isMastered ->
+                                viewModel.toggleVocabMastered(vocabId, isMastered)
+                            },
+                            onDeleteWord = { vocabId ->
+                                viewModel.deleteVocab(vocabId)
+                            }
+                        )
+                    }
+                    KikiExplorerSection.MISTAKES -> {
+                        ProfileMistakesSection(
+                            weakPoints = weakPoints,
+                            curedCount = curedWeakPoints,
+                            isEnglish = isEnglish,
+                            onStartClinic = {
+                                haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.TextHandleMove)
+                                showClinicDialog = true
+                            },
+                            onResolveSingle = { weakId ->
+                                viewModel.resolveWeakPoint(weakId)
+                            }
+                        )
+                    }
+                    KikiExplorerSection.ACHIEVEMENTS -> {
+                        ProfileAchievementsSection(
+                            allBadges = allBadges,
+                            unlockedCount = unlockedBadgeIds.size,
+                            earnedStars = earnedStars,
+                            isEnglish = isEnglish,
+                            onBadgeClick = { badge ->
+                                haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.TextHandleMove)
+                                selectedBadgeForDetail = badge
+                            }
+                        )
+                    }
                 }
             }
-            Spacer(modifier = Modifier.height(12.dp))
-
-            // Thẻ Phòng Khám Lỗi Sai (Smart Mistake Bank / Weak-point Clinic)
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clip(RoundedCornerShape(20.dp))
-                    .background(Brush.horizontalGradient(listOf(Color(0xFF260D15), Color(0xFF1E1428))))
-                    .border(1.dp, Color(0x66FF6B6B), RoundedCornerShape(20.dp))
-                    .clickable {
-                        haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.TextHandleMove)
-                        showClinicDialog = true
-                    }
-                    .padding(16.dp)
-            ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Box(
-                            modifier = Modifier
-                                .size(46.dp)
-                                .clip(CircleShape)
-                                .background(Color(0x33FF6B6B)),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(Icons.Default.Healing, contentDescription = null, tint = Color(0xFFFF6B6B), modifier = Modifier.size(24.dp))
-                        }
-                        Spacer(modifier = Modifier.width(14.dp))
-                        Column {
-                            Text(
-                                text = if (isEnglish) "WEAK-POINT CLINIC" else "PHÒNG KHÁM LỖI SAI",
-                                color = Color(0xFFFF6B6B),
-                                fontSize = 10.sp,
-                                fontWeight = FontWeight.Bold,
-                                letterSpacing = 1.sp
-                            )
-                            Text(
-                                text = if (isEnglish) "${weakPoints.size} Mistakes to Review" else "${weakPoints.size} Lỗi sai cần củng cố (+XP)",
-                                color = Color.White,
-                                fontSize = 14.sp,
-                                fontWeight = FontWeight.Bold
-                            )
-                        }
-                    }
-                    Icon(Icons.AutoMirrored.Filled.ArrowForward, contentDescription = null, tint = Color(0xFFFF6B6B), modifier = Modifier.size(20.dp))
-                }
-            }
-            Spacer(modifier = Modifier.height(16.dp))
-
-            ProfileJourneyCard(
-                currentChapterTitle = currentChapterTitle,
-                currentNode = currentNode,
-                completedStages = completedStages,
-                stageCount = journeyStages.size,
-                progress = progress,
-                isEnglish = isEnglish
-            )
-            Spacer(modifier = Modifier.height(16.dp))
-
-            ProfileAchievements(
-                allBadges = allBadges,
-                isEnglish = isEnglish,
-                onBadgeClick = { badge ->
-                    haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.TextHandleMove)
-                    selectedBadgeForDetail = badge
-                }
-            )
         }
     }
 
@@ -439,6 +441,46 @@ fun ProfileScreen(viewModel: StudyViewModel, onLogout: () -> Unit = {}) {
             }
         )
     }
+
+    if (showNavDrawer) {
+        KikiExplorerNavigationSheet(
+            currentSection = currentSection,
+            userName = userName,
+            level = level,
+            rankTitle = rankTitle,
+            avatarUri = avatarUri,
+            vocabCount = vocabularyList.size,
+            weakPointsCount = weakPoints.size,
+            unlockedBadgeCount = unlockedBadgeIds.size,
+            totalBadgeCount = allBadges.size,
+            isEnglish = isEnglish,
+            onSectionSelect = { section ->
+                viewModel.setKikiExplorerSection(section)
+                showNavDrawer = false
+            },
+            onSettingsClick = {
+                showNavDrawer = false
+                showSettingsSheet = true
+            },
+            onLogoutClick = {
+                showNavDrawer = false
+                showLogoutDialog = true
+            },
+            onDismiss = { showNavDrawer = false }
+        )
+    }
+
+    if (showAddWordDialog) {
+        AddWordDialog(
+            isEnglish = isEnglish,
+            viewModel = viewModel,
+            onDismiss = { showAddWordDialog = false },
+            onSave = { word, phonetic, meaning, example ->
+                viewModel.saveWord(word, phonetic, meaning, example)
+                showAddWordDialog = false
+            }
+        )
+    }
 }
 
 @Composable
@@ -488,32 +530,57 @@ private fun ProfileHeader(
     userName: String,
     earnedStars: Int,
     isEnglish: Boolean,
+    currentSection: KikiExplorerSection,
     onSettingsClick: () -> Unit
 ) {
     Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
         Column(modifier = Modifier.weight(1f)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Box(
+                    modifier = Modifier
+                        .size(6.dp)
+                        .clip(CircleShape)
+                        .background(Color(0xFF51FAC1))
+                )
+                Spacer(modifier = Modifier.width(6.dp))
+                Text(
+                    text = "KIKI EXPLORER",
+                    color = Color(0xFF51FAC1),
+                    fontSize = 10.5.sp,
+                    fontWeight = FontWeight.ExtraBold,
+                    letterSpacing = 1.4.sp
+                )
+            }
+            Spacer(modifier = Modifier.height(2.dp))
             Text(
-                if (isEnglish) "LEARNER PROFILE" else "HỒ SƠ NGƯỜI HỌC",
-                color = Color(0xFF51FAC1),
-                fontSize = 10.sp,
-                fontWeight = FontWeight.Bold,
-                letterSpacing = 1.2.sp
-            )
-            Text(
-                text = userName,
+                text = when (currentSection) {
+                    KikiExplorerSection.HUB -> "Kiki Explorer"
+                    KikiExplorerSection.PROFILE -> userName
+                    KikiExplorerSection.VOCABULARY -> if (isEnglish) "Vocabulary & Grammar" else "Từ Vựng & Ngữ Pháp"
+                    KikiExplorerSection.ACHIEVEMENTS -> if (isEnglish) "Cosmic Titles & Badges" else "Danh Hiệu & Cột Mốc"
+                    KikiExplorerSection.MISTAKES -> if (isEnglish) "Mistake Clinic" else "Phòng Khám Lỗi Sai"
+                },
                 color = Color.White,
-                fontSize = 24.sp,
+                fontSize = 19.sp,
                 fontWeight = FontWeight.Black,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
             )
             Text(
-                if (isEnglish) "Keep learning, keep growing" else "Tiếp tục học hỏi và phát triển",
+                text = when (currentSection) {
+                    KikiExplorerSection.HUB -> if (isEnglish) "Galactic exploration menu" else "Danh mục khám phá vũ trụ"
+                    KikiExplorerSection.PROFILE -> if (isEnglish) "Profile, avatar & account session" else "Hồ sơ, ảnh đại diện & đăng xuất"
+                    KikiExplorerSection.VOCABULARY -> if (isEnglish) "Saved vocabulary, 3D cards & grammar tips" else "Sổ từ vựng, thẻ 3D & mẹo ngữ pháp"
+                    KikiExplorerSection.ACHIEVEMENTS -> if (isEnglish) "Cosmic glory milestones & unlocked badges" else "Huy hiệu vũ trụ & sao tinh tú tích lũy"
+                    KikiExplorerSection.MISTAKES -> if (isEnglish) "Cure errors & earn bonus XP" else "Củng cố điểm yếu & nhận điểm thưởng"
+                },
                 color = Color(0xB3FFFFFF),
-                fontSize = 11.sp
+                fontSize = 10.5.sp,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
             )
         }
-        Spacer(modifier = Modifier.width(10.dp))
+        Spacer(modifier = Modifier.width(8.dp))
         Row(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -521,24 +588,24 @@ private fun ProfileHeader(
             // Star Badge Box
             Box(
                 modifier = Modifier
-                    .height(58.dp)
+                    .height(54.dp)
                     .clip(RoundedCornerShape(16.dp))
                     .background(Color(0x66191438))
                     .border(1.dp, Color(0x995C3DA0), RoundedCornerShape(16.dp))
-                    .padding(horizontal = 12.dp, vertical = 6.dp),
+                    .padding(horizontal = 10.dp, vertical = 6.dp),
                 contentAlignment = Alignment.Center
             ) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Icon(Icons.Default.Star, contentDescription = null, tint = Color(0xFFFFD166), modifier = Modifier.size(18.dp))
-                    Text("$earnedStars", color = Color.White, fontSize = 15.sp, fontWeight = FontWeight.ExtraBold)
-                    Text(if (isEnglish) "STARS" else "SAO", color = Color(0xCCFFFFFF), fontSize = 8.sp)
+                    Icon(Icons.Default.Star, contentDescription = null, tint = Color(0xFFFFD166), modifier = Modifier.size(17.dp))
+                    Text("$earnedStars", color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.ExtraBold)
+                    Text(if (isEnglish) "STARS" else "SAO", color = Color(0xCCFFFFFF), fontSize = 7.5.sp)
                 }
             }
 
             // Quick Settings Action Button
             Box(
                 modifier = Modifier
-                    .size(58.dp)
+                    .size(54.dp)
                     .clip(RoundedCornerShape(16.dp))
                     .background(Color(0x66191438))
                     .border(1.dp, Color(0x995C3DA0), RoundedCornerShape(16.dp))
@@ -550,13 +617,13 @@ private fun ProfileHeader(
                         Icons.Default.Settings,
                         contentDescription = if (isEnglish) "Settings" else "Cài đặt",
                         tint = Color(0xFF51FAC1),
-                        modifier = Modifier.size(20.dp)
+                        modifier = Modifier.size(19.dp)
                     )
                     Spacer(modifier = Modifier.height(2.dp))
                     Text(
                         if (isEnglish) "SETTINGS" else "CÀI ĐẶT",
                         color = Color(0xFF51FAC1),
-                        fontSize = 8.sp,
+                        fontSize = 7.5.sp,
                         fontWeight = FontWeight.Bold
                     )
                 }
@@ -850,6 +917,180 @@ fun EditProfileDialog(
             }
         }
     )
+}
+
+@Composable
+private fun ProfileClusterHeader(title: String, icon: ImageVector, color: Color) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 4.dp, vertical = 6.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Box(
+            modifier = Modifier
+                .size(6.dp)
+                .clip(CircleShape)
+                .background(color)
+        )
+        Spacer(modifier = Modifier.width(6.dp))
+        Text(
+            text = title,
+            color = Color(0xB3FFFFFF),
+            fontSize = 11.sp,
+            fontWeight = FontWeight.Bold,
+            letterSpacing = 1.sp
+        )
+    }
+}
+
+@Composable
+private fun ProfileCompactMetricTile(
+    modifier: Modifier = Modifier,
+    title: String,
+    value: String,
+    subtitle: String,
+    icon: ImageVector,
+    accentColor: Color,
+    onClick: () -> Unit
+) {
+    Box(
+        modifier = modifier
+            .height(78.dp)
+            .clip(RoundedCornerShape(18.dp))
+            .background(Brush.verticalGradient(listOf(Color(0x991C142E), Color(0x77120D22))))
+            .border(1.dp, accentColor.copy(alpha = 0.35f), RoundedCornerShape(18.dp))
+            .clickable { onClick() }
+            .padding(horizontal = 10.dp, vertical = 7.dp)
+    ) {
+        Column(
+            modifier = Modifier.fillMaxSize(),
+            verticalArrangement = Arrangement.SpaceBetween
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(18.dp)
+                        .clip(CircleShape)
+                        .background(accentColor.copy(alpha = 0.20f)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(icon, contentDescription = null, tint = accentColor, modifier = Modifier.size(11.dp))
+                }
+                Spacer(modifier = Modifier.width(5.dp))
+                Text(
+                    text = title,
+                    color = Color(0xB3FFFFFF),
+                    fontSize = 9.sp,
+                    fontWeight = FontWeight.Bold,
+                    letterSpacing = 0.3.sp,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+            }
+            Text(
+                text = value,
+                color = Color.White,
+                fontSize = 14.sp,
+                fontWeight = FontWeight.ExtraBold,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+            Text(
+                text = subtitle,
+                color = accentColor.copy(alpha = 0.9f),
+                fontSize = 9.5.sp,
+                fontWeight = FontWeight.Medium,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+        }
+    }
+}
+
+@Composable
+private fun ProfileCompactActionCard(
+    modifier: Modifier = Modifier,
+    title: String,
+    badgeText: String,
+    actionText: String,
+    icon: ImageVector,
+    accentColor: Color,
+    gradientColors: List<Color>,
+    onClick: () -> Unit
+) {
+    Box(
+        modifier = modifier
+            .height(86.dp)
+            .clip(RoundedCornerShape(18.dp))
+            .background(Brush.verticalGradient(gradientColors))
+            .border(1.dp, accentColor.copy(alpha = 0.45f), RoundedCornerShape(18.dp))
+            .clickable { onClick() }
+            .padding(10.dp)
+    ) {
+        Column(
+            modifier = Modifier.fillMaxSize(),
+            verticalArrangement = Arrangement.SpaceBetween
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Box(
+                        modifier = Modifier
+                            .size(24.dp)
+                            .clip(CircleShape)
+                            .background(accentColor.copy(alpha = 0.22f)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(icon, contentDescription = null, tint = accentColor, modifier = Modifier.size(14.dp))
+                    }
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text(
+                        text = title,
+                        color = Color.White,
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Bold,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
+            }
+            Text(
+                text = badgeText,
+                color = Color(0xCCFFFFFF),
+                fontSize = 10.sp,
+                fontWeight = FontWeight.Medium,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+            Row(
+                modifier = Modifier
+                    .clip(RoundedCornerShape(6.dp))
+                    .background(accentColor.copy(alpha = 0.16f))
+                    .padding(horizontal = 6.dp, vertical = 2.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = actionText,
+                    color = accentColor,
+                    fontSize = 10.sp,
+                    fontWeight = FontWeight.Bold
+                )
+                Spacer(modifier = Modifier.width(3.dp))
+                Icon(
+                    Icons.AutoMirrored.Filled.ArrowForward,
+                    contentDescription = null,
+                    tint = accentColor,
+                    modifier = Modifier.size(10.dp)
+                )
+            }
+        }
+    }
 }
 
 @Composable
@@ -1439,6 +1680,1353 @@ fun LevelSelectionDialog(
             }
         }
     )
+}
+
+@Composable
+private fun ProfileSectionTabBar(
+    currentSection: KikiExplorerSection,
+    onSectionSelect: (KikiExplorerSection) -> Unit,
+    vocabCount: Int,
+    weakPointsCount: Int,
+    badgeCount: Int,
+    isEnglish: Boolean
+) {
+    val items = listOf(
+        Triple(KikiExplorerSection.PROFILE, if (isEnglish) "Profile" else "Hồ Sơ", Icons.Default.Person),
+        Triple(KikiExplorerSection.VOCABULARY, if (isEnglish) "Vocab & Grammar ($vocabCount)" else "Từ Vựng & Ngữ Pháp ($vocabCount)", Icons.Default.CollectionsBookmark),
+        Triple(KikiExplorerSection.ACHIEVEMENTS, if (isEnglish) "Badges ($badgeCount)" else "Danh Hiệu ($badgeCount)", Icons.Default.EmojiEvents),
+        Triple(KikiExplorerSection.MISTAKES, if (isEnglish) "Mistakes ($weakPointsCount)" else "Lỗi Sai ($weakPointsCount)", Icons.Default.Healing)
+    )
+
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(16.dp))
+            .background(Color(0x6615102B))
+            .border(1.dp, Color(0x3351FAC1), RoundedCornerShape(16.dp))
+            .padding(4.dp)
+            .horizontalScroll(rememberScrollState()),
+        horizontalArrangement = Arrangement.spacedBy(4.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        items.forEach { (section, title, icon) ->
+            val isSelected = currentSection == section
+            Box(
+                modifier = Modifier
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(
+                        if (isSelected) Brush.horizontalGradient(listOf(Color(0xFF003830), Color(0xFF005648)))
+                        else Brush.linearGradient(listOf(Color.Transparent, Color.Transparent))
+                    )
+                    .border(
+                        1.dp,
+                        if (isSelected) Color(0xFF51FAC1) else Color.Transparent,
+                        RoundedCornerShape(12.dp)
+                    )
+                    .clickable { onSectionSelect(section) }
+                    .padding(horizontal = 12.dp, vertical = 8.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        imageVector = icon,
+                        contentDescription = null,
+                        tint = if (isSelected) Color(0xFF51FAC1) else Color(0x88FFFFFF),
+                        modifier = Modifier.size(15.dp)
+                    )
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text(
+                        text = title,
+                        color = if (isSelected) Color.White else Color(0xAAFFFFFF),
+                        fontSize = 11.5.sp,
+                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium
+                    )
+                }
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun KikiExplorerNavigationSheet(
+    currentSection: KikiExplorerSection,
+    userName: String,
+    level: Int,
+    rankTitle: String,
+    avatarUri: String?,
+    vocabCount: Int,
+    weakPointsCount: Int,
+    unlockedBadgeCount: Int,
+    totalBadgeCount: Int,
+    isEnglish: Boolean,
+    onSectionSelect: (KikiExplorerSection) -> Unit,
+    onSettingsClick: () -> Unit,
+    onLogoutClick: () -> Unit,
+    onDismiss: () -> Unit
+) {
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        containerColor = Color(0xFF140F26),
+        dragHandle = {
+            Box(
+                modifier = Modifier
+                    .padding(top = 10.dp, bottom = 4.dp)
+                    .size(width = 44.dp, height = 4.dp)
+                    .clip(CircleShape)
+                    .background(Color(0x5551FAC1))
+            )
+        }
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 20.dp, vertical = 12.dp)
+                .navigationBarsPadding()
+        ) {
+            // Header with Mini Profile Info
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(18.dp))
+                    .background(Brush.horizontalGradient(listOf(Color(0x662A1B4E), Color(0x44140D2B))))
+                    .border(1.dp, Color(0x4451FAC1), RoundedCornerShape(18.dp))
+                    .padding(14.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(50.dp)
+                        .clip(CircleShape)
+                        .border(1.5.dp, Color(0xFF51FAC1), CircleShape),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Image(
+                        painter = painterResource(resolveAvatarResource(avatarUri)),
+                        contentDescription = null,
+                        modifier = Modifier.fillMaxSize().clip(CircleShape)
+                    )
+                }
+                Spacer(modifier = Modifier.width(12.dp))
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = "Kiki Explorer",
+                        color = Color.White,
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Bold,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                    Spacer(modifier = Modifier.height(2.dp))
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Box(
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(6.dp))
+                                .background(Color(0xFF51FAC1).copy(alpha = 0.2f))
+                                .padding(horizontal = 6.dp, vertical = 2.dp)
+                        ) {
+                            Text(
+                                text = "Lv.$level",
+                                color = Color(0xFF51FAC1),
+                                fontSize = 10.sp,
+                                fontWeight = FontWeight.ExtraBold
+                            )
+                        }
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text(
+                            text = rankTitle,
+                            color = Color(0xFFFFD166),
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Medium
+                        )
+                    }
+                }
+                IconButton(onClick = onDismiss) {
+                    Icon(Icons.Default.Close, contentDescription = "Close", tint = Color(0x99FFFFFF))
+                }
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            Text(
+                text = if (isEnglish) "CHOOSE SECTION" else "CHỌN MỤC THAO TÁC",
+                color = Color(0xFF51FAC1),
+                fontSize = 10.5.sp,
+                fontWeight = FontWeight.Bold,
+                letterSpacing = 1.2.sp
+            )
+
+            Spacer(modifier = Modifier.height(10.dp))
+
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                KikiNavDrawerItem(
+                    title = if (isEnglish) "Learner Profile & Stats" else "Hồ Sơ & Thống Kê Cá Nhân",
+                    subtitle = if (isEnglish) "Identity, avatar, level & session" else "Ảnh đại diện, tên, cấp độ & phiên học",
+                    badgeText = "Lv.$level",
+                    icon = Icons.Default.Person,
+                    accentColor = Color(0xFF51FAC1),
+                    isSelected = currentSection == KikiExplorerSection.PROFILE,
+                    onClick = { onSectionSelect(KikiExplorerSection.PROFILE) }
+                )
+                KikiNavDrawerItem(
+                    title = if (isEnglish) "Vocabulary & Grammar" else "Từ Vựng & Ngữ Pháp",
+                    subtitle = if (isEnglish) "Saved words, 3D cards & grammar tips" else "Sổ từ vựng, flashcard 3D & mẹo ngữ pháp",
+                    badgeText = "$vocabCount từ",
+                    icon = Icons.Default.CollectionsBookmark,
+                    accentColor = Color(0xFF00F5D4),
+                    isSelected = currentSection == KikiExplorerSection.VOCABULARY,
+                    onClick = { onSectionSelect(KikiExplorerSection.VOCABULARY) }
+                )
+                KikiNavDrawerItem(
+                    title = if (isEnglish) "Cosmic Titles & Badges" else "Danh Hiệu & Cột Mốc",
+                    subtitle = if (isEnglish) "Honored milestones & cosmic stars" else "Bộ sưu tập huy hiệu danh dự vũ trụ",
+                    badgeText = "$unlockedBadgeCount/$totalBadgeCount",
+                    icon = Icons.Default.EmojiEvents,
+                    accentColor = Color(0xFFFFD166),
+                    isSelected = currentSection == KikiExplorerSection.ACHIEVEMENTS,
+                    onClick = { onSectionSelect(KikiExplorerSection.ACHIEVEMENTS) }
+                )
+                KikiNavDrawerItem(
+                    title = if (isEnglish) "Mistake Clinic" else "Phòng Khám Lỗi Sai",
+                    subtitle = if (isEnglish) "Review mistakes, reinforce knowledge, earn XP" else "Khắc phục câu làm sai & nhận thưởng XP",
+                    badgeText = if (weakPointsCount == 0) "0 lỗi 🎉" else "$weakPointsCount lỗi",
+                    icon = Icons.Default.Healing,
+                    accentColor = Color(0xFFFF6B6B),
+                    isSelected = currentSection == KikiExplorerSection.MISTAKES,
+                    onClick = { onSectionSelect(KikiExplorerSection.MISTAKES) }
+                )
+
+                HorizontalDivider(
+                    color = Color(0x22FFFFFF),
+                    modifier = Modifier.padding(vertical = 4.dp)
+                )
+
+                KikiNavDrawerItem(
+                    title = if (isEnglish) "Settings & Preferences" else "Cài Đặt & Tuỳ Chọn",
+                    subtitle = if (isEnglish) "Audio, notifications, level" else "Âm thanh, nhắc nhở & trình độ học",
+                    badgeText = "⚙️",
+                    icon = Icons.Default.Settings,
+                    accentColor = Color(0xFFC68CFF),
+                    isSelected = false,
+                    onClick = onSettingsClick
+                )
+
+                KikiNavDrawerItem(
+                    title = if (isEnglish) "Log Out Account" else "Đăng Xuất Tài Khoản",
+                    subtitle = if (isEnglish) "Safely sign out of current session" else "Thoát tài khoản người dùng an toàn",
+                    badgeText = "🚪",
+                    icon = Icons.AutoMirrored.Filled.ExitToApp,
+                    accentColor = Color(0xFFFF5F6D),
+                    isSelected = false,
+                    onClick = onLogoutClick
+                )
+            }
+            Spacer(modifier = Modifier.height(18.dp))
+        }
+    }
+}
+
+@Composable
+private fun KikiNavDrawerItem(
+    title: String,
+    subtitle: String,
+    badgeText: String,
+    icon: ImageVector,
+    accentColor: Color,
+    isSelected: Boolean,
+    onClick: () -> Unit
+) {
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(16.dp))
+            .background(
+                if (isSelected) Brush.horizontalGradient(listOf(Color(0xFF003830), Color(0xFF00221E)))
+                else Brush.linearGradient(listOf(Color(0x331C1635), Color(0x331C1635)))
+            )
+            .border(
+                1.dp,
+                if (isSelected) accentColor else Color(0x22FFFFFF),
+                RoundedCornerShape(16.dp)
+            )
+            .clickable(onClick = onClick)
+            .padding(horizontal = 14.dp, vertical = 10.dp)
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(36.dp)
+                    .clip(CircleShape)
+                    .background(accentColor.copy(alpha = 0.2f)),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(icon, contentDescription = null, tint = accentColor, modifier = Modifier.size(20.dp))
+            }
+            Spacer(modifier = Modifier.width(12.dp))
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = title,
+                    color = if (isSelected) Color(0xFF51FAC1) else Color.White,
+                    fontSize = 13.5.sp,
+                    fontWeight = FontWeight.Bold
+                )
+                Text(
+                    text = subtitle,
+                    color = Color(0x99FFFFFF),
+                    fontSize = 10.5.sp,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+            }
+            Spacer(modifier = Modifier.width(8.dp))
+            Box(
+                modifier = Modifier
+                    .clip(RoundedCornerShape(8.dp))
+                    .background(if (isSelected) Color(0xFF51FAC1).copy(alpha = 0.25f) else Color(0x22FFFFFF))
+                    .padding(horizontal = 8.dp, vertical = 4.dp)
+            ) {
+                Text(
+                    text = badgeText,
+                    color = if (isSelected) Color(0xFF51FAC1) else Color(0xCCFFFFFF),
+                    fontSize = 10.5.sp,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun KikiExplorerHubView(
+    userName: String,
+    rankTitle: String,
+    level: Int,
+    avatarUri: String?,
+    earnedStars: Int,
+    vocabCount: Int,
+    weakPointsCount: Int,
+    unlockedBadgeCount: Int,
+    totalBadgeCount: Int,
+    isEnglish: Boolean,
+    onSectionSelect: (KikiExplorerSection) -> Unit,
+    onSettingsClick: () -> Unit,
+    onLogoutClick: () -> Unit
+) {
+    Column(
+        modifier = Modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(14.dp)
+    ) {
+        // Top Card matching screenshot
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(22.dp))
+                .background(Brush.horizontalGradient(listOf(Color(0x882A1B4E), Color(0x66140D2B))))
+                .border(1.2.dp, Color(0x5551FAC1), RoundedCornerShape(22.dp))
+                .padding(horizontal = 16.dp, vertical = 14.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(54.dp)
+                    .clip(CircleShape)
+                    .background(Color(0xFF14141E))
+                    .border(2.dp, Color(0xFF51FAC1), CircleShape),
+                contentAlignment = Alignment.Center
+            ) {
+                if (avatarUri != null && (avatarUri.startsWith("http://") || avatarUri.startsWith("https://") || avatarUri.startsWith("content://"))) {
+                    AsyncImage(
+                        model = avatarUri,
+                        contentDescription = "Avatar",
+                        modifier = Modifier.fillMaxSize().clip(CircleShape),
+                        contentScale = ContentScale.Crop
+                    )
+                } else {
+                    Image(
+                        painter = painterResource(resolveAvatarResource(avatarUri)),
+                        contentDescription = "Avatar",
+                        modifier = Modifier.fillMaxSize().clip(CircleShape)
+                    )
+                }
+            }
+            Spacer(modifier = Modifier.width(14.dp))
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = "Kiki Explorer",
+                    color = Color.White,
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.Black,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+                Spacer(modifier = Modifier.height(3.dp))
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Box(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(6.dp))
+                            .background(Color(0xFF004D40))
+                            .border(1.dp, Color(0xFF51FAC1).copy(alpha = 0.5f), RoundedCornerShape(6.dp))
+                            .padding(horizontal = 7.dp, vertical = 2.dp)
+                    ) {
+                        Text(
+                            text = "Lv.$level",
+                            color = Color(0xFF51FAC1),
+                            fontSize = 10.5.sp,
+                            fontWeight = FontWeight.ExtraBold
+                        )
+                    }
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = rankTitle,
+                        color = Color(0xFFFFD166),
+                        fontSize = 11.5.sp,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                }
+            }
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                Box(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(Color(0x33FFD166))
+                        .border(1.dp, Color(0x66FFD166), RoundedCornerShape(12.dp))
+                        .padding(horizontal = 8.dp, vertical = 5.dp)
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(Icons.Default.Star, contentDescription = null, tint = Color(0xFFFFD166), modifier = Modifier.size(13.dp))
+                        Spacer(modifier = Modifier.width(3.dp))
+                        Text("$earnedStars", color = Color(0xFFFFD166), fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                    }
+                }
+                IconButton(onClick = onSettingsClick, modifier = Modifier.size(36.dp)) {
+                    Icon(
+                        Icons.Default.Settings,
+                        contentDescription = "Settings",
+                        tint = Color(0xFF51FAC1),
+                        modifier = Modifier.size(20.dp)
+                    )
+                }
+            }
+        }
+
+        Spacer(modifier = Modifier.height(2.dp))
+
+        Text(
+            text = if (isEnglish) "CHOOSE SECTION" else "CHỌN MỤC THAO TÁC",
+            color = Color(0xFF51FAC1),
+            fontSize = 11.sp,
+            fontWeight = FontWeight.Black,
+            letterSpacing = 1.3.sp
+        )
+
+        Column(verticalArrangement = Arrangement.spacedBy(9.dp)) {
+            KikiNavDrawerItem(
+                title = if (isEnglish) "Learner Profile & Stats" else "Hồ Sơ & Thống Kê Cá Nhân",
+                subtitle = if (isEnglish) "Avatar, name, level & study session" else "Ảnh đại diện, tên, cấp độ & phiên học",
+                badgeText = "Lv.$level",
+                icon = Icons.Default.Person,
+                accentColor = Color(0xFF51FAC1),
+                isSelected = true,
+                onClick = { onSectionSelect(KikiExplorerSection.PROFILE) }
+            )
+            KikiNavDrawerItem(
+                title = if (isEnglish) "Vocabulary & Grammar" else "Từ Vựng & Ngữ Pháp",
+                subtitle = if (isEnglish) "Vocabulary count, 3D cards & grammar tips" else "Số từ vựng, flashcard 3D & mẹo ngữ pháp",
+                badgeText = "$vocabCount từ",
+                icon = Icons.Default.CollectionsBookmark,
+                accentColor = Color(0xFF00F5D4),
+                isSelected = false,
+                onClick = { onSectionSelect(KikiExplorerSection.VOCABULARY) }
+            )
+            KikiNavDrawerItem(
+                title = if (isEnglish) "Cosmic Titles & Badges" else "Danh Hiệu & Cột Mốc",
+                subtitle = if (isEnglish) "Cosmic honor badge collection" else "Bộ sưu tập huy hiệu danh dự vũ trụ",
+                badgeText = "$unlockedBadgeCount/$totalBadgeCount",
+                icon = Icons.Default.EmojiEvents,
+                accentColor = Color(0xFFFFD166),
+                isSelected = false,
+                onClick = { onSectionSelect(KikiExplorerSection.ACHIEVEMENTS) }
+            )
+            KikiNavDrawerItem(
+                title = if (isEnglish) "Mistake Clinic" else "Phòng Khám Lỗi Sai",
+                subtitle = if (isEnglish) "Cure mistakes & earn bonus XP" else "Khắc phục câu làm sai & nhận thưởng XP",
+                badgeText = if (weakPointsCount == 0) "0 lỗi 🎉" else "$weakPointsCount lỗi",
+                icon = Icons.Default.Healing,
+                accentColor = Color(0xFFFF6B6B),
+                isSelected = false,
+                onClick = { onSectionSelect(KikiExplorerSection.MISTAKES) }
+            )
+
+            HorizontalDivider(
+                color = Color(0x22FFFFFF),
+                modifier = Modifier.padding(vertical = 4.dp)
+            )
+
+            KikiNavDrawerItem(
+                title = if (isEnglish) "Settings & Preferences" else "Cài Đặt & Tuỳ Chọn",
+                subtitle = if (isEnglish) "Audio, notifications & learning level" else "Âm thanh, nhắc nhở & trình độ học",
+                badgeText = "⚙️",
+                icon = Icons.Default.Settings,
+                accentColor = Color(0xFFC68CFF),
+                isSelected = false,
+                onClick = onSettingsClick
+            )
+
+            KikiNavDrawerItem(
+                title = if (isEnglish) "Log Out Account" else "Đăng Xuất Tài Khoản",
+                subtitle = if (isEnglish) "Safely sign out of current session" else "Thoát tài khoản người dùng an toàn",
+                badgeText = "🚪",
+                icon = Icons.AutoMirrored.Filled.ExitToApp,
+                accentColor = Color(0xFFFF5F6D),
+                isSelected = false,
+                onClick = onLogoutClick
+            )
+        }
+    }
+}
+
+@Composable
+private fun ProfileSectionView(
+    userName: String,
+    rankTitle: String,
+    level: Int,
+    xp: Int,
+    xpProgress: Float,
+    xpToNextLevel: Int,
+    avatarUri: String?,
+    studyMotto: String,
+    isEnglish: Boolean,
+    streak: Int,
+    streakShields: Int,
+    completedLessons: Int,
+    totalLessons: Int,
+    earnedStars: Int,
+    selectedLevel: String,
+    onEditClick: () -> Unit,
+    onNavigateToRoadmap: () -> Unit,
+    onOpenLevelDialog: () -> Unit,
+    onOpenSettings: () -> Unit,
+    onLogoutClick: () -> Unit
+) {
+    val context = LocalContext.current
+    val haptic = androidx.compose.ui.platform.LocalHapticFeedback.current
+
+    Column(modifier = Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(14.dp)) {
+        // 1. Thẻ Nhận Diện Cá Nhân: Avatar lớn, Tên, Cấp độ, XP, Châm ngôn, Nút chỉnh sửa
+        ProfileIdentityCard(
+            userName = userName,
+            rankTitle = rankTitle,
+            level = level,
+            xp = xp,
+            xpProgress = xpProgress,
+            xpToNextLevel = xpToNextLevel,
+            avatarUri = avatarUri,
+            studyMotto = studyMotto,
+            isEnglish = isEnglish,
+            onEditClick = onEditClick
+        )
+
+        // 2. Thống Kê Học Tập Cá Nhân (Streak, XP, Bài học, Sao)
+        ProfileClusterHeader(
+            title = if (isEnglish) "LEARNER VITALS" else "CHỈ SỐ HỌC TẬP CÁ NHÂN",
+            icon = Icons.Default.Insights,
+            color = Color(0xFF51FAC1)
+        )
+        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                ProfileCompactMetricTile(
+                    modifier = Modifier.weight(1f),
+                    title = if (isEnglish) "STREAK" else "CHUỖI NGÀY",
+                    value = if (isEnglish) "$streak Days 🔥" else "$streak Ngày 🔥",
+                    subtitle = if (isEnglish) "🛡️ $streakShields Shield" else "🛡️ $streakShields Khiên giữ",
+                    icon = Icons.Default.LocalFireDepartment,
+                    accentColor = Color(0xFFFF9E00),
+                    onClick = {
+                        haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.TextHandleMove)
+                        Toast.makeText(context, if (isEnglish) "Streak: $streak days" else "Chuỗi chuyên cần: $streak ngày liên tục!", Toast.LENGTH_SHORT).show()
+                    }
+                )
+                ProfileCompactMetricTile(
+                    modifier = Modifier.weight(1f),
+                    title = if (isEnglish) "TOTAL XP" else "NĂNG LƯỢNG XP",
+                    value = "$xp XP",
+                    subtitle = "⚡ $rankTitle",
+                    icon = Icons.Default.AutoAwesome,
+                    accentColor = Color(0xFFFFD166),
+                    onClick = {
+                        haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.TextHandleMove)
+                        Toast.makeText(context, if (isEnglish) "XP: $xp - Rank: $rankTitle" else "Điểm XP: $xp - Hạng: $rankTitle", Toast.LENGTH_SHORT).show()
+                    }
+                )
+            }
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                val percent = if (totalLessons > 0) (completedLessons * 100 / totalLessons) else 0
+                ProfileCompactMetricTile(
+                    modifier = Modifier.weight(1f),
+                    title = if (isEnglish) "LESSONS" else "BÀI HỌC",
+                    value = "$completedLessons/$totalLessons",
+                    subtitle = if (isEnglish) "$percent% Mastered" else "$percent% Hoàn thành",
+                    icon = Icons.AutoMirrored.Filled.MenuBook,
+                    accentColor = Color(0xFF51FAC1),
+                    onClick = {
+                        haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.TextHandleMove)
+                        onNavigateToRoadmap()
+                    }
+                )
+                ProfileCompactMetricTile(
+                    modifier = Modifier.weight(1f),
+                    title = if (isEnglish) "COSMIC STARS" else "SAO TINH TÚ",
+                    value = "$earnedStars ⭐",
+                    subtitle = if (isEnglish) "Milestone Vault" else "Kho báu tri thức",
+                    icon = Icons.Default.Star,
+                    accentColor = Color(0xFFC68CFF),
+                    onClick = {
+                        haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.TextHandleMove)
+                        Toast.makeText(context, if (isEnglish) "Cosmic Stars: $earnedStars ⭐" else "Kho báu sao: $earnedStars sao tinh tú!", Toast.LENGTH_SHORT).show()
+                    }
+                )
+            }
+        }
+
+        // 3. Tùy Chọn Trình Độ & Cài Đặt
+        ProfileClusterHeader(
+            title = if (isEnglish) "ACCOUNT PREFERENCES" else "QUẢN LÝ TÀI KHOẢN & TRÌNH ĐỘ",
+            icon = Icons.Default.Tune,
+            color = Color(0xFFFFB703)
+        )
+        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            ProfileCompactActionCard(
+                modifier = Modifier.weight(1f),
+                title = if (isEnglish) "Learning Level" else "Trình Độ Học",
+                badgeText = if (isEnglish) "Level: $selectedLevel" else "Trình độ: $selectedLevel",
+                actionText = if (isEnglish) "Change ➔" else "Thay đổi ➔",
+                icon = Icons.Default.Tune,
+                accentColor = Color(0xFFFFB703),
+                gradientColors = listOf(Color(0xFF281F10), Color(0xFF1B152A)),
+                onClick = onOpenLevelDialog
+            )
+            ProfileCompactActionCard(
+                modifier = Modifier.weight(1f),
+                title = if (isEnglish) "Preferences" else "Cài Đặt App",
+                badgeText = if (isEnglish) "Audio & Alerts" else "Âm thanh & Nhắc nhở",
+                actionText = if (isEnglish) "Open ➔" else "Mở cài đặt ➔",
+                icon = Icons.Default.Settings,
+                accentColor = Color(0xFFC68CFF),
+                gradientColors = listOf(Color(0xFF231435), Color(0xFF131024)),
+                onClick = onOpenSettings
+            )
+        }
+
+        // 4. CHỖ ĐĂNG XUẤT TÀI KHOẢN (LOGOUT BUTTON)
+        ProfileClusterHeader(
+            title = if (isEnglish) "ACCOUNT SESSION" else "PHIÊN ĐĂNG NHẬP",
+            icon = Icons.AutoMirrored.Filled.ExitToApp,
+            color = Color(0xFFFF5F6D)
+        )
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(22.dp))
+                .background(Brush.horizontalGradient(listOf(Color(0x33FF4D6D), Color(0x223B1218))))
+                .border(1.5.dp, Color(0x66FF5F6D), RoundedCornerShape(22.dp))
+                .clickable {
+                    haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.LongPress)
+                    onLogoutClick()
+                }
+                .padding(horizontal = 18.dp, vertical = 16.dp)
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Box(
+                        modifier = Modifier
+                            .size(46.dp)
+                            .clip(CircleShape)
+                            .background(Color(0x33FF5F6D))
+                            .border(1.dp, Color(0x66FF5F6D), CircleShape),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            Icons.AutoMirrored.Filled.ExitToApp,
+                            contentDescription = "Logout",
+                            tint = Color(0xFFFF5F6D),
+                            modifier = Modifier.size(22.dp)
+                        )
+                    }
+                    Spacer(modifier = Modifier.width(14.dp))
+                    Column {
+                        Text(
+                            text = if (isEnglish) "Log Out Account" else "Đăng Xuất Tài Khoản",
+                            color = Color(0xFFFF5F6D),
+                            fontSize = 15.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Spacer(modifier = Modifier.height(2.dp))
+                        Text(
+                            text = if (isEnglish) "Safely sign out from current session" else "Thoát tài khoản an toàn & lưu tiến trình",
+                            color = Color(0xAAFFFFFF),
+                            fontSize = 11.sp
+                        )
+                    }
+                }
+                Box(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(10.dp))
+                        .background(Color(0x44FF5F6D))
+                        .padding(horizontal = 10.dp, vertical = 6.dp)
+                ) {
+                    Text(
+                        text = if (isEnglish) "Sign out" else "Đăng xuất",
+                        color = Color(0xFFFF5F6D),
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun ProfileVocabularySection(
+    vocabularyList: List<VocabularyEntity>,
+    masteredCount: Int,
+    isEnglish: Boolean,
+    onOpenFlashcards: () -> Unit,
+    onAddWord: () -> Unit,
+    onSpeakWord: (String) -> Unit,
+    onToggleMastered: (Long, Boolean) -> Unit,
+    onDeleteWord: (Long) -> Unit
+) {
+    var searchQuery by remember { mutableStateOf("") }
+    var selectedFilter by remember { mutableIntStateOf(0) } // 0: All, 1: Learning, 2: Mastered
+
+    val filteredList = remember(vocabularyList, searchQuery, selectedFilter) {
+        vocabularyList.filter { item ->
+            val matchQuery = searchQuery.isBlank() || 
+                item.word.contains(searchQuery, ignoreCase = true) || 
+                item.meaning.contains(searchQuery, ignoreCase = true)
+            val matchFilter = when (selectedFilter) {
+                1 -> !item.isMastered
+                2 -> item.isMastered
+                else -> true
+            }
+            matchQuery && matchFilter
+        }
+    }
+
+    Column(modifier = Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        // Summary & Fast Action Header Card
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(22.dp))
+                .background(Brush.verticalGradient(listOf(Color(0xFF132729), Color(0xFF0F1826))))
+                .border(1.2.dp, Color(0xFF51FAC1).copy(alpha = 0.5f), RoundedCornerShape(22.dp))
+                .padding(14.dp)
+        ) {
+            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Column {
+                        Text(
+                            text = if (isEnglish) "SAVED VOCABULARY" else "SỔ TAY TỪ VỰNG",
+                            color = Color(0xFF51FAC1),
+                            fontSize = 10.sp,
+                            fontWeight = FontWeight.Bold,
+                            letterSpacing = 1.2.sp
+                        )
+                        Text(
+                            text = if (isEnglish) "${vocabularyList.size} Words in Vault" else "${vocabularyList.size} Từ Đã Thu Thập",
+                            color = Color.White,
+                            fontSize = 18.sp,
+                            fontWeight = FontWeight.Black
+                        )
+                    }
+                    Box(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(10.dp))
+                            .background(Color(0xFF51FAC1).copy(alpha = 0.15f))
+                            .padding(horizontal = 8.dp, vertical = 4.dp)
+                    ) {
+                        Text(
+                            text = if (isEnglish) "Mastered: $masteredCount" else "Đã thuộc: $masteredCount",
+                            color = Color(0xFF51FAC1),
+                            fontSize = 10.5.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                }
+
+                // Two Primary Action Buttons
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Button(
+                        onClick = onOpenFlashcards,
+                        modifier = Modifier.weight(1f).height(44.dp),
+                        shape = RoundedCornerShape(14.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = Color(0xFF51FAC1),
+                            contentColor = Color(0xFF0D0A1A)
+                        )
+                    ) {
+                        Icon(Icons.Default.CollectionsBookmark, contentDescription = null, modifier = Modifier.size(16.dp))
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text(
+                            text = if (isEnglish) "3D Flashcards" else "Luyện Thẻ 3D",
+                            fontSize = 11.5.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                    OutlinedButton(
+                        onClick = onAddWord,
+                        modifier = Modifier.weight(0.9f).height(44.dp),
+                        shape = RoundedCornerShape(14.dp),
+                        colors = ButtonDefaults.outlinedButtonColors(
+                            contentColor = Color.White
+                        ),
+                        border = BorderStroke(1.dp, Color(0xFF51FAC1).copy(alpha = 0.6f))
+                    ) {
+                        Icon(Icons.Default.Add, contentDescription = null, tint = Color(0xFF51FAC1), modifier = Modifier.size(16.dp))
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text(
+                            text = if (isEnglish) "Add Word" else "Thêm Từ",
+                            fontSize = 11.5.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                }
+            }
+        }
+
+        // Search Bar
+        OutlinedTextField(
+            value = searchQuery,
+            onValueChange = { searchQuery = it },
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(16.dp),
+            placeholder = {
+                Text(
+                    text = if (isEnglish) "Search saved words or meaning..." else "Tìm kiếm từ hoặc nghĩa tiếng Việt...",
+                    color = Color(0x66FFFFFF),
+                    fontSize = 12.sp
+                )
+            },
+            leadingIcon = {
+                Icon(Icons.Default.Search, contentDescription = null, tint = Color(0xFF51FAC1), modifier = Modifier.size(18.dp))
+            },
+            trailingIcon = {
+                if (searchQuery.isNotEmpty()) {
+                    IconButton(onClick = { searchQuery = "" }) {
+                        Icon(Icons.Default.Clear, contentDescription = "Clear", tint = Color(0x99FFFFFF), modifier = Modifier.size(16.dp))
+                    }
+                }
+            },
+            singleLine = true,
+            colors = OutlinedTextFieldDefaults.colors(
+                focusedTextColor = Color.White,
+                unfocusedTextColor = Color.White,
+                focusedBorderColor = Color(0xFF51FAC1),
+                unfocusedBorderColor = Color(0x3351FAC1),
+                focusedContainerColor = Color(0x44141026),
+                unfocusedContainerColor = Color(0x44141026)
+            )
+        )
+
+        // Filter Chips
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(6.dp)
+        ) {
+            val filterOptions = listOf(
+                0 to (if (isEnglish) "All (${vocabularyList.size})" else "Tất cả (${vocabularyList.size})"),
+                1 to (if (isEnglish) "Learning" else "Đang học"),
+                2 to (if (isEnglish) "Mastered ($masteredCount)" else "Đã thuộc ($masteredCount)")
+            )
+            filterOptions.forEach { (index, label) ->
+                val isSelected = selectedFilter == index
+                Box(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(10.dp))
+                        .background(if (isSelected) Color(0xFF51FAC1).copy(alpha = 0.2f) else Color(0x22FFFFFF))
+                        .border(1.dp, if (isSelected) Color(0xFF51FAC1) else Color.Transparent, RoundedCornerShape(10.dp))
+                        .clickable { selectedFilter = index }
+                        .padding(horizontal = 10.dp, vertical = 5.dp)
+                ) {
+                    Text(
+                        text = label,
+                        color = if (isSelected) Color(0xFF51FAC1) else Color(0x99FFFFFF),
+                        fontSize = 11.sp,
+                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium
+                    )
+                }
+            }
+        }
+
+        // List of Words or Empty State
+        if (filteredList.isEmpty()) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(20.dp))
+                    .background(Color(0x3318122C))
+                    .border(1.dp, Color(0x22FFFFFF), RoundedCornerShape(20.dp))
+                    .padding(32.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Icon(
+                        Icons.Default.CollectionsBookmark,
+                        contentDescription = null,
+                        tint = Color(0xFF51FAC1).copy(alpha = 0.6f),
+                        modifier = Modifier.size(42.dp)
+                    )
+                    Spacer(modifier = Modifier.height(10.dp))
+                    Text(
+                        text = if (isEnglish) "No words found in this view" else "Chưa có từ vựng nào trong mục này",
+                        color = Color.White,
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = if (isEnglish) "Add new words or practice quests to save!" else "Hãy nhấn 'Thêm Từ' hoặc chạm vào từ mới trong bài học để lưu lại!",
+                        color = Color(0x99FFFFFF),
+                        fontSize = 11.5.sp,
+                        textAlign = TextAlign.Center
+                    )
+                }
+            }
+        } else {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                filteredList.forEach { item ->
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(18.dp))
+                            .background(Color(0x55191438))
+                            .border(1.dp, if (item.isMastered) Color(0x5551FAC1) else Color(0x33FFFFFF), RoundedCornerShape(18.dp))
+                            .padding(12.dp)
+                    ) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Column(modifier = Modifier.weight(1f)) {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Text(
+                                        text = item.word,
+                                        color = Color.White,
+                                        fontSize = 16.sp,
+                                        fontWeight = FontWeight.ExtraBold
+                                    )
+                                    if (item.phonetic.isNotBlank()) {
+                                        Spacer(modifier = Modifier.width(6.dp))
+                                        Text(
+                                            text = item.phonetic,
+                                            color = Color(0xFF51FAC1),
+                                            fontSize = 12.sp,
+                                            fontWeight = FontWeight.Medium
+                                        )
+                                    }
+                                }
+                                Spacer(modifier = Modifier.height(2.dp))
+                                Text(
+                                    text = item.meaning,
+                                    color = Color(0xEEFFFFFF),
+                                    fontSize = 13.sp,
+                                    fontWeight = FontWeight.Normal
+                                )
+                                if (item.example.isNotBlank()) {
+                                    Spacer(modifier = Modifier.height(2.dp))
+                                    Text(
+                                        text = "\"${item.example}\"",
+                                        color = Color(0x88FFFFFF),
+                                        fontSize = 11.sp,
+                                        fontStyle = androidx.compose.ui.text.font.FontStyle.Italic
+                                    )
+                                }
+                            }
+                            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                                IconButton(
+                                    onClick = { onSpeakWord(item.word) },
+                                    modifier = Modifier.size(36.dp)
+                                ) {
+                                    Icon(
+                                        Icons.AutoMirrored.Filled.VolumeUp,
+                                        contentDescription = "Speak",
+                                        tint = Color(0xFF51FAC1),
+                                        modifier = Modifier.size(19.dp)
+                                    )
+                                }
+                                Box(
+                                    modifier = Modifier
+                                        .clip(RoundedCornerShape(10.dp))
+                                        .background(if (item.isMastered) Color(0xFF003830) else Color(0x22FFFFFF))
+                                        .border(1.dp, if (item.isMastered) Color(0xFF51FAC1) else Color(0x44FFFFFF), RoundedCornerShape(10.dp))
+                                        .clickable { onToggleMastered(item.vocabId, !item.isMastered) }
+                                        .padding(horizontal = 8.dp, vertical = 6.dp)
+                                ) {
+                                    Text(
+                                        text = if (item.isMastered) (if (isEnglish) "Mastered" else "Đã thuộc") else (if (isEnglish) "Need Practice" else "Cần ôn"),
+                                        color = if (item.isMastered) Color(0xFF51FAC1) else Color(0xAAFFFFFF),
+                                        fontSize = 10.sp,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        Spacer(modifier = Modifier.height(6.dp))
+
+        // Cụm Ngữ Pháp & Mẫu Câu Cốt Lõi (Core Grammar & Sentence Patterns)
+        ProfileClusterHeader(
+            title = if (isEnglish) "GRAMMAR & SENTENCE PATTERNS" else "MẸO NGỮ PHÁP & CẤU TRÚC CÂU",
+            icon = Icons.AutoMirrored.Filled.MenuBook,
+            color = Color(0xFF00F5D4)
+        )
+
+        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            ProfileGrammarTipCard(
+                title = if (isEnglish) "Present Simple vs Past Simple" else "Thì Hiện Tại Đơn & Quá Khứ Đơn",
+                rule = if (isEnglish) "Present: S + V(s/es) | Past: S + V-ed / V2" else "Hiện tại: S + V(s/es) | Quá khứ: S + V-ed / V2",
+                example = if (isEnglish) "I study English every day ➔ I studied yesterday." else "Tôi học tiếng Anh mỗi ngày ➔ Hôm qua tôi đã học.",
+                tag = "Tenses",
+                accentColor = Color(0xFF51FAC1)
+            )
+            ProfileGrammarTipCard(
+                title = if (isEnglish) "Wh- Questions Formula" else "Cấu Trúc Đặt Câu Hỏi (Wh-)",
+                rule = if (isEnglish) "Wh-word + Aux (do/does/did) + S + Verb base?" else "Từ để hỏi + Trợ động từ (do/does/did) + S + V nguyên mẫu?",
+                example = if (isEnglish) "Where do you practice speaking English?" else "Bạn luyện nói tiếng Anh ở đâu?",
+                tag = "Questions",
+                accentColor = Color(0xFFFFD166)
+            )
+            ProfileGrammarTipCard(
+                title = if (isEnglish) "Prepositions of Time & Place" else "Giới Từ Thời Gian & Nơi Chốn: In - On - At",
+                rule = if (isEnglish) "IN (Month/Year/City) - ON (Day/Street) - AT (Time/Specific place)" else "IN (Tháng/Năm/Mùa) - ON (Thứ/Ngày) - AT (Giờ giấc/Địa điểm cụ thể)",
+                example = if (isEnglish) "At 8 PM, on Monday, in December." else "Vào lúc 8h tối, vào thứ Hai, vào tháng 12.",
+                tag = "Prepositions",
+                accentColor = Color(0xFFC68CFF)
+            )
+        }
+    }
+}
+
+@Composable
+private fun ProfileGrammarTipCard(
+    title: String,
+    rule: String,
+    example: String,
+    tag: String,
+    accentColor: Color
+) {
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(18.dp))
+            .background(Color(0x55191438))
+            .border(1.dp, accentColor.copy(alpha = 0.45f), RoundedCornerShape(18.dp))
+            .padding(14.dp)
+    ) {
+        Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Box(
+                        modifier = Modifier
+                            .size(7.dp)
+                            .clip(CircleShape)
+                            .background(accentColor)
+                    )
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text(
+                        text = title,
+                        color = Color.White,
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+                Box(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(6.dp))
+                        .background(accentColor.copy(alpha = 0.18f))
+                        .padding(horizontal = 6.dp, vertical = 2.dp)
+                ) {
+                    Text(
+                        text = tag,
+                        color = accentColor,
+                        fontSize = 9.5.sp,
+                        fontWeight = FontWeight.ExtraBold
+                    )
+                }
+            }
+            Text(
+                text = rule,
+                color = accentColor,
+                fontSize = 12.sp,
+                fontWeight = FontWeight.SemiBold
+            )
+            Text(
+                text = example,
+                color = Color(0xCCFFFFFF),
+                fontSize = 11.5.sp,
+                fontStyle = androidx.compose.ui.text.font.FontStyle.Italic
+            )
+        }
+    }
+}
+
+@Composable
+private fun ProfileMistakesSection(
+    weakPoints: List<WeakPointEntity>,
+    curedCount: Int,
+    isEnglish: Boolean,
+    onStartClinic: () -> Unit,
+    onResolveSingle: (Long) -> Unit
+) {
+    Column(modifier = Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        // Summary Card
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(22.dp))
+                .background(Brush.verticalGradient(listOf(Color(0xFF2E131E), Color(0xFF1B0E1E))))
+                .border(1.2.dp, Color(0xFFFF6B6B).copy(alpha = 0.5f), RoundedCornerShape(22.dp))
+                .padding(14.dp)
+        ) {
+            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Column {
+                        Text(
+                            text = if (isEnglish) "MISTAKE CLINIC" else "PHÒNG KHÁM ĐIỂM YẾU",
+                            color = Color(0xFFFF6B6B),
+                            fontSize = 10.sp,
+                            fontWeight = FontWeight.Bold,
+                            letterSpacing = 1.2.sp
+                        )
+                        Text(
+                            text = if (isEnglish) "${weakPoints.size} Mistakes to Cure" else "${weakPoints.size} Lỗi Cần Khắc Phục",
+                            color = Color.White,
+                            fontSize = 18.sp,
+                            fontWeight = FontWeight.Black
+                        )
+                    }
+                    Box(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(10.dp))
+                            .background(Color(0xFFFF6B6B).copy(alpha = 0.15f))
+                            .padding(horizontal = 8.dp, vertical = 4.dp)
+                    ) {
+                        Text(
+                            text = if (isEnglish) "Cured: $curedCount" else "Đã chữa: $curedCount",
+                            color = Color(0xFFFF6B6B),
+                            fontSize = 10.5.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                }
+
+                Button(
+                    onClick = onStartClinic,
+                    modifier = Modifier.fillMaxWidth().height(44.dp),
+                    shape = RoundedCornerShape(14.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = Color(0xFFFF6B6B),
+                        contentColor = Color.White
+                    )
+                ) {
+                    Icon(Icons.Default.Healing, contentDescription = null, modifier = Modifier.size(17.dp))
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = if (isEnglish) "Start Clinic Rehab (+XP Bonus)" else "Bắt Đầu Chữa Lỗi (+XP Thưởng)",
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+            }
+        }
+
+        // List of Weak Points or Empty State
+        if (weakPoints.isEmpty()) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(20.dp))
+                    .background(Color(0x3318122C))
+                    .border(1.dp, Color(0x3351FAC1), RoundedCornerShape(20.dp))
+                    .padding(32.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Icon(
+                        Icons.Default.CheckCircle,
+                        contentDescription = null,
+                        tint = Color(0xFF51FAC1),
+                        modifier = Modifier.size(44.dp)
+                    )
+                    Spacer(modifier = Modifier.height(10.dp))
+                    Text(
+                        text = if (isEnglish) "Zero Weak Points!" else "Tuyệt Vời! Không Có Lỗi Tồn Đọng",
+                        color = Color.White,
+                        fontSize = 15.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = if (isEnglish) "Your knowledge is sharp. Keep advancing the galactic map!" else "Kiến thức của bạn đang rất vững vàng! Tiếp tục khám phá vũ trụ nhé! 🚀",
+                        color = Color(0x99FFFFFF),
+                        fontSize = 11.5.sp,
+                        textAlign = TextAlign.Center
+                    )
+                }
+            }
+        } else {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                weakPoints.forEach { item ->
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(18.dp))
+                            .background(Color(0x55281422))
+                            .border(1.dp, Color(0x44FF6B6B), RoundedCornerShape(18.dp))
+                            .padding(14.dp)
+                    ) {
+                        Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.SpaceBetween
+                            ) {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Box(
+                                        modifier = Modifier
+                                            .size(6.dp)
+                                            .clip(CircleShape)
+                                            .background(Color(0xFFFF6B6B))
+                                    )
+                                    Spacer(modifier = Modifier.width(6.dp))
+                                    Text(
+                                        text = if (isEnglish) "Wrong ${item.wrongCount} times" else "Sai ${item.wrongCount} lần",
+                                        color = Color(0xFFFF6B6B),
+                                        fontSize = 10.5.sp,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                }
+                                Box(
+                                    modifier = Modifier
+                                        .clip(RoundedCornerShape(8.dp))
+                                        .background(Color(0xFF51FAC1).copy(alpha = 0.2f))
+                                        .clickable { onResolveSingle(item.weakId) }
+                                        .padding(horizontal = 6.dp, vertical = 3.dp)
+                                ) {
+                                    Text(
+                                        text = if (isEnglish) "Mark Fixed" else "Đã hiểu ✓",
+                                        color = Color(0xFF51FAC1),
+                                        fontSize = 9.5.sp,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                }
+                            }
+                            Text(
+                                text = item.question,
+                                color = Color.White,
+                                fontSize = 13.5.sp,
+                                fontWeight = FontWeight.SemiBold
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun ProfileAchievementsSection(
+    allBadges: List<AchievementBadge>,
+    unlockedCount: Int,
+    earnedStars: Int,
+    isEnglish: Boolean,
+    onBadgeClick: (AchievementBadge) -> Unit
+) {
+    Column(modifier = Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        // Summary Card
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(22.dp))
+                .background(Brush.verticalGradient(listOf(Color(0xFF261D10), Color(0xFF161026))))
+                .border(1.2.dp, Color(0xFFFFD166).copy(alpha = 0.5f), RoundedCornerShape(22.dp))
+                .padding(14.dp)
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Column {
+                    Text(
+                        text = if (isEnglish) "COSMIC HONORS" else "KHO BÁU DANH DỰ",
+                        color = Color(0xFFFFD166),
+                        fontSize = 10.sp,
+                        fontWeight = FontWeight.Bold,
+                        letterSpacing = 1.2.sp
+                    )
+                    Text(
+                        text = if (isEnglish) "$unlockedCount / ${allBadges.size} Badges" else "$unlockedCount / ${allBadges.size} Huy Hiệu Đã Mở",
+                        color = Color.White,
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.Black
+                    )
+                }
+                Box(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(Color(0xFFFFD166).copy(alpha = 0.2f))
+                        .padding(horizontal = 10.dp, vertical = 6.dp)
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(Icons.Default.Star, contentDescription = null, tint = Color(0xFFFFD166), modifier = Modifier.size(16.dp))
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text(
+                            text = "$earnedStars Sao",
+                            color = Color(0xFFFFD166),
+                            fontSize = 11.5.sp,
+                            fontWeight = FontWeight.ExtraBold
+                        )
+                    }
+                }
+            }
+        }
+
+        ProfileAchievements(
+            allBadges = allBadges,
+            isEnglish = isEnglish,
+            onBadgeClick = onBadgeClick
+        )
+    }
 }
 
 

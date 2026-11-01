@@ -52,7 +52,10 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import com.example.viewmodel.StudyViewModel
+import kotlinx.coroutines.launch
 
 
 @Composable
@@ -100,7 +103,7 @@ fun JourneyMapScreen(
                 earnedStars = earnedStars,
                 strings = strings
             )
-            Spacer(modifier = Modifier.height(24.dp))
+            Spacer(modifier = Modifier.height(16.dp))
 
             if (stages.isEmpty()) {
                 Box(modifier = Modifier.fillMaxWidth().height(420.dp), contentAlignment = Alignment.Center) {
@@ -202,7 +205,7 @@ private fun JourneyTopBar(
     }
 }
 
-// ─── Neon Energy Waves path + stage nodes ────────────────────────────────────
+// ─── Cosmic Planetary Path + Progressive Planet Nodes ─────────────────────────
 
 @Composable
 private fun JourneyPath(
@@ -216,14 +219,9 @@ private fun JourneyPath(
 
     val auroraAnim = rememberCosmicAuroraAnimation()
 
-    fun getStageColor(visualType: PlanetVisualType): Color {
-        return when (visualType) {
-            PlanetVisualType.CYAN -> Color(0xFF51FAC1)
-            PlanetVisualType.PURPLE -> Color(0xFF974DDA)
-            PlanetVisualType.BLUE -> Color(0xFF3887E6)
-            PlanetVisualType.ORANGE -> Color(0xFFEA7218)
-            PlanetVisualType.MASTER -> Color(0xFFC084FC)
-        }
+    fun getStageColor(index: Int): Color {
+        val planetType = CosmicPlanetHelper.getPlanetTypeForStage(index)
+        return CosmicPlanetHelper.getPlanetPrimaryColor(planetType)
     }
 
     val activeUpTo = if (currentStageIndex < 0) stages.lastIndex
@@ -233,8 +231,8 @@ private fun JourneyPath(
         modifier = Modifier.fillMaxWidth().height((stages.size * stageStep.value + 190).dp)
     ) {
         Canvas(modifier = Modifier.matchParentSize()) {
-            val nodeX = { index: Int -> if (index % 2 == 0) 72.dp.toPx() else size.width - 72.dp.toPx() }
-            val nodeY = { index: Int -> index * stageStep.toPx() + 58.dp.toPx() }
+            val nodeX = { index: Int -> if (index % 2 == 0) 78.dp.toPx() else size.width - 78.dp.toPx() }
+            val nodeY = { index: Int -> index * stageStep.toPx() + 75.dp.toPx() }
 
             if (stages.size > 1) {
                 for (s in 1..stages.lastIndex) {
@@ -242,8 +240,8 @@ private fun JourneyPath(
                     val startY = nodeY(s - 1)
                     val endX = nodeX(s)
                     val endY = nodeY(s)
-                    val startColor = getStageColor(stages[s - 1].visualType)
-                    val endColor = getStageColor(stages[s].visualType)
+                    val startColor = getStageColor(s - 1)
+                    val endColor = getStageColor(s)
 
                     val isActive = s <= activeUpTo
 
@@ -293,7 +291,7 @@ private fun JourneyPath(
     }
 }
 
-// ─── Stage row — tap reveals the smart info card ─────────────────────────────
+// ─── Stage row — Cosmic Planet node & Smart info card ─────────────────────────
 
 @Composable
 private fun JourneyStageRow(
@@ -306,21 +304,44 @@ private fun JourneyStageRow(
     onEnterChapter: () -> Unit
 ) {
     val isLeft = index % 2 == 0
+    val planetType = remember(index) { CosmicPlanetHelper.getPlanetTypeForStage(index) }
+    val planetDiameter = remember(index) { CosmicPlanetHelper.getPlanetDiameter(index) }
+    val isSaturn = planetType == CosmicPlanetType.SATURN_MONARCH
+    val isSun = planetType == CosmicPlanetType.SOLAR_SUN
+    val containerWidth = when {
+        isSaturn -> planetDiameter + 68.dp
+        isSun    -> planetDiameter + 48.dp
+        else     -> planetDiameter + 28.dp
+    }
+    val containerHeight = when {
+        isSun    -> planetDiameter + 48.dp
+        isSaturn -> planetDiameter + 38.dp
+        else     -> planetDiameter + 28.dp
+    }
 
     BoxWithConstraints(
         modifier = Modifier.fillMaxWidth().height(stageStep)
     ) {
         val arrowDirection = if (isLeft) BubbleArrowDirection.LEFT else BubbleArrowDirection.RIGHT
-        val cardWidth = (maxWidth - 105.dp).coerceAtMost(maxWidth * 0.65f)
+        val cardWidth = (maxWidth - 120.dp).coerceAtMost(maxWidth * 0.64f)
         val cardModifier = if (isLeft) {
-            Modifier.align(Alignment.TopEnd).padding(end = 10.dp, top = 8.dp).width(cardWidth)
+            Modifier.align(Alignment.TopEnd).padding(end = 12.dp, top = 8.dp).width(cardWidth)
         } else {
-            Modifier.align(Alignment.TopStart).padding(start = 10.dp, top = 8.dp).width(cardWidth)
+            Modifier.align(Alignment.TopStart).padding(start = 12.dp, top = 8.dp).width(cardWidth)
         }
+
+        // Tọa độ tâm nodeX = 78.dp, nodeY = 75.dp
+        val centerOffsetX = 78.dp - (containerWidth / 2f)
+        val centerOffsetY = 75.dp - (containerHeight / 2f)
+
         val nodeModifier = if (isLeft) {
-            Modifier.align(Alignment.TopStart).padding(start = 14.dp)
+            Modifier
+                .align(Alignment.TopStart)
+                .offset(x = centerOffsetX.coerceAtLeast(0.dp), y = centerOffsetY.coerceAtLeast(0.dp))
         } else {
-            Modifier.align(Alignment.TopEnd).padding(end = 14.dp)
+            Modifier
+                .align(Alignment.TopEnd)
+                .offset(x = (-centerOffsetX).coerceAtMost(0.dp), y = centerOffsetY.coerceAtLeast(0.dp))
         }
 
         AnimatedVisibility(
@@ -331,14 +352,16 @@ private fun JourneyStageRow(
         ) {
             JourneyStageInformationCard(
                 stage = stage,
+                index = index,
                 strings = strings,
                 arrowDirection = arrowDirection,
                 onClick = onEnterChapter
             )
         }
 
-        JourneyPlanetNode(
+        CosmicPlanetView(
             stage = stage,
+            index = index,
             modifier = nodeModifier,
             onClick = {
                 if (isSelected && stage.state != JourneyStageState.LOCKED) {
@@ -351,99 +374,20 @@ private fun JourneyStageRow(
     }
 }
 
-// ─── Planet node ─────────────────────────────────────────────────────────────
-
-@Composable
-private fun JourneyPlanetNode(
-    stage: JourneyStageUiModel,
-    modifier: Modifier,
-    onClick: () -> Unit
-) {
-    val isCurrent = stage.state == JourneyStageState.CURRENT
-    val pulse = if (isCurrent) {
-        val transition = rememberInfiniteTransition(label = "journey_planet")
-        transition.animateFloat(
-            initialValue = 0.97f,
-            targetValue = 1.03f,
-            animationSpec = infiniteRepeatable(tween(1300, easing = LinearEasing), RepeatMode.Reverse),
-            label = "journey_planet_scale"
-        ).value
-    } else 1f
-
-    val colors = when (stage.visualType) {
-        PlanetVisualType.CYAN   -> listOf(Color(0xFFB1FFF4), Color(0xFF13C7B8), Color(0xFF075A75))
-        PlanetVisualType.PURPLE -> listOf(Color(0xFFE5C1FF), Color(0xFF974DDA), Color(0xFF33145F))
-        PlanetVisualType.BLUE   -> listOf(Color(0xFFA8E0FF), Color(0xFF3887E6), Color(0xFF143B82))
-        PlanetVisualType.ORANGE -> listOf(Color(0xFFFFD28A), Color(0xFFEA7218), Color(0xFF79250F))
-        PlanetVisualType.MASTER -> listOf(Color(0xFFE5E1F4), Color(0xFF87809D), Color(0xFF39344D))
-    }
-    val accent = when (stage.state) {
-        JourneyStageState.COMPLETED -> Color(0xFFFFD166)
-        JourneyStageState.CURRENT   -> Color(0xFF51FAC1)
-        JourneyStageState.AVAILABLE -> colors.first()
-        JourneyStageState.LOCKED    -> colors[1].copy(alpha = 0.75f)
-    }
-    val locked = stage.state == JourneyStageState.LOCKED
-    val label = "${stage.sequence}. ${stage.title}. " +
-        if (locked) stage.description else "${stage.completedLessons}/${stage.totalLessons} lessons"
-
-    Box(
-        modifier = modifier
-            .size(116.dp)
-            .graphicsLayer(scaleX = pulse, scaleY = pulse)
-            .semantics { contentDescription = label }
-            .pointerInput(Unit) {
-                detectTapGestures(
-                    onTap = { onClick() }
-                )
-            },
-        contentAlignment = Alignment.Center
-    ) {
-        if (isCurrent) {
-            Box(modifier = Modifier.size(100.dp).blur(10.dp).background(Color(0x5551FAC1), CircleShape))
-        }
-        Box(
-            modifier = Modifier
-                .size(96.dp).clip(CircleShape)
-                .background(
-                    if (locked) Brush.radialGradient(listOf(colors.first().copy(alpha = 0.35f), Color(0x3314141E)))
-                    else Brush.radialGradient(colors)
-                )
-                .border(2.dp, accent.copy(alpha = if (locked) 0.55f else 0.9f), CircleShape),
-            contentAlignment = Alignment.Center
-        ) {
-            Icon(
-                imageVector = when (stage.state) {
-                    JourneyStageState.COMPLETED -> Icons.Default.Check
-                    JourneyStageState.CURRENT   -> Icons.Default.PlayArrow
-                    JourneyStageState.AVAILABLE -> Icons.AutoMirrored.Filled.ArrowForward
-                    JourneyStageState.LOCKED    -> Icons.Default.Lock
-                },
-                contentDescription = null,
-                tint = if (locked) Color(0xD9FFFFFF) else Color.White,
-                modifier = Modifier.size(34.dp)
-            )
-        }
-        if (isCurrent) {
-            Icon(
-                Icons.Default.Flag,
-                contentDescription = null,
-                tint = Color.White,
-                modifier = Modifier.align(Alignment.TopCenter).offset(y = (-12).dp).size(24.dp)
-            )
-        }
-    }
-}
-
 // ─── Info card ───────────────────────────────────────────────────────────────
 
 @Composable
 private fun JourneyStageInformationCard(
     stage: JourneyStageUiModel,
+    index: Int = 0,
     strings: AppStrings,
     arrowDirection: BubbleArrowDirection = BubbleArrowDirection.LEFT,
     onClick: () -> Unit
 ) {
+    val planetType = remember(index) { CosmicPlanetHelper.getPlanetTypeForStage(index) }
+    val planetName = remember(planetType) { CosmicPlanetHelper.getPlanetTypeName(planetType) }
+    val planetColor = remember(planetType) { CosmicPlanetHelper.getPlanetPrimaryColor(planetType) }
+
     val locked = stage.state == JourneyStageState.LOCKED
     val accent = when (stage.state) {
         JourneyStageState.COMPLETED -> Color(0xFFFFD166)
@@ -469,7 +413,7 @@ private fun JourneyStageInformationCard(
 
     Box(
         modifier = Modifier
-            .height(162.dp)
+            .height(174.dp)
             .clip(bubbleShape)
             .background(Color(0xF2100E24))
             .border(
@@ -494,16 +438,25 @@ private fun JourneyStageInformationCard(
                     Text("${stage.sequence}", color = Color(0xFF11101B), fontSize = 11.sp, fontWeight = FontWeight.ExtraBold)
                 }
                 Spacer(modifier = Modifier.width(8.dp))
-                Text(
-                    stage.title,
-                    color = Color.White,
-                    fontSize = 13.sp,
-                    fontWeight = FontWeight.ExtraBold,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        stage.title,
+                        color = Color.White,
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.ExtraBold,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                    Text(
+                        text = "🪐 Cấp ${index + 1} • $planetName",
+                        color = planetColor,
+                        fontSize = 9.5.sp,
+                        fontWeight = FontWeight.Bold,
+                        maxLines = 1
+                    )
+                }
             }
-            Spacer(modifier = Modifier.height(6.dp))
+            Spacer(modifier = Modifier.height(4.dp))
             Text(
                 stage.description,
                 color = Color(0xCCFFFFFF),
