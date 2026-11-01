@@ -18,6 +18,7 @@ import okhttp3.RequestBody.Companion.toRequestBody
 import java.util.concurrent.TimeUnit
 import org.json.JSONObject
 import org.json.JSONArray
+import com.example.KikiExplorerSection
 import com.example.model.AchievementBadge
 import com.example.model.AchievementRegistry
 import com.example.model.BadgeId
@@ -82,6 +83,10 @@ class StudyViewModel @Inject constructor(
     private val _isEnglish = MutableLiveData(false)
     val isEnglish: LiveData<Boolean> = _isEnglish
     fun setEnglish(isEnglish: Boolean) { _isEnglish.value = isEnglish }
+
+    private val _kikiExplorerSection = MutableLiveData(KikiExplorerSection.HUB)
+    val kikiExplorerSection: LiveData<KikiExplorerSection> = _kikiExplorerSection
+    fun setKikiExplorerSection(section: KikiExplorerSection) { _kikiExplorerSection.value = section }
 
     private val _batterySaver = MutableLiveData(prefs.getBoolean("battery_saver_mode", false))
     val batterySaver: LiveData<Boolean> = _batterySaver

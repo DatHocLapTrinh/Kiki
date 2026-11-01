@@ -45,11 +45,12 @@ object JourneyStageMapper {
                 totalLessons = LESSONS_PER_STAGE,
                 progress = (completedLessons.toFloat() / LESSONS_PER_STAGE).coerceIn(0f, 1f),
                 state = state,
-                visualType = when (index % 5) {
+                visualType = when (index % 6) {
                     0 -> PlanetVisualType.CYAN
                     1 -> PlanetVisualType.PURPLE
                     2 -> PlanetVisualType.BLUE
                     3 -> PlanetVisualType.ORANGE
+                    4 -> PlanetVisualType.PURPLE
                     else -> PlanetVisualType.MASTER
                 },
                 destinationId = title,
