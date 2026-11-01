@@ -1164,6 +1164,12 @@ fun QuestScreen(viewModel: StudyViewModel, onFinish: () -> Unit) {
                     TextButton(
                         onClick = {
                             showExitDialog = false
+                            // Ghi nhận trạng thái từ bỏ bài làm: kết quả chưa đạt yêu cầu
+                            val abandonedResults = questions.mapIndexed { index, q ->
+                                val userAns = userAnswers[index] ?: -1
+                                q.copy(selectedIndex = userAns)
+                            }
+                            viewModel.recordAbandonedQuest(abandonedResults)
                             onFinish()
                         }
                     ) {

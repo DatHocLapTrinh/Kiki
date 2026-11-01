@@ -618,6 +618,16 @@ class StudyViewModel @Inject constructor(
     private val _questAnalysis = MutableLiveData<String?>(null)
     val questAnalysis: LiveData<String?> = _questAnalysis
 
+    fun recordAbandonedQuest(results: List<QuestItem>) {
+        _lastQuestResults.value = results
+        val isEng = _isEnglish.value ?: false
+        _questAnalysis.value = if (isEng) {
+            "• Lesson paused or abandoned.\n• Accuracy: 0%\n• Recommendation: Do not be discouraged! Practice makes perfect. Try again to conquer this level!"
+        } else {
+            "• Bài học đã dừng hoặc từ bỏ giữa chừng.\n• Độ chính xác: 0%\n• Lời khuyên: Đừng nản lòng nhé! Sai sót là cách học nhanh nhất. Hãy luyện lại để vượt qua chặng này!"
+        }
+    }
+
     fun analyzeQuestResults(context: Context, results: List<QuestItem>) {
         _lastQuestResults.value = results
 

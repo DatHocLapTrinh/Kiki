@@ -31,18 +31,20 @@ object KikiAnimationUrls {
     const val SAD = "https://github.com/dungpham280306nd-dot/BPS_asm1/releases/download/v3.0/buon.gif"
 
     /**
-     * Ánh xạ trạng thái cảm xúc MascotEmotion sang Animation URL tương ứng
+     * Ánh xạ trạng thái cảm xúc MascotEmotion sang Animation URL tương ứng.
+     * Lưu ý: MascotEmotion.IDLE và PETTED trong lúc học trả về null để giữ ảnh tĩnh mặc định.
+     * Chỉ ở tab khởi động (IntroScreen) hoặc tương tác chào trực tiếp mới phát hoạt ảnh GREETING.
      */
-    fun getAnimationUrl(emotion: MascotEmotion): String {
+    fun getAnimationUrl(emotion: MascotEmotion): String? {
         return when (emotion) {
             MascotEmotion.GREETING -> GREETING
             MascotEmotion.THINKING -> READING_QUESTION
             MascotEmotion.CHEER -> CLAP_NORMAL
             MascotEmotion.STREAK -> CLAP_STREAK
             MascotEmotion.EMPATHY -> SAD
-            MascotEmotion.PETTED -> GREETING
-            MascotEmotion.IDLE -> GREETING
-            MascotEmotion.LISTENING -> READING_QUESTION
+            MascotEmotion.PETTED -> null
+            MascotEmotion.IDLE -> null
+            MascotEmotion.LISTENING -> null
         }
     }
 }

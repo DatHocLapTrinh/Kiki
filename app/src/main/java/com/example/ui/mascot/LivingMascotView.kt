@@ -1,37 +1,35 @@
 package com.example.ui.mascot
 
-import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.rotate
-import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
+import coil.request.ImageRequest
 import com.example.R
+import com.example.model.KikiAnimationUrls
 import com.example.model.MascotEmotion
 
-import androidx.compose.ui.platform.LocalContext
-import coil.request.ImageRequest
-import com.example.model.KikiAnimationUrls
-
+/**
+ * LivingMascotView: Khung hiển thị linh vật Kiki sống động.
+ * Kích thước cố định 100%, không giật phóng to, không xoay lắc tròn.
+ * Bong bóng đứng im hoàn toàn, chuyển động mượt mà bằng hoạt ảnh GIF.
+ */
 @Composable
 fun LivingMascotView(
     emotion: MascotEmotion,
@@ -44,154 +42,55 @@ fun LivingMascotView(
     val context = LocalContext.current
     val haptic = LocalHapticFeedback.current
 
-    // 1. Nhịp thở tự nhiên (Idle Breathing)
-    val infiniteTransition = rememberInfiniteTransition(label = "LivingMascotInfinite")
-    val idleBreathY by infiniteTransition.animateFloat(
-        initialValue = 1.0f,
-        targetValue = 1.035f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(1600, easing = FastOutSlowInEasing),
-            repeatMode = RepeatMode.Reverse
-        ),
-        label = "IdleBreath"
-    )
-
-    // 2. Chuyển động vật lý nén & giãn (Squash & Stretch)
-    var isSquashing by remember { mutableStateOf(false) }
-
-    LaunchedEffect(emotion) {
-        if (emotion == MascotEmotion.CHEER || emotion == MascotEmotion.PETTED || emotion == MascotEmotion.STREAK || emotion == MascotEmotion.GREETING) {
-            isSquashing = true
-            kotlinx.coroutines.delay(140)
-            isSquashing = false
-        }
-    }
-
-    val targetScaleX = when (emotion) {
-        MascotEmotion.GREETING -> if (isSquashing) 1.15f else 1.03f
-        MascotEmotion.CHEER -> if (isSquashing) 1.25f else 1.05f
-        MascotEmotion.STREAK -> if (isSquashing) 1.2f else 1.08f
-        MascotEmotion.EMPATHY -> 1.03f
-        MascotEmotion.THINKING -> 0.98f
-        MascotEmotion.PETTED -> if (isSquashing) 1.22f else 1.05f
-        MascotEmotion.LISTENING -> 1.02f
-        MascotEmotion.IDLE -> 1.0f
-    }
-
-    val targetScaleY = when (emotion) {
-        MascotEmotion.GREETING -> if (isSquashing) 0.88f else 1.08f
-        MascotEmotion.CHEER -> if (isSquashing) 0.80f else 1.15f
-        MascotEmotion.STREAK -> if (isSquashing) 0.85f else 1.12f
-        MascotEmotion.EMPATHY -> 0.94f
-        MascotEmotion.THINKING -> 1.0f
-        MascotEmotion.PETTED -> if (isSquashing) 0.82f else 1.12f
-        MascotEmotion.LISTENING -> 1.02f
-        MascotEmotion.IDLE -> idleBreathY
-    }
-
-    val animScaleX by animateFloatAsState(
-        targetValue = targetScaleX,
-        animationSpec = spring(
-            dampingRatio = Spring.DampingRatioMediumBouncy,
-            stiffness = Spring.StiffnessLow
-        ),
-        label = "SquashX"
-    )
-
-    val animScaleY by animateFloatAsState(
-        targetValue = targetScaleY,
-        animationSpec = spring(
-            dampingRatio = Spring.DampingRatioMediumBouncy,
-            stiffness = Spring.StiffnessLow
-        ),
-        label = "StretchY"
-    )
-
-    // 3. Góc xoay cơ thể (Tilt & Wiggle)
-    val targetRotation = when (emotion) {
-        MascotEmotion.GREETING -> 6f
-        MascotEmotion.THINKING -> 10f
-        MascotEmotion.CHEER -> -8f
-        MascotEmotion.EMPATHY -> -5f
-        MascotEmotion.PETTED -> 8f
-        MascotEmotion.LISTENING -> 4f
-        else -> 0f
-    }
-
-    val animRotation by animateFloatAsState(
-        targetValue = targetRotation,
-        animationSpec = spring(
-            dampingRatio = Spring.DampingRatioMediumBouncy,
-            stiffness = Spring.StiffnessMedium
-        ),
-        label = "MascotRotation"
-    )
-
-    // 4. Hào quang tỏa sáng (Aura Glow Colors)
+    // Hào quang tỏa sáng dịu nhẹ (Aura Glow cố định, đứng im)
     val auraBrush = remember(emotion) {
         when (emotion) {
             MascotEmotion.GREETING -> Brush.radialGradient(
-                listOf(Color(0xFFFFD166).copy(alpha = 0.7f), Color(0xFF00F5D4).copy(alpha = 0.4f), Color.Transparent)
+                listOf(Color(0xFFFFD166).copy(alpha = 0.5f), Color(0xFF00F5D4).copy(alpha = 0.25f), Color.Transparent)
             )
             MascotEmotion.STREAK -> Brush.radialGradient(
-                listOf(Color(0xFFFF3D00), Color(0xFFFF9100), Color(0xFFFFD600).copy(alpha = 0.3f), Color.Transparent)
+                listOf(Color(0xFFFF3D00).copy(alpha = 0.6f), Color(0xFFFF9100).copy(alpha = 0.35f), Color.Transparent)
             )
             MascotEmotion.CHEER -> Brush.radialGradient(
-                listOf(Color(0xFFFFD700), Color(0xFF51FAC1), Color.Transparent)
+                listOf(Color(0xFFFFD700).copy(alpha = 0.5f), Color(0xFF51FAC1).copy(alpha = 0.25f), Color.Transparent)
             )
             MascotEmotion.PETTED -> Brush.radialGradient(
-                listOf(Color(0xFFFF4081), Color(0xFFFF80AB), Color.Transparent)
+                listOf(Color(0xFFFF4081).copy(alpha = 0.5f), Color(0xFFFF80AB).copy(alpha = 0.25f), Color.Transparent)
             )
             MascotEmotion.LISTENING -> Brush.radialGradient(
-                listOf(Color(0xFF00E5FF), Color(0xFF00B0FF), Color.Transparent)
+                listOf(Color(0xFF00E5FF).copy(alpha = 0.5f), Color(0xFF00B0FF).copy(alpha = 0.25f), Color.Transparent)
             )
             MascotEmotion.EMPATHY -> Brush.radialGradient(
-                listOf(Color(0xFF64B5F6), Color(0xFF81C784), Color.Transparent)
+                listOf(Color(0xFFFF6B6B).copy(alpha = 0.5f), Color(0xFF81C784).copy(alpha = 0.25f), Color.Transparent)
             )
             MascotEmotion.THINKING -> Brush.radialGradient(
-                listOf(Color(0xFFFFEE58), Color(0xFFFFCA28), Color.Transparent)
+                listOf(Color(0xFFFFEE58).copy(alpha = 0.5f), Color(0xFFFFCA28).copy(alpha = 0.25f), Color.Transparent)
             )
             MascotEmotion.IDLE -> Brush.radialGradient(
-                listOf(Color(0xFF51FAC1).copy(alpha = 0.6f), Color(0xFF006C4F).copy(alpha = 0.2f), Color.Transparent)
+                listOf(Color(0xFF51FAC1).copy(alpha = 0.3f), Color.Transparent)
             )
         }
-    }
-
-    // 5. Emote Badge biểu tượng
-    val emoteBadge = when (emotion) {
-        MascotEmotion.GREETING -> "👋"
-        MascotEmotion.CHEER -> "⭐"
-        MascotEmotion.STREAK -> "🔥"
-        MascotEmotion.EMPATHY -> "💖"
-        MascotEmotion.THINKING -> "💡"
-        MascotEmotion.LISTENING -> "🎧"
-        MascotEmotion.PETTED -> "🥰"
-        MascotEmotion.IDLE -> "🐾"
-    }
-
-    val emoteBadgeBg = when (emotion) {
-        MascotEmotion.GREETING -> Color(0xFF00F5D4)
-        MascotEmotion.STREAK -> Color(0xFFFF5722)
-        MascotEmotion.CHEER -> Color(0xFFFFB300)
-        MascotEmotion.PETTED -> Color(0xFFE91E63)
-        MascotEmotion.LISTENING -> Color(0xFF00B0FF)
-        MascotEmotion.THINKING -> Color(0xFFFFC107)
-        MascotEmotion.EMPATHY -> Color(0xFF4CAF50)
-        MascotEmotion.IDLE -> Color(0xFF27E0A9)
     }
 
     val gifUrl = remember(emotion) { KikiAnimationUrls.getAnimationUrl(emotion) }
-    val imageRequest = remember(gifUrl) {
-        ImageRequest.Builder(context)
-            .data(gifUrl)
-            .crossfade(true)
-            .placeholder(avatarRes)
-            .error(avatarRes)
-            .build()
+    val imageRequest = remember(gifUrl, avatarRes) {
+        if (gifUrl != null) {
+            ImageRequest.Builder(context)
+                .data(gifUrl)
+                .crossfade(true)
+                .placeholder(avatarRes)
+                .error(avatarRes)
+                .build()
+        } else {
+            ImageRequest.Builder(context)
+                .data(avatarRes)
+                .crossfade(true)
+                .build()
+        }
     }
 
     if (isFullBody) {
-        // --- Hiển thị toàn thân nhân vật Kiki với tỉ lệ dọc 9:16 ---
+        // --- Hiển thị toàn thân nhân vật Kiki với tỉ lệ dọc 9:16 (kích thước cố định 100%, không phóng to, không xoay) ---
         Box(
             modifier = modifier
                 .clickable(
@@ -203,36 +102,27 @@ fun LivingMascotView(
                 },
             contentAlignment = Alignment.Center
         ) {
-            // Hào quang tỏa sáng phát quang (Full body Aura Glow)
+            // Hào quang đứng im tĩnh lặng phía sau
             Box(
                 modifier = Modifier
                     .fillMaxSize(0.85f)
-                    .scale(if (emotion == MascotEmotion.STREAK) 1.2f else 1.05f)
                     .background(auraBrush, CircleShape)
-                    .blur(36.dp)
+                    .blur(28.dp)
             )
 
-            // Khung hình linh vật Kiki toàn thân với biến dạng Squash & Stretch
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .scale(scaleX = animScaleX, scaleY = animScaleY)
-                    .rotate(animRotation),
-                contentAlignment = Alignment.Center
-            ) {
-                AsyncImage(
-                    model = imageRequest,
-                    contentDescription = "Living Kiki Mascot Full Body",
-                    contentScale = ContentScale.Fit,
-                    modifier = Modifier.fillMaxSize()
-                )
-            }
+            // Nhân vật Kiki toàn thân giữ nguyên kích cỡ 100%, đứng im tuyệt đối, chuyển động mượt bằng frame GIF
+            AsyncImage(
+                model = imageRequest,
+                contentDescription = "Living Kiki Mascot Full Body",
+                contentScale = ContentScale.Fit,
+                modifier = Modifier.fillMaxSize()
+            )
         }
     } else {
-        // --- Hiển thị Avatar tròn nhỏ (cho Top bar, thanh tiến độ...) ---
+        // --- Hiển thị Avatar tròn nhỏ (Bong bóng đứng im hoàn toàn, kích thước cố định) ---
         Box(
             modifier = modifier
-                .size(size + 36.dp) // Dành không gian cho Aura và Particles
+                .size(size)
                 .clickable(
                     interactionSource = remember { MutableInteractionSource() },
                     indication = null
@@ -242,70 +132,38 @@ fun LivingMascotView(
                 },
             contentAlignment = Alignment.Center
         ) {
-            // Lớp hiệu ứng hạt Canvas (Mascot Particle Canvas)
-            MascotParticleCanvas(
-                emotion = emotion,
-                modifier = Modifier.fillMaxSize()
-            )
-
-            // Hào quang tỏa sáng phát quang (Aura Glow)
+            // Hào quang dịu nhẹ quanh viền bong bóng
             Box(
                 modifier = Modifier
-                    .size(size + 14.dp)
-                    .scale(if (emotion == MascotEmotion.STREAK) 1.25f else 1.12f)
+                    .fillMaxSize()
                     .background(auraBrush, CircleShape)
-                    .blur(10.dp)
+                    .blur(6.dp)
             )
 
-            // Khung hình linh vật Kiki với biến dạng Squash & Stretch
-            Box(
+            // Ảnh đại diện Kiki bên trong bong bóng đứng im, không xoay tròn, không co giãn
+            AsyncImage(
+                model = imageRequest,
+                contentDescription = "Living Kiki Mascot",
+                contentScale = ContentScale.Crop,
+                alignment = Alignment.TopCenter,
                 modifier = Modifier
-                    .size(size)
-                    .scale(scaleX = animScaleX, scaleY = animScaleY)
-                    .rotate(animRotation),
-                contentAlignment = Alignment.Center
-            ) {
-                // Ảnh đại diện Kiki (lấy phần thân trên khuôn mặt)
-                AsyncImage(
-                    model = imageRequest,
-                    contentDescription = "Living Kiki Mascot",
-                    contentScale = ContentScale.Crop,
-                    alignment = Alignment.TopCenter,
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .clip(CircleShape)
-                        .border(
-                            width = 2.dp,
-                            color = when (emotion) {
-                                MascotEmotion.GREETING -> Color(0xFF00F5D4)
-                                MascotEmotion.STREAK -> Color(0xFFFFD600)
-                                MascotEmotion.CHEER -> Color(0xFF51FAC1)
-                                MascotEmotion.PETTED -> Color(0xFFFF80AB)
-                                MascotEmotion.LISTENING -> Color(0xFF00E5FF)
-                                else -> Color(0x55FFFFFF)
-                            },
-                            shape = CircleShape
-                        )
-                )
-
-                // Emote Badge nổi bật ở góc phải trên (Floating Emote Badge)
-                Box(
-                    modifier = Modifier
-                        .align(Alignment.TopEnd)
-                        .offset(x = 4.dp, y = (-2).dp)
-                        .size(20.dp)
-                        .clip(CircleShape)
-                        .background(emoteBadgeBg)
-                        .border(1.5.dp, Color(0xFF0A0A12), CircleShape),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = emoteBadge,
-                        fontSize = 11.sp,
-                        lineHeight = 11.sp
+                    .fillMaxSize()
+                    .clip(CircleShape)
+                    .border(
+                        width = 1.5.dp,
+                        color = when (emotion) {
+                            MascotEmotion.GREETING -> Color(0xFF00F5D4)
+                            MascotEmotion.STREAK -> Color(0xFFFFD600)
+                            MascotEmotion.CHEER -> Color(0xFF51FAC1)
+                            MascotEmotion.PETTED -> Color(0xFFFF80AB)
+                            MascotEmotion.LISTENING -> Color(0xFF00E5FF)
+                            MascotEmotion.EMPATHY -> Color(0xFFFF6B6B)
+                            MascotEmotion.THINKING -> Color(0xFFFFCA28)
+                            else -> Color(0x6651FAC1)
+                        },
+                        shape = CircleShape
                     )
-                }
-            }
+            )
         }
     }
 }
