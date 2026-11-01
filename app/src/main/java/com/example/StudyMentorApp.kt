@@ -954,11 +954,14 @@ fun MainNavigation(viewModel: StudyViewModel, onLogout: () -> Unit) {
             composable("quest_review") { QuestReviewScreen(viewModel, onBack = { navController.popBackStack() }) }
             composable("quests") { QuestsScreen(viewModel) }
             composable("ask") { AskScreen(viewModel) }
+            composable("rank") { RankScreen(viewModel) }
+            composable("shop") { ShopScreen(viewModel) }
             composable("profile") { 
                 ProfileScreen(
                     viewModel = viewModel, 
                     onLogout = onLogout,
-                    onNavigateToRoadmap = { navController.navigate("progression_map") }
+                    onNavigateToRoadmap = { navController.navigate("progression_map") },
+                    onNavigateToShop = { navController.navigate("shop") }
                 ) 
             }
         }
@@ -1011,6 +1014,7 @@ fun FloatingNavBar(
     ) {
         NavItem("map", Icons.Default.Map, strings.navMap, currentRoute, navController)
         NavItem("quests", Icons.Default.TaskAlt, strings.navLearn, currentRoute, navController)
+        NavItem("shop", Icons.Default.Store, strings.navShop, currentRoute, navController)
         NavItem("ask", Icons.Default.ChatBubbleOutline, strings.navTutor, currentRoute, navController)
         NavItem("rank", Icons.Default.EmojiEvents, strings.navRank, currentRoute, navController)
         NavItem(

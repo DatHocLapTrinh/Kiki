@@ -1079,7 +1079,7 @@ fun StepGlassCard(
                         }
                         Spacer(modifier = Modifier.width(8.dp))
                         IconButton(onClick = onSpeak, modifier = Modifier.size(26.dp)) {
-                            Icon(Icons.Default.VolumeUp, contentDescription = "Pronounce", tint = Color(0xFF51FAC1), modifier = Modifier.size(16.dp))
+                            Icon(Icons.AutoMirrored.Filled.VolumeUp, contentDescription = "Pronounce", tint = Color(0xFF51FAC1), modifier = Modifier.size(16.dp))
                         }
                     }
                 }
