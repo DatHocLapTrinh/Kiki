@@ -259,7 +259,7 @@ class StudyViewModel @Inject constructor(
             val f = BuildConfig::class.java.getField("GEMINI_API_KEY")
             f.get(null) as? String ?: ""
         } catch (_: Exception) { "" }
-        if (envGemini.isNotBlank() && !envGemini.contains("your_") && !envGemini.contains("here")) {
+        if (envGemini.isNotBlank() && !envGemini.contains("your_") && !envGemini.contains("here") && (envGemini.startsWith("AIza") || envGemini.startsWith("AQ."))) {
             return envGemini.trim()
         }
 
@@ -1316,52 +1316,10 @@ class StudyViewModel @Inject constructor(
                     cleanQuestion
                 }
 
-                if (imageUri != null) {
-                    answer = fetchAnswerFromAI(context, question, imageUri)
-                } else if (getEffectiveActiveProvider() == PROVIDER_GEMINI) {
-                    // Trực tiếp dùng Gemini 2.5 Flash Native Audio Dialog để tối ưu tốc độ và độ chính xác
-                    answer = fetchAnswerFromGemini(context, promptForAi, null)
-                    if (answer.startsWith("Lỗi kết nối") || answer.startsWith("⚠️")) {
-                        try {
-                            val token = authManager.getIdToken() ?: "mock_dev_token_kiki_explorer"
-                            val weakPoints = _weakPoints.value?.take(5)?.map { it.question } ?: emptyList()
-                            val request = MentorChatRequest(
-                                message = promptForAi,
-                                userLevel = _selectedLevel.value ?: "Intermediate",
-                                currentChapter = _currentChapterTitle.value ?: "English Fundamentals",
-                                recentWeakPoints = weakPoints
-                            )
-                            val response = backendApiService.mentorChat("Bearer $token", request)
-                            if (response.isSuccessful && response.body() != null) {
-                                val body = response.body()!!
-                                answer = body.reply
-                                grammarTip = body.grammarTip
-                                vocabularies = body.detectedVocabularies
-                            }
-                        } catch (_: Exception) {}
-                    }
+                answer = if (imageUri != null) {
+                    fetchAnswerFromAI(context, question, imageUri)
                 } else {
-                    try {
-                        val token = authManager.getIdToken() ?: "mock_dev_token_kiki_explorer"
-                        val weakPoints = _weakPoints.value?.take(5)?.map { it.question } ?: emptyList()
-                        val request = MentorChatRequest(
-                            message = promptForAi,
-                            userLevel = _selectedLevel.value ?: "Intermediate",
-                            currentChapter = _currentChapterTitle.value ?: "English Fundamentals",
-                            recentWeakPoints = weakPoints
-                        )
-                        val response = backendApiService.mentorChat("Bearer $token", request)
-                        if (response.isSuccessful && response.body() != null) {
-                            val body = response.body()!!
-                            answer = body.reply
-                            grammarTip = body.grammarTip
-                            vocabularies = body.detectedVocabularies
-                        } else {
-                            answer = fetchAnswerFromAI(context, promptForAi, null)
-                        }
-                    } catch (e: Exception) {
-                        answer = fetchAnswerFromAI(context, promptForAi, null)
-                    }
+                    fetchAnswerFromAI(context, promptForAi, null)
                 }
                 answer = sanitizeAiMentorReply(answer)
                 if (grammarTip != null) {
