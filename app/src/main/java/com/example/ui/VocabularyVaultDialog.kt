@@ -1454,7 +1454,7 @@ private fun EmptyVaultState(isEnglish: Boolean, onAddClick: () -> Unit) {
 }
 
 @Composable
-private fun AddWordDialog(
+internal fun AddWordDialog(
     isEnglish: Boolean,
     viewModel: StudyViewModel,
     onDismiss: () -> Unit,
