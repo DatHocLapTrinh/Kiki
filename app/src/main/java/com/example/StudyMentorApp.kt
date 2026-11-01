@@ -655,13 +655,18 @@ fun MainNavigation(viewModel: StudyViewModel, onLogout: () -> Unit) {
             composable("quest_review") { QuestReviewScreen(viewModel, onBack = { navController.popBackStack() }) }
             composable("quests") { QuestsScreen(viewModel) }
             composable("ask") { AskScreen(viewModel) }
-            composable("rank") { RankScreen(viewModel) }
-            composable("profile") { ProfileScreen(viewModel, onLogout = onLogout) }
-            composable("shop") { ShopScreen(viewModel) }
+            composable("profile") { 
+                ProfileScreen(
+                    viewModel = viewModel, 
+                    onLogout = onLogout,
+                    onNavigateToRoadmap = { navController.navigate("progression_map") }
+                ) 
+            }
         }
 
         FloatingNavBar(
             navController = navController,
+            viewModel = viewModel,
             modifier = Modifier
                 .align(Alignment.BottomCenter)
                 .navigationBarsPadding()
@@ -672,7 +677,11 @@ fun MainNavigation(viewModel: StudyViewModel, onLogout: () -> Unit) {
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-fun FloatingNavBar(navController: androidx.navigation.NavHostController, modifier: Modifier = Modifier) {
+fun FloatingNavBar(
+    navController: androidx.navigation.NavHostController,
+    viewModel: StudyViewModel? = null,
+    modifier: Modifier = Modifier
+) {
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
     val strings = LocalAppStrings.current
@@ -703,10 +712,18 @@ fun FloatingNavBar(navController: androidx.navigation.NavHostController, modifie
     ) {
         NavItem("map", Icons.Default.Map, strings.navMap, currentRoute, navController)
         NavItem("quests", Icons.Default.TaskAlt, strings.navLearn, currentRoute, navController)
-        NavItem("shop", Icons.Default.Store, strings.navShop, currentRoute, navController)
         NavItem("ask", Icons.Default.ChatBubbleOutline, strings.navTutor, currentRoute, navController)
         NavItem("rank", Icons.Default.EmojiEvents, strings.navRank, currentRoute, navController)
-        NavItem("profile", Icons.Default.Person, strings.navProfile, currentRoute, navController)
+        NavItem(
+            route = "profile",
+            icon = Icons.Default.Menu,
+            label = strings.navMenu,
+            currentRoute = currentRoute,
+            navController = navController,
+            onClickExtra = {
+                viewModel?.setKikiExplorerSection(KikiExplorerSection.HUB)
+            }
+        )
     }
 }
 
@@ -716,7 +733,8 @@ fun NavItem(
     icon: ImageVector,
     label: String,
     currentRoute: String?,
-    navController: androidx.navigation.NavHostController
+    navController: androidx.navigation.NavHostController,
+    onClickExtra: (() -> Unit)? = null
 ) {
     val isSelected = currentRoute == route
     val haptic = LocalHapticFeedback.current
@@ -739,6 +757,7 @@ fun NavItem(
             )
             .clickable {
                 haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                onClickExtra?.invoke()
                 navController.navigate(route) {
                     popUpTo(navController.graph.startDestinationId) { saveState = true }
                     launchSingleTop = true
