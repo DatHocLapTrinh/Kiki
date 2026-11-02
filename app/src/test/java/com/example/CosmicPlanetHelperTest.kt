@@ -8,48 +8,38 @@ import org.junit.Test
 class CosmicPlanetHelperTest {
 
     @Test
-    fun `planet diameters strictly progress from smallest to largest in each cycle`() {
-        val d0 = CosmicPlanetHelper.getPlanetDiameter(0)
-        val d1 = CosmicPlanetHelper.getPlanetDiameter(1)
-        val d2 = CosmicPlanetHelper.getPlanetDiameter(2)
-        val d3 = CosmicPlanetHelper.getPlanetDiameter(3)
-        val d4 = CosmicPlanetHelper.getPlanetDiameter(4)
-        val d5 = CosmicPlanetHelper.getPlanetDiameter(5)
-        val d6 = CosmicPlanetHelper.getPlanetDiameter(6)
-        val d7 = CosmicPlanetHelper.getPlanetDiameter(7)
+    fun `planet diameters are properly assigned in cosmic stages`() {
+        assertEquals(70.dp, CosmicPlanetHelper.getPlanetDiameter(0))  // Sao Thủy
+        assertEquals(78.dp, CosmicPlanetHelper.getPlanetDiameter(1))  // Sao Kim
+        assertEquals(84.dp, CosmicPlanetHelper.getPlanetDiameter(2))  // Trái Đất
+        assertEquals(74.dp, CosmicPlanetHelper.getPlanetDiameter(3))  // Mặt Trăng
+        assertEquals(88.dp, CosmicPlanetHelper.getPlanetDiameter(4))  // Sao Hỏa
+        assertEquals(106.dp, CosmicPlanetHelper.getPlanetDiameter(5)) // Sao Mộc
+        assertEquals(96.dp, CosmicPlanetHelper.getPlanetDiameter(6))  // Sao Thổ
+        assertEquals(110.dp, CosmicPlanetHelper.getPlanetDiameter(7)) // Sao Thiên Vương
+        assertEquals(118.dp, CosmicPlanetHelper.getPlanetDiameter(8)) // Sao Hải Vương
+        assertEquals(134.dp, CosmicPlanetHelper.getPlanetDiameter(9)) // Mặt Trời
 
-        assertEquals(74.dp, d0)
-        assertEquals(80.dp, d1)
-        assertEquals(88.dp, d2)
-        assertEquals(96.dp, d3)
-        assertEquals(104.dp, d4)
-        assertEquals(112.dp, d5)
-        assertEquals(120.dp, d6)
-        assertEquals(132.dp, d7)
-
-        assertTrue("Stage 0 < Stage 1", d0.value < d1.value)
-        assertTrue("Stage 1 < Stage 2", d1.value < d2.value)
-        assertTrue("Stage 2 < Stage 3", d2.value < d3.value)
-        assertTrue("Stage 3 < Stage 4", d3.value < d4.value)
-        assertTrue("Stage 4 < Stage 5", d4.value < d5.value)
-        assertTrue("Stage 5 < Stage 6", d5.value < d6.value)
-        assertTrue("Stage 6 < Stage 7", d6.value < d7.value)
+        // Final stage override always gives apex size
+        assertEquals(134.dp, CosmicPlanetHelper.getPlanetDiameter(4, totalStages = 5))
     }
 
     @Test
-    fun `planet types map correctly through cosmic stages`() {
-        assertEquals(CosmicPlanetType.TERRA_GAIA, CosmicPlanetHelper.getPlanetTypeForStage(0))
-        assertEquals(CosmicPlanetType.MOON_GRAY, CosmicPlanetHelper.getPlanetTypeForStage(1))
-        assertEquals(CosmicPlanetType.SATURN_MONARCH, CosmicPlanetHelper.getPlanetTypeForStage(2))
-        assertEquals(CosmicPlanetType.JUPITER_STORM, CosmicPlanetHelper.getPlanetTypeForStage(3))
+    fun `planet types map correctly through cosmic stages in solar system order`() {
+        assertEquals(CosmicPlanetType.MERCURY_ROCK, CosmicPlanetHelper.getPlanetTypeForStage(0))
+        assertEquals(CosmicPlanetType.VENUS_SULFUR, CosmicPlanetHelper.getPlanetTypeForStage(1))
+        assertEquals(CosmicPlanetType.TERRA_GAIA, CosmicPlanetHelper.getPlanetTypeForStage(2))
+        assertEquals(CosmicPlanetType.MOON_GRAY, CosmicPlanetHelper.getPlanetTypeForStage(3))
         assertEquals(CosmicPlanetType.MARS_CRIMSON, CosmicPlanetHelper.getPlanetTypeForStage(4))
-        assertEquals(CosmicPlanetType.URANUS_ICE, CosmicPlanetHelper.getPlanetTypeForStage(5))
-        assertEquals(CosmicPlanetType.NEPTUNE_STORM, CosmicPlanetHelper.getPlanetTypeForStage(6))
-        assertEquals(CosmicPlanetType.SOLAR_SUN, CosmicPlanetHelper.getPlanetTypeForStage(7))
+        assertEquals(CosmicPlanetType.JUPITER_STORM, CosmicPlanetHelper.getPlanetTypeForStage(5))
+        assertEquals(CosmicPlanetType.SATURN_MONARCH, CosmicPlanetHelper.getPlanetTypeForStage(6))
+        assertEquals(CosmicPlanetType.URANUS_ICE, CosmicPlanetHelper.getPlanetTypeForStage(7))
+        assertEquals(CosmicPlanetType.NEPTUNE_STORM, CosmicPlanetHelper.getPlanetTypeForStage(8))
+        assertEquals(CosmicPlanetType.SOLAR_SUN, CosmicPlanetHelper.getPlanetTypeForStage(9))
 
         // Cycle repeats seamlessly for AI-generated higher stages
-        assertEquals(CosmicPlanetType.TERRA_GAIA, CosmicPlanetHelper.getPlanetTypeForStage(8))
-        assertEquals(CosmicPlanetType.SOLAR_SUN, CosmicPlanetHelper.getPlanetTypeForStage(15))
+        assertEquals(CosmicPlanetType.MERCURY_ROCK, CosmicPlanetHelper.getPlanetTypeForStage(10))
+        assertEquals(CosmicPlanetType.SOLAR_SUN, CosmicPlanetHelper.getPlanetTypeForStage(19))
 
         // Final stage override when totalStages is provided
         assertEquals(CosmicPlanetType.SOLAR_SUN, CosmicPlanetHelper.getPlanetTypeForStage(6, totalStages = 7))
@@ -57,6 +47,14 @@ class CosmicPlanetHelperTest {
 
     @Test
     fun `planet names support bilingual display`() {
+        val mercury = CosmicPlanetType.MERCURY_ROCK
+        assertEquals("Sao Thủy (Khoáng Thạch Lam)", CosmicPlanetHelper.getPlanetTypeName(mercury, isEnglish = false))
+        assertEquals("Mercury (MESSENGER Rayed)", CosmicPlanetHelper.getPlanetTypeName(mercury, isEnglish = true))
+
+        val venus = CosmicPlanetType.VENUS_SULFUR
+        assertEquals("Sao Kim (Mây Vàng Ngọc Trai)", CosmicPlanetHelper.getPlanetTypeName(venus, isEnglish = false))
+        assertEquals("Venus (Golden Cloud Swirl)", CosmicPlanetHelper.getPlanetTypeName(venus, isEnglish = true))
+
         val sun = CosmicPlanetType.SOLAR_SUN
         assertEquals("Mặt Trời (Đỉnh Cao Thái Dương)", CosmicPlanetHelper.getPlanetTypeName(sun, isEnglish = false))
         assertEquals("The Sun (Solar Apex)", CosmicPlanetHelper.getPlanetTypeName(sun, isEnglish = true))

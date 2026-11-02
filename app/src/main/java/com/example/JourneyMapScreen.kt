@@ -333,6 +333,7 @@ private fun JourneyPath(
                 JourneyStageRow(
                     stage = stage,
                     index = index,
+                    totalStages = stages.size,
                     stageStep = stageStep,
                     strings = strings,
                     isSelected = selectedStageIndex == index,
@@ -362,6 +363,7 @@ private fun JourneyPath(
 private fun JourneyStageRow(
     stage: JourneyStageUiModel,
     index: Int,
+    totalStages: Int = -1,
     stageStep: Dp,
     strings: AppStrings,
     isSelected: Boolean,
@@ -369,8 +371,8 @@ private fun JourneyStageRow(
     onEnterChapter: () -> Unit
 ) {
     val isLeft = index % 2 == 0
-    val planetType = remember(index) { CosmicPlanetHelper.getPlanetTypeForStage(index) }
-    val planetDiameter = remember(index) { CosmicPlanetHelper.getPlanetDiameter(index) }
+    val planetType = remember(index, totalStages) { CosmicPlanetHelper.getPlanetTypeForStage(index, totalStages) }
+    val planetDiameter = remember(index, totalStages) { CosmicPlanetHelper.getPlanetDiameter(index, totalStages) }
     val isSaturn = planetType == CosmicPlanetType.SATURN_MONARCH
     val isSun = planetType == CosmicPlanetType.SOLAR_SUN
     val containerWidth = when {
@@ -427,6 +429,7 @@ private fun JourneyStageRow(
         CosmicPlanetView(
             stage = stage,
             index = index,
+            totalStages = totalStages,
             modifier = nodeModifier,
             onClick = {
                 if (isSelected && stage.state != JourneyStageState.LOCKED) {
