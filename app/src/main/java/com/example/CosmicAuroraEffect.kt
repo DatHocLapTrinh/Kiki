@@ -12,6 +12,7 @@ import kotlin.math.PI
 import kotlin.math.cos
 import kotlin.math.sin
 import kotlin.math.sqrt
+import kotlin.math.pow
 
 /**
  * State holding continuous animated values for the Cosmic Aurora Ribbon path.
@@ -102,36 +103,127 @@ fun DrawScope.drawCosmicAuroraSegment(
         normY[k] = tx / len
     }
 
-    // ── 1. Cosmic Nebula Haze (Outer Glow) ────────────────────────────────────
+    // ── 0. Cosmic Docking Glow (Quầng năng lượng tiếp giáp tại 2 hành tinh) ────
+    val dockAlpha = if (isActive) 0.50f * alphaScale else 0.26f * alphaScale
+    val dockRadius = 84.dp.toPx()
+
+    // 0.1 Quầng năng lượng tinh vân bán nguyệt bao bọc hành tinh xuất phát (Top planet)
+    drawCircle(
+        brush = Brush.radialGradient(
+            listOf(
+                startColor.copy(alpha = dockAlpha * 0.95f),
+                Color(0xFFFF2A85).copy(alpha = dockAlpha * 0.65f),
+                Color(0xFF7E5CFF).copy(alpha = dockAlpha * 0.35f),
+                Color.Transparent
+            ),
+            center = Offset(startX, startY),
+            radius = dockRadius
+        ),
+        radius = dockRadius,
+        center = Offset(startX, startY)
+    )
+
+    // 0.2 Quầng năng lượng tinh vân bán nguyệt đón nhận tại hành tinh đích đến (Bottom planet)
+    drawCircle(
+        brush = Brush.radialGradient(
+            listOf(
+                endColor.copy(alpha = dockAlpha * 0.95f),
+                Color(0xFF51FAC1).copy(alpha = dockAlpha * 0.65f),
+                Color(0xFF7E5CFF).copy(alpha = dockAlpha * 0.35f),
+                Color.Transparent
+            ),
+            center = Offset(endX, endY),
+            radius = dockRadius
+        ),
+        radius = dockRadius,
+        center = Offset(endX, endY)
+    )
+
+    // 0.3 Vệt bừng sáng tinh vân (Emergence Flare) tại điểm xa lộ thoát ra / tiếp đất
+    val exitIdx = (samples * 0.22f).toInt().coerceIn(0, samples)
+    val enterIdx = (samples * 0.78f).toInt().coerceIn(0, samples)
+    val flareRadius = 44.dp.toPx()
+
+    drawCircle(
+        brush = Brush.radialGradient(
+            listOf(
+                Color(0xFFFF2A85).copy(alpha = dockAlpha * 0.85f),
+                Color(0xFFEC4899).copy(alpha = dockAlpha * 0.40f),
+                Color.Transparent
+            ),
+            center = Offset(ptsX[exitIdx], ptsY[exitIdx]),
+            radius = flareRadius
+        ),
+        radius = flareRadius,
+        center = Offset(ptsX[exitIdx], ptsY[exitIdx])
+    )
+
+    drawCircle(
+        brush = Brush.radialGradient(
+            listOf(
+                Color(0xFF51FAC1).copy(alpha = dockAlpha * 0.85f),
+                Color(0xFF7E5CFF).copy(alpha = dockAlpha * 0.40f),
+                Color.Transparent
+            ),
+            center = Offset(ptsX[enterIdx], ptsY[enterIdx]),
+            radius = flareRadius
+        ),
+        radius = flareRadius,
+        center = Offset(ptsX[enterIdx], ptsY[enterIdx])
+    )
+
+    // ── 1. Cosmic Nebula Haze (Outer Glow - 70dp Xa Lộ Vũ Trụ) ────────────────
     val hazeAlpha = if (isActive) 0.32f * alphaScale else 0.18f * alphaScale
+
+    // 1.1 Quầng khuếch tán diện rộng (Broad Diffuse Nebula Glow: 72dp)
     drawPath(
         path = mainPath,
         brush = Brush.verticalGradient(
             listOf(
-                startColor.copy(alpha = hazeAlpha),
-                Color(0xFFEC4899).copy(alpha = hazeAlpha * 1.1f),
-                Color(0xFF7E5CFF).copy(alpha = hazeAlpha),
-                endColor.copy(alpha = hazeAlpha)
+                startColor.copy(alpha = hazeAlpha * 0.65f),
+                Color(0xFFEC4899).copy(alpha = hazeAlpha * 0.80f),
+                Color(0xFF7E5CFF).copy(alpha = hazeAlpha * 0.70f),
+                endColor.copy(alpha = hazeAlpha * 0.65f)
             ),
             startY = startY,
             endY = endY
         ),
-        style = Stroke(width = 28.dp.toPx(), cap = StrokeCap.Round)
+        style = Stroke(width = 72.dp.toPx(), cap = StrokeCap.Round)
     )
 
-    // ── 2. Ribbon Band 1: Radiant Magenta / Rose Silk Ribbon ──────────────────
+    // 1.2 Lõi tinh vân dày dặn (Inner Core Haze: 50dp)
+    drawPath(
+        path = mainPath,
+        brush = Brush.verticalGradient(
+            listOf(
+                startColor.copy(alpha = hazeAlpha * 0.90f),
+                Color(0xFFFF2A85).copy(alpha = hazeAlpha * 1.10f),
+                Color(0xFF9333EA).copy(alpha = hazeAlpha * 1.05f),
+                endColor.copy(alpha = hazeAlpha * 0.90f)
+            ),
+            startY = startY,
+            endY = endY
+        ),
+        style = Stroke(width = 50.dp.toPx(), cap = StrokeCap.Round)
+    )
+
+    // ── 2. Ribbon Band 1: Radiant Magenta / Rose Silk Ribbon (42dp - 48dp) ────
     val top1X = FloatArray(samples + 1)
     val top1Y = FloatArray(samples + 1)
     val bot1X = FloatArray(samples + 1)
     val bot1Y = FloatArray(samples + 1)
 
-    val maxW1 = 15.dp.toPx()
-    val maxDisp1 = 4.dp.toPx()
+    // Bề rộng tối thiểu 37dp ở 2 đầu, phễu loe 41dp, mở rộng lên 47dp ở giữa
+    val baseW1 = 18.5.dp.toPx()
+    val midBonus1 = 5.0.dp.toPx()
+    val flareW1 = 2.0.dp.toPx()
+    val maxDisp1 = 5.dp.toPx()
 
     for (k in 0..samples) {
         val t = k.toFloat() / samples
         val sinT = sin(PI.toFloat() * t)
-        val w = (maxW1 * sinT * (1f + 0.22f * sin(2f * PI.toFloat() * t + animPhase))).coerceAtLeast(0f)
+        val funnel = ((1f - t).pow(6) + t.pow(6))
+        val w = ((baseW1 + midBonus1 * sinT + flareW1 * funnel) * (1f + 0.15f * sin(2f * PI.toFloat() * t + animPhase))).coerceAtLeast(0f)
         val disp = maxDisp1 * sinT * sin(2f * PI.toFloat() * t + animPhase * 0.7f)
         top1X[k] = ptsX[k] + normX[k] * (disp + w)
         top1Y[k] = ptsY[k] + normY[k] * (disp + w)
@@ -146,7 +238,7 @@ fun DrawScope.drawCosmicAuroraSegment(
         close()
     }
 
-    val r1Alpha = if (isActive) 0.55f * alphaScale else 0.35f * alphaScale
+    val r1Alpha = if (isActive) 0.58f * alphaScale else 0.36f * alphaScale
     drawPath(
         path = ribbon1Path,
         brush = Brush.verticalGradient(
@@ -161,19 +253,23 @@ fun DrawScope.drawCosmicAuroraSegment(
         )
     )
 
-    // ── 3. Ribbon Band 2: Cosmic Violet / Purple Weaving Silk ─────────────────
+    // ── 3. Ribbon Band 2: Cosmic Violet / Purple Weaving Silk (43dp - 50dp) ───
     val top2X = FloatArray(samples + 1)
     val top2Y = FloatArray(samples + 1)
     val bot2X = FloatArray(samples + 1)
     val bot2Y = FloatArray(samples + 1)
 
-    val maxW2 = 18.dp.toPx()
-    val maxDisp2 = 5.dp.toPx()
+    // Bề rộng tối thiểu 39dp ở 2 đầu, phễu loe 43dp, mở rộng lên 50dp ở giữa
+    val baseW2 = 19.5.dp.toPx()
+    val midBonus2 = 5.5.dp.toPx()
+    val flareW2 = 2.0.dp.toPx()
+    val maxDisp2 = 6.dp.toPx()
 
     for (k in 0..samples) {
         val t = k.toFloat() / samples
         val sinT = sin(PI.toFloat() * t)
-        val w = (maxW2 * sinT * (1f + 0.25f * cos(2f * PI.toFloat() * t + animPhase))).coerceAtLeast(0f)
+        val funnel = ((1f - t).pow(6) + t.pow(6))
+        val w = ((baseW2 + midBonus2 * sinT + flareW2 * funnel) * (1f + 0.16f * cos(2f * PI.toFloat() * t + animPhase * 0.8f))).coerceAtLeast(0f)
         val disp = -maxDisp2 * sinT * cos(2f * PI.toFloat() * t + animPhase * 0.8f)
         top2X[k] = ptsX[k] + normX[k] * (disp + w)
         top2Y[k] = ptsY[k] + normY[k] * (disp + w)
@@ -188,7 +284,7 @@ fun DrawScope.drawCosmicAuroraSegment(
         close()
     }
 
-    val r2Alpha = if (isActive) 0.50f * alphaScale else 0.32f * alphaScale
+    val r2Alpha = if (isActive) 0.52f * alphaScale else 0.34f * alphaScale
     drawPath(
         path = ribbon2Path,
         brush = Brush.verticalGradient(
@@ -204,18 +300,19 @@ fun DrawScope.drawCosmicAuroraSegment(
         )
     )
 
-    // ── 4. Ribbon Band 3: Electric Cyan / Blue Highlight Strip ───────────────
+    // ── 4. Ribbon Band 3: Electric Cyan / Starlight Streak (11dp - 18dp) ──────
     val top3X = FloatArray(samples + 1)
     val top3Y = FloatArray(samples + 1)
     val bot3X = FloatArray(samples + 1)
     val bot3Y = FloatArray(samples + 1)
 
-    val maxW3 = 6.dp.toPx()
+    val baseW3 = 5.5.dp.toPx()
+    val midBonus3 = 3.5.dp.toPx()
     for (k in 0..samples) {
         val t = k.toFloat() / samples
         val sinT = sin(PI.toFloat() * t)
-        val w = (maxW3 * sinT).coerceAtLeast(0f)
-        val disp = 2.dp.toPx() * sinT * sin(4f * PI.toFloat() * t + animPhase)
+        val w = ((baseW3 + midBonus3 * sinT) * (1f + 0.12f * sin(3f * PI.toFloat() * t + animPhase))).coerceAtLeast(0f)
+        val disp = 3.dp.toPx() * sinT * sin(4f * PI.toFloat() * t + animPhase)
         top3X[k] = ptsX[k] + normX[k] * (disp + w)
         top3Y[k] = ptsY[k] + normY[k] * (disp + w)
         bot3X[k] = ptsX[k] + normX[k] * (disp - w)
@@ -229,7 +326,7 @@ fun DrawScope.drawCosmicAuroraSegment(
         close()
     }
 
-    val r3Alpha = if (isActive) 0.40f * alphaScale else 0.22f * alphaScale
+    val r3Alpha = if (isActive) 0.44f * alphaScale else 0.24f * alphaScale
     drawPath(
         path = ribbon3Path,
         brush = Brush.verticalGradient(
@@ -258,21 +355,21 @@ fun DrawScope.drawCosmicAuroraSegment(
             endY = endY
         ),
         style = Stroke(
-            width = 3.dp.toPx(),
+            width = 4.5.dp.toPx(),
             cap = StrokeCap.Round,
             pathEffect = if (isActive) PathEffect.dashPathEffect(
-                floatArrayOf(16.dp.toPx(), 8.dp.toPx()),
+                floatArrayOf(18.dp.toPx(), 9.dp.toPx()),
                 phase = waveOffsetPx
             ) else null
         )
     )
 
     // ── 6. White-Hot Filament (Thin Center Beam) ─────────────────────────────
-    val filamentAlpha = if (isActive) 0.88f * alphaScale else 0.45f * alphaScale
+    val filamentAlpha = if (isActive) 0.90f * alphaScale else 0.50f * alphaScale
     drawPath(
         path = mainPath,
         color = Color.White.copy(alpha = filamentAlpha),
-        style = Stroke(width = 1.3.dp.toPx(), cap = StrokeCap.Round)
+        style = Stroke(width = 2.dp.toPx(), cap = StrokeCap.Round)
     )
 
     // ── 7. Traveling Star Pulse Orb (Chuyển động truyền từ hành tinh này sang hành tinh khác) ──
@@ -287,26 +384,26 @@ fun DrawScope.drawCosmicAuroraSegment(
         drawCircle(
             brush = Brush.radialGradient(
                 listOf(
-                    Color(0x99FFFFFF),
-                    Color(0x66FF2A85),
+                    Color(0xBBFFFFFF),
+                    Color(0x88FF2A85),
                     Color(0x00FF2A85)
                 ),
                 center = Offset(pulseX, pulseY),
-                radius = 16.dp.toPx()
+                radius = 22.dp.toPx()
             ),
-            radius = 16.dp.toPx(),
+            radius = 22.dp.toPx(),
             center = Offset(pulseX, pulseY)
         )
         // Radiant core
         drawCircle(
             color = Color(0xFFFF8AD8),
-            radius = 5.dp.toPx(),
+            radius = 6.5.dp.toPx(),
             center = Offset(pulseX, pulseY)
         )
         // White center spark
         drawCircle(
             color = Color.White,
-            radius = 2.4.dp.toPx(),
+            radius = 3.dp.toPx(),
             center = Offset(pulseX, pulseY)
         )
     }
