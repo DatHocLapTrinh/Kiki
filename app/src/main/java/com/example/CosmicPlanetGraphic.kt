@@ -2027,48 +2027,8 @@ private fun DrawScope.drawTheSunSolarApex(
     }
 
     clipPath(sunPath) {
-        // A. Hạt plasma đối lưu sôi sục (Solar Convection Granulation)
+        // Hạt plasma đối lưu sôi sục & các điểm hoạt động từ trường cực nóng phát sáng (Solar Granulation & Active Magnetic Regions)
         drawSolarGranulation(centerX, centerY, radius, cloudPhase, alphaFactor)
-
-        // B. Cụm vết đen Mặt Trời khổng lồ (Active Sunspot Group AR13664)
-        // Cụm 1 ở bán cầu đông nam
-        drawRealisticSunspot(
-            centerX = centerX + radius * 0.28f,
-            centerY = centerY + radius * 0.14f,
-            umbraRadius = radius * 0.085f,
-            penumbraRadius = radius * 0.17f,
-            rotationDeg = 25f,
-            alpha = alphaFactor
-        )
-        drawRealisticSunspot(
-            centerX = centerX + radius * 0.44f,
-            centerY = centerY + radius * 0.20f,
-            umbraRadius = radius * 0.055f,
-            penumbraRadius = radius * 0.11f,
-            rotationDeg = -15f,
-            alpha = alphaFactor
-        )
-
-        // Cụm 2 ở bán cầu tây bắc
-        drawRealisticSunspot(
-            centerX = centerX - radius * 0.32f,
-            centerY = centerY - radius * 0.24f,
-            umbraRadius = radius * 0.065f,
-            penumbraRadius = radius * 0.13f,
-            rotationDeg = 45f,
-            alpha = alphaFactor
-        )
-        drawRealisticSunspot(
-            centerX = centerX - radius * 0.18f,
-            centerY = centerY - radius * 0.32f,
-            umbraRadius = radius * 0.040f,
-            penumbraRadius = radius * 0.085f,
-            rotationDeg = 10f,
-            alpha = alphaFactor
-        )
-
-        // C. Dải từ trường sáng Faculae rực rỡ xung quanh cụm vết đen
-        drawSolarFaculaeVeins(centerX, centerY, radius, alphaFactor)
     }
 
     // 6. Viền sắc quyển phát sáng (Chromosphere Ring Glow)
@@ -2188,108 +2148,7 @@ private fun DrawScope.drawSolarGranulation(
     }
 }
 
-/**
- * Vẽ vết đen Mặt Trời chân thực (Photorealistic Sunspot với Umbra, Penumbra & cấu trúc dạng sợi)
- */
-private fun DrawScope.drawRealisticSunspot(
-    centerX: Float,
-    centerY: Float,
-    umbraRadius: Float,
-    penumbraRadius: Float,
-    rotationDeg: Float,
-    alpha: Float
-) {
-    // 1. Quầng Penumbra dạng sợi màu nâu cam sẫm
-    val penumbraBrush = Brush.radialGradient(
-        0.0f to Color(0xFF3E1200).copy(alpha = 0.90f * alpha),
-        0.55f to Color(0xFF7A2000).copy(alpha = 0.85f * alpha),
-        0.90f to Color(0xFFB73A00).copy(alpha = 0.60f * alpha),
-        1.0f to Color.Transparent,
-        center = Offset(centerX, centerY),
-        radius = penumbraRadius
-    )
-    drawOval(
-        brush = penumbraBrush,
-        topLeft = Offset(centerX - penumbraRadius * 1.15f, centerY - penumbraRadius * 0.85f),
-        size = Size(penumbraRadius * 2.3f, penumbraRadius * 1.7f)
-    )
 
-    // Các sợi từ trường penumbra hướng tâm (Penumbra radial filaments)
-    val filamentColor = Color(0xFF2E0900).copy(alpha = 0.65f * alpha)
-    for (i in 0 until 12) {
-        val angle = (i * 30f + rotationDeg) * (PI.toFloat() / 180f)
-        val fx1 = centerX + cos(angle) * (umbraRadius * 0.9f)
-        val fy1 = centerY + sin(angle) * (umbraRadius * 0.9f)
-        val fx2 = centerX + cos(angle) * (penumbraRadius * 0.95f)
-        val fy2 = centerY + sin(angle) * (penumbraRadius * 0.95f)
-        drawLine(
-            color = filamentColor,
-            start = Offset(fx1, fy1),
-            end = Offset(fx2, fy2),
-            strokeWidth = 1.0.dp.toPx()
-        )
-    }
-
-    // 2. Lõi tối Umbra đen thẳm (Nhiệt độ thấp hơn quang cầu ~1500K)
-    val umbraBrush = Brush.radialGradient(
-        0.0f to Color(0xFF0F0300).copy(alpha = 0.98f * alpha),
-        0.80f to Color(0xFF1F0600).copy(alpha = 0.95f * alpha),
-        1.0f to Color(0xFF380C00).copy(alpha = 0.90f * alpha),
-        center = Offset(centerX, centerY),
-        radius = umbraRadius
-    )
-    drawOval(
-        brush = umbraBrush,
-        topLeft = Offset(centerX - umbraRadius * 1.1f, centerY - umbraRadius * 0.9f),
-        size = Size(umbraRadius * 2.2f, umbraRadius * 1.8f)
-    )
-}
-
-/**
- * Vẽ các mạng lưới dải từ trường sáng Faculae bao quanh vết đen Mặt Trời
- */
-private fun DrawScope.drawSolarFaculaeVeins(
-    centerX: Float,
-    centerY: Float,
-    radius: Float,
-    alpha: Float
-) {
-    val faculaeColor = Color(0x66FFFDE7).copy(alpha = 0.55f * alpha)
-
-    // Dải sáng 1 quanh cụm đông nam
-    val path1 = Path().apply {
-        moveTo(centerX + radius * 0.16f, centerY + radius * 0.08f)
-        cubicTo(
-            centerX + radius * 0.24f, centerY + radius * 0.04f,
-            centerX + radius * 0.38f, centerY + radius * 0.06f,
-            centerX + radius * 0.52f, centerY + radius * 0.16f
-        )
-        cubicTo(
-            centerX + radius * 0.40f, centerY + radius * 0.28f,
-            centerX + radius * 0.22f, centerY + radius * 0.24f,
-            centerX + radius * 0.16f, centerY + radius * 0.08f
-        )
-        close()
-    }
-    drawPath(path1, color = faculaeColor, style = Stroke(width = 1.5.dp.toPx()))
-
-    // Dải sáng 2 quanh cụm tây bắc
-    val path2 = Path().apply {
-        moveTo(centerX - radius * 0.40f, centerY - radius * 0.18f)
-        cubicTo(
-            centerX - radius * 0.36f, centerY - radius * 0.34f,
-            centerX - radius * 0.14f, centerY - radius * 0.38f,
-            centerX - radius * 0.10f, centerY - radius * 0.22f
-        )
-        cubicTo(
-            centerX - radius * 0.20f, centerY - radius * 0.16f,
-            centerX - radius * 0.32f, centerY - radius * 0.14f,
-            centerX - radius * 0.40f, centerY - radius * 0.18f
-        )
-        close()
-    }
-    drawPath(path2, color = faculaeColor, style = Stroke(width = 1.5.dp.toPx()))
-}
 
 /**
  * Vẽ tia khúc xạ hình sao 4 cánh (Stellar Diffraction Spikes) từ tâm Mặt Trời
