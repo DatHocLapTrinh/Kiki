@@ -186,6 +186,26 @@ class StudyViewModel @Inject constructor(
             cleaned = cleaned.replace(Regex("\n{3,}"), "\n\n")
             return cleaned.trim()
         }
+
+        /**
+         * Lọc sạch tiền tố câu hỏi (tra từ, tra tu, thành ngữ, look up, nghĩa là gì, ...)
+         * để lấy chính xác từ vựng hoặc cụm thành ngữ cốt lõi mà người dùng muốn tìm.
+         */
+        fun cleanTargetWordFromQuery(query: String): String {
+            if (query.isBlank()) return ""
+            var cleaned = query.trim()
+                // Xoá icon kính lúp và các tiền tố tra cứu tiếng Việt (cả có dấu và không dấu) hoặc tiếng Anh
+                .replace(Regex("(?i)^[🔍\\s]*(tra\\s+(từ\\s+vựng|từ|thành\\s+ngữ|thanh\\s+ngu|cụm\\s+từ|cum\\s+tu|tu\\s+vung|tu)|look\\s+up(\\s+(word|idiom))?|tìm\\s+từ|tim\\s+tu|thành\\s+ngữ|thanh\\s+ngu|cụm\\s+từ|cum\\s+tu|từ\\s+vựng|tu\\s+vung|từ|tu|what\\s+is|what's|define)\\s*:?\\s*"), "")
+                // Xoá các hậu tố hỏi nghĩa ở cuối câu (nghĩa là gì, là gì, meaning, ví dụ...)
+                .replace(Regex("(?i)\\s+(nghĩa\\s+là\\s+gì|nghia\\s+la\\s+gi|nghĩa|nghia|là\\s+gì|la\\s+gi|meaning|definition|&\\s*ví\\s*dụ.*|&\\s*vi\\s*du.*|in\\s+context.*)$"), "")
+                // Xoá dấu ngoặc kép, ngoặc đơn
+                .replace(Regex("['\"“”‘’]"), "")
+                .trim()
+
+            // Nếu câu bắt đầu bằng "thành ngữ " hoặc "cụm từ " mà bị dính ở đầu
+            cleaned = cleaned.replace(Regex("(?i)^(thành\\s+ngữ|thanh\\s+ngu|cụm\\s+từ|cum\\s+tu)\\s*:?\\s*"), "").trim()
+            return cleaned
+        }
     }
 
     private val genericHttpClient = OkHttpClient.Builder()
@@ -1291,21 +1311,24 @@ class StudyViewModel @Inject constructor(
 
                 // Augment vocab/lookup questions to strictly request the concise 1-card format
                 val cleanQuestion = question.trim()
+                val targetWord = cleanTargetWordFromQuery(cleanQuestion)
                 val isLookup = cleanQuestion.startsWith("🔍") ||
-                        cleanQuestion.contains("Tra từ", ignoreCase = true) ||
-                        cleanQuestion.contains("Tra thành ngữ", ignoreCase = true) ||
-                        cleanQuestion.contains("Look up", ignoreCase = true) ||
+                        cleanQuestion.contains("tra từ", ignoreCase = true) ||
+                        cleanQuestion.contains("tra tu", ignoreCase = true) ||
+                        cleanQuestion.contains("tra thành ngữ", ignoreCase = true) ||
+                        cleanQuestion.contains("tra thanh ngu", ignoreCase = true) ||
+                        cleanQuestion.contains("thành ngữ", ignoreCase = true) ||
+                        cleanQuestion.contains("thanh ngu", ignoreCase = true) ||
+                        cleanQuestion.contains("cụm từ", ignoreCase = true) ||
+                        cleanQuestion.contains("cum tu", ignoreCase = true) ||
+                        cleanQuestion.contains("look up", ignoreCase = true) ||
                         cleanQuestion.contains("nghĩa là gì", ignoreCase = true) ||
-                        (cleanQuestion.split(Regex("\\s+")).size <= 3 && !cleanQuestion.endsWith("?") && !cleanQuestion.contains("tại sao", ignoreCase = true) && !cleanQuestion.contains("why", ignoreCase = true))
+                        cleanQuestion.contains("nghia la gi", ignoreCase = true) ||
+                        cleanQuestion.contains("là gì", ignoreCase = true) ||
+                        cleanQuestion.contains("la gi", ignoreCase = true) ||
+                        (targetWord.isNotBlank() && targetWord.split(Regex("\\s+")).size <= 4 && !cleanQuestion.endsWith("?") && !cleanQuestion.contains("tại sao", ignoreCase = true) && !cleanQuestion.contains("why", ignoreCase = true))
 
-                val promptForAi = if (isLookup && imageUri == null) {
-                    val targetWord = cleanQuestion
-                        .replace(Regex("^🔍\\s*(Tra từ|Tra thành ngữ|Look up word|Look up idiom):?\\s*"), "")
-                        .replace(Regex("['\"]"), "")
-                        .replace(Regex("&\\s*ví dụ.*", RegexOption.IGNORE_CASE), "")
-                        .replace(Regex("in context.*", RegexOption.IGNORE_CASE), "")
-                        .trim()
-
+                val promptForAi = if (isLookup && imageUri == null && targetWord.isNotBlank()) {
                     "Giải thích từ/cụm từ: '$targetWord'. Trả lời NGẮN GỌN trong DUY NHẤT 1 câu trả lời theo đúng mẫu sau (tuyệt đối không chào hỏi, không giới thiệu, không bảng biểu, không dùng [STEP]):\n" +
                     "$targetWord /IPA/ (Từ loại)\n" +
                     "• Nghĩa: [Giải thích nghĩa tiếng Việt ngắn gọn, súc tích]\n" +
@@ -1328,23 +1351,31 @@ class StudyViewModel @Inject constructor(
 
                 // Trích xuất thẻ từ vựng tự động từ kết quả Gemini nếu backend offline
                 if (vocabularies.isEmpty() && isLookup && !answer.startsWith("Lỗi") && !answer.startsWith("⚠️")) {
-                    val lines = answer.lines()
-                    val headerLine = lines.firstOrNull { it.isNotBlank() } ?: ""
+                    val lines = answer.lines().map { it.trim() }.filter { it.isNotBlank() }
+                    val headerLine = lines.firstOrNull() ?: ""
                     val phoneticMatch = Regex("/([^/]+)/").find(headerLine)?.value
-                    val meaningLine = lines.firstOrNull { it.contains("Nghĩa:", ignoreCase = true) }
-                        ?.replace(Regex("^•?\\s*Nghĩa:\\s*", RegexOption.IGNORE_CASE), "")?.trim()
-                    val exampleLine = lines.firstOrNull { it.contains("Ví dụ:", ignoreCase = true) }
-                        ?.replace(Regex("^•?\\s*Ví dụ:\\s*", RegexOption.IGNORE_CASE), "")?.trim()
-                    if (!meaningLine.isNullOrBlank()) {
-                        val targetWord = cleanQuestion
-                            .replace(Regex("^🔍\\s*(Tra từ|Tra thành ngữ|Look up word|Look up idiom):?\\s*"), "")
-                            .replace(Regex("['\"]"), "")
-                            .replace(Regex("&\\s*ví dụ.*", RegexOption.IGNORE_CASE), "")
-                            .replace(Regex("in context.*", RegexOption.IGNORE_CASE), "")
-                            .trim()
+                    val meaningLine = lines.firstOrNull { it.contains("Nghĩa:", ignoreCase = true) || it.contains("Nghia:", ignoreCase = true) }
+                        ?.replace(Regex("^•?\\s*(Nghĩa|Nghia):\\s*", RegexOption.IGNORE_CASE), "")?.trim()
+                    val exampleLine = lines.firstOrNull { it.contains("Ví dụ:", ignoreCase = true) || it.contains("Vi du:", ignoreCase = true) }
+                        ?.replace(Regex("^•?\\s*(Ví dụ|Vi du):\\s*", RegexOption.IGNORE_CASE), "")?.trim()
+
+                    // Ưu tiên trích xuất từ gốc trực tiếp từ dòng đầu của AI reply (đoạn trước dấu '/')
+                    val aiExtractedWord = if (headerLine.contains("/")) {
+                        headerLine.substringBefore("/").replace("**", "").replace("*", "").replace(Regex("[^a-zA-Z\\s'-]"), "").trim()
+                    } else {
+                        ""
+                    }
+
+                    val finalWord = when {
+                        aiExtractedWord.isNotBlank() && aiExtractedWord.split(Regex("\\s+")).size <= 5 -> aiExtractedWord
+                        targetWord.isNotBlank() -> targetWord
+                        else -> cleanTargetWordFromQuery(cleanQuestion)
+                    }
+
+                    if (!meaningLine.isNullOrBlank() && finalWord.isNotBlank()) {
                         vocabularies = listOf(
                             VocabularyCardDto(
-                                word = targetWord,
+                                word = finalWord,
                                 phonetic = phoneticMatch,
                                 meaning = meaningLine,
                                 example = exampleLine

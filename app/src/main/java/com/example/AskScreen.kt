@@ -1542,11 +1542,12 @@ fun extractVocabFromQa(
     answer: String,
     detectedVocabs: List<VocabularyCardDto> = emptyList()
 ): ExtractedVocab {
-    // 1. Ưu tiên sử dụng danh sách từ vựng đã được backend phân tích sẵn
+    // 1. Ưu tiên sử dụng danh sách từ vựng đã được backend/AI phân tích sẵn (đồng thời làm sạch tiền tố)
     if (detectedVocabs.isNotEmpty()) {
         val dto = detectedVocabs.first()
+        val cleanedDtoWord = StudyViewModel.cleanTargetWordFromQuery(dto.word)
         return ExtractedVocab(
-            word = dto.word.trim(),
+            word = if (cleanedDtoWord.isNotBlank()) cleanedDtoWord else dto.word.trim(),
             phonetic = dto.phonetic?.trim().orEmpty(),
             meaning = dto.meaning.trim(),
             example = dto.example?.trim().orEmpty()
@@ -1579,22 +1580,24 @@ fun extractVocabFromQa(
     for (line in lines) {
         val cleanLine = line.removePrefix("•").removePrefix("-").removePrefix("*").trim()
         val lower = cleanLine.lowercase()
-        if (lower.startsWith("nghĩa:") || lower.startsWith("nghĩa là:") || lower.startsWith("meaning:")) {
+        if (lower.startsWith("nghĩa:") || lower.startsWith("nghĩa là:") || lower.startsWith("meaning:") || lower.startsWith("nghia:")) {
             extractedMeaning = cleanLine.substringAfter(":").trim()
-        } else if (lower.startsWith("ví dụ:") || lower.startsWith("example:") || lower.startsWith("vd:")) {
+        } else if (lower.startsWith("ví dụ:") || lower.startsWith("example:") || lower.startsWith("vd:") || lower.startsWith("vi du:")) {
             extractedExample = cleanLine.substringAfter(":").trim()
         }
     }
 
     // 3. Nếu từ vựng trích xuất được còn trống hoặc quá dài (dính câu dài), lọc từ trong câu hỏi của người dùng
     if (extractedWord.isBlank() || extractedWord.split(Regex("\\s+")).size > 5) {
-        val cleanQ = question.trim()
-            .replace(Regex("(?i)^[🔍\\s]*(tra\\s+(từ\\s+vựng|từ|thành\\s+ngữ|cụm\\s+từ)|look\\s+up|tìm\\s+từ)\\s*:?\\s*"), "")
-            .replace(Regex("(?i)\\s+(nghĩa\\s+là\\s+gì|là\\s+gì|meaning|&\\s*ví\\s*dụ.*)$"), "")
-            .replace(Regex("['\"“”‘’]"), "")
-            .trim()
+        val cleanQ = StudyViewModel.cleanTargetWordFromQuery(question)
         if (cleanQ.isNotBlank()) {
             extractedWord = cleanQ
+        }
+    } else {
+        // Đảm bảo extractedWord không bị dính bất kỳ tiền tố nào
+        val cleanedExtracted = StudyViewModel.cleanTargetWordFromQuery(extractedWord)
+        if (cleanedExtracted.isNotBlank()) {
+            extractedWord = cleanedExtracted
         }
     }
 
@@ -1609,7 +1612,7 @@ fun extractVocabFromQa(
 
     return ExtractedVocab(
         word = extractedWord,
-        phonetic = extractedPhonetic,
+        phonetic = if (extractedPhonetic.isNotBlank() && !extractedPhonetic.startsWith("/")) "/$extractedPhonetic/" else extractedPhonetic,
         meaning = extractedMeaning,
         example = extractedExample
     )

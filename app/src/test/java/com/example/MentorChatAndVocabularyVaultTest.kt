@@ -127,4 +127,36 @@ class MentorChatAndVocabularyVaultTest {
         assertTrue("Must contain synonyms", sanitized.contains("• Từ đồng nghĩa: adaptable, flexible, tough"))
         assertTrue("Must contain antonyms", sanitized.contains("• Từ trái nghĩa: fragile, vulnerable"))
     }
+
+    @Test
+    fun testCleanTargetWordFromQueryRemovesLookupPrefixesAndSuffixes() {
+        assertEquals("orange", com.example.viewmodel.StudyViewModel.cleanTargetWordFromQuery("tra tu orange"))
+        assertEquals("orange", com.example.viewmodel.StudyViewModel.cleanTargetWordFromQuery("tra từ orange"))
+        assertEquals("orange", com.example.viewmodel.StudyViewModel.cleanTargetWordFromQuery("tra từ: 'orange' & ví dụ"))
+        assertEquals("Bite the bullet", com.example.viewmodel.StudyViewModel.cleanTargetWordFromQuery("🔍 Tra thành ngữ: 'Bite the bullet'"))
+        assertEquals("bite the bullet", com.example.viewmodel.StudyViewModel.cleanTargetWordFromQuery("thành ngữ bite the bullet là gì"))
+        assertEquals("bite the bullet", com.example.viewmodel.StudyViewModel.cleanTargetWordFromQuery("thanh ngu bite the bullet la gi"))
+        assertEquals("look forward to", com.example.viewmodel.StudyViewModel.cleanTargetWordFromQuery("cụm từ look forward to nghĩa là gì"))
+        assertEquals("resilient", com.example.viewmodel.StudyViewModel.cleanTargetWordFromQuery("resilient là gì"))
+        assertEquals("apple", com.example.viewmodel.StudyViewModel.cleanTargetWordFromQuery("look up word 'apple' in context"))
+    }
+
+    @Test
+    fun testExtractVocabFromQaFiltersOutQueryPrefixesAndExtractsCleanCard() {
+        val question = "tra tu orange"
+        val answer = """
+            Orange /ˈɒr.ɪndʒ/ (noun)
+            • Nghĩa: Quả cam, màu cam
+            • Ví dụ: I like fresh orange juice.
+            • Từ đồng nghĩa: citrus
+            • Từ trái nghĩa: none
+        """.trimIndent()
+
+        val extracted = extractVocabFromQa(question, answer, emptyList())
+
+        assertEquals("Orange", extracted.word)
+        assertEquals("/ˈɒr.ɪndʒ/", extracted.phonetic)
+        assertEquals("Quả cam, màu cam", extracted.meaning)
+        assertEquals("I like fresh orange juice.", extracted.example)
+    }
 }
