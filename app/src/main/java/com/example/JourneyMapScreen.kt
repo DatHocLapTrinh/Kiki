@@ -129,20 +129,6 @@ fun JourneyMapScreen(
                         }
                     }
                 )
-
-                val isGeneratingNextChapter by viewModel.isGeneratingNextChapter.observeAsState(false)
-                val allCompleted = stages.isNotEmpty() && stages.all { it.state == JourneyStageState.COMPLETED }
-
-                if (allCompleted || stages.size >= 5) {
-                    Spacer(modifier = Modifier.height(24.dp))
-                    AiNextChapterCard(
-                        isGenerating = isGeneratingNextChapter,
-                        strings = strings,
-                        onGenerate = {
-                            viewModel.generateNextChapterOnDemand()
-                        }
-                    )
-                }
             }
         }
     }
@@ -511,108 +497,6 @@ private fun JourneyStageInformationCard(
                     tint = if (locked) Color(0x88FFFFFF) else Color(0xFF00F5D4),
                     modifier = Modifier.size(17.dp)
                 )
-            }
-        }
-    }
-}
-
-@Composable
-private fun AiNextChapterCard(
-    isGenerating: Boolean,
-    strings: AppStrings,
-    onGenerate: () -> Unit
-) {
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 22.dp)
-            .clip(RoundedCornerShape(22.dp))
-            .background(
-                Brush.linearGradient(
-                    listOf(Color(0xFF130924), Color(0xFF0D1B2A))
-                )
-            )
-            .border(
-                1.5.dp,
-                Brush.linearGradient(
-                    listOf(Color(0xFF00F5D4), Color(0xFF8A2BE2), Color(0xFF00F5D4))
-                ),
-                RoundedCornerShape(22.dp)
-            )
-            .padding(18.dp)
-    ) {
-        Column(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.Center
-            ) {
-                Icon(
-                    imageVector = Icons.Default.AutoAwesome,
-                    contentDescription = null,
-                    tint = Color(0xFF00F5D4),
-                    modifier = Modifier.size(24.dp)
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(
-                    text = "AI Adaptive Learning",
-                    color = Color(0xFF00F5D4),
-                    fontSize = 13.sp,
-                    fontWeight = FontWeight.ExtraBold,
-                    letterSpacing = 1.sp
-                )
-            }
-            Spacer(modifier = Modifier.height(8.dp))
-            Text(
-                text = "Hệ thống AI sẵn sàng phân tích các lỗ hổng kiến thức để kiến tạo chặng học tiếp theo tối ưu cho bạn.",
-                color = Color(0xCCFFFFFF),
-                fontSize = 12.5.sp,
-                textAlign = TextAlign.Center,
-                lineHeight = 18.sp
-            )
-            Spacer(modifier = Modifier.height(14.dp))
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(50.dp)
-                    .clip(CircleShape)
-                    .background(
-                        if (isGenerating)
-                            Brush.linearGradient(listOf(Color(0xFF332050), Color(0xFF203050)))
-                        else
-                            Brush.linearGradient(listOf(Color(0xFF00F5D4), Color(0xFF8A2BE2)))
-                    )
-                    .clickable(enabled = !isGenerating, onClick = onGenerate),
-                contentAlignment = Alignment.Center
-            ) {
-                if (isGenerating) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        CircularProgressIndicator(
-                            modifier = Modifier.size(20.dp),
-                            color = Color(0xFF00F5D4),
-                            strokeWidth = 2.5.dp
-                        )
-                        Spacer(modifier = Modifier.width(10.dp))
-                        Text(
-                            text = strings.aiGeneratingNextChapter,
-                            color = Color(0xFF00F5D4),
-                            fontSize = 13.sp,
-                            fontWeight = FontWeight.Bold
-                        )
-                    }
-                } else {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text(
-                            text = strings.generateNextAiChapterButton,
-                            color = Color.White,
-                            fontSize = 14.sp,
-                            fontWeight = FontWeight.ExtraBold,
-                            letterSpacing = 1.sp
-                        )
-                    }
-                }
             }
         }
     }

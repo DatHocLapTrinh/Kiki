@@ -104,16 +104,16 @@ fun QuestsScreen(viewModel: StudyViewModel) {
     }
 
     // Tự động sắp xếp nhiệm vụ:
-    // 1. Nhiệm vụ ĐÃ HOÀN THÀNH CHƯA NHẬN THƯỞNG: Đưa lên ĐẦU TIÊN (Rank 0) để user thấy ngay và bấm nhận, tránh bị quên.
-    // 2. Nhiệm vụ ĐÃ HOÀN THÀNH VÀ ĐÃ NHẬN: Rank 1 (nằm trong nhóm đã hoàn thành).
-    // 3. Nhiệm vụ ĐANG THỰC HIỆN: Rank 2 (sắp xếp theo tiến độ % giảm dần).
+    // 1. Nhiệm vụ ĐÃ HOÀN THÀNH CHƯA NHẬN THƯỞNG: Đưa lên ĐẦU TIÊN (Rank 0) để user thấy ngay và bấm nhận.
+    // 2. Nhiệm vụ ĐANG THỰC HIỆN: Rank 1 (sắp xếp theo tiến độ % giảm dần).
+    // 3. Nhiệm vụ ĐÃ NHẬN THƯỞNG: Rank 2 (chuyển xuống cuối danh sách sau khi bấm nhận để không choáng chỗ trên đầu).
     val sortedQuests = remember(quests) {
         quests.sortedWith(
             compareBy(
                 { quest ->
                     when {
                         quest.isCompleted && !quest.isClaimed -> 0
-                        quest.isCompleted && quest.isClaimed -> 1
+                        !quest.isClaimed -> 1
                         else -> 2
                     }
                 },
@@ -143,30 +143,18 @@ fun QuestsScreen(viewModel: StudyViewModel) {
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 20.dp, vertical = 10.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(Icons.AutoMirrored.Filled.MenuBook, contentDescription = null, tint = Color(0xFFFFD166), modifier = Modifier.size(28.dp))
-                Spacer(modifier = Modifier.width(12.dp))
-                Column {
-                    Text(strings.dailyQuests, color = Color.White, fontSize = 22.sp, fontWeight = FontWeight.ExtraBold)
-                    Text(
-                        text = if (isEnglish) "Complete 6 quests to earn 100 ⭐" else "Hoàn thành 6 nhiệm vụ nhận 100 ⭐",
-                        color = Color(0xFFFFD166),
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.SemiBold
-                    )
-                }
-            }
-
-            IconButton(
-                onClick = {
-                    haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.TextHandleMove)
-                    viewModel.refreshDailyTasks()
-                }
-            ) {
-                Icon(Icons.Default.Refresh, contentDescription = "Refresh", tint = Color(0xFF51FAC1))
+            Icon(Icons.AutoMirrored.Filled.MenuBook, contentDescription = null, tint = Color(0xFFFFD166), modifier = Modifier.size(28.dp))
+            Spacer(modifier = Modifier.width(12.dp))
+            Column {
+                Text(strings.dailyQuests, color = Color.White, fontSize = 22.sp, fontWeight = FontWeight.ExtraBold)
+                Text(
+                    text = if (isEnglish) "Complete 6 quests to earn 100 ⭐" else "Hoàn thành 6 nhiệm vụ nhận 100 ⭐",
+                    color = Color(0xFFFFD166),
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.SemiBold
+                )
             }
         }
 

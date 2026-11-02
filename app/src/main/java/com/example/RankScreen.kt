@@ -58,6 +58,10 @@ fun RankScreen(viewModel: StudyViewModel) {
 
     var selectedTimeframe by remember { mutableStateOf(RankTimeframe.THIS_WEEK) }
 
+    LaunchedEffect(Unit) {
+        viewModel.fetchLeaderboard()
+    }
+
     val players = remember(rawLeaderboard, currentUserId, selectedTimeframe, userXp, userStreak) {
         if (rawLeaderboard.isEmpty()) emptyList()
         else {
@@ -128,23 +132,11 @@ fun RankScreen(viewModel: StudyViewModel) {
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 20.dp, vertical = 10.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(Icons.Default.EmojiEvents, contentDescription = null, tint = Color(0xFFFFD166), modifier = Modifier.size(28.dp))
-                    Spacer(modifier = Modifier.width(12.dp))
-                    Text(strings.rankedArena, color = Color.White, fontSize = 24.sp, fontWeight = FontWeight.ExtraBold)
-                }
-
-                IconButton(
-                    onClick = {
-                        haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                        viewModel.fetchLeaderboard()
-                    }
-                ) {
-                    Icon(Icons.Default.Refresh, contentDescription = "Refresh", tint = Color(0xFF51FAC1))
-                }
+                Icon(Icons.Default.EmojiEvents, contentDescription = null, tint = Color(0xFFFFD166), modifier = Modifier.size(28.dp))
+                Spacer(modifier = Modifier.width(12.dp))
+                Text(strings.rankedArena, color = Color.White, fontSize = 24.sp, fontWeight = FontWeight.ExtraBold)
             }
 
             // Timeframe Filter Tabs (Hôm nay / Tuần này / Tất cả)
