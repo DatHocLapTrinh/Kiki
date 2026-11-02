@@ -980,7 +980,7 @@ fun MainNavigation(viewModel: StudyViewModel, onLogout: () -> Unit) {
     }
 }
 
-@OptIn(ExperimentalLayoutApi::class)
+@OptIn(ExperimentalLayoutApi::class, ExperimentalMaterial3Api::class)
 @Composable
 fun FloatingNavBar(
     navController: androidx.navigation.NavHostController,
@@ -991,6 +991,24 @@ fun FloatingNavBar(
     val currentRoute = navBackStackEntry?.destination?.route
     val strings = LocalAppStrings.current
     val isImeVisible = WindowInsets.isImeVisible
+
+    val currentUserId by viewModel?.currentUserId?.observeAsState(-1L) ?: remember { mutableStateOf(-1L) }
+    val dailyTasks by viewModel?.dailyTasks?.observeAsState(emptyList()) ?: remember { mutableStateOf(emptyList()) }
+    val chestOpened by viewModel?.isDailyChestOpened?.observeAsState(false) ?: remember { mutableStateOf(false) }
+
+    LaunchedEffect(currentUserId) {
+        if (currentUserId != -1L) {
+            viewModel?.refreshDailyTasks()
+        }
+    }
+
+    val completedQuestsCount = remember(dailyTasks, chestOpened) {
+        val claimableTasks = dailyTasks.count { (it.currentValue >= it.targetValue || it.status == "COMPLETED") && it.status != "CLAIMED" }
+        val totalTasks = dailyTasks.size
+        val finishedTasks = dailyTasks.count { it.currentValue >= it.targetValue || it.status == "COMPLETED" || it.status == "CLAIMED" }
+        val canOpenChest = totalTasks > 0 && finishedTasks >= totalTasks && !chestOpened
+        claimableTasks + (if (canOpenChest) 1 else 0)
+    }
 
     if (isImeVisible || currentRoute == "quest_active" || currentRoute == "rank_reveal" || currentRoute == "progression_map" || currentRoute == "quest_review") return
 
@@ -1016,7 +1034,14 @@ fun FloatingNavBar(
         verticalAlignment = Alignment.CenterVertically
     ) {
         NavItem("map", R.drawable.ic_nav_roadmap, strings.navMap, currentRoute, navController)
-        NavItem("quests", R.drawable.ic_nav_task, strings.navLearn, currentRoute, navController)
+        NavItem(
+            route = "quests",
+            drawableRes = R.drawable.ic_nav_task,
+            label = strings.navLearn,
+            currentRoute = currentRoute,
+            navController = navController,
+            badgeCount = completedQuestsCount
+        )
         NavItem("shop", R.drawable.ic_nav_shop, strings.navShop, currentRoute, navController)
         NavItem("ask", R.drawable.ic_mentor_qa, strings.navTutor, currentRoute, navController)
         NavItem("rank", R.drawable.ic_nav_ranking, strings.navRank, currentRoute, navController)
@@ -1033,6 +1058,7 @@ fun FloatingNavBar(
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun NavItem(
     route: String,
@@ -1040,6 +1066,7 @@ fun NavItem(
     label: String,
     currentRoute: String?,
     navController: androidx.navigation.NavHostController,
+    badgeCount: Int = 0,
     onClickExtra: (() -> Unit)? = null
 ) {
     val isSelected = currentRoute == route
@@ -1072,15 +1099,32 @@ fun NavItem(
             .padding(horizontal = 12.dp, vertical = 8.dp),
         contentAlignment = Alignment.Center
     ) {
-        Image(
-            painter = painterResource(id = drawableRes),
-            contentDescription = label,
-            modifier = Modifier
-                .size(28.dp)
-                .graphicsLayer {
-                    alpha = if (isSelected) 1.0f else 0.68f
+        BadgedBox(
+            badge = {
+                if (badgeCount > 0) {
+                    Badge(
+                        containerColor = Color(0xFFFFD166),
+                        contentColor = Color(0xFF1E1138)
+                    ) {
+                        Text(
+                            text = if (badgeCount > 99) "99+" else "$badgeCount",
+                            fontSize = 10.sp,
+                            fontWeight = FontWeight.ExtraBold
+                        )
+                    }
                 }
-        )
+            }
+        ) {
+            Image(
+                painter = painterResource(id = drawableRes),
+                contentDescription = label,
+                modifier = Modifier
+                    .size(28.dp)
+                    .graphicsLayer {
+                        alpha = if (isSelected) 1.0f else 0.68f
+                    }
+            )
+        }
     }
 }
 
