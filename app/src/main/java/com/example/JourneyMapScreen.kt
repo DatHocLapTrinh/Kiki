@@ -84,7 +84,6 @@ fun JourneyMapScreen(
     val stages = remember(availableChapters, chapterProgress) {
         JourneyStageMapper.mapStages(availableChapters, chapterProgress)
     }
-    val earnedStars = JourneyStageMapper.earnedStars(stages)
     val currentStageIndex = stages.indexOfFirst { it.state == JourneyStageState.CURRENT }
     var isNavigating by remember { mutableStateOf(false) }
 
@@ -100,14 +99,12 @@ fun JourneyMapScreen(
                 .fillMaxSize()
                 .statusBarsPadding()
         ) {
-            // Banner chỉ số trên cùng (Avatar, Streak, Hearts, Shields)
+            // Banner chỉ số trên cùng (Avatar profile, Streak, Hearts, Shields) - 4 cột chia đều, không đóng khung
             CosmicUserStatsBanner(
-                userName = userName,
                 avatarUri = avatarUri,
                 streak = streak,
                 hearts = hearts,
-                streakShields = streakShields,
-                onAvatarClick = onViewStats
+                streakShields = streakShields
             )
 
             Column(
@@ -117,88 +114,30 @@ fun JourneyMapScreen(
                     .padding(top = 8.dp, bottom = 124.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                JourneyTopBar(
-                    userName = userName,
-                    isEnglish = isEnglish,
-                    earnedStars = earnedStars,
-                    strings = strings
-                )
-                Spacer(modifier = Modifier.height(16.dp))
-
-            if (stages.isEmpty()) {
-                Box(modifier = Modifier.fillMaxWidth().height(420.dp), contentAlignment = Alignment.Center) {
-                    when {
-                        chaptersLoading -> JourneyLoadingState()
-                        chaptersError != null -> JourneyErrorState(
-                            message = chaptersError ?: strings.noChaptersFound,
-                            onRetry = viewModel::refreshChapters
-                        )
-                        else -> JourneyEmptyState(onRetry = viewModel::refreshChapters)
-                    }
-                }
-            } else {
-                JourneyPath(
-                    stages = stages,
-                    currentStageIndex = currentStageIndex,
-                    strings = strings,
-                    onStageClick = { stage ->
-                        if (!isNavigating && stage.state != JourneyStageState.LOCKED) {
-                            isNavigating = true
-                            viewModel.selectChapterByTitle(stage.title, stage.sequence)
-                            onStartQuest()
+                if (stages.isEmpty()) {
+                    Box(modifier = Modifier.fillMaxWidth().height(420.dp), contentAlignment = Alignment.Center) {
+                        when {
+                            chaptersLoading -> JourneyLoadingState()
+                            chaptersError != null -> JourneyErrorState(
+                                message = chaptersError ?: strings.noChaptersFound,
+                                onRetry = viewModel::refreshChapters
+                            )
+                            else -> JourneyEmptyState(onRetry = viewModel::refreshChapters)
                         }
                     }
-                )
-            }
-        }
-    }
-}
-}
-
-@Composable
-private fun JourneyTopBar(
-    userName: String,
-    isEnglish: Boolean,
-    earnedStars: Int,
-    strings: AppStrings
-) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 20.dp, vertical = 4.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.SpaceBetween
-    ) {
-        Column(modifier = Modifier.weight(1f)) {
-            Text(
-                text = if (isEnglish) "$userName's Roadmap" else "Lộ trình của $userName",
-                color = Color.White,
-                fontSize = 22.sp,
-                fontWeight = FontWeight.Black,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
-            )
-            Text(
-                text = if (isEnglish) "Master English step-by-step" else "Lộ trình chinh phục tiếng Anh từng bước",
-                color = Color(0xB3FFFFFF),
-                fontSize = 12.sp
-            )
-        }
-        Spacer(modifier = Modifier.width(12.dp))
-        Box(
-            modifier = Modifier
-                .clip(RoundedCornerShape(18.dp))
-                .background(Color(0x3314142C))
-                .border(1.dp, Color(0x995C2A9D), RoundedCornerShape(18.dp))
-                .padding(horizontal = 14.dp, vertical = 10.dp),
-            contentAlignment = Alignment.Center
-        ) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(Icons.Default.Star, contentDescription = null, tint = Color(0xFFFFD166), modifier = Modifier.size(20.dp))
-                Spacer(modifier = Modifier.width(6.dp))
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text("$earnedStars", color = Color.White, fontSize = 18.sp, fontWeight = FontWeight.ExtraBold)
-                    Text(strings.starsLabel, color = Color(0xCCFFFFFF), fontSize = 9.sp, fontWeight = FontWeight.Bold)
+                } else {
+                    JourneyPath(
+                        stages = stages,
+                        currentStageIndex = currentStageIndex,
+                        strings = strings,
+                        onStageClick = { stage ->
+                            if (!isNavigating && stage.state != JourneyStageState.LOCKED) {
+                                isNavigating = true
+                                viewModel.selectChapterByTitle(stage.title, stage.sequence)
+                                onStartQuest()
+                            }
+                        }
+                    )
                 }
             }
         }
@@ -207,152 +146,127 @@ private fun JourneyTopBar(
 
 @Composable
 private fun CosmicUserStatsBanner(
-    userName: String,
     avatarUri: String?,
     streak: Int,
     hearts: Int,
-    streakShields: Int,
-    onAvatarClick: () -> Unit = {}
+    streakShields: Int
 ) {
-    val haptic = LocalHapticFeedback.current
-
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 6.dp)
-            .clip(RoundedCornerShape(20.dp))
-            .background(
-                Brush.horizontalGradient(
-                    listOf(
-                        Color(0xDD130B29),
-                        Color(0xDD0D1630),
-                        Color(0xDD150E2D)
-                    )
-                )
-            )
-            .border(
-                1.2.dp,
-                Brush.horizontalGradient(
-                    listOf(
-                        Color(0x668A2BE2),
-                        Color(0x6651FAC1),
-                        Color(0x6600F5D4),
-                        Color(0x668A2BE2)
-                    )
-                ),
-                RoundedCornerShape(20.dp)
-            )
-            .padding(horizontal = 12.dp, vertical = 8.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.SpaceBetween
+            .padding(horizontal = 12.dp, vertical = 12.dp),
+        verticalAlignment = Alignment.CenterVertically
     ) {
-        // 1. Avatar bên trái
+        // Cột 1: Avatar Profile của user
         Box(
-            modifier = Modifier
-                .size(40.dp)
-                .clip(CircleShape)
-                .background(
-                    Brush.sweepGradient(
-                        listOf(Color(0xFF51FAC1), Color(0xFF8A2BE2), Color(0xFFFFD166), Color(0xFF51FAC1))
-                    )
-                )
-                .padding(2.dp)
-                .clip(CircleShape)
-                .background(Color(0xFF140D2B))
-                .clickable {
-                    haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                    onAvatarClick()
-                },
+            modifier = Modifier.weight(1f),
             contentAlignment = Alignment.Center
         ) {
-            if (!avatarUri.isNullOrBlank()) {
-                AsyncImage(
-                    model = avatarUri,
-                    contentDescription = "User Avatar",
-                    contentScale = ContentScale.Crop,
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .clip(CircleShape)
+            Box(
+                modifier = Modifier
+                    .size(42.dp)
+                    .clip(CircleShape)
+                    .background(Color(0xFF14141E))
+                    .border(2.dp, Color(0xFFFFD166), CircleShape)
+                    .padding(2.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                if (avatarUri != null && (avatarUri.startsWith("http://") || avatarUri.startsWith("https://") || avatarUri.startsWith("content://"))) {
+                    AsyncImage(
+                        model = avatarUri,
+                        contentDescription = "Avatar",
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .clip(CircleShape),
+                        contentScale = ContentScale.Crop
+                    )
+                } else {
+                    AsyncImage(
+                        model = resolveAvatarResource(avatarUri),
+                        contentDescription = "Avatar",
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .clip(CircleShape),
+                        contentScale = ContentScale.Fit
+                    )
+                }
+            }
+        }
+
+        // Cột 2: Chuỗi ngày Streak 🔥
+        Box(
+            modifier = Modifier.weight(1f),
+            contentAlignment = Alignment.Center
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.Center
+            ) {
+                Icon(
+                    imageVector = Icons.Default.LocalFireDepartment,
+                    contentDescription = null,
+                    tint = Color(0xFFFF6D00),
+                    modifier = Modifier.size(24.dp)
                 )
-            } else {
+                Spacer(modifier = Modifier.width(6.dp))
                 Text(
-                    text = userName.trim().take(1).uppercase().ifBlank { "K" },
-                    color = Color(0xFF51FAC1),
+                    text = "$streak",
+                    color = Color.White,
                     fontSize = 17.sp,
-                    fontWeight = FontWeight.Black
+                    fontWeight = FontWeight.ExtraBold
                 )
             }
         }
 
-        // Nhóm các chỉ số bên phải (Streak, Hearts, Shields)
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        // Cột 3: Số lượng tym Hearts ❤️
+        Box(
+            modifier = Modifier.weight(1f),
+            contentAlignment = Alignment.Center
         ) {
-            // 2. Chuỗi ngày Streak 🔥
-            CosmicStatBadge(
-                icon = Icons.Default.LocalFireDepartment,
-                iconTint = Color(0xFFFF6D00),
-                value = "$streak",
-                valueColor = Color(0xFFFFD166),
-                badgeBg = Color(0x33FF6D00),
-                borderColor = Color(0x66FF6D00)
-            )
-
-            // 3. Số lượng tym Hearts ❤️
-            CosmicStatBadge(
-                icon = Icons.Default.Favorite,
-                iconTint = Color(0xFFFF2A6D),
-                value = "$hearts",
-                valueColor = Color(0xFFFF85A1),
-                badgeBg = Color(0x33FF2A6D),
-                borderColor = Color(0x66FF2A6D)
-            )
-
-            // 4. Số lượng khiên Shields 🛡️
-            CosmicStatBadge(
-                icon = Icons.Default.Shield,
-                iconTint = Color(0xFF00E5FF),
-                value = "$streakShields",
-                valueColor = Color(0xFF80D8FF),
-                badgeBg = Color(0x3300E5FF),
-                borderColor = Color(0x6600E5FF)
-            )
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.Center
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Favorite,
+                    contentDescription = null,
+                    tint = Color(0xFFFF2A6D),
+                    modifier = Modifier.size(24.dp)
+                )
+                Spacer(modifier = Modifier.width(6.dp))
+                Text(
+                    text = "$hearts",
+                    color = Color.White,
+                    fontSize = 17.sp,
+                    fontWeight = FontWeight.ExtraBold
+                )
+            }
         }
-    }
-}
 
-@Composable
-private fun CosmicStatBadge(
-    icon: androidx.compose.ui.graphics.vector.ImageVector,
-    iconTint: Color,
-    value: String,
-    valueColor: Color,
-    badgeBg: Color,
-    borderColor: Color
-) {
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
-        modifier = Modifier
-            .clip(RoundedCornerShape(13.dp))
-            .background(badgeBg)
-            .border(1.dp, borderColor, RoundedCornerShape(13.dp))
-            .padding(horizontal = 9.dp, vertical = 5.dp)
-    ) {
-        Icon(
-            imageVector = icon,
-            contentDescription = null,
-            tint = iconTint,
-            modifier = Modifier.size(17.dp)
-        )
-        Spacer(modifier = Modifier.width(5.dp))
-        Text(
-            text = value,
-            color = valueColor,
-            fontSize = 13.5.sp,
-            fontWeight = FontWeight.ExtraBold,
-            letterSpacing = 0.3.sp
-        )
+        // Cột 4: Số lượng khiên Shields 🛡️
+        Box(
+            modifier = Modifier.weight(1f),
+            contentAlignment = Alignment.Center
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.Center
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Shield,
+                    contentDescription = null,
+                    tint = Color(0xFF00E5FF),
+                    modifier = Modifier.size(24.dp)
+                )
+                Spacer(modifier = Modifier.width(6.dp))
+                Text(
+                    text = "$streakShields",
+                    color = Color.White,
+                    fontSize = 17.sp,
+                    fontWeight = FontWeight.ExtraBold
+                )
+            }
+        }
     }
 }
 
