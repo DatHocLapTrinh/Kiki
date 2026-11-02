@@ -181,9 +181,7 @@ fun RankRevealScreen(
 
             // Avatar Section với LivingMascotView
             Box(
-                modifier = Modifier
-                    .size(200.dp)
-                    .offset(y = floatAnimSlow.dp),
+                modifier = Modifier.size(200.dp),
                 contentAlignment = Alignment.Center
             ) {
                 // Outer Glow
@@ -219,12 +217,15 @@ fun RankRevealScreen(
                         .size(34.dp)
                 )
 
-                // Living Kiki Mascot
+                // Living Kiki Mascot (Hiển thị toàn thân hoạt ảnh Buồn khi chưa đạt/từ bỏ, hoặc Vui/Ăn mừng)
                 LivingMascotView(
                     emotion = mascotEmotion,
-                    size = 124.dp,
+                    isFullBody = true,
                     avatarRes = R.drawable.companion_mascot,
-                    modifier = Modifier.padding(top = 18.dp)
+                    modifier = Modifier
+                        .height(148.dp)
+                        .aspectRatio(9f / 16f)
+                        .padding(top = 16.dp)
                 )
             }
 

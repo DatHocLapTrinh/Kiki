@@ -39,6 +39,7 @@ fun MascotSpeechBubble(
     ) {
         speech?.let { text ->
             val borderColor = when (emotion) {
+                MascotEmotion.GREETING -> Color(0xFF00F5D4)
                 MascotEmotion.STREAK -> Color(0xFFFF9100)
                 MascotEmotion.CHEER -> Color(0xFFFFD700)
                 MascotEmotion.PETTED -> Color(0xFFFF80AB)
