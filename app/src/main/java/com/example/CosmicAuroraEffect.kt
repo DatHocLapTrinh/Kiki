@@ -275,51 +275,7 @@ fun DrawScope.drawCosmicAuroraSegment(
         style = Stroke(width = 1.3.dp.toPx(), cap = StrokeCap.Round)
     )
 
-    // ── 7. Sparkle Cross Stars (4-Point Stars as in reference image) ─────────
-    val starConfigs = listOf(
-        StarDef(0.24f, -9f, 5.2f, Color(0xFFB1FFF4), 0.5f),
-        StarDef(0.48f, 8f, 7.5f, Color(0xFFFF8AD8), 1.8f),
-        StarDef(0.70f, -7f, 6.0f, Color(0xFFD4B2FF), 3.2f),
-        StarDef(0.85f, 9f, 4.8f, Color(0xFFFFFFFF), 4.5f)
-    )
-
-    for (s in starConfigs) {
-        val sampleIndex = (s.t * samples).toInt().coerceIn(0, samples)
-        val nx = normX[sampleIndex]
-        val ny = normY[sampleIndex]
-        val sx = ptsX[sampleIndex] + nx * s.normOffsetDp.dp.toPx()
-        val sy = ptsY[sampleIndex] + ny * s.normOffsetDp.dp.toPx()
-        val twinkle = (0.55f + 0.45f * sin(animPhase + s.phaseOffset)).coerceIn(0.15f, 1f) * alphaScale
-        drawSparkleStar(
-            centerX = sx,
-            centerY = sy,
-            radiusPx = s.sizeDp.dp.toPx(),
-            color = s.color,
-            twinkleAlpha = twinkle
-        )
-    }
-
-    // ── 8. Stardust Particles (Twinkling Cosmic Specks) ──────────────────────
-    val dustDefs = listOf(
-        Pair(0.16f, 12f),
-        Pair(0.33f, -14f),
-        Pair(0.58f, 15f),
-        Pair(0.76f, -13f),
-        Pair(0.90f, 7f)
-    )
-    for (d in dustDefs) {
-        val sIdx = (d.first * samples).toInt().coerceIn(0, samples)
-        val dxPos = ptsX[sIdx] + normX[sIdx] * d.second.dp.toPx()
-        val dyPos = ptsY[sIdx] + normY[sIdx] * d.second.dp.toPx()
-        val dustAlpha = (0.45f + 0.45f * sin(animPhase + d.first * 8f)).coerceIn(0.2f, 0.95f) * alphaScale
-        drawCircle(
-            color = Color.White.copy(alpha = dustAlpha),
-            radius = 1.6.dp.toPx(),
-            center = Offset(dxPos, dyPos)
-        )
-    }
-
-    // ── 9. Traveling Energy Pulse Orb (Cosmic Plasma Flow) ───────────────────
+    // ── 7. Traveling Star Pulse Orb (Chuyển động truyền từ hành tinh này sang hành tinh khác) ──
     if (isActive) {
         val pulseT = ((animPhase / (2f * PI.toFloat())) % 1f + 1f) % 1f
         val pulseIdx = (pulseT * samples).toInt().coerceIn(0, samples - 1)
@@ -354,56 +310,4 @@ fun DrawScope.drawCosmicAuroraSegment(
             center = Offset(pulseX, pulseY)
         )
     }
-}
-
-private data class StarDef(
-    val t: Float,
-    val normOffsetDp: Float,
-    val sizeDp: Float,
-    val color: Color,
-    val phaseOffset: Float
-)
-
-/**
- * Draws a 4-point concave sparkle star (cross flare) with soft outer glow and bright center.
- */
-private fun DrawScope.drawSparkleStar(
-    centerX: Float,
-    centerY: Float,
-    radiusPx: Float,
-    color: Color,
-    twinkleAlpha: Float
-) {
-    if (radiusPx <= 0f) return
-    val alphaColor = color.copy(alpha = (color.alpha * twinkleAlpha).coerceIn(0f, 1f))
-
-    // Soft glow circle behind star
-    drawCircle(
-        color = alphaColor.copy(alpha = alphaColor.alpha * 0.35f),
-        radius = radiusPx * 1.6f,
-        center = Offset(centerX, centerY)
-    )
-
-    // 4-pointed sparkle star path (concave diamond)
-    val starPath = Path().apply {
-        val r = radiusPx
-        val inner = radiusPx * 0.22f
-        moveTo(centerX, centerY - r)
-        quadraticTo(centerX, centerY, centerX + inner, centerY)
-        quadraticTo(centerX, centerY, centerX + r, centerY)
-        quadraticTo(centerX, centerY, centerX, centerY + inner)
-        quadraticTo(centerX, centerY, centerX, centerY + r)
-        quadraticTo(centerX, centerY, centerX - inner, centerY)
-        quadraticTo(centerX, centerY, centerX - r, centerY)
-        quadraticTo(centerX, centerY, centerX, centerY - inner)
-        close()
-    }
-    drawPath(path = starPath, color = alphaColor)
-
-    // Bright white core dot
-    drawCircle(
-        color = Color.White.copy(alpha = twinkleAlpha.coerceIn(0f, 1f)),
-        radius = radiusPx * 0.28f,
-        center = Offset(centerX, centerY)
-    )
 }
