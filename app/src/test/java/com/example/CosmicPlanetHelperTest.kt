@@ -17,10 +17,10 @@ class CosmicPlanetHelperTest {
         val d5 = CosmicPlanetHelper.getPlanetDiameter(5)
 
         assertEquals(72.dp, d0)
-        assertEquals(82.dp, d1)
-        assertEquals(92.dp, d2)
-        assertEquals(104.dp, d3)
-        assertEquals(116.dp, d4)
+        assertEquals(80.dp, d1)
+        assertEquals(90.dp, d2)
+        assertEquals(102.dp, d3)
+        assertEquals(114.dp, d4)
         assertEquals(128.dp, d5)
 
         assertTrue("Stage 1 must be smaller than Stage 2", d0.value < d1.value)
@@ -32,15 +32,15 @@ class CosmicPlanetHelperTest {
 
     @Test
     fun `planet types map correctly through cosmic stages`() {
-        assertEquals(CosmicPlanetType.MERCURY_ICE, CosmicPlanetHelper.getPlanetTypeForStage(0))
-        assertEquals(CosmicPlanetType.MARS_CRIMSON, CosmicPlanetHelper.getPlanetTypeForStage(1))
-        assertEquals(CosmicPlanetType.TERRA_GAIA, CosmicPlanetHelper.getPlanetTypeForStage(2))
+        assertEquals(CosmicPlanetType.TERRA_GAIA, CosmicPlanetHelper.getPlanetTypeForStage(0))
+        assertEquals(CosmicPlanetType.MOON_GRAY, CosmicPlanetHelper.getPlanetTypeForStage(1))
+        assertEquals(CosmicPlanetType.SATURN_MONARCH, CosmicPlanetHelper.getPlanetTypeForStage(2))
         assertEquals(CosmicPlanetType.JUPITER_STORM, CosmicPlanetHelper.getPlanetTypeForStage(3))
-        assertEquals(CosmicPlanetType.SATURN_MONARCH, CosmicPlanetHelper.getPlanetTypeForStage(4))
+        assertEquals(CosmicPlanetType.MARS_CRIMSON, CosmicPlanetHelper.getPlanetTypeForStage(4))
         assertEquals(CosmicPlanetType.SOLAR_SUN, CosmicPlanetHelper.getPlanetTypeForStage(5))
 
         // Cycle repeats seamlessly for AI-generated higher stages
-        assertEquals(CosmicPlanetType.MERCURY_ICE, CosmicPlanetHelper.getPlanetTypeForStage(6))
+        assertEquals(CosmicPlanetType.TERRA_GAIA, CosmicPlanetHelper.getPlanetTypeForStage(6))
         assertEquals(CosmicPlanetType.SOLAR_SUN, CosmicPlanetHelper.getPlanetTypeForStage(11))
     }
 
