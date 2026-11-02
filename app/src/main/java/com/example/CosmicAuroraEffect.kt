@@ -64,7 +64,8 @@ fun DrawScope.drawCosmicAuroraSegment(
     animPhase: Float,
     waveOffsetPx: Float,
     isActive: Boolean,
-    alphaScale: Float = 1f
+    alphaScale: Float = 1f,
+    surgePulseProgress: Float? = null
 ) {
     val dx = endX - startX
     val dy = endY - startY
@@ -259,38 +260,43 @@ fun DrawScope.drawCosmicAuroraSegment(
     )
 
     // ── 4. Traveling Star Pulse Orb (Ngôi sao truyền từ hành tinh này sang hành tinh khác) ──
-    if (isActive) {
-        val pulseT = ((animPhase / (2f * PI.toFloat())) % 1f + 1f) % 1f
+    val isSurging = surgePulseProgress != null && surgePulseProgress in 0.001f..0.999f
+    if (isActive || isSurging) {
+        val pulseT = if (isSurging) surgePulseProgress!!.coerceIn(0f, 1f) else (((animPhase / (2f * PI.toFloat())) % 1f + 1f) % 1f)
         val pulseIdx = (pulseT * samples).toInt().coerceIn(0, samples - 1)
         val subT = (pulseT * samples) - pulseIdx
         val pulseX = ptsX[pulseIdx] + (ptsX[pulseIdx + 1] - ptsX[pulseIdx]) * subT
         val pulseY = ptsY[pulseIdx] + (ptsY[pulseIdx + 1] - ptsY[pulseIdx]) * subT
 
+        val pulseRadius = if (isSurging) 34.dp.toPx() else 24.dp.toPx()
+        val pulseHaloColor = if (isSurging) Color(0xFF51FAC1) else Color(0x99FFA050)
+        val pulseCoreColor = if (isSurging) Color(0xFFFFFFFF) else Color(0xFFFFD166)
+
         // Soft outer energy flare
         drawCircle(
             brush = Brush.radialGradient(
                 listOf(
-                    Color(0xEEFFFFFF),
-                    Color(0x99FFA050),
+                    Color.White.copy(alpha = if (isSurging) 1.0f else 0.9f),
+                    pulseHaloColor,
                     Color(0x55FF2A85),
                     Color.Transparent
                 ),
                 center = Offset(pulseX, pulseY),
-                radius = 24.dp.toPx()
+                radius = pulseRadius
             ),
-            radius = 24.dp.toPx(),
+            radius = pulseRadius,
             center = Offset(pulseX, pulseY)
         )
         // Radiant fiery core
         drawCircle(
-            color = Color(0xFFFFD166),
-            radius = 7.dp.toPx(),
+            color = pulseCoreColor,
+            radius = (if (isSurging) 10.dp else 7.dp).toPx(),
             center = Offset(pulseX, pulseY)
         )
         // White center spark
         drawCircle(
             color = Color.White,
-            radius = 3.2.dp.toPx(),
+            radius = (if (isSurging) 5.dp else 3.2.dp).toPx(),
             center = Offset(pulseX, pulseY)
         )
     }
