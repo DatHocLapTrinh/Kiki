@@ -503,11 +503,14 @@ fun IntroContent(currentX: Float, currentY: Float, onBurst: (x: Float, y: Float)
                 screenHeight = it.size.height.toFloat()
             }
     ) {
-        // Layer 4: Kiki Masterclass (3D Animated Hero with True Alpha Transparency)
+        // Layer 4: Kiki Masterclass (3D Animated Hero with True Alpha Transparency & Golden Ratio)
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .fillMaxHeight(0.74f)
+                .statusBarsPadding()
+                .padding(top = 16.dp)
+                .fillMaxHeight(0.46f)
+                .heightIn(max = 330.dp)
                 .align(Alignment.TopCenter)
                 .graphicsLayer {
                     translationX = currentX * 45f
