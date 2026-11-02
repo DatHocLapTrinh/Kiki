@@ -241,37 +241,11 @@ fun AskScreen(viewModel: StudyViewModel) {
     ) {
         TopAppBar(
             title = {
-                Column {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(Icons.Default.AutoFixHigh, contentDescription = null, tint = Color(0xFFFFD166), modifier = Modifier.size(22.dp))
-                        Spacer(modifier = Modifier.width(8.dp))
-                        val strings = LocalAppStrings.current
-                        Text(strings.knowledgeDecoder, color = Color.White, fontWeight = FontWeight.Bold, fontSize = 18.sp)
-                    }
-                    val activeProviderTitle by viewModel.activeProviderDisplayTitle.observeAsState("🧠 Gemini 2.5 Flash Native Dialog")
-                    val effectiveProvider = viewModel.getEffectiveActiveProvider()
-                    val indicatorColor = when (effectiveProvider) {
-                        StudyViewModel.PROVIDER_GROQ -> Color(0xFFFF9E00)
-                        StudyViewModel.PROVIDER_GEMINI -> Color(0xFF51FAC1)
-                        StudyViewModel.PROVIDER_CLAUDE -> Color(0xFFE07A5F)
-                        StudyViewModel.PROVIDER_OPENAI -> Color(0xFF10A37F)
-                        else -> Color(0xFF51FAC1)
-                    }
-                    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(top = 2.dp)) {
-                        Box(
-                            modifier = Modifier
-                                .size(6.dp)
-                                .clip(CircleShape)
-                                .background(indicatorColor)
-                        )
-                        Spacer(modifier = Modifier.width(5.dp))
-                        Text(
-                            text = activeProviderTitle,
-                            color = indicatorColor,
-                            fontSize = 11.sp,
-                            fontWeight = FontWeight.Medium
-                        )
-                    }
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(Icons.Default.AutoFixHigh, contentDescription = null, tint = Color(0xFFFFD166), modifier = Modifier.size(22.dp))
+                    Spacer(modifier = Modifier.width(8.dp))
+                    val strings = LocalAppStrings.current
+                    Text(strings.knowledgeDecoder, color = Color.White, fontWeight = FontWeight.Bold, fontSize = 18.sp)
                 }
             },
             actions = {

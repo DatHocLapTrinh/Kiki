@@ -150,13 +150,6 @@ private fun JourneyTopBar(
     ) {
         Column(modifier = Modifier.weight(1f)) {
             Text(
-                text = strings.mapTitle,
-                color = Color(0xFF51FAC1),
-                fontSize = 11.sp,
-                fontWeight = FontWeight.Bold,
-                letterSpacing = 1.2.sp
-            )
-            Text(
                 text = if (isEnglish) "$userName's Roadmap" else "Lộ trình của $userName",
                 color = Color.White,
                 fontSize = 22.sp,
