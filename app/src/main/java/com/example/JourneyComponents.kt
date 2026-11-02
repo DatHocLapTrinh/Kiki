@@ -1,6 +1,7 @@
 package com.example
 
 import androidx.compose.animation.core.*
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -16,6 +17,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -65,11 +68,14 @@ fun RewardChestCard(
                         .background(if (unlocked) Color(0xFFFFD166).copy(alpha = 0.2f) else Color(0x1AFFFFFF)),
                     contentAlignment = Alignment.Center
                 ) {
-                    Icon(
-                        imageVector = if (unlocked) Icons.Default.LockOpen else Icons.Default.Lock,
-                        contentDescription = null,
-                        tint = if (unlocked) Color(0xFFFFD166) else Color(0x66FFFFFF),
-                        modifier = Modifier.size(24.dp)
+                    Image(
+                        painter = painterResource(id = R.drawable.ic_reward_chest),
+                        contentDescription = "Reward Chest",
+                        modifier = Modifier
+                            .size(36.dp)
+                            .graphicsLayer {
+                                alpha = if (unlocked) glowAlpha else 0.70f
+                            }
                     )
                 }
                 Spacer(modifier = Modifier.width(14.dp))

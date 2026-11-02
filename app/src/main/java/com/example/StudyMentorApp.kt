@@ -4,6 +4,7 @@ import android.content.Context
 import android.net.Uri
 import androidx.compose.animation.*
 import androidx.compose.animation.core.*
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -24,10 +25,12 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -1012,14 +1015,14 @@ fun FloatingNavBar(
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
-        NavItem("map", Icons.Default.Map, strings.navMap, currentRoute, navController)
-        NavItem("quests", Icons.Default.TaskAlt, strings.navLearn, currentRoute, navController)
-        NavItem("shop", Icons.Default.Store, strings.navShop, currentRoute, navController)
-        NavItem("ask", Icons.Default.ChatBubbleOutline, strings.navTutor, currentRoute, navController)
-        NavItem("rank", Icons.Default.EmojiEvents, strings.navRank, currentRoute, navController)
+        NavItem("map", R.drawable.ic_nav_roadmap, strings.navMap, currentRoute, navController)
+        NavItem("quests", R.drawable.ic_nav_practice, strings.navLearn, currentRoute, navController)
+        NavItem("shop", R.drawable.ic_nav_shop, strings.navShop, currentRoute, navController)
+        NavItem("ask", R.drawable.ic_nav_mentor, strings.navTutor, currentRoute, navController)
+        NavItem("rank", R.drawable.ic_nav_ranking, strings.navRank, currentRoute, navController)
         NavItem(
             route = "profile",
-            icon = Icons.Default.Menu,
+            drawableRes = R.drawable.ic_nav_menu,
             label = strings.navMenu,
             currentRoute = currentRoute,
             navController = navController,
@@ -1033,7 +1036,7 @@ fun FloatingNavBar(
 @Composable
 fun NavItem(
     route: String,
-    icon: ImageVector,
+    drawableRes: Int,
     label: String,
     currentRoute: String?,
     navController: androidx.navigation.NavHostController,
@@ -1041,9 +1044,8 @@ fun NavItem(
 ) {
     val isSelected = currentRoute == route
     val haptic = LocalHapticFeedback.current
-    val color = if (isSelected) Color(0xFF51FAC1) else Color(0x99FFFFFF)
     val scale by animateFloatAsState(
-        targetValue = if (isSelected) 1.06f else 1f,
+        targetValue = if (isSelected) 1.10f else 1f,
         animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessMedium),
         label = "nav_scale"
     )
@@ -1067,14 +1069,17 @@ fun NavItem(
                     restoreState = true
                 }
             }
-            .padding(horizontal = 14.dp, vertical = 10.dp),
+            .padding(horizontal = 12.dp, vertical = 8.dp),
         contentAlignment = Alignment.Center
     ) {
-        Icon(
-            imageVector = icon,
+        Image(
+            painter = painterResource(id = drawableRes),
             contentDescription = label,
-            tint = color,
-            modifier = Modifier.size(26.dp)
+            modifier = Modifier
+                .size(28.dp)
+                .graphicsLayer {
+                    alpha = if (isSelected) 1.0f else 0.68f
+                }
         )
     }
 }

@@ -12,6 +12,7 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -21,6 +22,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.ui.res.painterResource
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.*
 import androidx.compose.material.icons.filled.*
@@ -202,11 +204,10 @@ private fun CosmicUserStatsBanner(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.Center
             ) {
-                Icon(
-                    imageVector = Icons.Default.LocalFireDepartment,
-                    contentDescription = null,
-                    tint = Color(0xFFFF6D00),
-                    modifier = Modifier.size(24.dp)
+                Image(
+                    painter = painterResource(id = R.drawable.ic_stat_streak),
+                    contentDescription = "Streak",
+                    modifier = Modifier.size(26.dp)
                 )
                 Spacer(modifier = Modifier.width(6.dp))
                 Text(
@@ -227,11 +228,10 @@ private fun CosmicUserStatsBanner(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.Center
             ) {
-                Icon(
-                    imageVector = Icons.Default.Favorite,
-                    contentDescription = null,
-                    tint = Color(0xFFFF2A6D),
-                    modifier = Modifier.size(24.dp)
+                Image(
+                    painter = painterResource(id = R.drawable.ic_stat_heart),
+                    contentDescription = "Hearts",
+                    modifier = Modifier.size(26.dp)
                 )
                 Spacer(modifier = Modifier.width(6.dp))
                 Text(
@@ -252,11 +252,10 @@ private fun CosmicUserStatsBanner(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.Center
             ) {
-                Icon(
-                    imageVector = Icons.Default.Shield,
-                    contentDescription = null,
-                    tint = Color(0xFF00E5FF),
-                    modifier = Modifier.size(24.dp)
+                Image(
+                    painter = painterResource(id = R.drawable.ic_stat_shield),
+                    contentDescription = "Shields",
+                    modifier = Modifier.size(26.dp)
                 )
                 Spacer(modifier = Modifier.width(6.dp))
                 Text(
