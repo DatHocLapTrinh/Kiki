@@ -378,12 +378,12 @@ private fun JourneyStageRow(
     val containerWidth = when {
         isSaturn -> planetDiameter + 68.dp
         isSun    -> planetDiameter + 56.dp
-        else     -> planetDiameter + 48.dp
+        else     -> planetDiameter + 52.dp
     }
     val containerHeight = when {
         isSun    -> planetDiameter + 56.dp
         isSaturn -> planetDiameter + 38.dp
-        else     -> planetDiameter + 48.dp
+        else     -> planetDiameter + 52.dp
     }
 
     BoxWithConstraints(
