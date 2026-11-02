@@ -1,4 +1,4 @@
-﻿package com.example
+package com.example
 
 import android.content.Context
 import android.net.Uri
@@ -673,48 +673,31 @@ fun MainNavigation(viewModel: StudyViewModel, onLogout: () -> Unit) {
         var showVideoCall by remember { mutableStateOf(false) }
         var showPronouncePractice by remember { mutableStateOf(false) }
 
-        FloatingNavBar(
-            navController = navController,
-            viewModel = viewModel,
-            onOpenMoreSheet = { showDuolingoMoreSheet = true },
-            modifier = Modifier
-                .align(Alignment.BottomCenter)
-                .navigationBarsPadding()
-                .padding(bottom = 12.dp)
-        )
-
         if (showDuolingoMoreSheet) {
-            DuolingoMoreBottomSheet(
+            DuolingoMoreFloatingMenu(
                 strings = strings,
                 onDismiss = { showDuolingoMoreSheet = false },
-                onNavigateShop = {
+                onNavigateProfile = {
                     showDuolingoMoreSheet = false
-                    navController.navigate("shop") {
-                        popUpTo(navController.graph.startDestinationId) { saveState = true }
-                        launchSingleTop = true
-                        restoreState = true
-                    }
-                },
-                onNavigatePronounce = {
-                    showDuolingoMoreSheet = false
-                    showPronouncePractice = true
-                },
-                onNavigateVideoCall = {
-                    showDuolingoMoreSheet = false
-                    showVideoCall = true
-                },
-                onNavigatePractice = {
-                    showDuolingoMoreSheet = false
-                    viewModel.setKikiExplorerSection(KikiExplorerSection.MISTAKES)
+                    viewModel.setKikiExplorerSection(KikiExplorerSection.PROFILE)
                     navController.navigate("profile") {
                         popUpTo(navController.graph.startDestinationId) { saveState = true }
                         launchSingleTop = true
                         restoreState = true
                     }
                 },
-                onNavigateProfileSettings = {
+                onNavigateVocab = {
                     showDuolingoMoreSheet = false
-                    viewModel.setKikiExplorerSection(KikiExplorerSection.PROFILE)
+                    viewModel.setKikiExplorerSection(KikiExplorerSection.VOCABULARY)
+                    navController.navigate("profile") {
+                        popUpTo(navController.graph.startDestinationId) { saveState = true }
+                        launchSingleTop = true
+                        restoreState = true
+                    }
+                },
+                onNavigateSettings = {
+                    showDuolingoMoreSheet = false
+                    viewModel.setKikiExplorerSection(KikiExplorerSection.SETTINGS)
                     navController.navigate("profile") {
                         popUpTo(navController.graph.startDestinationId) { saveState = true }
                         launchSingleTop = true
@@ -723,6 +706,17 @@ fun MainNavigation(viewModel: StudyViewModel, onLogout: () -> Unit) {
                 }
             )
         }
+
+        FloatingNavBar(
+            navController = navController,
+            viewModel = viewModel,
+            isMoreOpen = showDuolingoMoreSheet,
+            onOpenMoreSheet = { showDuolingoMoreSheet = !showDuolingoMoreSheet },
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .navigationBarsPadding()
+                .padding(bottom = 12.dp)
+        )
 
         if (showVideoCall) {
             KikiVideoCallDialog(
@@ -745,6 +739,7 @@ fun MainNavigation(viewModel: StudyViewModel, onLogout: () -> Unit) {
 fun FloatingNavBar(
     navController: androidx.navigation.NavHostController,
     viewModel: StudyViewModel? = null,
+    isMoreOpen: Boolean = false,
     onOpenMoreSheet: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -782,140 +777,149 @@ fun FloatingNavBar(
         NavItem("ask", Icons.Default.ChatBubbleOutline, strings.navTutor, currentRoute, navController)
         NavItem("rank", Icons.Default.EmojiEvents, strings.navRank, currentRoute, navController)
 
-        // Nút ... 3 chấm tròn kiểu Duolingo (More Options Pill)
+        // Nút Menu Ba Gạch / Ba Chấm có MÀU VÀ KIỂU DÁNG HOÀN TOÀN ĐỒNG BỘ CÁC TAB KHÁC
+        val moreSelected = isMoreOpen
+        val moreColor = if (moreSelected) Color(0xFF51FAC1) else Color(0x99FFFFFF)
+        val moreScale by animateFloatAsState(
+            targetValue = if (moreSelected) 1.06f else 1f,
+            animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessMedium),
+            label = "more_nav_scale"
+        )
+
         Box(
             modifier = Modifier
-                .size(46.dp)
-                .clip(CircleShape)
-                .background(
-                    Brush.linearGradient(
-                        listOf(Color(0xFFAB47BC), Color(0xFF8E24AA))
-                    )
-                )
+                .scale(moreScale)
+                .clip(RoundedCornerShape(20.dp))
+                .background(if (moreSelected) Color(0x2E4EF3C5) else Color.Transparent)
                 .border(
-                    width = 1.5.dp,
-                    color = Color(0xFFE1BEE7),
-                    shape = CircleShape
+                    width = if (moreSelected) 1.dp else 0.dp,
+                    color = if (moreSelected) Color(0x4D51FAC1) else Color.Transparent,
+                    shape = RoundedCornerShape(20.dp)
                 )
                 .clickable {
                     haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
                     onOpenMoreSheet()
-                },
+                }
+                .padding(horizontal = 14.dp, vertical = 10.dp),
             contentAlignment = Alignment.Center
         ) {
             Icon(
-                imageVector = Icons.Default.MoreHoriz,
+                imageVector = Icons.Default.Menu,
                 contentDescription = strings.navMenu,
-                tint = Color.White,
-                modifier = Modifier.size(24.dp)
+                tint = moreColor,
+                modifier = Modifier.size(26.dp)
             )
         }
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun DuolingoMoreBottomSheet(
+fun DuolingoMoreFloatingMenu(
     strings: AppStrings,
     onDismiss: () -> Unit,
-    onNavigateShop: () -> Unit,
-    onNavigatePronounce: () -> Unit,
-    onNavigateVideoCall: () -> Unit,
-    onNavigatePractice: () -> Unit,
-    onNavigateProfileSettings: () -> Unit
+    onNavigateProfile: () -> Unit,
+    onNavigateVocab: () -> Unit,
+    onNavigateSettings: () -> Unit
 ) {
     val haptic = LocalHapticFeedback.current
-    ModalBottomSheet(
-        onDismissRequest = onDismiss,
-        containerColor = Color(0xFF131722),
-        dragHandle = {
-            Box(
-                modifier = Modifier
-                    .padding(top = 10.dp, bottom = 6.dp)
-                    .size(width = 40.dp, height = 4.dp)
-                    .clip(CircleShape)
-                    .background(Color(0x55FFFFFF))
-            )
-        }
+    val isEnglish = strings.settingsTitle == "Settings"
+
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .clickable(
+                interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() },
+                indication = null
+            ) { onDismiss() }
     ) {
+        // Nền mờ nhẹ
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(Color.Black.copy(alpha = 0.5f))
+        )
+
+        // Mini tab NẰM TRÊN THANH BOTTOM BAR (không đè lên thanh điều hướng!)
         Column(
             modifier = Modifier
-                .fillMaxWidth()
+                .align(Alignment.BottomCenter)
                 .navigationBarsPadding()
-                .padding(horizontal = 16.dp, vertical = 8.dp)
-                .padding(bottom = 20.dp),
+                .padding(bottom = 88.dp)
+                .fillMaxWidth(0.92f)
+                .clip(RoundedCornerShape(24.dp))
+                .background(Color(0xFF131722))
+                .border(1.5.dp, Color(0x4451FAC1), RoundedCornerShape(24.dp))
+                .clickable(
+                    interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() },
+                    indication = null
+                ) { /* absorb clicks */ }
+                .padding(horizontal = 14.dp, vertical = 10.dp),
             verticalArrangement = Arrangement.spacedBy(2.dp)
         ) {
-            // 1. Cửa hàng (Shop) - Khối hộp 3D xanh lam Cyan giống hình Duolingo
+            // Tiêu đề mini tab
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 8.dp, vertical = 6.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Text(
+                    text = if (isEnglish) "EXPLORER HUB" else "DANH MỤC THAO TÁC",
+                    color = Color(0xFF51FAC1),
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.Black,
+                    letterSpacing = 1.2.sp
+                )
+                Icon(
+                    imageVector = Icons.Default.Close,
+                    contentDescription = "Close",
+                    tint = Color(0x88FFFFFF),
+                    modifier = Modifier
+                        .size(20.dp)
+                        .clickable { onDismiss() }
+                )
+            }
+
+            HorizontalDivider(color = Color(0x1A51FAC1), thickness = 0.8.dp)
+
+            // 1. Hồ sơ (gồm danh hiệu và cột mốc bên trong)
             DuolingoMenuItem(
-                title = strings.duolingoShop,
-                icon = Icons.Default.LocalMall,
-                iconTint = Color.White,
-                iconBg = Color(0xFF00B4D8),
-                shapeType = 0,
+                title = if (isEnglish) "Profile & Cosmic Badges" else "Hồ Sơ & Danh Hiệu Cột Mốc",
+                icon = Icons.Default.Person,
+                iconTint = Color(0xFF51FAC1),
+                iconBg = Color(0x2251FAC1),
                 onClick = {
                     haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                    onNavigateShop()
+                    onNavigateProfile()
                 }
             )
 
-            HorizontalDivider(color = Color(0x1AFFFFFF), thickness = 0.8.dp)
+            HorizontalDivider(color = Color(0x1A51FAC1), thickness = 0.8.dp)
 
-            // 2. Phát âm & Luyện nói - Biểu tượng khuôn miệng đỏ cam hoạt hình
+            // 2. Từ vựng & Ngữ pháp
             DuolingoMenuItem(
-                title = strings.duolingoPronounce,
-                icon = Icons.Default.RecordVoiceOver,
-                iconTint = Color.White,
-                iconBg = Color(0xFFFF6F59),
-                shapeType = 1,
+                title = if (isEnglish) "Vocabulary & Grammar" else "Từ Vựng & Ngữ Pháp",
+                icon = Icons.Default.CollectionsBookmark,
+                iconTint = Color(0xFF51FAC1),
+                iconBg = Color(0x2251FAC1),
                 onClick = {
                     haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                    onNavigatePronounce()
+                    onNavigateVocab()
                 }
             )
 
-            HorizontalDivider(color = Color(0x1AFFFFFF), thickness = 0.8.dp)
+            HorizontalDivider(color = Color(0x1A51FAC1), thickness = 0.8.dp)
 
-            // 3. Cuộc gọi video / Kiki AI - Máy quay video màu tím violet
+            // 3. Cài đặt & Tuỳ chọn
             DuolingoMenuItem(
-                title = strings.duolingoVideoCall,
-                icon = Icons.Default.Videocam,
-                iconTint = Color.White,
-                iconBg = Color(0xFF8E24AA),
-                shapeType = 2,
+                title = if (isEnglish) "Settings & Preferences" else "Cài Đặt & Tuỳ Chọn",
+                icon = Icons.Default.Settings,
+                iconTint = Color(0xFF51FAC1),
+                iconBg = Color(0x2251FAC1),
                 onClick = {
                     haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                    onNavigateVideoCall()
-                }
-            )
-
-            HorizontalDivider(color = Color(0x1AFFFFFF), thickness = 0.8.dp)
-
-            // 4. Trung tâm luyện tập (Practice Center) - Hình tạ tập gym màu xanh dương
-            DuolingoMenuItem(
-                title = strings.duolingoPractice,
-                icon = Icons.Default.FitnessCenter,
-                iconTint = Color.White,
-                iconBg = Color(0xFF29B6F6),
-                shapeType = 3,
-                onClick = {
-                    haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                    onNavigatePractice()
-                }
-            )
-
-            HorizontalDivider(color = Color(0x1AFFFFFF), thickness = 0.8.dp)
-
-            // 5. Hồ sơ & Cài đặt (Profile & Settings)
-            DuolingoMenuItem(
-                title = strings.duolingoProfileSettings,
-                icon = Icons.Default.AccountCircle,
-                iconTint = Color.White,
-                iconBg = Color(0xFF51FAC1),
-                shapeType = 4,
-                onClick = {
-                    haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                    onNavigateProfileSettings()
+                    onNavigateSettings()
                 }
             )
         }
@@ -926,9 +930,8 @@ fun DuolingoMoreBottomSheet(
 private fun DuolingoMenuItem(
     title: String,
     icon: ImageVector,
-    iconTint: Color,
-    iconBg: Color,
-    shapeType: Int,
+    iconTint: Color = Color(0xFF51FAC1),
+    iconBg: Color = Color(0x2251FAC1),
     onClick: () -> Unit
 ) {
     Row(
@@ -936,62 +939,37 @@ private fun DuolingoMenuItem(
             .fillMaxWidth()
             .clip(RoundedCornerShape(16.dp))
             .clickable(onClick = onClick)
-            .padding(horizontal = 14.dp, vertical = 14.dp),
+            .padding(horizontal = 14.dp, vertical = 13.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Box(
             modifier = Modifier
-                .size(42.dp)
-                .clip(
-                    when (shapeType) {
-                        0 -> RoundedCornerShape(12.dp)
-                        1 -> RoundedCornerShape(14.dp)
-                        2 -> RoundedCornerShape(14.dp)
-                        3 -> RoundedCornerShape(12.dp)
-                        else -> CircleShape
-                    }
-                )
-                .background(
-                    Brush.verticalGradient(
-                        listOf(iconBg.copy(alpha = 0.95f), iconBg)
-                    )
-                )
-                .border(
-                    width = 1.dp,
-                    color = Color.White.copy(alpha = 0.35f),
-                    shape = when (shapeType) {
-                        0 -> RoundedCornerShape(12.dp)
-                        1 -> RoundedCornerShape(14.dp)
-                        2 -> RoundedCornerShape(14.dp)
-                        3 -> RoundedCornerShape(12.dp)
-                        else -> CircleShape
-                    }
-                ),
+                .size(44.dp)
+                .clip(RoundedCornerShape(13.dp))
+                .background(iconBg)
+                .border(1.dp, iconTint.copy(alpha = 0.4f), RoundedCornerShape(13.dp)),
             contentAlignment = Alignment.Center
         ) {
             Icon(
                 imageVector = icon,
                 contentDescription = title,
                 tint = iconTint,
-                modifier = Modifier.size(22.dp)
+                modifier = Modifier.size(24.dp)
             )
         }
-
-        Spacer(modifier = Modifier.width(18.dp))
-
+        Spacer(modifier = Modifier.width(16.dp))
         Text(
             text = title,
             color = Color.White,
-            fontSize = 17.sp,
+            fontSize = 16.sp,
             fontWeight = FontWeight.Bold,
             modifier = Modifier.weight(1f)
         )
-
         Icon(
             imageVector = Icons.AutoMirrored.Filled.ArrowForwardIos,
             contentDescription = null,
             tint = Color(0x44FFFFFF),
-            modifier = Modifier.size(14.dp)
+            modifier = Modifier.size(13.dp)
         )
     }
 }

@@ -48,6 +48,8 @@ import com.example.model.BadgeId
 import com.example.notification.KikiDailyReminderScheduler
 import coil.compose.AsyncImage
 import com.example.ui.VocabularyVaultDialog
+import com.example.ui.KikiVideoCallDialog
+import com.example.ui.PronunciationPracticeDialog
 import com.example.ui.WeakPointsClinicDialog
 import com.example.ui.AddWordDialog
 import com.example.sqlite.room.VocabularyEntity
@@ -74,14 +76,16 @@ enum class KikiExplorerSection {
     PROFILE,
     VOCABULARY,
     MISTAKES,
-    ACHIEVEMENTS
+    ACHIEVEMENTS,
+    SETTINGS
 }
 
 @Composable
 fun ProfileScreen(
     viewModel: StudyViewModel, 
     onLogout: () -> Unit = {},
-    onNavigateToRoadmap: () -> Unit = {}
+    onNavigateToRoadmap: () -> Unit = {},
+    onNavigateToShop: () -> Unit = {}
 ) {
     val strings = LocalAppStrings.current
     val context = LocalContext.current
@@ -125,6 +129,8 @@ fun ProfileScreen(
     val selectedLevel by viewModel.selectedLevel.observeAsState("Beginner")
     var soundEnabled by remember(userId) { mutableStateOf(settings.getBoolean("sound_enabled", true)) }
     var notificationsEnabled by remember(userId) { mutableStateOf(settings.getBoolean("notifications_enabled", true)) }
+    var showVideoCall by remember { mutableStateOf(false) }
+    var showPronouncePractice by remember { mutableStateOf(false) }
     var showSettingsSheet by remember { mutableStateOf(false) }
     var showLogoutDialog by remember { mutableStateOf(false) }
     var showLevelDialog by remember { mutableStateOf(false) }
@@ -186,9 +192,13 @@ fun ProfileScreen(
                     earnedStars = earnedStars,
                     isEnglish = isEnglish,
                     currentSection = currentSection,
+                    onBackClick = {
+                        haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.TextHandleMove)
+                        viewModel.setKikiExplorerSection(KikiExplorerSection.PROFILE)
+                    },
                     onSettingsClick = {
                         haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.TextHandleMove)
-                        showSettingsSheet = true
+                        viewModel.setKikiExplorerSection(KikiExplorerSection.SETTINGS)
                     }
                 )
                 Spacer(modifier = Modifier.height(14.dp))
@@ -209,17 +219,18 @@ fun ProfileScreen(
                             avatarUri = avatarUri,
                             earnedStars = earnedStars,
                             vocabCount = vocabularyList.size,
-                            weakPointsCount = weakPoints.size,
-                            unlockedBadgeCount = unlockedBadgeIds.size,
-                            totalBadgeCount = allBadges.size,
                             isEnglish = isEnglish,
-                            onSectionSelect = { targetSection ->
+                            onNavigateProfile = {
                                 haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.TextHandleMove)
-                                viewModel.setKikiExplorerSection(targetSection)
+                                viewModel.setKikiExplorerSection(KikiExplorerSection.PROFILE)
+                            },
+                            onNavigateVocab = {
+                                haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.TextHandleMove)
+                                viewModel.setKikiExplorerSection(KikiExplorerSection.VOCABULARY)
                             },
                             onSettingsClick = {
                                 haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.TextHandleMove)
-                                showSettingsSheet = true
+                                viewModel.setKikiExplorerSection(KikiExplorerSection.SETTINGS)
                             },
                             onLogoutClick = {
                                 haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.TextHandleMove)
@@ -244,6 +255,12 @@ fun ProfileScreen(
                             totalLessons = totalLessons,
                             earnedStars = earnedStars,
                             selectedLevel = selectedLevel,
+                            allBadges = allBadges,
+                            unlockedBadgeCount = unlockedBadgeIds.size,
+                            onBadgeClick = { badge ->
+                                haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.TextHandleMove)
+                                selectedBadgeForDetail = badge
+                            },
                             onEditClick = {
                                 haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.TextHandleMove)
                                 showEditProfileDialog = true
@@ -255,7 +272,7 @@ fun ProfileScreen(
                             },
                             onOpenSettings = {
                                 haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.TextHandleMove)
-                                showSettingsSheet = true
+                                viewModel.setKikiExplorerSection(KikiExplorerSection.SETTINGS)
                             },
                             onLogoutClick = {
                                 haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.TextHandleMove)
@@ -311,6 +328,21 @@ fun ProfileScreen(
                                 haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.TextHandleMove)
                                 selectedBadgeForDetail = badge
                             }
+                        )
+                    }
+                    KikiExplorerSection.SETTINGS -> {
+                        ProfileSettingsSectionView(
+                            soundEnabled = soundEnabled,
+                            onSoundChanged = {
+                                haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.TextHandleMove)
+                                soundEnabled = it
+                                settings.edit().putBoolean("sound_enabled", it).apply()
+                            },
+                            onLogoutClick = {
+                                haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.TextHandleMove)
+                                showLogoutDialog = true
+                            },
+                            isEnglish = isEnglish
                         )
                     }
                 }
@@ -372,6 +404,20 @@ fun ProfileScreen(
         )
     }
 
+    if (showVideoCall) {
+        KikiVideoCallDialog(
+            viewModel = viewModel,
+            onDismiss = { showVideoCall = false }
+        )
+    }
+
+    if (showPronouncePractice) {
+        PronunciationPracticeDialog(
+            viewModel = viewModel,
+            onDismiss = { showPronouncePractice = false }
+        )
+    }
+
     if (selectedBadgeForDetail != null) {
         AchievementDetailDialog(
             badge = selectedBadgeForDetail,
@@ -403,33 +449,12 @@ fun ProfileScreen(
         ProfileSettingsBottomSheet(
             strings = strings,
             isEnglish = isEnglish,
-            selectedLevel = selectedLevel,
             soundEnabled = soundEnabled,
-            notificationsEnabled = notificationsEnabled,
             onDismiss = { showSettingsSheet = false },
-            onSelectLevelClick = {
-                haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.TextHandleMove)
-                showLevelDialog = true
-            },
-            onLanguageChanged = {
-                haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.TextHandleMove)
-                settings.edit().putBoolean("english", it).apply()
-                viewModel.setEnglish(it)
-            },
             onSoundChanged = {
                 haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.TextHandleMove)
                 soundEnabled = it
                 settings.edit().putBoolean("sound_enabled", it).apply()
-            },
-            onNotificationsChanged = {
-                haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.TextHandleMove)
-                notificationsEnabled = it
-                settings.edit().putBoolean("notifications_enabled", it).apply()
-                if (it) {
-                    KikiDailyReminderScheduler.scheduleDailyReminder(context)
-                } else {
-                    KikiDailyReminderScheduler.cancelDailyReminder(context)
-                }
             },
             onLogoutClick = {
                 haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.TextHandleMove)
@@ -447,13 +472,14 @@ fun ProfileScreen(
             rankTitle = rankTitle,
             avatarUri = avatarUri,
             vocabCount = vocabularyList.size,
-            weakPointsCount = weakPoints.size,
-            unlockedBadgeCount = unlockedBadgeIds.size,
-            totalBadgeCount = allBadges.size,
             isEnglish = isEnglish,
-            onSectionSelect = { section ->
-                viewModel.setKikiExplorerSection(section)
+            onNavigateProfile = {
                 showNavDrawer = false
+                viewModel.setKikiExplorerSection(KikiExplorerSection.PROFILE)
+            },
+            onNavigateVocab = {
+                showNavDrawer = false
+                viewModel.setKikiExplorerSection(KikiExplorerSection.VOCABULARY)
             },
             onSettingsClick = {
                 showNavDrawer = false
@@ -528,9 +554,24 @@ private fun ProfileHeader(
     earnedStars: Int,
     isEnglish: Boolean,
     currentSection: KikiExplorerSection,
+    onBackClick: () -> Unit = {},
     onSettingsClick: () -> Unit
 ) {
     Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+        if (currentSection != KikiExplorerSection.PROFILE && currentSection != KikiExplorerSection.HUB) {
+            IconButton(
+                onClick = onBackClick,
+                modifier = Modifier.size(40.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                    contentDescription = "Back",
+                    tint = Color(0xFF51FAC1),
+                    modifier = Modifier.size(22.dp)
+                )
+            }
+            Spacer(modifier = Modifier.width(8.dp))
+        }
         Column(modifier = Modifier.weight(1f)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Box(
@@ -556,6 +597,7 @@ private fun ProfileHeader(
                     KikiExplorerSection.VOCABULARY -> if (isEnglish) "Vocabulary & Grammar" else "Từ Vựng & Ngữ Pháp"
                     KikiExplorerSection.ACHIEVEMENTS -> if (isEnglish) "Cosmic Titles & Badges" else "Danh Hiệu & Cột Mốc"
                     KikiExplorerSection.MISTAKES -> if (isEnglish) "Mistake Clinic" else "Phòng Khám Lỗi Sai"
+                    KikiExplorerSection.SETTINGS -> if (isEnglish) "Settings & Preferences" else "Cài Đặt & Tuỳ Chọn"
                 },
                 color = Color.White,
                 fontSize = 19.sp,
@@ -566,10 +608,11 @@ private fun ProfileHeader(
             Text(
                 text = when (currentSection) {
                     KikiExplorerSection.HUB -> if (isEnglish) "Galactic exploration menu" else "Danh mục khám phá vũ trụ"
-                    KikiExplorerSection.PROFILE -> if (isEnglish) "Profile, avatar & account session" else "Hồ sơ, ảnh đại diện & đăng xuất"
+                    KikiExplorerSection.PROFILE -> if (isEnglish) "Cosmic Profile & Milestones" else "Hồ sơ, danh hiệu & cột mốc"
                     KikiExplorerSection.VOCABULARY -> if (isEnglish) "Saved vocabulary, 3D cards & grammar tips" else "Sổ từ vựng, thẻ 3D & mẹo ngữ pháp"
                     KikiExplorerSection.ACHIEVEMENTS -> if (isEnglish) "Cosmic glory milestones & unlocked badges" else "Huy hiệu vũ trụ & sao tinh tú tích lũy"
                     KikiExplorerSection.MISTAKES -> if (isEnglish) "Cure errors & earn bonus XP" else "Củng cố điểm yếu & nhận điểm thưởng"
+                    KikiExplorerSection.SETTINGS -> if (isEnglish) "Sound effects & account logout" else "Âm thanh & đăng xuất tài khoản"
                 },
                 color = Color(0xB3FFFFFF),
                 fontSize = 10.5.sp,
@@ -599,30 +642,32 @@ private fun ProfileHeader(
                 }
             }
 
-            // Quick Settings Action Button
-            Box(
-                modifier = Modifier
-                    .size(54.dp)
-                    .clip(RoundedCornerShape(16.dp))
-                    .background(Color(0x66191438))
-                    .border(1.dp, Color(0x995C3DA0), RoundedCornerShape(16.dp))
-                    .clickable(onClick = onSettingsClick),
-                contentAlignment = Alignment.Center
-            ) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Icon(
-                        Icons.Default.Settings,
-                        contentDescription = if (isEnglish) "Settings" else "Cài đặt",
-                        tint = Color(0xFF51FAC1),
-                        modifier = Modifier.size(19.dp)
-                    )
-                    Spacer(modifier = Modifier.height(2.dp))
-                    Text(
-                        if (isEnglish) "SETTINGS" else "CÀI ĐẶT",
-                        color = Color(0xFF51FAC1),
-                        fontSize = 7.5.sp,
-                        fontWeight = FontWeight.Bold
-                    )
+            if (currentSection != KikiExplorerSection.SETTINGS) {
+                // Quick Settings Action Button
+                Box(
+                    modifier = Modifier
+                        .size(54.dp)
+                        .clip(RoundedCornerShape(16.dp))
+                        .background(Color(0x66191438))
+                        .border(1.dp, Color(0x995C3DA0), RoundedCornerShape(16.dp))
+                        .clickable(onClick = onSettingsClick),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Icon(
+                            Icons.Default.Settings,
+                            contentDescription = if (isEnglish) "Settings" else "Cài đặt",
+                            tint = Color(0xFF51FAC1),
+                            modifier = Modifier.size(19.dp)
+                        )
+                        Spacer(modifier = Modifier.height(2.dp))
+                        Text(
+                            if (isEnglish) "SETTINGS" else "CÀI ĐẶT",
+                            color = Color(0xFF51FAC1),
+                            fontSize = 7.5.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
                 }
             }
         }
@@ -1383,19 +1428,111 @@ private fun AchievementDetailDialog(
     )
 }
 
+@Composable
+private fun ProfileSettingsSectionView(
+    soundEnabled: Boolean,
+    onSoundChanged: (Boolean) -> Unit,
+    onLogoutClick: () -> Unit,
+    isEnglish: Boolean
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(bottom = 32.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp)
+    ) {
+        Text(
+            text = if (isEnglish) "PREFERENCES" else "TUỲ CHỌN HỆ THỐNG",
+            color = Color(0xFF51FAC1),
+            fontSize = 11.sp,
+            fontWeight = FontWeight.Bold,
+            letterSpacing = 1.sp
+        )
+
+        // Sound Effects toggle
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(20.dp))
+                .background(Color(0xFF131722))
+                .border(1.dp, Color(0x3351FAC1), RoundedCornerShape(20.dp))
+                .padding(16.dp)
+        ) {
+            ProfileSettingRow(
+                title = if (isEnglish) "Sound Effects" else "Hiệu Ứng Âm Thanh",
+                icon = Icons.AutoMirrored.Filled.VolumeUp,
+                checked = soundEnabled,
+                onCheckedChange = onSoundChanged
+            )
+        }
+
+        Spacer(modifier = Modifier.height(4.dp))
+
+        Text(
+            text = if (isEnglish) "ACCOUNT" else "TÀI KHOẢN",
+            color = Color(0xFF51FAC1),
+            fontSize = 11.sp,
+            fontWeight = FontWeight.Bold,
+            letterSpacing = 1.sp
+        )
+
+        // Logout button
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(20.dp))
+                .background(Color(0xFF131722))
+                .border(1.dp, Color(0x33FF5252), RoundedCornerShape(20.dp))
+                .clickable(onClick = onLogoutClick)
+                .padding(16.dp)
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Box(
+                        modifier = Modifier
+                            .size(36.dp)
+                            .clip(CircleShape)
+                            .background(Color(0x22FF5252)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.Logout,
+                            contentDescription = null,
+                            tint = Color(0xFFFF5252),
+                            modifier = Modifier.size(18.dp)
+                        )
+                    }
+                    Spacer(modifier = Modifier.width(12.dp))
+                    Text(
+                        text = if (isEnglish) "Log Out" else "Đăng Xuất Tài Khoản",
+                        color = Color(0xFFFF5252),
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+                Icon(
+                    imageVector = Icons.AutoMirrored.Filled.ArrowForwardIos,
+                    contentDescription = null,
+                    tint = Color(0x66FF5252),
+                    modifier = Modifier.size(14.dp)
+                )
+            }
+        }
+    }
+}
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun ProfileSettingsBottomSheet(
     strings: AppStrings,
     isEnglish: Boolean,
-    selectedLevel: String,
     soundEnabled: Boolean,
-    notificationsEnabled: Boolean,
     onDismiss: () -> Unit,
-    onSelectLevelClick: () -> Unit,
-    onLanguageChanged: (Boolean) -> Unit,
     onSoundChanged: (Boolean) -> Unit,
-    onNotificationsChanged: (Boolean) -> Unit,
     onLogoutClick: () -> Unit
 ) {
     ModalBottomSheet(
@@ -1434,13 +1571,13 @@ private fun ProfileSettingsBottomSheet(
                     Spacer(modifier = Modifier.width(12.dp))
                     Column {
                         Text(
-                            text = if (isEnglish) "Settings & Preferences" else "Cài Đặt & Cấu Hình",
+                            text = if (isEnglish) "Settings & Preferences" else "Cài Đặt & Tuỳ Chọn",
                             color = Color.White,
                             fontSize = 17.sp,
                             fontWeight = FontWeight.Bold
                         )
                         Text(
-                            text = if (isEnglish) "Personalize your study experience" else "Tùy chỉnh trải nghiệm học tập của bạn",
+                            text = if (isEnglish) "Sound and account settings" else "Âm thanh & đăng xuất tài khoản",
                             color = Color(0x88FFFFFF),
                             fontSize = 11.sp
                         )
@@ -1459,9 +1596,9 @@ private fun ProfileSettingsBottomSheet(
 
             Spacer(modifier = Modifier.height(18.dp))
 
-            // Section 1: Study & Language
+            // Sound Effects Box
             Text(
-                text = if (isEnglish) "LEARNING & LANGUAGE" else "HỌC TẬP & NGÔN NGỮ",
+                text = if (isEnglish) "PREFERENCES" else "TUỲ CHỌN HỆ THỐNG",
                 color = Color(0xFF51FAC1),
                 fontSize = 11.sp,
                 fontWeight = FontWeight.Bold,
@@ -1477,47 +1614,17 @@ private fun ProfileSettingsBottomSheet(
                     .border(1.dp, Color(0x555C3DA0), RoundedCornerShape(20.dp))
                     .padding(14.dp)
             ) {
-                Column {
-                    ProfileLevelSelectionRow(
-                        title = strings.selectLevelTitle,
-                        currentLevel = selectedLevel,
-                        onClick = onSelectLevelClick
-                    )
-                    HorizontalDivider(modifier = Modifier.padding(vertical = 10.dp), color = Color(0x1FFFFFFF))
-                    ProfileSettingRow(strings.languageLabel, Icons.Default.Language, isEnglish, onLanguageChanged)
-                }
+                ProfileSettingRow(
+                    title = if (isEnglish) "Sound Effects" else "Hiệu Ứng Âm Thanh",
+                    icon = Icons.AutoMirrored.Filled.VolumeUp,
+                    checked = soundEnabled,
+                    onCheckedChange = onSoundChanged
+                )
             }
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Section 2: Preferences
-            Text(
-                text = if (isEnglish) "EXPERIENCE & REMINDERS" else "TRẢI NGHIỆM & NHẮC NHỞ",
-                color = Color(0xFF51FAC1),
-                fontSize = 11.sp,
-                fontWeight = FontWeight.Bold,
-                letterSpacing = 1.sp
-            )
-            Spacer(modifier = Modifier.height(8.dp))
-
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clip(RoundedCornerShape(20.dp))
-                    .background(Color(0x76181434))
-                    .border(1.dp, Color(0x555C3DA0), RoundedCornerShape(20.dp))
-                    .padding(14.dp)
-            ) {
-                Column {
-                    ProfileSettingRow(strings.soundEffects, Icons.AutoMirrored.Filled.VolumeUp, soundEnabled, onSoundChanged)
-                    Spacer(modifier = Modifier.height(10.dp))
-                    ProfileSettingRow(strings.notifications, Icons.Default.Notifications, notificationsEnabled, onNotificationsChanged)
-                }
-            }
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            // Section 3: Account
+            // Account / Logout
             Text(
                 text = if (isEnglish) "ACCOUNT" else "TÀI KHOẢN",
                 color = Color(0xFF51FAC1),
@@ -1536,7 +1643,7 @@ private fun ProfileSettingsBottomSheet(
             ) {
                 Icon(Icons.AutoMirrored.Filled.Logout, contentDescription = null, modifier = Modifier.size(18.dp))
                 Spacer(modifier = Modifier.width(8.dp))
-                Text(strings.logout, fontWeight = FontWeight.SemiBold, fontSize = 13.sp)
+                Text(if (isEnglish) "Log Out" else "Đăng Xuất Tài Khoản", fontWeight = FontWeight.SemiBold, fontSize = 13.sp)
             }
 
             Spacer(modifier = Modifier.height(16.dp))
@@ -1751,15 +1858,14 @@ private fun KikiExplorerNavigationSheet(
     rankTitle: String,
     avatarUri: String?,
     vocabCount: Int,
-    weakPointsCount: Int,
-    unlockedBadgeCount: Int,
-    totalBadgeCount: Int,
     isEnglish: Boolean,
-    onSectionSelect: (KikiExplorerSection) -> Unit,
+    onNavigateProfile: () -> Unit,
+    onNavigateVocab: () -> Unit,
     onSettingsClick: () -> Unit,
     onLogoutClick: () -> Unit,
     onDismiss: () -> Unit
 ) {
+    val strings = LocalAppStrings.current
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         containerColor = Color(0xFF140F26),
@@ -1853,66 +1959,46 @@ private fun KikiExplorerNavigationSheet(
 
             Spacer(modifier = Modifier.height(10.dp))
 
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                KikiNavDrawerItem(
-                    title = if (isEnglish) "Learner Profile & Stats" else "Hồ Sơ & Thống Kê Cá Nhân",
-                    subtitle = if (isEnglish) "Identity, avatar, level & session" else "Ảnh đại diện, tên, cấp độ & phiên học",
-                    badgeText = "Lv.$level",
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(22.dp))
+                    .background(Color(0xFF131722))
+                    .border(1.dp, Color(0x3351FAC1), RoundedCornerShape(22.dp))
+                    .padding(vertical = 4.dp)
+            ) {
+                // 1. Hồ sơ (gồm danh hiệu và cột mốc bên trong)
+                DuolingoStyleTile(
+                    title = if (isEnglish) "Profile & Cosmic Badges" else "Hồ Sơ & Danh Hiệu Cột Mốc",
                     icon = Icons.Default.Person,
-                    accentColor = Color(0xFF51FAC1),
-                    isSelected = currentSection == KikiExplorerSection.PROFILE,
-                    onClick = { onSectionSelect(KikiExplorerSection.PROFILE) }
+                    badgeText = "Lv.$level",
+                    onClick = onNavigateProfile
                 )
-                KikiNavDrawerItem(
+                HorizontalDivider(color = Color(0x1A51FAC1), thickness = 0.8.dp)
+
+                // 2. Từ vựng & Ngữ pháp
+                DuolingoStyleTile(
                     title = if (isEnglish) "Vocabulary & Grammar" else "Từ Vựng & Ngữ Pháp",
-                    subtitle = if (isEnglish) "Saved words, 3D cards & grammar tips" else "Sổ từ vựng, flashcard 3D & mẹo ngữ pháp",
-                    badgeText = "$vocabCount từ",
                     icon = Icons.Default.CollectionsBookmark,
-                    accentColor = Color(0xFF00F5D4),
-                    isSelected = currentSection == KikiExplorerSection.VOCABULARY,
-                    onClick = { onSectionSelect(KikiExplorerSection.VOCABULARY) }
+                    badgeText = "$vocabCount từ",
+                    onClick = onNavigateVocab
                 )
-                KikiNavDrawerItem(
-                    title = if (isEnglish) "Cosmic Titles & Badges" else "Danh Hiệu & Cột Mốc",
-                    subtitle = if (isEnglish) "Honored milestones & cosmic stars" else "Bộ sưu tập huy hiệu danh dự vũ trụ",
-                    badgeText = "$unlockedBadgeCount/$totalBadgeCount",
-                    icon = Icons.Default.EmojiEvents,
-                    accentColor = Color(0xFFFFD166),
-                    isSelected = currentSection == KikiExplorerSection.ACHIEVEMENTS,
-                    onClick = { onSectionSelect(KikiExplorerSection.ACHIEVEMENTS) }
-                )
-                KikiNavDrawerItem(
-                    title = if (isEnglish) "Mistake Clinic" else "Phòng Khám Lỗi Sai",
-                    subtitle = if (isEnglish) "Review mistakes, reinforce knowledge, earn XP" else "Khắc phục câu làm sai & nhận thưởng XP",
-                    badgeText = if (weakPointsCount == 0) "0 lỗi 🎉" else "$weakPointsCount lỗi",
-                    icon = Icons.Default.Healing,
-                    accentColor = Color(0xFFFF6B6B),
-                    isSelected = currentSection == KikiExplorerSection.MISTAKES,
-                    onClick = { onSectionSelect(KikiExplorerSection.MISTAKES) }
-                )
+                HorizontalDivider(color = Color(0x1A51FAC1), thickness = 0.8.dp)
 
-                HorizontalDivider(
-                    color = Color(0x22FFFFFF),
-                    modifier = Modifier.padding(vertical = 4.dp)
-                )
-
-                KikiNavDrawerItem(
+                // 3. Cài đặt & Tuỳ chọn
+                DuolingoStyleTile(
                     title = if (isEnglish) "Settings & Preferences" else "Cài Đặt & Tuỳ Chọn",
-                    subtitle = if (isEnglish) "Audio, notifications, level" else "Âm thanh, nhắc nhở & trình độ học",
-                    badgeText = "⚙️",
                     icon = Icons.Default.Settings,
-                    accentColor = Color(0xFFC68CFF),
-                    isSelected = false,
                     onClick = onSettingsClick
                 )
+                HorizontalDivider(color = Color(0x1A51FAC1), thickness = 0.8.dp)
 
-                KikiNavDrawerItem(
+                // 4. Đăng xuất tài khoản
+                DuolingoStyleTile(
                     title = if (isEnglish) "Log Out Account" else "Đăng Xuất Tài Khoản",
-                    subtitle = if (isEnglish) "Safely sign out of current session" else "Thoát tài khoản người dùng an toàn",
-                    badgeText = "🚪",
                     icon = Icons.AutoMirrored.Filled.ExitToApp,
-                    accentColor = Color(0xFFFF5F6D),
-                    isSelected = false,
+                    iconBg = Color(0x22FF5252),
+                    iconTint = Color(0xFFFF5252),
                     onClick = onLogoutClick
                 )
             }
@@ -2002,19 +2088,18 @@ private fun KikiExplorerHubView(
     avatarUri: String?,
     earnedStars: Int,
     vocabCount: Int,
-    weakPointsCount: Int,
-    unlockedBadgeCount: Int,
-    totalBadgeCount: Int,
     isEnglish: Boolean,
-    onSectionSelect: (KikiExplorerSection) -> Unit,
+    onNavigateProfile: () -> Unit,
+    onNavigateVocab: () -> Unit,
     onSettingsClick: () -> Unit,
     onLogoutClick: () -> Unit
 ) {
+    val strings = LocalAppStrings.current
     Column(
         modifier = Modifier.fillMaxWidth(),
         verticalArrangement = Arrangement.spacedBy(14.dp)
     ) {
-        // Top Card matching screenshot
+        // Top Card matching original Kiki Explorer header
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -2110,76 +2195,131 @@ private fun KikiExplorerHubView(
         Spacer(modifier = Modifier.height(2.dp))
 
         Text(
-            text = if (isEnglish) "CHOOSE SECTION" else "CHỌN MỤC THAO TÁC",
+            text = if (isEnglish) "EXPLORER SECTIONS" else "CHỌN MỤC THAO TÁC",
             color = Color(0xFF51FAC1),
             fontSize = 11.sp,
             fontWeight = FontWeight.Black,
             letterSpacing = 1.3.sp
         )
 
-        Column(verticalArrangement = Arrangement.spacedBy(9.dp)) {
-            KikiNavDrawerItem(
-                title = if (isEnglish) "Learner Profile & Stats" else "Hồ Sơ & Thống Kê Cá Nhân",
-                subtitle = if (isEnglish) "Avatar, name, level & study session" else "Ảnh đại diện, tên, cấp độ & phiên học",
-                badgeText = "Lv.$level",
+        // Menu thu gọn theo đúng yêu cầu: Hồ sơ (gồm danh hiệu), Từ vựng ngữ pháp, Cài đặt
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(22.dp))
+                .background(Color(0xFF131722))
+                .border(1.dp, Color(0x3351FAC1), RoundedCornerShape(22.dp))
+                .padding(vertical = 4.dp),
+            verticalArrangement = Arrangement.spacedBy(0.dp)
+        ) {
+            // 1. Hồ sơ (gồm danh hiệu và cột mốc bên trong)
+            DuolingoStyleTile(
+                title = if (isEnglish) "Profile & Cosmic Badges" else "Hồ Sơ & Danh Hiệu Cột Mốc",
                 icon = Icons.Default.Person,
-                accentColor = Color(0xFF51FAC1),
-                isSelected = true,
-                onClick = { onSectionSelect(KikiExplorerSection.PROFILE) }
+                badgeText = "Lv.$level",
+                onClick = onNavigateProfile
             )
-            KikiNavDrawerItem(
+
+            HorizontalDivider(color = Color(0x1A51FAC1), thickness = 0.8.dp)
+
+            // 2. Từ vựng & Ngữ pháp
+            DuolingoStyleTile(
                 title = if (isEnglish) "Vocabulary & Grammar" else "Từ Vựng & Ngữ Pháp",
-                subtitle = if (isEnglish) "Vocabulary count, 3D cards & grammar tips" else "Số từ vựng, flashcard 3D & mẹo ngữ pháp",
-                badgeText = "$vocabCount từ",
                 icon = Icons.Default.CollectionsBookmark,
-                accentColor = Color(0xFF00F5D4),
-                isSelected = false,
-                onClick = { onSectionSelect(KikiExplorerSection.VOCABULARY) }
-            )
-            KikiNavDrawerItem(
-                title = if (isEnglish) "Cosmic Titles & Badges" else "Danh Hiệu & Cột Mốc",
-                subtitle = if (isEnglish) "Cosmic honor badge collection" else "Bộ sưu tập huy hiệu danh dự vũ trụ",
-                badgeText = "$unlockedBadgeCount/$totalBadgeCount",
-                icon = Icons.Default.EmojiEvents,
-                accentColor = Color(0xFFFFD166),
-                isSelected = false,
-                onClick = { onSectionSelect(KikiExplorerSection.ACHIEVEMENTS) }
-            )
-            KikiNavDrawerItem(
-                title = if (isEnglish) "Mistake Clinic" else "Phòng Khám Lỗi Sai",
-                subtitle = if (isEnglish) "Cure mistakes & earn bonus XP" else "Khắc phục câu làm sai & nhận thưởng XP",
-                badgeText = if (weakPointsCount == 0) "0 lỗi 🎉" else "$weakPointsCount lỗi",
-                icon = Icons.Default.Healing,
-                accentColor = Color(0xFFFF6B6B),
-                isSelected = false,
-                onClick = { onSectionSelect(KikiExplorerSection.MISTAKES) }
+                badgeText = "$vocabCount từ",
+                onClick = onNavigateVocab
             )
 
-            HorizontalDivider(
-                color = Color(0x22FFFFFF),
-                modifier = Modifier.padding(vertical = 4.dp)
-            )
+            HorizontalDivider(color = Color(0x1A51FAC1), thickness = 0.8.dp)
 
-            KikiNavDrawerItem(
+            // 3. Cài đặt & Tuỳ chọn
+            DuolingoStyleTile(
                 title = if (isEnglish) "Settings & Preferences" else "Cài Đặt & Tuỳ Chọn",
-                subtitle = if (isEnglish) "Audio, notifications & learning level" else "Âm thanh, nhắc nhở & trình độ học",
-                badgeText = "⚙️",
                 icon = Icons.Default.Settings,
-                accentColor = Color(0xFFC68CFF),
-                isSelected = false,
                 onClick = onSettingsClick
             )
 
-            KikiNavDrawerItem(
+            HorizontalDivider(color = Color(0x1A51FAC1), thickness = 0.8.dp)
+
+            // 4. Đăng xuất tài khoản
+            DuolingoStyleTile(
                 title = if (isEnglish) "Log Out Account" else "Đăng Xuất Tài Khoản",
-                subtitle = if (isEnglish) "Safely sign out of current session" else "Thoát tài khoản người dùng an toàn",
-                badgeText = "🚪",
                 icon = Icons.AutoMirrored.Filled.ExitToApp,
-                accentColor = Color(0xFFFF5F6D),
-                isSelected = false,
+                iconBg = Color(0x22FF5252),
+                iconTint = Color(0xFFFF5252),
                 onClick = onLogoutClick
             )
         }
+    }
+}
+
+@Composable
+private fun DuolingoStyleTile(
+    title: String,
+    icon: ImageVector,
+    iconBg: Color = Color(0x2251FAC1),
+    iconTint: Color = Color(0xFF51FAC1),
+    badgeText: String? = null,
+    onClick: () -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(16.dp))
+            .clickable(onClick = onClick)
+            .padding(horizontal = 14.dp, vertical = 13.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Box(
+            modifier = Modifier
+                .size(44.dp)
+                .clip(RoundedCornerShape(13.dp))
+                .background(iconBg)
+                .border(1.dp, iconTint.copy(alpha = 0.4f), RoundedCornerShape(13.dp)),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(
+                imageVector = icon,
+                contentDescription = title,
+                tint = iconTint,
+                modifier = Modifier.size(24.dp)
+            )
+        }
+
+        Spacer(modifier = Modifier.width(16.dp))
+
+        Text(
+            text = title,
+            color = Color.White,
+            fontSize = 16.sp,
+            fontWeight = FontWeight.Bold,
+            modifier = Modifier.weight(1f)
+        )
+
+        if (badgeText != null) {
+            Box(
+                modifier = Modifier
+                    .clip(RoundedCornerShape(8.dp))
+                    .background(Color(0x1A51FAC1))
+                    .border(1.dp, Color(0x3351FAC1), RoundedCornerShape(8.dp))
+                    .padding(horizontal = 8.dp, vertical = 4.dp)
+            ) {
+                Text(
+                    text = badgeText,
+                    color = Color(0xFF51FAC1),
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+            Spacer(modifier = Modifier.width(8.dp))
+        }
+
+        Icon(
+            imageVector = Icons.AutoMirrored.Filled.ArrowForwardIos,
+            contentDescription = null,
+            tint = Color(0x44FFFFFF),
+            modifier = Modifier.size(13.dp)
+        )
     }
 }
 
@@ -2200,6 +2340,9 @@ private fun ProfileSectionView(
     totalLessons: Int,
     earnedStars: Int,
     selectedLevel: String,
+    allBadges: List<AchievementBadge> = emptyList(),
+    unlockedBadgeCount: Int = 0,
+    onBadgeClick: (AchievementBadge) -> Unit = {},
     onEditClick: () -> Unit,
     onNavigateToRoadmap: () -> Unit,
     onOpenLevelDialog: () -> Unit,
@@ -2286,105 +2429,18 @@ private fun ProfileSectionView(
             }
         }
 
-        // 3. Tùy Chọn Trình Độ & Cài Đặt
+        // 2.5 Danh Hiệu & Cột Mốc (Thiết kế nhúng ngay trong Hồ Sơ)
         ProfileClusterHeader(
-            title = if (isEnglish) "ACCOUNT PREFERENCES" else "QUẢN LÝ TÀI KHOẢN & TRÌNH ĐỘ",
-            icon = Icons.Default.Tune,
-            color = Color(0xFFFFB703)
+            title = if (isEnglish) "COSMIC HONORS & BADGES" else "DANH HIỆU & CỘT MỐC",
+            icon = Icons.Default.EmojiEvents,
+            color = Color(0xFFFFD166)
         )
-        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            ProfileCompactActionCard(
-                modifier = Modifier.weight(1f),
-                title = if (isEnglish) "Learning Level" else "Trình Độ Học",
-                badgeText = if (isEnglish) "Level: $selectedLevel" else "Trình độ: $selectedLevel",
-                actionText = if (isEnglish) "Change ➔" else "Thay đổi ➔",
-                icon = Icons.Default.Tune,
-                accentColor = Color(0xFFFFB703),
-                gradientColors = listOf(Color(0xFF281F10), Color(0xFF1B152A)),
-                onClick = onOpenLevelDialog
-            )
-            ProfileCompactActionCard(
-                modifier = Modifier.weight(1f),
-                title = if (isEnglish) "Preferences" else "Cài Đặt App",
-                badgeText = if (isEnglish) "Audio & Alerts" else "Âm thanh & Nhắc nhở",
-                actionText = if (isEnglish) "Open ➔" else "Mở cài đặt ➔",
-                icon = Icons.Default.Settings,
-                accentColor = Color(0xFFC68CFF),
-                gradientColors = listOf(Color(0xFF231435), Color(0xFF131024)),
-                onClick = onOpenSettings
-            )
-        }
+        ProfileAchievements(
+            allBadges = allBadges,
+            isEnglish = isEnglish,
+            onBadgeClick = onBadgeClick
+        )
 
-        // 4. CHỖ ĐĂNG XUẤT TÀI KHOẢN (LOGOUT BUTTON)
-        ProfileClusterHeader(
-            title = if (isEnglish) "ACCOUNT SESSION" else "PHIÊN ĐĂNG NHẬP",
-            icon = Icons.AutoMirrored.Filled.ExitToApp,
-            color = Color(0xFFFF5F6D)
-        )
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .clip(RoundedCornerShape(22.dp))
-                .background(Brush.horizontalGradient(listOf(Color(0x33FF4D6D), Color(0x223B1218))))
-                .border(1.5.dp, Color(0x66FF5F6D), RoundedCornerShape(22.dp))
-                .clickable {
-                    haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.LongPress)
-                    onLogoutClick()
-                }
-                .padding(horizontal = 18.dp, vertical = 16.dp)
-        ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Box(
-                        modifier = Modifier
-                            .size(46.dp)
-                            .clip(CircleShape)
-                            .background(Color(0x33FF5F6D))
-                            .border(1.dp, Color(0x66FF5F6D), CircleShape),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(
-                            Icons.AutoMirrored.Filled.ExitToApp,
-                            contentDescription = "Logout",
-                            tint = Color(0xFFFF5F6D),
-                            modifier = Modifier.size(22.dp)
-                        )
-                    }
-                    Spacer(modifier = Modifier.width(14.dp))
-                    Column {
-                        Text(
-                            text = if (isEnglish) "Log Out Account" else "Đăng Xuất Tài Khoản",
-                            color = Color(0xFFFF5F6D),
-                            fontSize = 15.sp,
-                            fontWeight = FontWeight.Bold
-                        )
-                        Spacer(modifier = Modifier.height(2.dp))
-                        Text(
-                            text = if (isEnglish) "Safely sign out from current session" else "Thoát tài khoản an toàn & lưu tiến trình",
-                            color = Color(0xAAFFFFFF),
-                            fontSize = 11.sp
-                        )
-                    }
-                }
-                Box(
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(10.dp))
-                        .background(Color(0x44FF5F6D))
-                        .padding(horizontal = 10.dp, vertical = 6.dp)
-                ) {
-                    Text(
-                        text = if (isEnglish) "Sign out" else "Đăng xuất",
-                        color = Color(0xFFFF5F6D),
-                        fontSize = 11.sp,
-                        fontWeight = FontWeight.Bold
-                    )
-                }
-            }
-        }
     }
 }
 

@@ -84,7 +84,7 @@ class StudyViewModel @Inject constructor(
     val isEnglish: LiveData<Boolean> = _isEnglish
     fun setEnglish(isEnglish: Boolean) { _isEnglish.value = isEnglish }
 
-    private val _kikiExplorerSection = MutableLiveData(KikiExplorerSection.HUB)
+    private val _kikiExplorerSection = MutableLiveData(KikiExplorerSection.PROFILE)
     val kikiExplorerSection: LiveData<KikiExplorerSection> = _kikiExplorerSection
     fun setKikiExplorerSection(section: KikiExplorerSection) { _kikiExplorerSection.value = section }
 
