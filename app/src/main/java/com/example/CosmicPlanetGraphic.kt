@@ -2,6 +2,7 @@ package com.example
 
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -9,6 +10,7 @@ import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.res.painterResource
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.filled.*
@@ -72,22 +74,9 @@ object CosmicPlanetHelper {
         }
     }
 
-    fun getPlanetDiameter(index: Int, totalStages: Int = -1): Dp {
-        if (totalStages > 1 && index == totalStages - 1) {
-            return 134.dp
-        }
-        return when (index % 10) {
-            0 -> 70.dp   // Chặng 1: Sao Thủy (~70dp)
-            1 -> 78.dp   // Chặng 2: Sao Kim (~78dp)
-            2 -> 84.dp   // Chặng 3: Trái Đất (~84dp)
-            3 -> 74.dp   // Chặng 4: Mặt Trăng (~74dp)
-            4 -> 88.dp   // Chặng 5: Sao Hỏa (~88dp)
-            5 -> 106.dp  // Chặng 6: Sao Mộc (~106dp)
-            6 -> 96.dp   // Chặng 7: Sao Thổ (~96dp + vành đai)
-            7 -> 110.dp  // Chặng 8: Sao Thiên Vương (~110dp)
-            8 -> 118.dp  // Chặng 9: Sao Hải Vương (~118dp)
-            else -> 134.dp // Chặng 10 / Mốc Cuối: Mặt Trời (~134dp)
-        }
+    fun getPlanetDiameter(index: Int = 0, totalStages: Int = -1): Dp {
+        // Tất cả các hành tinh đều được phóng to đồng đều bằng kích thước của Mặt Trời (134.dp)
+        return 134.dp
     }
 
     fun getPlanetTypeName(type: CosmicPlanetType, isEnglish: Boolean = false): String {
@@ -139,16 +128,8 @@ fun CosmicPlanetView(
     val isSun = planetType == CosmicPlanetType.SOLAR_SUN
 
     // Kích thước container mở rộng cho vành đai Sao Thổ hoặc hào quang nhật hoa / tai lửa Mặt Trời
-    val containerWidth = when {
-        isSaturn -> planetDiameter + 68.dp
-        isSun    -> planetDiameter + 56.dp
-        else     -> planetDiameter + 52.dp
-    }
-    val containerHeight = when {
-        isSun    -> planetDiameter + 56.dp
-        isSaturn -> planetDiameter + 38.dp
-        else     -> planetDiameter + 52.dp
-    }
+    val containerWidth = if (isSaturn) 236.dp else 216.dp
+    val containerHeight = 236.dp
 
     val isCurrent = stage.state == JourneyStageState.CURRENT
     val isCompleted = stage.state == JourneyStageState.COMPLETED
@@ -215,17 +196,11 @@ fun CosmicPlanetView(
         label = "shield_glow_pulse"
     )
 
-    // Sóng radar quét nhiệm vụ cho chặng CURRENT
-    val beaconRadarRadius by if (isCurrent) {
-        infiniteTransition.animateFloat(
-            initialValue = 0f,
-            targetValue = 1f,
-            animationSpec = infiniteRepeatable(tween(1400, easing = LinearEasing), RepeatMode.Restart),
-            label = "radar_sweep"
-        )
-    } else {
-        remember { mutableFloatStateOf(0f) }
-    }
+    val animatedProgress by animateFloatAsState(
+        targetValue = stage.progress.coerceIn(0f, 1f),
+        animationSpec = tween(800, easing = FastOutSlowInEasing),
+        label = "planet_progress"
+    )
 
     val contentDesc = "${stage.sequence}. ${stage.title} - ${CosmicPlanetHelper.getPlanetTypeName(planetType)}"
 
@@ -302,6 +277,61 @@ fun CosmicPlanetView(
                 isBackPass = false
             )
 
+            // ─── Viền Tròn Tiến Độ Quỹ Đạo (Orbital Progress Ring) ───────────────
+            // Hiển thị vòng tròn quỹ đạo và cung sáng tiến độ (3/5 bài, 5/5 bài...) theo đúng thiết kế
+            if (!isLocked) {
+                val progressRingRadius = radius + 10.dp.toPx()
+
+                // Đường viền quỹ đạo mỏng làm nền (Background Orbital Track)
+                drawCircle(
+                    color = Color(0x384D8BFA),
+                    center = Offset(centerX, centerY),
+                    radius = progressRingRadius,
+                    style = Stroke(width = 2.dp.toPx())
+                )
+
+                // Cung tròn tiến độ phát sáng quét từ góc 12h (-90 độ) theo chiều kim đồng hồ
+                if (animatedProgress > 0f) {
+                    val sweepAngle = animatedProgress * 360f
+
+                    // Lớp phát quang mờ ảo neon (Aura Glow Stroke)
+                    drawArc(
+                        brush = Brush.sweepGradient(
+                            colors = if (isCompleted) {
+                                listOf(Color(0x80FFD166), Color(0x80FF9E00), Color(0x80FFD166))
+                            } else {
+                                listOf(Color(0x8051FAC1), Color(0x8000E5FF), Color(0x8051FAC1))
+                            },
+                            center = Offset(centerX, centerY)
+                        ),
+                        startAngle = -90f,
+                        sweepAngle = sweepAngle,
+                        useCenter = false,
+                        topLeft = Offset(centerX - progressRingRadius, centerY - progressRingRadius),
+                        size = Size(progressRingRadius * 2f, progressRingRadius * 2f),
+                        style = Stroke(width = 8.dp.toPx(), cap = StrokeCap.Round)
+                    )
+
+                    // Lớp viền neon sắc nét chính (Crisp Neon Core)
+                    drawArc(
+                        brush = Brush.sweepGradient(
+                            colors = if (isCompleted) {
+                                listOf(Color(0xFFFFD166), Color(0xFFFFB703), Color(0xFFFFE169), Color(0xFFFFD166))
+                            } else {
+                                listOf(Color(0xFF51FAC1), Color(0xFF00E5FF), Color(0xFF38BDF8), Color(0xFF51FAC1))
+                            },
+                            center = Offset(centerX, centerY)
+                        ),
+                        startAngle = -90f,
+                        sweepAngle = sweepAngle,
+                        useCenter = false,
+                        topLeft = Offset(centerX - progressRingRadius, centerY - progressRingRadius),
+                        size = Size(progressRingRadius * 2f, progressRingRadius * 2f),
+                        style = Stroke(width = 4.5.dp.toPx(), cap = StrokeCap.Round)
+                    )
+                }
+            }
+
             // Khiên năng lượng từ trường (Cosmic Force Field / Energy Shield) & Ổ khóa Neon Hologram cho chặng LOCKED
             if (isLocked) {
                 drawCosmicForceFieldShield(
@@ -314,123 +344,70 @@ fun CosmicPlanetView(
             }
         }
 
-        // Cờ tiêu lệnh phi hành gia trên đỉnh cực bắc chặng đang học (CURRENT)
-        if (isCurrent) {
-            Box(
-                modifier = Modifier
-                    .align(Alignment.TopCenter)
-                    .offset(y = (-8).dp)
-                    .clip(RoundedCornerShape(8.dp))
-                    .background(Color(0xFF00F5D4))
-                    .border(1.dp, Color.White, RoundedCornerShape(8.dp))
-                    .padding(horizontal = 6.dp, vertical = 2.dp)
-            ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(
-                        Icons.Default.Flag,
-                        contentDescription = null,
-                        tint = Color(0xFF06152B),
-                        modifier = Modifier.size(11.dp)
-                    )
-                    Spacer(modifier = Modifier.width(3.dp))
-                    Text(
-                        text = "EXPLORING",
-                        color = Color(0xFF06152B),
-                        fontSize = 8.sp,
-                        fontWeight = FontWeight.Black,
-                        letterSpacing = 0.6.sp
-                    )
-                }
-            }
-        }
+        val progressRingRadiusDp = (planetDiameter / 2f) + 10.dp
 
-        // Vương miện thiên hà sao vàng cho chặng đã hoàn thành (COMPLETED)
-        if (isCompleted) {
-            Box(
-                modifier = Modifier
-                    .align(Alignment.TopCenter)
-                    .offset(y = (-6).dp)
-                    .clip(RoundedCornerShape(8.dp))
-                    .background(Brush.horizontalGradient(listOf(Color(0xFFFFD166), Color(0xFFFF9E00))))
-                    .border(1.dp, Color(0xFFFFF275), RoundedCornerShape(8.dp))
-                    .padding(horizontal = 6.dp, vertical = 2.dp)
-            ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(
-                        Icons.Default.Star,
-                        contentDescription = null,
-                        tint = Color(0xFF160F2B),
-                        modifier = Modifier.size(11.dp)
-                    )
-                    Spacer(modifier = Modifier.width(3.dp))
-                    Text(
-                        text = "CONQUERED",
-                        color = Color(0xFF160F2B),
-                        fontSize = 8.sp,
-                        fontWeight = FontWeight.Black,
-                        letterSpacing = 0.6.sp
-                    )
-                }
-            }
-        }
-
-        // ─── Holographic Mission Telemetry Badge ──────────────────────────────
-        // Thao tác nhỏ gọn ở rìa ngoài hành tinh cho chặng đang học hoặc hoàn thành
-        // (Khi LOCKED: Đã có khiên từ trường lượng tử + ổ khóa Neon Hologram bao bọc toàn bộ cực đẹp,
-        //  loại bỏ hoàn toàn huy hiệu tròn xám dán góc)
+        // ─── Cờ hiệu phi hành gia (flag.png) cắm chuẩn xác vào đỉnh vòng tròn tiến độ ───
         if (!isLocked) {
-            val badgeSize = (planetDiameter * 0.28f).coerceIn(22.dp, 30.dp)
+            Image(
+                painter = painterResource(R.drawable.flag),
+                contentDescription = "Mission Flag",
+                modifier = Modifier
+                    .align(Alignment.Center)
+                    .offset(x = 2.5.dp, y = -(progressRingRadiusDp + 18.dp))
+                    .size(40.dp)
+            )
+        }
+
+        // ─── Text box hiển thị số bài (★ 3/5 bài) gắn trực tiếp vào đáy vòng tròn tiến độ ───
+        if (!isLocked) {
             Box(
                 modifier = Modifier
-                    .align(Alignment.BottomEnd)
-                    .offset(x = (-2).dp, y = (-2).dp)
-                    .size(badgeSize)
+                    .align(Alignment.Center)
+                    .offset(y = progressRingRadiusDp)
                     .clip(CircleShape)
                     .background(
-                        when {
-                            isCompleted -> Brush.radialGradient(listOf(Color(0xFF261801), Color(0xFF120A01)))
-                            isCurrent   -> Brush.radialGradient(listOf(Color(0xFF003830), Color(0xFF011814)))
-                            else        -> Brush.radialGradient(listOf(Color(0xFF092342), Color(0xFF041021)))
-                        }
+                        Brush.horizontalGradient(
+                            listOf(
+                                Color(0xF20A132C),
+                                Color(0xF214224E)
+                            )
+                        )
                     )
                     .border(
-                        width = 1.5.dp,
-                        color = when {
-                            isCompleted -> Color(0xFFFFD166)
-                            isCurrent   -> Color(0xFF00F5D4)
-                            else        -> CosmicPlanetHelper.getPlanetPrimaryColor(planetType)
-                        },
+                        width = 1.4.dp,
+                        brush = Brush.horizontalGradient(
+                            when {
+                                isCompleted -> listOf(Color(0xFFFFD166), Color(0xFFFF9E00))
+                                else        -> listOf(Color(0xFF38BDF8), Color(0xFF00F5D4))
+                            }
+                        ),
                         shape = CircleShape
-                    ),
-                contentAlignment = Alignment.Center
+                    )
+                    .padding(horizontal = 14.dp, vertical = 4.dp)
             ) {
-                // Hiệu ứng sóng radar phát tín hiệu cho chặng CURRENT
-                if (isCurrent) {
-                    Canvas(modifier = Modifier.fillMaxSize()) {
-                        drawCircle(
-                            color = Color(0xFF00F5D4).copy(alpha = (1f - beaconRadarRadius) * 0.6f),
-                            radius = (size.minDimension / 2f) * (0.8f + beaconRadarRadius * 0.6f),
-                            style = Stroke(width = 1.5.dp.toPx())
-                        )
-                    }
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Star,
+                        contentDescription = null,
+                        tint = if (isCompleted) Color(0xFFFFD166) else Color.White,
+                        modifier = Modifier.size(13.dp)
+                    )
+                    Spacer(modifier = Modifier.width(5.dp))
+                    Text(
+                        text = "${stage.completedLessons}/${stage.totalLessons} bài",
+                        color = Color.White,
+                        fontSize = 11.5.sp,
+                        fontWeight = FontWeight.ExtraBold,
+                        letterSpacing = 0.3.sp
+                    )
                 }
-
-                Icon(
-                    imageVector = when {
-                        isCompleted -> Icons.Default.Check
-                        isCurrent   -> Icons.Default.PlayArrow
-                        else        -> Icons.AutoMirrored.Filled.ArrowForward
-                    },
-                    contentDescription = null,
-                    tint = when {
-                        isCompleted -> Color(0xFFFFD166)
-                        isCurrent   -> Color(0xFF00F5D4)
-                        else        -> Color.White
-                    },
-                    modifier = Modifier.size(badgeSize * 0.55f)
-                )
             }
         }
+
+
     }
 }
 

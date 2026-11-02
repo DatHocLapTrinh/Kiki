@@ -1,6 +1,7 @@
 package com.example
 
 import androidx.compose.animation.core.*
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -20,6 +21,7 @@ import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -42,7 +44,8 @@ data class ShopItem(
     val description: String,
     val starCost: Int,
     val quantity: Int,        // Số lượng mua được mỗi lần
-    val icon: ImageVector,
+    val iconRes: Int? = null,
+    val icon: ImageVector? = null,
     val iconColor: Color,
     val cardGradient: List<Color>,
     val borderColor: Color
@@ -69,7 +72,7 @@ fun ShopScreen(viewModel: StudyViewModel) {
             description = if (isEnglish) "Restores 1 heart. Protects against wrong answers!" else "Khôi phục 1 trái tim. Bảo vệ bạn khi trả lời sai bài học!",
             starCost = 10,
             quantity = 1,
-            icon = Icons.Default.Favorite,
+            iconRes = R.drawable.ic_stat_heart,
             iconColor = Color(0xFFFF6B8A),
             cardGradient = listOf(Color(0xFF2C1326), Color(0xFF191128)),
             borderColor = Color(0xFFFF6B8A)
@@ -81,7 +84,7 @@ fun ShopScreen(viewModel: StudyViewModel) {
             description = if (isEnglish) "Get 3 hearts at a discount. Smart savings!" else "Nhận 3 trái tim giá ưu đãi. Tiết kiệm hơn!",
             starCost = 25,
             quantity = 3,
-            icon = Icons.Default.Favorite,
+            iconRes = R.drawable.ic_stat_heart,
             iconColor = Color(0xFFFF6B8A),
             cardGradient = listOf(Color(0xFF33152C), Color(0xFF1E132E)),
             borderColor = Color(0xFFFF6B8A)
@@ -93,7 +96,7 @@ fun ShopScreen(viewModel: StudyViewModel) {
             description = if (isEnglish) "Protects your streak for 1 day if you miss a session!" else "Bảo vệ chuỗi streak 1 ngày nếu bạn lỡ quên học!",
             starCost = 30,
             quantity = 1,
-            icon = Icons.Default.Shield,
+            iconRes = R.drawable.ic_stat_shield,
             iconColor = Color(0xFF4FC3F7),
             cardGradient = listOf(Color(0xFF14243D), Color(0xFF12162C)),
             borderColor = Color(0xFF4FC3F7)
@@ -105,7 +108,7 @@ fun ShopScreen(viewModel: StudyViewModel) {
             description = if (isEnglish) "3 streak shields at a great price. Keep streaks alive!" else "3 khiên bảo vệ giá tốt. Duy trì chuỗi ngày liên tục!",
             starCost = 75,
             quantity = 3,
-            icon = Icons.Default.Shield,
+            iconRes = R.drawable.ic_stat_shield,
             iconColor = Color(0xFF4FC3F7),
             cardGradient = listOf(Color(0xFF172B45), Color(0xFF131830)),
             borderColor = Color(0xFF4FC3F7)
@@ -243,11 +246,10 @@ fun ShopHeader(isEnglish: Boolean) {
                 .border(1.5.dp, Color(0x66FFD166), CircleShape),
             contentAlignment = Alignment.Center
         ) {
-            Icon(
-                Icons.Default.Store,
+            Image(
+                painter = painterResource(R.drawable.ic_nav_shop),
                 contentDescription = null,
-                tint = Color(0xFFFFD166),
-                modifier = Modifier.size(24.dp)
+                modifier = Modifier.size(28.dp)
             )
         }
         Spacer(modifier = Modifier.width(14.dp))
@@ -258,11 +260,23 @@ fun ShopHeader(isEnglish: Boolean) {
                 fontSize = 24.sp,
                 fontWeight = FontWeight.ExtraBold
             )
-            Text(
-                text = if (isEnglish) "Spend ⭐ Stars to get power-ups!" else "Dùng ⭐ Sao để đổi vật phẩm hỗ trợ!",
-                color = Color(0xB3FFFFFF),
-                fontSize = 13.sp
-            )
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    text = if (isEnglish) "Spend " else "Dùng ",
+                    color = Color(0xB3FFFFFF),
+                    fontSize = 13.sp
+                )
+                Image(
+                    painter = painterResource(R.drawable.ic_action_star),
+                    contentDescription = null,
+                    modifier = Modifier.size(14.dp)
+                )
+                Text(
+                    text = if (isEnglish) " Stars to get power-ups!" else " Sao để đổi vật phẩm hỗ trợ!",
+                    color = Color(0xB3FFFFFF),
+                    fontSize = 13.sp
+                )
+            }
         }
     }
 }
@@ -295,7 +309,7 @@ fun CurrencyBar(stars: Int, hearts: Int, shields: Int, isEnglish: Boolean) {
             verticalAlignment = Alignment.CenterVertically
         ) {
             CurrencyChip(
-                emoji = "⭐",
+                iconRes = R.drawable.ic_action_star,
                 value = stars,
                 label = if (isEnglish) "Stars" else "Sao",
                 color = Color(0xFFFFD166)
@@ -307,7 +321,7 @@ fun CurrencyBar(stars: Int, hearts: Int, shields: Int, isEnglish: Boolean) {
                     .background(Color(0x33FFFFFF))
             )
             CurrencyChip(
-                emoji = "❤️",
+                iconRes = R.drawable.ic_stat_heart,
                 value = hearts,
                 label = if (isEnglish) "Hearts" else "Trái Tim",
                 color = Color(0xFFFF6B8A)
@@ -319,7 +333,7 @@ fun CurrencyBar(stars: Int, hearts: Int, shields: Int, isEnglish: Boolean) {
                     .background(Color(0x33FFFFFF))
             )
             CurrencyChip(
-                emoji = "🛡️",
+                iconRes = R.drawable.ic_stat_shield,
                 value = shields,
                 label = if (isEnglish) "Shields" else "Khiên",
                 color = Color(0xFF4FC3F7)
@@ -329,9 +343,13 @@ fun CurrencyBar(stars: Int, hearts: Int, shields: Int, isEnglish: Boolean) {
 }
 
 @Composable
-fun CurrencyChip(emoji: String, value: Int, label: String, color: Color) {
+fun CurrencyChip(iconRes: Int, value: Int, label: String, color: Color) {
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-        Text(text = emoji, fontSize = 22.sp)
+        Image(
+            painter = painterResource(iconRes),
+            contentDescription = label,
+            modifier = Modifier.size(28.dp)
+        )
         Spacer(modifier = Modifier.height(2.dp))
         Text(
             text = value.toString(),
@@ -393,12 +411,20 @@ fun ShopItemCard(
                     .border(1.5.dp, item.iconColor.copy(alpha = 0.5f), RoundedCornerShape(16.dp)),
                 contentAlignment = Alignment.Center
             ) {
-                Icon(
-                    imageVector = item.icon,
-                    contentDescription = null,
-                    tint = item.iconColor,
-                    modifier = Modifier.size(30.dp)
-                )
+                if (item.iconRes != null) {
+                    Image(
+                        painter = painterResource(item.iconRes),
+                        contentDescription = null,
+                        modifier = Modifier.size(36.dp)
+                    )
+                } else if (item.icon != null) {
+                    Icon(
+                        imageVector = item.icon,
+                        contentDescription = null,
+                        tint = item.iconColor,
+                        modifier = Modifier.size(30.dp)
+                    )
+                }
                 // Badge số lượng (ví dụ ×3)
                 if (item.quantity > 1) {
                     Box(
@@ -454,7 +480,11 @@ fun ShopItemCard(
                     contentAlignment = Alignment.Center
                 ) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text("⭐", fontSize = 14.sp)
+                        Image(
+                            painter = painterResource(R.drawable.ic_action_star),
+                            contentDescription = null,
+                            modifier = Modifier.size(16.dp)
+                        )
                         Spacer(modifier = Modifier.width(4.dp))
                         Text(
                             text = "${item.starCost}",
@@ -496,12 +526,19 @@ fun ShopItemCard(
                             .padding(horizontal = 8.dp, vertical = 4.dp),
                         contentAlignment = Alignment.Center
                     ) {
-                        Text(
-                            text = if (isEnglish) "Need ⭐" else "Chưa đủ ⭐",
-                            color = Color(0xFFFF8FA3),
-                            fontSize = 10.5.sp,
-                            fontWeight = FontWeight.Bold
-                        )
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text(
+                                text = if (isEnglish) "Need " else "Chưa đủ ",
+                                color = Color(0xFFFF8FA3),
+                                fontSize = 10.5.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                            Image(
+                                painter = painterResource(R.drawable.ic_action_star),
+                                contentDescription = null,
+                                modifier = Modifier.size(12.dp)
+                            )
+                        }
                     }
                 }
             }
@@ -527,13 +564,21 @@ fun ShopConfirmDialog(
             Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.fillMaxWidth()) {
                 Box(
                     modifier = Modifier
-                        .size(60.dp)
+                        .size(64.dp)
                         .clip(CircleShape)
                         .background(item.iconColor.copy(alpha = 0.2f))
                         .border(1.5.dp, item.iconColor.copy(alpha = 0.5f), CircleShape),
                     contentAlignment = Alignment.Center
                 ) {
-                    Icon(item.icon, contentDescription = null, tint = item.iconColor, modifier = Modifier.size(32.dp))
+                    if (item.iconRes != null) {
+                        Image(
+                            painter = painterResource(item.iconRes),
+                            contentDescription = null,
+                            modifier = Modifier.size(42.dp)
+                        )
+                    } else if (item.icon != null) {
+                        Icon(item.icon, contentDescription = null, tint = item.iconColor, modifier = Modifier.size(32.dp))
+                    }
                 }
                 Spacer(modifier = Modifier.height(10.dp))
                 Text(
@@ -566,7 +611,11 @@ fun ShopConfirmDialog(
                         .padding(horizontal = 16.dp, vertical = 9.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text("⭐", fontSize = 18.sp)
+                    Image(
+                        painter = painterResource(R.drawable.ic_action_star),
+                        contentDescription = null,
+                        modifier = Modifier.size(20.dp)
+                    )
                     Spacer(modifier = Modifier.width(6.dp))
                     Text(
                         text = "${item.starCost} ${if (isEnglish) "Stars" else "Sao"}",

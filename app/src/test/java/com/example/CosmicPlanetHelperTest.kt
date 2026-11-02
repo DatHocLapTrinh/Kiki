@@ -9,16 +9,17 @@ class CosmicPlanetHelperTest {
 
     @Test
     fun `planet diameters are properly assigned in cosmic stages`() {
-        assertEquals(70.dp, CosmicPlanetHelper.getPlanetDiameter(0))  // Sao Thủy
-        assertEquals(78.dp, CosmicPlanetHelper.getPlanetDiameter(1))  // Sao Kim
-        assertEquals(84.dp, CosmicPlanetHelper.getPlanetDiameter(2))  // Trái Đất
-        assertEquals(74.dp, CosmicPlanetHelper.getPlanetDiameter(3))  // Mặt Trăng
-        assertEquals(88.dp, CosmicPlanetHelper.getPlanetDiameter(4))  // Sao Hỏa
-        assertEquals(106.dp, CosmicPlanetHelper.getPlanetDiameter(5)) // Sao Mộc
-        assertEquals(96.dp, CosmicPlanetHelper.getPlanetDiameter(6))  // Sao Thổ
-        assertEquals(110.dp, CosmicPlanetHelper.getPlanetDiameter(7)) // Sao Thiên Vương
-        assertEquals(118.dp, CosmicPlanetHelper.getPlanetDiameter(8)) // Sao Hải Vương
-        assertEquals(134.dp, CosmicPlanetHelper.getPlanetDiameter(9)) // Mặt Trời
+        // Tất cả các hành tinh đều được đồng bộ to bằng kích thước Mặt Trời (134.dp)
+        assertEquals(134.dp, CosmicPlanetHelper.getPlanetDiameter(0))  // Sao Thủy
+        assertEquals(134.dp, CosmicPlanetHelper.getPlanetDiameter(1))  // Sao Kim
+        assertEquals(134.dp, CosmicPlanetHelper.getPlanetDiameter(2))  // Trái Đất
+        assertEquals(134.dp, CosmicPlanetHelper.getPlanetDiameter(3))  // Mặt Trăng
+        assertEquals(134.dp, CosmicPlanetHelper.getPlanetDiameter(4))  // Sao Hỏa
+        assertEquals(134.dp, CosmicPlanetHelper.getPlanetDiameter(5))  // Sao Mộc
+        assertEquals(134.dp, CosmicPlanetHelper.getPlanetDiameter(6))  // Sao Thổ
+        assertEquals(134.dp, CosmicPlanetHelper.getPlanetDiameter(7))  // Sao Thiên Vương
+        assertEquals(134.dp, CosmicPlanetHelper.getPlanetDiameter(8))  // Sao Hải Vương
+        assertEquals(134.dp, CosmicPlanetHelper.getPlanetDiameter(9))  // Mặt Trời
 
         // Final stage override always gives apex size
         assertEquals(134.dp, CosmicPlanetHelper.getPlanetDiameter(4, totalStages = 5))

@@ -2,6 +2,7 @@ package com.example
 
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -24,6 +25,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -134,7 +136,11 @@ fun RankScreen(viewModel: StudyViewModel) {
                     .padding(horizontal = 20.dp, vertical = 10.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Icon(Icons.Default.EmojiEvents, contentDescription = null, tint = Color(0xFFFFD166), modifier = Modifier.size(28.dp))
+                Image(
+                    painter = painterResource(R.drawable.ic_nav_ranking),
+                    contentDescription = null,
+                    modifier = Modifier.size(34.dp)
+                )
                 Spacer(modifier = Modifier.width(12.dp))
                 Text(strings.rankedArena, color = Color.White, fontSize = 24.sp, fontWeight = FontWeight.ExtraBold)
             }
@@ -164,7 +170,11 @@ fun RankScreen(viewModel: StudyViewModel) {
                                 .border(1.5.dp, Color(0x66FFD166), CircleShape),
                             contentAlignment = Alignment.Center
                         ) {
-                            Icon(Icons.Default.EmojiEvents, contentDescription = null, tint = Color(0xFFFFD166), modifier = Modifier.size(38.dp))
+                            Image(
+                                painter = painterResource(R.drawable.ic_nav_ranking),
+                                contentDescription = null,
+                                modifier = Modifier.size(46.dp)
+                            )
                         }
                         Spacer(modifier = Modifier.height(16.dp))
                         Text(
@@ -433,12 +443,20 @@ fun CurrentUserRankCard(
                     .border(1.dp, Color(0x6651FAC1), RoundedCornerShape(12.dp))
                     .padding(horizontal = 10.dp, vertical = 6.dp)
             ) {
-                Text(
-                    text = "${player.score} XP",
-                    color = Color(0xFF51FAC1),
-                    fontWeight = FontWeight.ExtraBold,
-                    fontSize = 14.sp
-                )
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Image(
+                        painter = painterResource(R.drawable.ic_action_star),
+                        contentDescription = null,
+                        modifier = Modifier.size(15.dp)
+                    )
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text(
+                        text = "${player.score} XP",
+                        color = Color(0xFF51FAC1),
+                        fontWeight = FontWeight.ExtraBold,
+                        fontSize = 14.sp
+                    )
+                }
             }
         }
     }
@@ -496,11 +514,10 @@ fun PodiumItem(player: RankPlayer, rank: Int, color: Color, height: androidx.com
             
             // Crown for Rank 1
             if (isCenter) {
-                Icon(
-                    Icons.Default.WorkspacePremium,
-                    contentDescription = "Crown",
-                    tint = Color(0xFFFFD166),
-                    modifier = Modifier.align(Alignment.TopCenter).offset(y = (-20).dp).size(36.dp)
+                Image(
+                    painter = painterResource(R.drawable.ic_nav_ranking),
+                    contentDescription = "Trophy",
+                    modifier = Modifier.align(Alignment.TopCenter).offset(y = (-22).dp).size(36.dp)
                 )
             }
         }
@@ -525,7 +542,15 @@ fun PodiumItem(player: RankPlayer, rank: Int, color: Color, height: androidx.com
                 Text("#$rank", color = color, fontSize = 28.sp, fontWeight = FontWeight.ExtraBold)
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(player.name, color = Color.White, fontSize = 12.sp, fontWeight = FontWeight.Bold, maxLines = 1)
-                Text("${player.score} XP", color = Color(0xB3FFFFFF), fontSize = 11.sp, fontWeight = FontWeight.SemiBold)
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Image(
+                        painter = painterResource(R.drawable.ic_action_star),
+                        contentDescription = null,
+                        modifier = Modifier.size(11.dp)
+                    )
+                    Spacer(modifier = Modifier.width(3.dp))
+                    Text("${player.score} XP", color = Color(0xB3FFFFFF), fontSize = 11.sp, fontWeight = FontWeight.SemiBold)
+                }
             }
         }
     }
@@ -596,6 +621,14 @@ fun RankListItem(player: RankPlayer, isSticky: Boolean = false) {
         }
         
         // Score
-        Text("${player.score} XP", color = Color.White, fontWeight = FontWeight.ExtraBold, fontSize = 14.sp)
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Image(
+                painter = painterResource(R.drawable.ic_action_star),
+                contentDescription = null,
+                modifier = Modifier.size(14.dp)
+            )
+            Spacer(modifier = Modifier.width(4.dp))
+            Text("${player.score} XP", color = Color.White, fontWeight = FontWeight.ExtraBold, fontSize = 14.sp)
+        }
     }
 }

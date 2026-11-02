@@ -612,11 +612,10 @@ private fun ProfileHeader(
                 contentAlignment = Alignment.Center
             ) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Icon(
-                        Icons.Default.Settings,
+                    Image(
+                        painter = painterResource(R.drawable.ic_action_setting),
                         contentDescription = if (isEnglish) "Settings" else "Cài đặt",
-                        tint = Color(0xFF51FAC1),
-                        modifier = Modifier.size(19.dp)
+                        modifier = Modifier.size(24.dp)
                     )
                     Spacer(modifier = Modifier.height(2.dp))
                     Text(
@@ -1015,7 +1014,8 @@ private fun ProfileCompactActionCard(
     title: String,
     badgeText: String,
     actionText: String,
-    icon: ImageVector,
+    icon: ImageVector? = null,
+    iconRes: Int? = null,
     accentColor: Color,
     gradientColors: List<Color>,
     onClick: () -> Unit
@@ -1046,7 +1046,15 @@ private fun ProfileCompactActionCard(
                             .background(accentColor.copy(alpha = 0.22f)),
                         contentAlignment = Alignment.Center
                     ) {
-                        Icon(icon, contentDescription = null, tint = accentColor, modifier = Modifier.size(14.dp))
+                        if (iconRes != null) {
+                            Image(
+                                painter = painterResource(iconRes),
+                                contentDescription = null,
+                                modifier = Modifier.size(16.dp)
+                            )
+                        } else if (icon != null) {
+                            Icon(icon, contentDescription = null, tint = accentColor, modifier = Modifier.size(14.dp))
+                        }
                     }
                     Spacer(modifier = Modifier.width(6.dp))
                     Text(
@@ -1433,7 +1441,11 @@ private fun ProfileSettingsBottomSheet(
                             .background(Color(0x3351FAC1)),
                         contentAlignment = Alignment.Center
                     ) {
-                        Icon(Icons.Default.Settings, contentDescription = null, tint = Color(0xFF51FAC1), modifier = Modifier.size(22.dp))
+                        Image(
+                            painter = painterResource(R.drawable.ic_action_setting),
+                            contentDescription = null,
+                            modifier = Modifier.size(24.dp)
+                        )
                     }
                     Spacer(modifier = Modifier.width(12.dp))
                     Column {
@@ -1903,8 +1915,8 @@ private fun KikiExplorerNavigationSheet(
                 KikiNavDrawerItem(
                     title = if (isEnglish) "Settings & Preferences" else "Cài Đặt & Tuỳ Chọn",
                     subtitle = if (isEnglish) "Audio, notifications, level" else "Âm thanh, nhắc nhở & trình độ học",
-                    badgeText = "⚙️",
-                    icon = Icons.Default.Settings,
+                    badgeText = if (isEnglish) "Settings" else "Cài đặt",
+                    iconRes = R.drawable.ic_action_setting,
                     accentColor = Color(0xFFC68CFF),
                     isSelected = false,
                     onClick = onSettingsClick
@@ -1914,7 +1926,7 @@ private fun KikiExplorerNavigationSheet(
                     title = if (isEnglish) "Log Out Account" else "Đăng Xuất Tài Khoản",
                     subtitle = if (isEnglish) "Safely sign out of current session" else "Thoát tài khoản người dùng an toàn",
                     badgeText = "🚪",
-                    icon = Icons.AutoMirrored.Filled.ExitToApp,
+                    iconRes = R.drawable.ic_logout,
                     accentColor = Color(0xFFFF5F6D),
                     isSelected = false,
                     onClick = onLogoutClick
@@ -1930,7 +1942,8 @@ private fun KikiNavDrawerItem(
     title: String,
     subtitle: String,
     badgeText: String,
-    icon: ImageVector,
+    icon: ImageVector? = null,
+    iconRes: Int? = null,
     accentColor: Color,
     isSelected: Boolean,
     onClick: () -> Unit
@@ -1962,7 +1975,15 @@ private fun KikiNavDrawerItem(
                     .background(accentColor.copy(alpha = 0.2f)),
                 contentAlignment = Alignment.Center
             ) {
-                Icon(icon, contentDescription = null, tint = accentColor, modifier = Modifier.size(20.dp))
+                if (iconRes != null) {
+                    Image(
+                        painter = painterResource(iconRes),
+                        contentDescription = null,
+                        modifier = Modifier.size(20.dp)
+                    )
+                } else if (icon != null) {
+                    Icon(icon, contentDescription = null, tint = accentColor, modifier = Modifier.size(20.dp))
+                }
             }
             Spacer(modifier = Modifier.width(12.dp))
             Column(modifier = Modifier.weight(1f)) {
@@ -2102,11 +2123,10 @@ private fun KikiExplorerHubView(
                     }
                 }
                 IconButton(onClick = onSettingsClick, modifier = Modifier.size(36.dp)) {
-                    Icon(
-                        Icons.Default.Settings,
+                    Image(
+                        painter = painterResource(R.drawable.ic_action_setting),
                         contentDescription = "Settings",
-                        tint = Color(0xFF51FAC1),
-                        modifier = Modifier.size(20.dp)
+                        modifier = Modifier.size(24.dp)
                     )
                 }
             }
@@ -2177,8 +2197,8 @@ private fun KikiExplorerHubView(
             KikiNavDrawerItem(
                 title = if (isEnglish) "Settings & Preferences" else "Cài Đặt & Tuỳ Chọn",
                 subtitle = if (isEnglish) "Audio, notifications & learning level" else "Âm thanh, nhắc nhở & trình độ học",
-                badgeText = "⚙️",
-                icon = Icons.Default.Settings,
+                badgeText = if (isEnglish) "Settings" else "Cài đặt",
+                iconRes = R.drawable.ic_action_setting,
                 accentColor = Color(0xFFC68CFF),
                 isSelected = false,
                 onClick = onSettingsClick
@@ -2188,7 +2208,7 @@ private fun KikiExplorerHubView(
                 title = if (isEnglish) "Log Out Account" else "Đăng Xuất Tài Khoản",
                 subtitle = if (isEnglish) "Safely sign out of current session" else "Thoát tài khoản người dùng an toàn",
                 badgeText = "🚪",
-                icon = Icons.AutoMirrored.Filled.ExitToApp,
+                iconRes = R.drawable.ic_logout,
                 accentColor = Color(0xFFFF5F6D),
                 isSelected = false,
                 onClick = onLogoutClick
@@ -2322,7 +2342,7 @@ private fun ProfileSectionView(
                 title = if (isEnglish) "Preferences" else "Cài Đặt App",
                 badgeText = if (isEnglish) "Audio & Alerts" else "Âm thanh & Nhắc nhở",
                 actionText = if (isEnglish) "Open ➔" else "Mở cài đặt ➔",
-                icon = Icons.Default.Settings,
+                iconRes = R.drawable.ic_action_setting,
                 accentColor = Color(0xFFC68CFF),
                 gradientColors = listOf(Color(0xFF231435), Color(0xFF131024)),
                 onClick = onOpenSettings
@@ -2361,11 +2381,10 @@ private fun ProfileSectionView(
                             .border(1.dp, Color(0x66FF5F6D), CircleShape),
                         contentAlignment = Alignment.Center
                     ) {
-                        Icon(
-                            Icons.AutoMirrored.Filled.ExitToApp,
+                        Image(
+                            painter = painterResource(R.drawable.ic_logout),
                             contentDescription = "Logout",
-                            tint = Color(0xFFFF5F6D),
-                            modifier = Modifier.size(22.dp)
+                            modifier = Modifier.size(26.dp)
                         )
                     }
                     Spacer(modifier = Modifier.width(14.dp))

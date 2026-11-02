@@ -922,7 +922,7 @@ fun MainNavigation(viewModel: StudyViewModel, onLogout: () -> Unit) {
             composable("map") {
                 JourneyMapScreen(
                     viewModel = viewModel,
-                    onStartQuest = { navController.navigate("progression_map") },
+                    onStartQuest = { navController.navigate("quest_active") },
                     onStartActiveLesson = { navController.navigate("quest_active") },
                     onLogout = onLogout,
                     onViewStats = { navController.navigate("profile") { launchSingleTop = true } }
@@ -937,8 +937,8 @@ fun MainNavigation(viewModel: StudyViewModel, onLogout: () -> Unit) {
                 RankRevealScreen(
                     viewModel = viewModel,
                     onEnterRealm = {
-                        navController.navigate("progression_map") {
-                            popUpTo("map")
+                        navController.navigate("map") {
+                            popUpTo("map") { inclusive = false }
                         }
                     },
                     onViewAnalysis = {
@@ -949,7 +949,7 @@ fun MainNavigation(viewModel: StudyViewModel, onLogout: () -> Unit) {
                         val currentNode = viewModel.currentNode.value ?: 1
                         viewModel.selectChapterByTitle(currentChapter, currentNode)
                         navController.navigate("quest_active") {
-                            popUpTo("progression_map")
+                            popUpTo("map")
                         }
                     }
                 )
@@ -963,7 +963,7 @@ fun MainNavigation(viewModel: StudyViewModel, onLogout: () -> Unit) {
                 ProfileScreen(
                     viewModel = viewModel, 
                     onLogout = onLogout,
-                    onNavigateToRoadmap = { navController.navigate("progression_map") },
+                    onNavigateToRoadmap = { navController.navigate("map") { launchSingleTop = true } },
                     onNavigateToShop = { navController.navigate("shop") }
                 ) 
             }
@@ -1016,9 +1016,9 @@ fun FloatingNavBar(
         verticalAlignment = Alignment.CenterVertically
     ) {
         NavItem("map", R.drawable.ic_nav_roadmap, strings.navMap, currentRoute, navController)
-        NavItem("quests", R.drawable.ic_nav_practice, strings.navLearn, currentRoute, navController)
+        NavItem("quests", R.drawable.ic_nav_task, strings.navLearn, currentRoute, navController)
         NavItem("shop", R.drawable.ic_nav_shop, strings.navShop, currentRoute, navController)
-        NavItem("ask", R.drawable.ic_nav_mentor, strings.navTutor, currentRoute, navController)
+        NavItem("ask", R.drawable.ic_mentor_qa, strings.navTutor, currentRoute, navController)
         NavItem("rank", R.drawable.ic_nav_ranking, strings.navRank, currentRoute, navController)
         NavItem(
             route = "profile",
