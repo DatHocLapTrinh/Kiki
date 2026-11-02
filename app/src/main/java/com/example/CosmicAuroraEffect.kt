@@ -108,10 +108,9 @@ fun DrawScope.drawCosmicAuroraSegment(
     }
 
     // ── 0. Cosmic Docking Glow (Quầng năng lượng tinh vân tiếp giáp tại 2 hành tinh) ──
-    val dockAlpha = if (isActive) 0.52f * alphaScale else 0.28f * alphaScale
+    val dockAlpha = if (isActive) 0.55f * alphaScale else 0.30f * alphaScale
     val dockRadius = 88.dp.toPx()
 
-    // 0.1 Quầng năng lượng bao bọc hành tinh xuất phát (Top planet)
     drawCircle(
         brush = Brush.radialGradient(
             listOf(
@@ -127,7 +126,6 @@ fun DrawScope.drawCosmicAuroraSegment(
         center = Offset(startX, startY)
     )
 
-    // 0.2 Quầng năng lượng đón nhận tại hành tinh đích đến (Bottom planet)
     drawCircle(
         brush = Brush.radialGradient(
             listOf(
@@ -143,153 +141,244 @@ fun DrawScope.drawCosmicAuroraSegment(
         center = Offset(endX, endY)
     )
 
-    // ── 1. Cosmic Dust Gas Clouds (Mây khói tinh vân vũ trụ nền - Deep Violet & Magenta) ──
-    val cloudAlpha = if (isActive) 0.28f * alphaScale else 0.16f * alphaScale
-    val cloudSteps = 9
-    for (c in 1 until cloudSteps) {
-        val t = c.toFloat() / cloudSteps
-        val idx = (t * samples).toInt().coerceIn(0, samples)
-        val lateralOffset = (sin(c * 2.3f + animPhase * 0.4f) * 16.dp.toPx())
-        val cx = ptsX[idx] + normX[idx] * lateralOffset
-        val cy = ptsY[idx] + normY[idx] * lateralOffset
-        val r = (48 + (c % 3) * 10).dp.toPx()
+    // ── 1. Cầu nối bụi vũ trụ cuộn xoáy làm biến dạng không-thời gian (Swirling Dust Bridge) ──
+    val dustBridgeAlpha = if (isActive) 0.48f * alphaScale else 0.28f * alphaScale
 
-        drawCircle(
-            brush = Brush.radialGradient(
-                listOf(
-                    Color(0xFF4C1D95).copy(alpha = cloudAlpha * 0.85f),
-                    Color(0xFF2E1065).copy(alpha = cloudAlpha * 0.55f),
-                    Color(0xFF1E1035).copy(alpha = cloudAlpha * 0.25f),
-                    Color.Transparent
-                ),
-                center = Offset(cx, cy),
-                radius = r
-            ),
-            radius = r,
-            center = Offset(cx, cy)
-        )
-    }
+    val dust1TopX = FloatArray(samples + 1)
+    val dust1TopY = FloatArray(samples + 1)
+    val dust1BotX = FloatArray(samples + 1)
+    val dust1BotY = FloatArray(samples + 1)
 
-    // ── 2. Branching Plasma Tendrils (Mạng lưới sợi nhánh tinh vân tỏa ra không gian) ──
-    val tendrilAlpha = if (isActive) 0.68f * alphaScale else 0.38f * alphaScale
-    val tendrilConfigs = listOf(
-        Triple(0.12f, 1f, 38f to 14f),
-        Triple(0.18f, -1f, 44f to -16f),
-        Triple(0.26f, 1f, 52f to 18f),
-        Triple(0.32f, -1f, 40f to -12f),
-        Triple(0.40f, 1f, 56f to -20f),
-        Triple(0.46f, -1f, 48f to 16f),
-        Triple(0.54f, 1f, 50f to 18f),
-        Triple(0.60f, -1f, 54f to -22f),
-        Triple(0.68f, 1f, 42f to -14f),
-        Triple(0.74f, -1f, 48f to 16f),
-        Triple(0.82f, 1f, 36f to 12f),
-        Triple(0.88f, -1f, 32f to -10f)
-    )
+    val dust2TopX = FloatArray(samples + 1)
+    val dust2TopY = FloatArray(samples + 1)
+    val dust2BotX = FloatArray(samples + 1)
+    val dust2BotY = FloatArray(samples + 1)
 
-    for ((t, side, shape) in tendrilConfigs) {
-        val (lenDp, curlDp) = shape
-        val idx = (t * samples).toInt().coerceIn(0, samples)
-        val x0 = ptsX[idx]
-        val y0 = ptsY[idx]
-
-        val lengthPx = lenDp.dp.toPx()
-        val curlPx = curlDp.dp.toPx()
-
-        val nx = normX[idx] * side
-        val ny = normY[idx] * side
-        val tx = tanX[idx]
-        val ty = tanY[idx]
-
-        val cp1X = x0 + nx * (lengthPx * 0.35f) + tx * (curlPx * 0.2f)
-        val cp1Y = y0 + ny * (lengthPx * 0.35f) + ty * (curlPx * 0.2f)
-        val cp2X = x0 + nx * (lengthPx * 0.75f) + tx * (curlPx * 0.7f)
-        val cp2Y = y0 + ny * (lengthPx * 0.75f) + ty * (curlPx * 0.7f)
-        val endTendrilX = x0 + nx * lengthPx + tx * curlPx
-        val endTendrilY = y0 + ny * lengthPx + ty * curlPx
-
-        val tendrilPath = Path().apply {
-            moveTo(x0, y0)
-            cubicTo(cp1X, cp1Y, cp2X, cp2Y, endTendrilX, endTendrilY)
-        }
-
-        drawPath(
-            path = tendrilPath,
-            brush = Brush.linearGradient(
-                listOf(
-                    Color(0xFFFF5580).copy(alpha = tendrilAlpha * 0.90f),
-                    Color(0xFFC026D3).copy(alpha = tendrilAlpha * 0.75f),
-                    Color(0xFF7E22CE).copy(alpha = tendrilAlpha * 0.45f),
-                    Color(0x003B0764)
-                ),
-                start = Offset(x0, y0),
-                end = Offset(endTendrilX, endTendrilY)
-            ),
-            style = Stroke(width = 1.8.dp.toPx(), cap = StrokeCap.Round)
-        )
-
-        val tipTwinkle = (0.5f + 0.5f * sin(animPhase * 2f + t * 10f))
-        drawCircle(
-            color = Color(0xFFFFD166).copy(alpha = tendrilAlpha * tipTwinkle),
-            radius = 1.6.dp.toPx(),
-            center = Offset(endTendrilX, endTendrilY)
-        )
-    }
-
-    // ── 3. Braided Multi-Strand Cosmic Fibers (Các chùm sợi plasma đan bện xoắn ốc) ──
-    val fiberAlpha = if (isActive) 0.78f * alphaScale else 0.48f * alphaScale
-
-    val fiber1Path = Path()
-    val fiber2Path = Path()
-    val fiber3Path = Path()
-    val fiber4Path = Path()
+    val dustW1Base = 18.dp.toPx()
+    val dustW2Base = 16.dp.toPx()
+    val vortexDisp = 14.dp.toPx()
 
     for (k in 0..samples) {
         val t = k.toFloat() / samples
         val sinT = sin(PI.toFloat() * t)
+        val envelope = (0.55f + 0.45f * sinT)
 
-        val disp1 = normX[k] * (sin(3.5f * PI.toFloat() * t + animPhase) * 11.dp.toPx() + sin(7f * PI.toFloat() * t) * 3.dp.toPx()) * (0.4f + 0.6f * sinT)
-        val disp1Y = normY[k] * (sin(3.5f * PI.toFloat() * t + animPhase) * 11.dp.toPx() + sin(7f * PI.toFloat() * t) * 3.dp.toPx()) * (0.4f + 0.6f * sinT)
+        val swirlPhase = 2.5f * PI.toFloat() * t + animPhase
+        val d1 = normX[k] * (sin(swirlPhase) * vortexDisp * envelope)
+        val d1Y = normY[k] * (sin(swirlPhase) * vortexDisp * envelope)
+        val d2 = normX[k] * (-sin(swirlPhase) * vortexDisp * envelope)
+        val d2Y = normY[k] * (-sin(swirlPhase) * vortexDisp * envelope)
 
-        val disp2 = normX[k] * (-cos(3.2f * PI.toFloat() * t + animPhase * 0.8f) * 14.dp.toPx() + cos(6f * PI.toFloat() * t) * 3.5.dp.toPx()) * (0.4f + 0.6f * sinT)
-        val disp2Y = normY[k] * (-cos(3.2f * PI.toFloat() * t + animPhase * 0.8f) * 14.dp.toPx() + cos(6f * PI.toFloat() * t) * 3.5.dp.toPx()) * (0.4f + 0.6f * sinT)
+        val w1 = (dustW1Base + 6.dp.toPx() * sinT)
+        val w2 = (dustW2Base + 6.dp.toPx() * sinT)
 
-        val disp3 = normX[k] * (sin(2.5f * PI.toFloat() * t - animPhase * 0.7f) * 18.dp.toPx() - sin(5f * PI.toFloat() * t) * 4.dp.toPx()) * (0.4f + 0.6f * sinT)
-        val disp3Y = normY[k] * (sin(2.5f * PI.toFloat() * t - animPhase * 0.7f) * 18.dp.toPx() - sin(5f * PI.toFloat() * t) * 4.dp.toPx()) * (0.4f + 0.6f * sinT)
+        dust1TopX[k] = ptsX[k] + d1 + normX[k] * w1
+        dust1TopY[k] = ptsY[k] + d1Y + normY[k] * w1
+        dust1BotX[k] = ptsX[k] + d1 - normX[k] * w1
+        dust1BotY[k] = ptsY[k] + d1Y - normY[k] * w1
 
-        val disp4 = normX[k] * (cos(4.8f * PI.toFloat() * t + animPhase * 1.3f) * 6.dp.toPx() + sin(9f * PI.toFloat() * t) * 2.dp.toPx()) * (0.4f + 0.6f * sinT)
-        val disp4Y = normY[k] * (cos(4.8f * PI.toFloat() * t + animPhase * 1.3f) * 6.dp.toPx() + sin(9f * PI.toFloat() * t) * 2.dp.toPx()) * (0.4f + 0.6f * sinT)
-
-        val p1x = ptsX[k] + disp1
-        val p1y = ptsY[k] + disp1Y
-        val p2x = ptsX[k] + disp2
-        val p2y = ptsY[k] + disp2Y
-        val p3x = ptsX[k] + disp3
-        val p3y = ptsY[k] + disp3Y
-        val p4x = ptsX[k] + disp4
-        val p4y = ptsY[k] + disp4Y
-
-        if (k == 0) {
-            fiber1Path.moveTo(p1x, p1y)
-            fiber2Path.moveTo(p2x, p2y)
-            fiber3Path.moveTo(p3x, p3y)
-            fiber4Path.moveTo(p4x, p4y)
-        } else {
-            fiber1Path.lineTo(p1x, p1y)
-            fiber2Path.lineTo(p2x, p2y)
-            fiber3Path.lineTo(p3x, p3y)
-            fiber4Path.lineTo(p4x, p4y)
-        }
+        dust2TopX[k] = ptsX[k] + d2 + normX[k] * w2
+        dust2TopY[k] = ptsY[k] + d2Y + normY[k] * w2
+        dust2BotX[k] = ptsX[k] + d2 - normX[k] * w2
+        dust2BotY[k] = ptsY[k] + d2Y - normY[k] * w2
     }
 
-    // Fiber 3 (Sợi tím vũ trụ bề rộng mềm mại)
+    val dustPath1 = Path().apply {
+        moveTo(dust1TopX[0], dust1TopY[0])
+        for (k in 1..samples) lineTo(dust1TopX[k], dust1TopY[k])
+        for (k in samples downTo 0) lineTo(dust1BotX[k], dust1BotY[k])
+        close()
+    }
+
+    val dustPath2 = Path().apply {
+        moveTo(dust2TopX[0], dust2TopY[0])
+        for (k in 1..samples) lineTo(dust2TopX[k], dust2TopY[k])
+        for (k in samples downTo 0) lineTo(dust2BotX[k], dust2BotY[k])
+        close()
+    }
+
+    // Cầu bụi vũ trụ 1 (Tím thẫm - Indigo sâu thẳm)
     drawPath(
-        path = fiber3Path,
+        path = dustPath1,
         brush = Brush.verticalGradient(
             listOf(
-                Color(0xFF7E22CE).copy(alpha = fiberAlpha * 0.70f),
-                Color(0xFFA855F7).copy(alpha = fiberAlpha * 0.85f),
-                Color(0xFF9333EA).copy(alpha = fiberAlpha * 0.75f)
+                Color(0xFF581C87).copy(alpha = dustBridgeAlpha * 0.85f),
+                Color(0xFF3B0764).copy(alpha = dustBridgeAlpha),
+                Color(0xFF1E1035).copy(alpha = dustBridgeAlpha * 0.90f),
+                Color(0xFF4C1D95).copy(alpha = dustBridgeAlpha * 0.85f)
+            ),
+            startY = startY,
+            endY = endY
+        )
+    )
+
+    // Cầu bụi vũ trụ 2 (Mận chín - Mận hoàng gia cuộn xoáy ngược)
+    drawPath(
+        path = dustPath2,
+        brush = Brush.verticalGradient(
+            listOf(
+                Color(0xFF701A75).copy(alpha = dustBridgeAlpha * 0.80f),
+                Color(0xFF831843).copy(alpha = dustBridgeAlpha * 0.95f),
+                Color(0xFF4A044E).copy(alpha = dustBridgeAlpha * 0.85f),
+                Color(0xFF581C87).copy(alpha = dustBridgeAlpha * 0.80f)
+            ),
+            startY = startY,
+            endY = endY
+        )
+    )
+
+    // ── 2. Các dải plasma dày đặc, rực rỡ (Dense Radiant Plasma Bands) ────────
+    val plasmaAlpha = if (isActive) 0.84f * alphaScale else 0.52f * alphaScale
+
+    // Dải Plasma A: Hồng Neon - Hoa Hồng Rực Sáng (22dp - 30dp)
+    val plasmaATopX = FloatArray(samples + 1)
+    val plasmaATopY = FloatArray(samples + 1)
+    val plasmaABotX = FloatArray(samples + 1)
+    val plasmaABotY = FloatArray(samples + 1)
+
+    // Dải Plasma B: Vàng Hổ Phách - Cam Lửa (18dp - 26dp)
+    val plasmaBTopX = FloatArray(samples + 1)
+    val plasmaBTopY = FloatArray(samples + 1)
+    val plasmaBBotX = FloatArray(samples + 1)
+    val plasmaBBotY = FloatArray(samples + 1)
+
+    // Dải Plasma C: Sóng Năng Lượng Xanh Ngọc (8dp - 12dp)
+    val plasmaCTopX = FloatArray(samples + 1)
+    val plasmaCTopY = FloatArray(samples + 1)
+    val plasmaCBotX = FloatArray(samples + 1)
+    val plasmaCBotY = FloatArray(samples + 1)
+
+    val plasmaWBaseA = 11.dp.toPx()
+    val plasmaWBaseB = 9.dp.toPx()
+    val plasmaWBaseC = 4.dp.toPx()
+
+    for (k in 0..samples) {
+        val t = k.toFloat() / samples
+        val sinT = sin(PI.toFloat() * t)
+        val envelope = (0.50f + 0.50f * sinT)
+
+        val wavePhase = 3.2f * PI.toFloat() * t + animPhase
+        val dispA = normX[k] * (sin(wavePhase) * 8.dp.toPx() * envelope)
+        val dispAY = normY[k] * (sin(wavePhase) * 8.dp.toPx() * envelope)
+
+        val dispB = normX[k] * (-sin(wavePhase) * 8.dp.toPx() * envelope)
+        val dispBY = normY[k] * (-sin(wavePhase) * 8.dp.toPx() * envelope)
+
+        val dispC = normX[k] * (cos(wavePhase * 1.5f) * 4.dp.toPx() * envelope)
+        val dispCY = normY[k] * (cos(wavePhase * 1.5f) * 4.dp.toPx() * envelope)
+
+        val wA = plasmaWBaseA + 4.dp.toPx() * sinT
+        val wB = plasmaWBaseB + 4.dp.toPx() * sinT
+        val wC = plasmaWBaseC + 2.dp.toPx() * sinT
+
+        plasmaATopX[k] = ptsX[k] + dispA + normX[k] * wA
+        plasmaATopY[k] = ptsY[k] + dispAY + normY[k] * wA
+        plasmaABotX[k] = ptsX[k] + dispA - normX[k] * wA
+        plasmaABotY[k] = ptsY[k] + dispAY - normY[k] * wA
+
+        plasmaBTopX[k] = ptsX[k] + dispB + normX[k] * wB
+        plasmaBTopY[k] = ptsY[k] + dispBY + normY[k] * wB
+        plasmaBBotX[k] = ptsX[k] + dispB - normX[k] * wB
+        plasmaBBotY[k] = ptsY[k] + dispBY - normY[k] * wB
+
+        plasmaCTopX[k] = ptsX[k] + dispC + normX[k] * wC
+        plasmaCTopY[k] = ptsY[k] + dispCY + normY[k] * wC
+        plasmaCBotX[k] = ptsX[k] + dispC - normX[k] * wC
+        plasmaCBotY[k] = ptsY[k] + dispCY - normY[k] * wC
+    }
+
+    val plasmaPathA = Path().apply {
+        moveTo(plasmaATopX[0], plasmaATopY[0])
+        for (k in 1..samples) lineTo(plasmaATopX[k], plasmaATopY[k])
+        for (k in samples downTo 0) lineTo(plasmaABotX[k], plasmaABotY[k])
+        close()
+    }
+
+    val plasmaPathB = Path().apply {
+        moveTo(plasmaBTopX[0], plasmaBTopY[0])
+        for (k in 1..samples) lineTo(plasmaBTopX[k], plasmaBTopY[k])
+        for (k in samples downTo 0) lineTo(plasmaBBotX[k], plasmaBBotY[k])
+        close()
+    }
+
+    val plasmaPathC = Path().apply {
+        moveTo(plasmaCTopX[0], plasmaCTopY[0])
+        for (k in 1..samples) lineTo(plasmaCTopX[k], plasmaCTopY[k])
+        for (k in samples downTo 0) lineTo(plasmaCBotX[k], plasmaCBotY[k])
+        close()
+    }
+
+    // Dải Plasma A (Hồng Neon - Magenta rực rỡ)
+    drawPath(
+        path = plasmaPathA,
+        brush = Brush.verticalGradient(
+            listOf(
+                Color(0xFFFF2A85).copy(alpha = plasmaAlpha * 0.90f),
+                Color(0xFFEC4899).copy(alpha = plasmaAlpha),
+                Color(0xFFD946EF).copy(alpha = plasmaAlpha * 0.95f),
+                Color(0xFFFF2A85).copy(alpha = plasmaAlpha * 0.90f)
+            ),
+            startY = startY,
+            endY = endY
+        )
+    )
+
+    // Dải Plasma B (Vàng Hổ Phách - Cam Lửa rực sáng)
+    drawPath(
+        path = plasmaPathB,
+        brush = Brush.verticalGradient(
+            listOf(
+                Color(0xFFFFCC00).copy(alpha = plasmaAlpha * 0.95f),
+                Color(0xFFFFA050).copy(alpha = plasmaAlpha),
+                Color(0xFFFF3B30).copy(alpha = plasmaAlpha * 0.90f),
+                Color(0xFFFFD166).copy(alpha = plasmaAlpha * 0.95f)
+            ),
+            startY = startY,
+            endY = endY
+        )
+    )
+
+    // Dải Plasma C (Xanh Ngọc Bích Starlight)
+    drawPath(
+        path = plasmaPathC,
+        brush = Brush.verticalGradient(
+            listOf(
+                Color(0xFF51FAC1).copy(alpha = plasmaAlpha * 0.85f),
+                Color(0xFF00F5FF).copy(alpha = plasmaAlpha * 0.95f),
+                Color(0xFFA855F7).copy(alpha = plasmaAlpha * 0.75f)
+            ),
+            startY = startY,
+            endY = endY
+        )
+    )
+
+    // ── 3. Lõi dung nham plasma rực lửa ở trung tâm (White-Hot Core Spine) ──
+    val coreAlpha = if (isActive) 0.98f * alphaScale else 0.68f * alphaScale
+
+    // Vệt hào quang phát sáng lõi
+    drawPath(
+        path = mainPath,
+        brush = Brush.verticalGradient(
+            listOf(
+                Color(0xFFFFA050).copy(alpha = coreAlpha * 0.70f),
+                Color(0xFFFF2A85).copy(alpha = coreAlpha * 0.85f),
+                Color(0xFFFFD166).copy(alpha = coreAlpha * 0.80f),
+                Color(0xFFFFA050).copy(alpha = coreAlpha * 0.70f)
+            ),
+            startY = startY,
+            endY = endY
+        ),
+        style = Stroke(width = 11.dp.toPx(), cap = StrokeCap.Round)
+    )
+
+    // Lõi vàng kim starlight
+    drawPath(
+        path = mainPath,
+        brush = Brush.verticalGradient(
+            listOf(
+                Color(0xFFFFF0B3).copy(alpha = coreAlpha * 0.95f),
+                Color(0xFFFFD166).copy(alpha = coreAlpha),
+                Color(0xFFFFA050).copy(alpha = coreAlpha * 0.95f)
             ),
             startY = startY,
             endY = endY
@@ -297,126 +386,14 @@ fun DrawScope.drawCosmicAuroraSegment(
         style = Stroke(width = 4.2.dp.toPx(), cap = StrokeCap.Round)
     )
 
-    // Fiber 2 (Sợi hồng plasma rực sáng)
+    // Tia laser trắng trung tâm
     drawPath(
-        path = fiber2Path,
-        brush = Brush.verticalGradient(
-            listOf(
-                Color(0xFFEC4899).copy(alpha = fiberAlpha * 0.80f),
-                Color(0xFFFF2A85).copy(alpha = fiberAlpha * 0.95f),
-                Color(0xFFD946EF).copy(alpha = fiberAlpha * 0.85f)
-            ),
-            startY = startY,
-            endY = endY
-        ),
-        style = Stroke(width = 3.6.dp.toPx(), cap = StrokeCap.Round)
-    )
-
-    // Fiber 1 (Sợi cam lửa hổ phách nóng bỏng)
-    drawPath(
-        path = fiber1Path,
-        brush = Brush.verticalGradient(
-            listOf(
-                Color(0xFFFB923C).copy(alpha = fiberAlpha * 0.85f),
-                Color(0xFFFFA050).copy(alpha = fiberAlpha * 0.95f),
-                Color(0xFFF43F5E).copy(alpha = fiberAlpha * 0.85f)
-            ),
-            startY = startY,
-            endY = endY
-        ),
-        style = Stroke(width = 3.0.dp.toPx(), cap = StrokeCap.Round)
-    )
-
-    // Fiber 4 (Sợi vàng kim starlight đan xen)
-    drawPath(
-        path = fiber4Path,
-        brush = Brush.verticalGradient(
-            listOf(
-                Color(0xFFFFF0B3).copy(alpha = fiberAlpha * 0.90f),
-                Color(0xFFFFDD80).copy(alpha = fiberAlpha * 1.0f),
-                Color(0xFFFF8AD8).copy(alpha = fiberAlpha * 0.90f)
-            ),
-            startY = startY,
-            endY = endY
-        ),
+        path = mainPath,
+        color = Color.White.copy(alpha = coreAlpha),
         style = Stroke(width = 2.0.dp.toPx(), cap = StrokeCap.Round)
     )
 
-    // ── 4. The Fiery Burning Core Spine (Lõi dung nham bụi sao vàng hồng rực lửa) ──
-    val coreAlpha = if (isActive) 0.96f * alphaScale else 0.65f * alphaScale
-
-    // 4.1 Vệt phát quang hổ phách - hoa hồng
-    drawPath(
-        path = mainPath,
-        brush = Brush.verticalGradient(
-            listOf(
-                Color(0xFFFF7E40).copy(alpha = coreAlpha * 0.65f),
-                Color(0xFFFF3366).copy(alpha = coreAlpha * 0.80f),
-                Color(0xFFFFA050).copy(alpha = coreAlpha * 0.75f),
-                Color(0xFFFF7E40).copy(alpha = coreAlpha * 0.65f)
-            ),
-            startY = startY,
-            endY = endY
-        ),
-        style = Stroke(width = 9.dp.toPx(), cap = StrokeCap.Round)
-    )
-
-    // 4.2 Lõi sợi vàng kim rực rỡ
-    drawPath(
-        path = mainPath,
-        brush = Brush.verticalGradient(
-            listOf(
-                Color(0xFFFFE066).copy(alpha = coreAlpha * 0.92f),
-                Color(0xFFFF6699).copy(alpha = coreAlpha * 0.96f),
-                Color(0xFFFFD166).copy(alpha = coreAlpha * 0.92f)
-            ),
-            startY = startY,
-            endY = endY
-        ),
-        style = Stroke(width = 3.5.dp.toPx(), cap = StrokeCap.Round)
-    )
-
-    // 4.3 Tia sáng trắng trung tâm
-    drawPath(
-        path = mainPath,
-        color = Color.White.copy(alpha = coreAlpha * 0.95f),
-        style = Stroke(width = 1.4.dp.toPx(), cap = StrokeCap.Round)
-    )
-
-    // ── 5. Field of Scattered Stardust (Bầu trời bụi sao lơ lửng khắp dải mạng nhện vũ trụ) ──
-    val stardustCount = 52
-    for (i in 0 until stardustCount) {
-        val seed = i * 1337 + 73
-        val t = ((i * 0.0192f) % 0.88f) + 0.06f
-        val idx = (t * samples).toInt().coerceIn(0, samples - 1)
-        val subT = (t * samples) - idx
-        val baseX = ptsX[idx] + (ptsX[idx + 1] - ptsX[idx]) * subT
-        val baseY = ptsY[idx] + (ptsY[idx + 1] - ptsY[idx]) * subT
-
-        val latOffset = (sin(seed * 0.31f) * 34.dp.toPx())
-        val starX = baseX + normX[idx] * latOffset
-        val starY = baseY + normY[idx] * latOffset
-
-        val starRadius = (1.1f + ((seed % 4) * 0.45f)).dp.toPx()
-        val twinkleSpeed = 1.8f + (seed % 3) * 0.8f
-        val twinkle = (0.45f + 0.55f * sin(animPhase * twinkleSpeed + seed.toFloat()))
-
-        val starColor = when (i % 5) {
-            0 -> Color(0xFFFFD166) // Gold star
-            1 -> Color(0xFFFF6699) // Coral/rose star
-            2 -> Color(0xFFC084FC) // Violet star
-            3 -> Color(0xFF51FAC1) // Cyan star
-            else -> Color.White   // Pure white spark
-        }
-
-        drawCircle(
-            color = starColor.copy(alpha = (starColor.alpha * twinkle * alphaScale).coerceIn(0f, 1f)),
-            radius = starRadius,
-            center = Offset(starX, starY)
-        )
-    }
-
-    // ── 6. Traveling Star Pulse Orb (Ngôi sao truyền từ hành tinh này sang hành tinh khác) ──
+    // ── 4. Traveling Star Pulse Orb (Ngôi sao truyền từ hành tinh này sang hành tinh khác) ──
     if (isActive) {
         val pulseT = ((animPhase / (2f * PI.toFloat())) % 1f + 1f) % 1f
         val pulseIdx = (pulseT * samples).toInt().coerceIn(0, samples - 1)
