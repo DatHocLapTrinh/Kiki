@@ -553,7 +553,7 @@ fun IntroContent(currentX: Float, currentY: Float, onBurst: (x: Float, y: Float)
                 )
 
                 AsyncImage(
-                    model = R.drawable.kiki_icon,
+                    model = R.drawable.kiki_welcome,
                     contentDescription = "Kiki Waving Welcome",
                     modifier = Modifier
                         .fillMaxSize()

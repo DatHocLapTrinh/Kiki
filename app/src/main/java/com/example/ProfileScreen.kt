@@ -61,7 +61,10 @@ import com.example.viewmodel.StudyViewModel
 
 fun resolveAvatarResource(avatarUri: String?): Int {
     return when (avatarUri) {
-        "kiki_mascot_head", "kiki_state_happy" -> R.drawable.kiki_mascot_head
+        "kiki_welcome" -> R.drawable.kiki_welcome
+        "kiki_happy", "kiki_mascot_head", "kiki_state_happy" -> R.drawable.kiki_happy
+        "kiki_sad" -> R.drawable.kiki_sad
+        "kiki_speaker" -> R.drawable.kiki_speaker
         else -> R.drawable.kiki_icon
     }
 }
@@ -744,8 +747,11 @@ fun EditProfileDialog(
     var selectedAvatar by remember { mutableStateOf(currentAvatar ?: "kiki_icon") }
 
     val avatars = listOf(
-        "kiki_icon" to (if (isEnglish) "Scholar" else "Học giả"),
-        "kiki_mascot_head" to (if (isEnglish) "Joyful" else "Hào hứng")
+        "kiki_welcome" to (if (isEnglish) "Welcome" else "Chào đón"),
+        "kiki_happy" to (if (isEnglish) "Victory" else "Ăn mừng"),
+        "kiki_speaker" to (if (isEnglish) "Speaker" else "Diễn thuyết"),
+        "kiki_sad" to (if (isEnglish) "Empathetic" else "Đồng cảm"),
+        "kiki_icon" to (if (isEnglish) "Scholar" else "Học giả")
     )
 
     AlertDialog(

@@ -797,7 +797,7 @@ fun QuestScreen(viewModel: StudyViewModel, onFinish: () -> Unit) {
                                         contentAlignment = Alignment.Center
                                     ) {
                                         coil.compose.AsyncImage(
-                                            model = if (isCurrentCorrect) R.drawable.kiki_mascot_head else R.drawable.kiki_icon,
+                                            model = if (isCurrentCorrect) R.drawable.kiki_happy else R.drawable.kiki_sad,
                                             contentDescription = if (isCurrentCorrect) "Kiki Happy" else "Kiki Empathetic",
                                             contentScale = androidx.compose.ui.layout.ContentScale.Fit,
                                             modifier = Modifier

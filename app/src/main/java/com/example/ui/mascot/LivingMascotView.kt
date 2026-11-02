@@ -38,11 +38,12 @@ fun resolveMascotDrawableForEmotion(emotion: MascotEmotion): Int {
     return when (emotion) {
         MascotEmotion.CHEER,
         MascotEmotion.STREAK,
-        MascotEmotion.PETTED -> R.drawable.kiki_mascot_head
-        MascotEmotion.IDLE,
-        MascotEmotion.THINKING,
+        MascotEmotion.PETTED -> R.drawable.kiki_happy
+        MascotEmotion.EMPATHY -> R.drawable.kiki_sad
         MascotEmotion.LISTENING,
-        MascotEmotion.EMPATHY -> R.drawable.kiki_icon
+        MascotEmotion.SPEAKING,
+        MascotEmotion.THINKING -> R.drawable.kiki_speaker
+        MascotEmotion.IDLE -> R.drawable.kiki_welcome
     }
 }
 
@@ -86,7 +87,8 @@ fun LivingMascotView(
         MascotEmotion.EMPATHY -> 1.05f
         MascotEmotion.THINKING -> 0.98f
         MascotEmotion.PETTED -> if (isSquashing) 1.22f else 1.05f
-        MascotEmotion.LISTENING -> 1.02f
+        MascotEmotion.LISTENING,
+        MascotEmotion.SPEAKING -> 1.02f
         MascotEmotion.IDLE -> 1.0f
     }
 
@@ -96,7 +98,8 @@ fun LivingMascotView(
         MascotEmotion.EMPATHY -> 0.92f
         MascotEmotion.THINKING -> 1.0f
         MascotEmotion.PETTED -> if (isSquashing) 0.82f else 1.12f
-        MascotEmotion.LISTENING -> 1.02f
+        MascotEmotion.LISTENING,
+        MascotEmotion.SPEAKING -> 1.02f
         MascotEmotion.IDLE -> idleBreathY
     }
 
@@ -149,7 +152,8 @@ fun LivingMascotView(
             MascotEmotion.PETTED -> Brush.radialGradient(
                 listOf(Color(0xFFFF4081), Color(0xFFFF80AB), Color.Transparent)
             )
-            MascotEmotion.LISTENING -> Brush.radialGradient(
+            MascotEmotion.LISTENING,
+            MascotEmotion.SPEAKING -> Brush.radialGradient(
                 listOf(Color(0xFF00E5FF), Color(0xFF00B0FF), Color.Transparent)
             )
             MascotEmotion.EMPATHY -> Brush.radialGradient(
@@ -171,6 +175,7 @@ fun LivingMascotView(
         MascotEmotion.EMPATHY -> "💖"
         MascotEmotion.THINKING -> "💡"
         MascotEmotion.LISTENING -> "🎧"
+        MascotEmotion.SPEAKING -> "🗣️"
         MascotEmotion.PETTED -> "🥰"
         MascotEmotion.IDLE -> "🐾"
     }
@@ -179,7 +184,8 @@ fun LivingMascotView(
         MascotEmotion.STREAK -> Color(0xFFFF5722)
         MascotEmotion.CHEER -> Color(0xFFFFB300)
         MascotEmotion.PETTED -> Color(0xFFE91E63)
-        MascotEmotion.LISTENING -> Color(0xFF00B0FF)
+        MascotEmotion.LISTENING,
+        MascotEmotion.SPEAKING -> Color(0xFF00B0FF)
         MascotEmotion.THINKING -> Color(0xFFFFC107)
         MascotEmotion.EMPATHY -> Color(0xFF4CAF50)
         MascotEmotion.IDLE -> Color(0xFF27E0A9)

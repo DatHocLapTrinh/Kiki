@@ -42,7 +42,8 @@ fun MascotSpeechBubble(
                 MascotEmotion.STREAK -> Color(0xFFFF9100)
                 MascotEmotion.CHEER -> Color(0xFFFFD700)
                 MascotEmotion.PETTED -> Color(0xFFFF80AB)
-                MascotEmotion.LISTENING -> Color(0xFF00E5FF)
+                MascotEmotion.LISTENING,
+                MascotEmotion.SPEAKING -> Color(0xFF00E5FF)
                 MascotEmotion.EMPATHY -> Color(0xFF81C784)
                 MascotEmotion.THINKING -> Color(0xFFFFCA28)
                 MascotEmotion.IDLE -> Color(0xFF51FAC1)
