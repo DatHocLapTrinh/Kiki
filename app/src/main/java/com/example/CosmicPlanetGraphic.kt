@@ -140,14 +140,14 @@ fun CosmicPlanetView(
 
     // Kích thước container mở rộng cho vành đai Sao Thổ hoặc hào quang nhật hoa / tai lửa Mặt Trời
     val containerWidth = when {
-        isSaturn -> planetDiameter + 68.dp
-        isSun    -> planetDiameter + 56.dp
-        else     -> planetDiameter + 52.dp
+        isSaturn -> planetDiameter + 72.dp
+        isSun    -> planetDiameter + 64.dp
+        else     -> planetDiameter + 60.dp
     }
     val containerHeight = when {
-        isSun    -> planetDiameter + 56.dp
-        isSaturn -> planetDiameter + 38.dp
-        else     -> planetDiameter + 52.dp
+        isSun    -> planetDiameter + 76.dp
+        isSaturn -> planetDiameter + 68.dp
+        else     -> planetDiameter + 72.dp
     }
 
     val isCurrent = stage.state == JourneyStageState.CURRENT
@@ -213,6 +213,12 @@ fun CosmicPlanetView(
         targetValue = 1.18f,
         animationSpec = infiniteRepeatable(tween(1800, easing = FastOutSlowInEasing), RepeatMode.Reverse),
         label = "shield_glow_pulse"
+    )
+
+    val animatedProgress by animateFloatAsState(
+        targetValue = stage.progress.coerceIn(0f, 1f),
+        animationSpec = tween(800, easing = FastOutSlowInEasing),
+        label = "planet_progress"
     )
 
     val contentDesc = "${stage.sequence}. ${stage.title} - ${CosmicPlanetHelper.getPlanetTypeName(planetType)}"
@@ -290,6 +296,61 @@ fun CosmicPlanetView(
                 isBackPass = false
             )
 
+            // ─── Viền Tròn Tiến Độ Quỹ Đạo (Orbital Progress Ring) ───────────────
+            // Hiển thị vòng tròn quỹ đạo và cung sáng tiến độ (3/5 bài, 5/5 bài...) theo đúng thiết kế
+            if (!isLocked) {
+                val progressRingRadius = radius + 10.dp.toPx()
+
+                // Đường viền quỹ đạo mỏng làm nền (Background Orbital Track)
+                drawCircle(
+                    color = Color(0x384D8BFA),
+                    center = Offset(centerX, centerY),
+                    radius = progressRingRadius,
+                    style = Stroke(width = 2.dp.toPx())
+                )
+
+                // Cung tròn tiến độ phát sáng quét từ góc 12h (-90 độ) theo chiều kim đồng hồ
+                if (animatedProgress > 0f) {
+                    val sweepAngle = animatedProgress * 360f
+
+                    // Lớp phát quang mờ ảo neon (Aura Glow Stroke)
+                    drawArc(
+                        brush = Brush.sweepGradient(
+                            colors = if (isCompleted) {
+                                listOf(Color(0x80FFD166), Color(0x80FF9E00), Color(0x80FFD166))
+                            } else {
+                                listOf(Color(0x8051FAC1), Color(0x8000E5FF), Color(0x8051FAC1))
+                            },
+                            center = Offset(centerX, centerY)
+                        ),
+                        startAngle = -90f,
+                        sweepAngle = sweepAngle,
+                        useCenter = false,
+                        topLeft = Offset(centerX - progressRingRadius, centerY - progressRingRadius),
+                        size = Size(progressRingRadius * 2f, progressRingRadius * 2f),
+                        style = Stroke(width = 8.dp.toPx(), cap = StrokeCap.Round)
+                    )
+
+                    // Lớp viền neon sắc nét chính (Crisp Neon Core)
+                    drawArc(
+                        brush = Brush.sweepGradient(
+                            colors = if (isCompleted) {
+                                listOf(Color(0xFFFFD166), Color(0xFFFFB703), Color(0xFFFFE169), Color(0xFFFFD166))
+                            } else {
+                                listOf(Color(0xFF51FAC1), Color(0xFF00E5FF), Color(0xFF38BDF8), Color(0xFF51FAC1))
+                            },
+                            center = Offset(centerX, centerY)
+                        ),
+                        startAngle = -90f,
+                        sweepAngle = sweepAngle,
+                        useCenter = false,
+                        topLeft = Offset(centerX - progressRingRadius, centerY - progressRingRadius),
+                        size = Size(progressRingRadius * 2f, progressRingRadius * 2f),
+                        style = Stroke(width = 4.5.dp.toPx(), cap = StrokeCap.Round)
+                    )
+                }
+            }
+
             // Khiên năng lượng từ trường (Cosmic Force Field / Energy Shield) & Ổ khóa Neon Hologram cho chặng LOCKED
             if (isLocked) {
                 drawCosmicForceFieldShield(
@@ -307,27 +368,53 @@ fun CosmicPlanetView(
             Box(
                 modifier = Modifier
                     .align(Alignment.TopCenter)
-                    .offset(y = (-8).dp)
-                    .clip(RoundedCornerShape(8.dp))
-                    .background(Color(0xFF00F5D4))
-                    .border(1.dp, Color.White, RoundedCornerShape(8.dp))
-                    .padding(horizontal = 6.dp, vertical = 2.dp)
+                    .offset(y = (-10).dp),
+                contentAlignment = Alignment.BottomCenter
             ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(
-                        Icons.Default.Flag,
-                        contentDescription = null,
-                        tint = Color(0xFF06152B),
-                        modifier = Modifier.size(11.dp)
+                Row(
+                    verticalAlignment = Alignment.Bottom
+                ) {
+                    // Cột cờ thẳng đứng màu bạc/trắng
+                    Box(
+                        modifier = Modifier
+                            .width(2.dp)
+                            .height(24.dp)
+                            .background(
+                                Brush.verticalGradient(
+                                    listOf(Color.White, Color(0xFF00F5D4), Color(0xFF06152B))
+                                )
+                            )
                     )
-                    Spacer(modifier = Modifier.width(3.dp))
-                    Text(
-                        text = "EXPLORING",
-                        color = Color(0xFF06152B),
-                        fontSize = 8.sp,
-                        fontWeight = FontWeight.Black,
-                        letterSpacing = 0.6.sp
-                    )
+                    // Lá cờ vẫy có biểu tượng tên lửa/khám phá
+                    Box(
+                        modifier = Modifier
+                            .offset(x = 0.dp, y = (-6).dp)
+                            .clip(RoundedCornerShape(topStart = 2.dp, topEnd = 8.dp, bottomEnd = 8.dp, bottomStart = 2.dp))
+                            .background(
+                                Brush.horizontalGradient(
+                                    listOf(Color(0xFFFFFFFF), Color(0xFFE0F7FA))
+                                )
+                            )
+                            .border(1.dp, Color(0xFF00F5D4), RoundedCornerShape(topStart = 2.dp, topEnd = 8.dp, bottomEnd = 8.dp, bottomStart = 2.dp))
+                            .padding(horizontal = 6.dp, vertical = 2.dp)
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(
+                                Icons.Default.Flag,
+                                contentDescription = null,
+                                tint = Color(0xFF0284C7),
+                                modifier = Modifier.size(11.dp)
+                            )
+                            Spacer(modifier = Modifier.width(3.dp))
+                            Text(
+                                text = "EXPLORING",
+                                color = Color(0xFF0F172A),
+                                fontSize = 8.sp,
+                                fontWeight = FontWeight.Black,
+                                letterSpacing = 0.6.sp
+                            )
+                        }
+                    }
                 }
             }
         }
@@ -337,7 +424,7 @@ fun CosmicPlanetView(
             Box(
                 modifier = Modifier
                     .align(Alignment.TopCenter)
-                    .offset(y = (-6).dp)
+                    .offset(y = (-8).dp)
                     .clip(RoundedCornerShape(8.dp))
                     .background(Brush.horizontalGradient(listOf(Color(0xFFFFD166), Color(0xFFFF9E00))))
                     .border(1.dp, Color(0xFFFFF275), RoundedCornerShape(8.dp))
@@ -359,6 +446,60 @@ fun CosmicPlanetView(
                         letterSpacing = 0.6.sp
                     )
                 }
+            }
+        }
+
+        // ─── Huy hiệu viên nang hiển thị tiến độ (Pill Badge: 3/5 bài) ───────
+        Box(
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .offset(y = 12.dp)
+                .clip(CircleShape)
+                .background(
+                    Brush.horizontalGradient(
+                        listOf(
+                            Color(0xF00A132C),
+                            Color(0xF0132352)
+                        )
+                    )
+                )
+                .border(
+                    width = 1.2.dp,
+                    brush = Brush.horizontalGradient(
+                        when {
+                            isCompleted -> listOf(Color(0xFFFFD166), Color(0xFFFF9E00))
+                            isCurrent   -> listOf(Color(0xFF51FAC1), Color(0xFF00E5FF))
+                            isLocked    -> listOf(Color(0x40FFFFFF), Color(0x20FFFFFF))
+                            else        -> listOf(Color(0x8038BDF8), Color(0x60818CF8))
+                        }
+                    ),
+                    shape = CircleShape
+                )
+                .padding(horizontal = 10.dp, vertical = 3.5.dp)
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.Center
+            ) {
+                Icon(
+                    imageVector = if (isLocked) Icons.Default.Lock else Icons.Default.Star,
+                    contentDescription = null,
+                    tint = when {
+                        isCompleted -> Color(0xFFFFD166)
+                        isCurrent   -> Color(0xFF51FAC1)
+                        isLocked    -> Color(0x80FFFFFF)
+                        else        -> Color(0xFFFFD166)
+                    },
+                    modifier = Modifier.size(11.dp)
+                )
+                Spacer(modifier = Modifier.width(4.dp))
+                Text(
+                    text = if (isLocked) "Khóa" else "${stage.completedLessons}/${stage.totalLessons} bài",
+                    color = Color.White,
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.ExtraBold,
+                    letterSpacing = 0.3.sp
+                )
             }
         }
 

@@ -48,6 +48,10 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import com.example.ui.BubbleArrowDirection
+import com.example.ui.CosmicSectionBanner
+import com.example.ui.CosmicSectionConfig
+import com.example.ui.CosmicSectionData
+import com.example.ui.CosmicGuidebookDialog
 import com.example.ui.SpeechBubbleShape
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -88,6 +92,11 @@ fun JourneyMapScreen(
     }
     val currentStageIndex = stages.indexOfFirst { it.state == JourneyStageState.CURRENT }
     var isNavigating by remember { mutableStateOf(false) }
+    var activeGuidebookSection by remember { mutableStateOf<CosmicSectionData?>(null) }
+
+    LaunchedEffect(Unit) {
+        isNavigating = false
+    }
 
     LaunchedEffect(availableChapters) {
         if (availableChapters.isEmpty() && !chaptersLoading) {
@@ -138,10 +147,20 @@ fun JourneyMapScreen(
                                 viewModel.selectChapterByTitle(stage.title, stage.sequence)
                                 onStartQuest()
                             }
+                        },
+                        onOpenGuidebook = { sectionData ->
+                            activeGuidebookSection = sectionData
                         }
                     )
                 }
             }
+        }
+
+        activeGuidebookSection?.let { sectionData ->
+            CosmicGuidebookDialog(
+                section = sectionData,
+                onDismiss = { activeGuidebookSection = null }
+            )
         }
     }
 }
@@ -276,10 +295,17 @@ private fun JourneyPath(
     stages: List<JourneyStageUiModel>,
     currentStageIndex: Int,
     strings: AppStrings,
-    onStageClick: (JourneyStageUiModel) -> Unit
+    onStageClick: (JourneyStageUiModel) -> Unit,
+    onOpenGuidebook: (CosmicSectionData) -> Unit
 ) {
     val stageStep = 230.dp
-    val rewardTop = (stages.size * stageStep.value + 10).dp
+    val bannerHeight = 110.dp
+    val bannerSpacing = 16.dp
+    val bannerTotalHeight = bannerHeight + bannerSpacing
+
+    val totalBanners = if (stages.isEmpty()) 0 else (stages.lastIndex / 10) + 1
+    val totalPathHeight = (stages.size * stageStep.value + totalBanners * bannerTotalHeight.value + 190).dp
+    val rewardTop = (stages.size * stageStep.value + totalBanners * bannerTotalHeight.value + 10).dp
 
     val auroraAnim = rememberCosmicAuroraAnimation()
 
@@ -292,11 +318,11 @@ private fun JourneyPath(
         else (currentStageIndex + 1).coerceAtMost(stages.lastIndex)
 
     BoxWithConstraints(
-        modifier = Modifier.fillMaxWidth().height((stages.size * stageStep.value + 190).dp)
+        modifier = Modifier.fillMaxWidth().height(totalPathHeight)
     ) {
         Canvas(modifier = Modifier.matchParentSize()) {
             val nodeX = { index: Int -> if (index % 2 == 0) 78.dp.toPx() else size.width - 78.dp.toPx() }
-            val nodeY = { index: Int -> index * stageStep.toPx() + 75.dp.toPx() }
+            val nodeY = { index: Int -> ((index / 10) + 1) * bannerTotalHeight.toPx() + index * stageStep.toPx() + 75.dp.toPx() }
 
             if (stages.size > 1) {
                 for (s in 1..stages.lastIndex) {
@@ -325,22 +351,34 @@ private fun JourneyPath(
             }
         }
 
-        var selectedStageIndex by remember { mutableStateOf<Int?>(null) }
-
         Column(modifier = Modifier.fillMaxWidth()) {
             stages.forEachIndexed { index, stage ->
+                if (index % 10 == 0) {
+                    val sectionNum = index / 10 + 1
+                    val sectionStages = stages.drop(index).take(10)
+                    val completedInSection = sectionStages.count { it.state == JourneyStageState.COMPLETED }
+                    val sectionData = CosmicSectionConfig.getSectionData(
+                        sectionNumber = sectionNum,
+                        completedPlanets = completedInSection,
+                        totalInThisSection = sectionStages.size
+                    )
+                    CosmicSectionBanner(
+                        section = sectionData,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(bannerHeight),
+                        onOpenGuidebook = onOpenGuidebook
+                    )
+                    Spacer(modifier = Modifier.height(bannerSpacing))
+                }
+
                 JourneyStageRow(
                     stage = stage,
                     index = index,
                     totalStages = stages.size,
                     stageStep = stageStep,
                     strings = strings,
-                    isSelected = selectedStageIndex == index,
-                    onToggleSelect = {
-                        selectedStageIndex = if (selectedStageIndex == index) null else index
-                    },
-                    onEnterChapter = {
-                        selectedStageIndex = null
+                    onStageClick = {
                         onStageClick(stage)
                     }
                 )
@@ -356,7 +394,7 @@ private fun JourneyPath(
     }
 }
 
-// ─── Stage row — Cosmic Planet node & Smart info card ─────────────────────────
+// ─── Stage row — Cosmic Planet node ──────────────────────────────────────────
 
 @Composable
 private fun JourneyStageRow(
@@ -365,9 +403,7 @@ private fun JourneyStageRow(
     totalStages: Int = -1,
     stageStep: Dp,
     strings: AppStrings,
-    isSelected: Boolean,
-    onToggleSelect: () -> Unit,
-    onEnterChapter: () -> Unit
+    onStageClick: () -> Unit
 ) {
     val isLeft = index % 2 == 0
     val planetType = remember(index, totalStages) { CosmicPlanetHelper.getPlanetTypeForStage(index, totalStages) }
@@ -375,27 +411,19 @@ private fun JourneyStageRow(
     val isSaturn = planetType == CosmicPlanetType.SATURN_MONARCH
     val isSun = planetType == CosmicPlanetType.SOLAR_SUN
     val containerWidth = when {
-        isSaturn -> planetDiameter + 68.dp
-        isSun    -> planetDiameter + 56.dp
-        else     -> planetDiameter + 52.dp
+        isSaturn -> planetDiameter + 72.dp
+        isSun    -> planetDiameter + 64.dp
+        else     -> planetDiameter + 60.dp
     }
     val containerHeight = when {
-        isSun    -> planetDiameter + 56.dp
-        isSaturn -> planetDiameter + 38.dp
-        else     -> planetDiameter + 52.dp
+        isSun    -> planetDiameter + 76.dp
+        isSaturn -> planetDiameter + 68.dp
+        else     -> planetDiameter + 72.dp
     }
 
     BoxWithConstraints(
         modifier = Modifier.fillMaxWidth().height(stageStep)
     ) {
-        val arrowDirection = if (isLeft) BubbleArrowDirection.LEFT else BubbleArrowDirection.RIGHT
-        val cardWidth = (maxWidth - 120.dp).coerceAtMost(maxWidth * 0.64f)
-        val cardModifier = if (isLeft) {
-            Modifier.align(Alignment.TopEnd).padding(end = 12.dp, top = 8.dp).width(cardWidth)
-        } else {
-            Modifier.align(Alignment.TopStart).padding(start = 12.dp, top = 8.dp).width(cardWidth)
-        }
-
         // Tọa độ tâm nodeX = 78.dp, nodeY = 75.dp
         val centerOffsetX = 78.dp - (containerWidth / 2f)
         val centerOffsetY = 75.dp - (containerHeight / 2f)
@@ -410,31 +438,14 @@ private fun JourneyStageRow(
                 .offset(x = (-centerOffsetX).coerceAtMost(0.dp), y = centerOffsetY.coerceAtLeast(0.dp))
         }
 
-        AnimatedVisibility(
-            visible = isSelected,
-            modifier = cardModifier,
-            enter = fadeIn(tween(180)) + scaleIn(tween(180), initialScale = 0.88f),
-            exit = fadeOut(tween(150)) + scaleOut(tween(150), targetScale = 0.88f)
-        ) {
-            JourneyStageInformationCard(
-                stage = stage,
-                index = index,
-                strings = strings,
-                arrowDirection = arrowDirection,
-                onClick = onEnterChapter
-            )
-        }
-
         CosmicPlanetView(
             stage = stage,
             index = index,
             totalStages = totalStages,
             modifier = nodeModifier,
             onClick = {
-                if (isSelected && stage.state != JourneyStageState.LOCKED) {
-                    onEnterChapter()
-                } else {
-                    onToggleSelect()
+                if (stage.state != JourneyStageState.LOCKED) {
+                    onStageClick()
                 }
             }
         )

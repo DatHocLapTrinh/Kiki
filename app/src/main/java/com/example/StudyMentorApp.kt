@@ -922,7 +922,7 @@ fun MainNavigation(viewModel: StudyViewModel, onLogout: () -> Unit) {
             composable("map") {
                 JourneyMapScreen(
                     viewModel = viewModel,
-                    onStartQuest = { navController.navigate("progression_map") },
+                    onStartQuest = { navController.navigate("quest_active") },
                     onStartActiveLesson = { navController.navigate("quest_active") },
                     onLogout = onLogout,
                     onViewStats = { navController.navigate("profile") { launchSingleTop = true } }
@@ -937,8 +937,8 @@ fun MainNavigation(viewModel: StudyViewModel, onLogout: () -> Unit) {
                 RankRevealScreen(
                     viewModel = viewModel,
                     onEnterRealm = {
-                        navController.navigate("progression_map") {
-                            popUpTo("map")
+                        navController.navigate("map") {
+                            popUpTo("map") { inclusive = false }
                         }
                     },
                     onViewAnalysis = {
@@ -949,7 +949,7 @@ fun MainNavigation(viewModel: StudyViewModel, onLogout: () -> Unit) {
                         val currentNode = viewModel.currentNode.value ?: 1
                         viewModel.selectChapterByTitle(currentChapter, currentNode)
                         navController.navigate("quest_active") {
-                            popUpTo("progression_map")
+                            popUpTo("map")
                         }
                     }
                 )
@@ -963,7 +963,7 @@ fun MainNavigation(viewModel: StudyViewModel, onLogout: () -> Unit) {
                 ProfileScreen(
                     viewModel = viewModel, 
                     onLogout = onLogout,
-                    onNavigateToRoadmap = { navController.navigate("progression_map") },
+                    onNavigateToRoadmap = { navController.navigate("map") { launchSingleTop = true } },
                     onNavigateToShop = { navController.navigate("shop") }
                 ) 
             }
