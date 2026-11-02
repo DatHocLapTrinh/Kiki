@@ -1,4 +1,4 @@
-package com.example
+﻿package com.example
 
 import android.content.Context
 import android.net.Uri
@@ -655,6 +655,8 @@ fun MainNavigation(viewModel: StudyViewModel, onLogout: () -> Unit) {
             composable("quest_review") { QuestReviewScreen(viewModel, onBack = { navController.popBackStack() }) }
             composable("quests") { QuestsScreen(viewModel) }
             composable("ask") { AskScreen(viewModel) }
+            composable("shop") { ShopScreen(viewModel) }
+            composable("rank") { RankScreen(viewModel) }
             composable("profile") { 
                 ProfileScreen(
                     viewModel = viewModel, 
@@ -664,14 +666,62 @@ fun MainNavigation(viewModel: StudyViewModel, onLogout: () -> Unit) {
             }
         }
 
+        var showDuolingoMoreSheet by remember { mutableStateOf(false) }
+
         FloatingNavBar(
             navController = navController,
             viewModel = viewModel,
+            onOpenMoreSheet = { showDuolingoMoreSheet = true },
             modifier = Modifier
                 .align(Alignment.BottomCenter)
                 .navigationBarsPadding()
                 .padding(bottom = 12.dp)
         )
+
+        if (showDuolingoMoreSheet) {
+            DuolingoMoreBottomSheet(
+                strings = strings,
+                onDismiss = { showDuolingoMoreSheet = false },
+                onNavigateShop = {
+                    showDuolingoMoreSheet = false
+                    navController.navigate("shop") {
+                        popUpTo(navController.graph.startDestinationId) { saveState = true }
+                        launchSingleTop = true
+                        restoreState = true
+                    }
+                },
+                onNavigatePronounce = {
+                    showDuolingoMoreSheet = false
+                    navController.navigate("progression_map")
+                },
+                onNavigateVideoCall = {
+                    showDuolingoMoreSheet = false
+                    navController.navigate("ask") {
+                        popUpTo(navController.graph.startDestinationId) { saveState = true }
+                        launchSingleTop = true
+                        restoreState = true
+                    }
+                },
+                onNavigatePractice = {
+                    showDuolingoMoreSheet = false
+                    viewModel.setKikiExplorerSection(KikiExplorerSection.VOCABULARY)
+                    navController.navigate("profile") {
+                        popUpTo(navController.graph.startDestinationId) { saveState = true }
+                        launchSingleTop = true
+                        restoreState = true
+                    }
+                },
+                onNavigateProfileSettings = {
+                    showDuolingoMoreSheet = false
+                    viewModel.setKikiExplorerSection(KikiExplorerSection.PROFILE)
+                    navController.navigate("profile") {
+                        popUpTo(navController.graph.startDestinationId) { saveState = true }
+                        launchSingleTop = true
+                        restoreState = true
+                    }
+                }
+            )
+        }
     }
 }
 
@@ -680,12 +730,14 @@ fun MainNavigation(viewModel: StudyViewModel, onLogout: () -> Unit) {
 fun FloatingNavBar(
     navController: androidx.navigation.NavHostController,
     viewModel: StudyViewModel? = null,
+    onOpenMoreSheet: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
     val strings = LocalAppStrings.current
     val isImeVisible = WindowInsets.isImeVisible
+    val haptic = LocalHapticFeedback.current
 
     if (isImeVisible || currentRoute == "quest_active" || currentRoute == "rank_reveal" || currentRoute == "progression_map" || currentRoute == "quest_review") return
 
@@ -714,15 +766,217 @@ fun FloatingNavBar(
         NavItem("quests", Icons.Default.TaskAlt, strings.navLearn, currentRoute, navController)
         NavItem("ask", Icons.Default.ChatBubbleOutline, strings.navTutor, currentRoute, navController)
         NavItem("rank", Icons.Default.EmojiEvents, strings.navRank, currentRoute, navController)
-        NavItem(
-            route = "profile",
-            icon = Icons.Default.Menu,
-            label = strings.navMenu,
-            currentRoute = currentRoute,
-            navController = navController,
-            onClickExtra = {
-                viewModel?.setKikiExplorerSection(KikiExplorerSection.HUB)
-            }
+
+        // Nút ... 3 chấm tròn kiểu Duolingo (More Options Pill)
+        Box(
+            modifier = Modifier
+                .size(46.dp)
+                .clip(CircleShape)
+                .background(
+                    Brush.linearGradient(
+                        listOf(Color(0xFFAB47BC), Color(0xFF8E24AA))
+                    )
+                )
+                .border(
+                    width = 1.5.dp,
+                    color = Color(0xFFE1BEE7),
+                    shape = CircleShape
+                )
+                .clickable {
+                    haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                    onOpenMoreSheet()
+                },
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(
+                imageVector = Icons.Default.MoreHoriz,
+                contentDescription = strings.navMenu,
+                tint = Color.White,
+                modifier = Modifier.size(24.dp)
+            )
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun DuolingoMoreBottomSheet(
+    strings: AppStrings,
+    onDismiss: () -> Unit,
+    onNavigateShop: () -> Unit,
+    onNavigatePronounce: () -> Unit,
+    onNavigateVideoCall: () -> Unit,
+    onNavigatePractice: () -> Unit,
+    onNavigateProfileSettings: () -> Unit
+) {
+    val haptic = LocalHapticFeedback.current
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        containerColor = Color(0xFF131722),
+        dragHandle = {
+            Box(
+                modifier = Modifier
+                    .padding(top = 10.dp, bottom = 6.dp)
+                    .size(width = 40.dp, height = 4.dp)
+                    .clip(CircleShape)
+                    .background(Color(0x55FFFFFF))
+            )
+        }
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .navigationBarsPadding()
+                .padding(horizontal = 16.dp, vertical = 8.dp)
+                .padding(bottom = 20.dp),
+            verticalArrangement = Arrangement.spacedBy(2.dp)
+        ) {
+            // 1. Cửa hàng (Shop) - Khối hộp 3D xanh lam Cyan giống hình Duolingo
+            DuolingoMenuItem(
+                title = strings.duolingoShop,
+                icon = Icons.Default.LocalMall,
+                iconTint = Color.White,
+                iconBg = Color(0xFF00B4D8),
+                shapeType = 0,
+                onClick = {
+                    haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                    onNavigateShop()
+                }
+            )
+
+            HorizontalDivider(color = Color(0x1AFFFFFF), thickness = 0.8.dp)
+
+            // 2. Phát âm & Luyện nói - Biểu tượng khuôn miệng đỏ cam hoạt hình
+            DuolingoMenuItem(
+                title = strings.duolingoPronounce,
+                icon = Icons.Default.RecordVoiceOver,
+                iconTint = Color.White,
+                iconBg = Color(0xFFFF6F59),
+                shapeType = 1,
+                onClick = {
+                    haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                    onNavigatePronounce()
+                }
+            )
+
+            HorizontalDivider(color = Color(0x1AFFFFFF), thickness = 0.8.dp)
+
+            // 3. Cuộc gọi video / Kiki AI - Máy quay video màu tím violet
+            DuolingoMenuItem(
+                title = strings.duolingoVideoCall,
+                icon = Icons.Default.Videocam,
+                iconTint = Color.White,
+                iconBg = Color(0xFF8E24AA),
+                shapeType = 2,
+                onClick = {
+                    haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                    onNavigateVideoCall()
+                }
+            )
+
+            HorizontalDivider(color = Color(0x1AFFFFFF), thickness = 0.8.dp)
+
+            // 4. Trung tâm luyện tập (Practice Center) - Hình tạ tập gym màu xanh dương
+            DuolingoMenuItem(
+                title = strings.duolingoPractice,
+                icon = Icons.Default.FitnessCenter,
+                iconTint = Color.White,
+                iconBg = Color(0xFF29B6F6),
+                shapeType = 3,
+                onClick = {
+                    haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                    onNavigatePractice()
+                }
+            )
+
+            HorizontalDivider(color = Color(0x1AFFFFFF), thickness = 0.8.dp)
+
+            // 5. Hồ sơ & Cài đặt (Profile & Settings)
+            DuolingoMenuItem(
+                title = strings.duolingoProfileSettings,
+                icon = Icons.Default.AccountCircle,
+                iconTint = Color.White,
+                iconBg = Color(0xFF51FAC1),
+                shapeType = 4,
+                onClick = {
+                    haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                    onNavigateProfileSettings()
+                }
+            )
+        }
+    }
+}
+
+@Composable
+private fun DuolingoMenuItem(
+    title: String,
+    icon: ImageVector,
+    iconTint: Color,
+    iconBg: Color,
+    shapeType: Int,
+    onClick: () -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(16.dp))
+            .clickable(onClick = onClick)
+            .padding(horizontal = 14.dp, vertical = 14.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Box(
+            modifier = Modifier
+                .size(42.dp)
+                .clip(
+                    when (shapeType) {
+                        0 -> RoundedCornerShape(12.dp)
+                        1 -> RoundedCornerShape(14.dp)
+                        2 -> RoundedCornerShape(14.dp)
+                        3 -> RoundedCornerShape(12.dp)
+                        else -> CircleShape
+                    }
+                )
+                .background(
+                    Brush.verticalGradient(
+                        listOf(iconBg.copy(alpha = 0.95f), iconBg)
+                    )
+                )
+                .border(
+                    width = 1.dp,
+                    color = Color.White.copy(alpha = 0.35f),
+                    shape = when (shapeType) {
+                        0 -> RoundedCornerShape(12.dp)
+                        1 -> RoundedCornerShape(14.dp)
+                        2 -> RoundedCornerShape(14.dp)
+                        3 -> RoundedCornerShape(12.dp)
+                        else -> CircleShape
+                    }
+                ),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(
+                imageVector = icon,
+                contentDescription = title,
+                tint = iconTint,
+                modifier = Modifier.size(22.dp)
+            )
+        }
+
+        Spacer(modifier = Modifier.width(18.dp))
+
+        Text(
+            text = title,
+            color = Color.White,
+            fontSize = 17.sp,
+            fontWeight = FontWeight.Bold,
+            modifier = Modifier.weight(1f)
+        )
+
+        Icon(
+            imageVector = Icons.AutoMirrored.Filled.ArrowForwardIos,
+            contentDescription = null,
+            tint = Color(0x44FFFFFF),
+            modifier = Modifier.size(14.dp)
         )
     }
 }
@@ -775,4 +1029,3 @@ fun NavItem(
         )
     }
 }
-

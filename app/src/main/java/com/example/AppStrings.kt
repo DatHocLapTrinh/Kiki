@@ -1,4 +1,4 @@
-package com.example
+﻿package com.example
 
 import androidx.compose.runtime.staticCompositionLocalOf
 
@@ -226,7 +226,12 @@ data class AppStrings(
     val navTutor: String = "Gia sư",
     val navRank: String = "Xếp hạng",
     val navProfile: String = "Hồ sơ",
-    val navMenu: String = "Menu",
+    val navMenu: String = "Thêm",
+    val duolingoShop: String = "Cửa hàng",
+    val duolingoPronounce: String = "Phát âm & Luyện nói",
+    val duolingoVideoCall: String = "Trò chuyện gia sư Kiki",
+    val duolingoPractice: String = "Trung tâm luyện tập",
+    val duolingoProfileSettings: String = "Hồ sơ & Cài đặt",
     val journeyEmptyTitle: String = "Hành trình sẵn sàng bắt đầu",
     val journeyEmptyDescription: String = "Hãy chọn môn học hoặc bắt đầu bài học đầu tiên để tạo lộ trình của bạn.",
     val retry: String = "Thử lại",
@@ -473,7 +478,12 @@ val EnglishStrings = AppStrings(
     navTutor = "Tutor",
     navRank = "Rank",
     navProfile = "Profile",
-    navMenu = "Menu",
+    navMenu = "More",
+    duolingoShop = "Shop",
+    duolingoPronounce = "Pronounce & Speak",
+    duolingoVideoCall = "Video Call with Kiki",
+    duolingoPractice = "Practice Center",
+    duolingoProfileSettings = "Profile & Settings",
     journeyEmptyTitle = "Your journey is ready to begin",
     journeyEmptyDescription = "Choose a subject or start your first lesson to create your learning path.",
     retry = "Retry",
