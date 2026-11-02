@@ -89,13 +89,7 @@ fun ChapterJourneyMapScreen(
     }
 
     Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(
-                Brush.verticalGradient(
-                    listOf(Color(0xFF080512), Color(0xFF10071F), Color(0xFF07182A))
-                )
-            )
+        modifier = Modifier.fillMaxSize()
     ) {
         Column(
             modifier = Modifier

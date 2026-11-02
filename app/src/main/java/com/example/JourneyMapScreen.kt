@@ -12,6 +12,7 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -21,6 +22,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.ui.res.painterResource
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.*
 import androidx.compose.material.icons.filled.*
@@ -54,6 +56,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.layout.ContentScale
+import coil.compose.AsyncImage
 import com.example.viewmodel.StudyViewModel
 import kotlinx.coroutines.launch
 
@@ -69,6 +73,10 @@ fun JourneyMapScreen(
     val strings = LocalAppStrings.current
     val scrollState = rememberScrollState()
     val userName by viewModel.userName.observeAsState("Adventurer")
+    val avatarUri by viewModel.avatarUri.observeAsState(null)
+    val streak by viewModel.streak.observeAsState(0)
+    val hearts by viewModel.hearts.observeAsState(5)
+    val streakShields by viewModel.streakShields.observeAsState(0)
     val isEnglish by viewModel.isEnglish.observeAsState(false)
     val availableChapters by viewModel.availableChapters.observeAsState(emptyList())
     val chapterProgress by viewModel.chapterProgress.observeAsState(emptyList())
@@ -78,7 +86,6 @@ fun JourneyMapScreen(
     val stages = remember(availableChapters, chapterProgress) {
         JourneyStageMapper.mapStages(availableChapters, chapterProgress)
     }
-    val earnedStars = JourneyStageMapper.earnedStars(stages)
     val currentStageIndex = stages.indexOfFirst { it.state == JourneyStageState.CURRENT }
     var isNavigating by remember { mutableStateOf(false) }
 
@@ -92,54 +99,45 @@ fun JourneyMapScreen(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .verticalScroll(scrollState)
                 .statusBarsPadding()
-                .padding(top = 12.dp, bottom = 124.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            JourneyTopBar(
-                userName = userName,
-                isEnglish = isEnglish,
-                earnedStars = earnedStars,
-                strings = strings
+            // Banner chỉ số trên cùng (Avatar profile, Streak, Hearts, Shields) - 4 cột chia đều, không đóng khung
+            CosmicUserStatsBanner(
+                avatarUri = avatarUri,
+                streak = streak,
+                hearts = hearts,
+                streakShields = streakShields
             )
-            Spacer(modifier = Modifier.height(16.dp))
 
-            if (stages.isEmpty()) {
-                Box(modifier = Modifier.fillMaxWidth().height(420.dp), contentAlignment = Alignment.Center) {
-                    when {
-                        chaptersLoading -> JourneyLoadingState()
-                        chaptersError != null -> JourneyErrorState(
-                            message = chaptersError ?: strings.noChaptersFound,
-                            onRetry = viewModel::refreshChapters
-                        )
-                        else -> JourneyEmptyState(onRetry = viewModel::refreshChapters)
-                    }
-                }
-            } else {
-                JourneyPath(
-                    stages = stages,
-                    currentStageIndex = currentStageIndex,
-                    strings = strings,
-                    onStageClick = { stage ->
-                        if (!isNavigating && stage.state != JourneyStageState.LOCKED) {
-                            isNavigating = true
-                            viewModel.selectChapterByTitle(stage.title, stage.sequence)
-                            onStartQuest()
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .verticalScroll(scrollState)
+                    .padding(top = 8.dp, bottom = 124.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                if (stages.isEmpty()) {
+                    Box(modifier = Modifier.fillMaxWidth().height(420.dp), contentAlignment = Alignment.Center) {
+                        when {
+                            chaptersLoading -> JourneyLoadingState()
+                            chaptersError != null -> JourneyErrorState(
+                                message = chaptersError ?: strings.noChaptersFound,
+                                onRetry = viewModel::refreshChapters
+                            )
+                            else -> JourneyEmptyState(onRetry = viewModel::refreshChapters)
                         }
                     }
-                )
-
-                val isGeneratingNextChapter by viewModel.isGeneratingNextChapter.observeAsState(false)
-                val allCompleted = stages.isNotEmpty() && stages.all { it.state == JourneyStageState.COMPLETED }
-
-                if (allCompleted || stages.size >= 5) {
-                    Spacer(modifier = Modifier.height(24.dp))
-                    AiNextChapterCard(
-                        isGenerating = isGeneratingNextChapter,
+                } else {
+                    JourneyPath(
+                        stages = stages,
+                        currentStageIndex = currentStageIndex,
                         strings = strings,
-                        onGenerate = {
-                            viewModel.generateNextChapterOnDemand()
+                        onStageClick = { stage ->
+                            if (!isNavigating && stage.state != JourneyStageState.LOCKED) {
+                                isNavigating = true
+                                viewModel.selectChapterByTitle(stage.title, stage.sequence)
+                                onStartQuest()
+                            }
                         }
                     )
                 }
@@ -149,57 +147,123 @@ fun JourneyMapScreen(
 }
 
 @Composable
-private fun JourneyTopBar(
-    userName: String,
-    isEnglish: Boolean,
-    earnedStars: Int,
-    strings: AppStrings
+private fun CosmicUserStatsBanner(
+    avatarUri: String?,
+    streak: Int,
+    hearts: Int,
+    streakShields: Int
 ) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 20.dp, vertical = 4.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.SpaceBetween
+            .padding(horizontal = 12.dp, vertical = 12.dp),
+        verticalAlignment = Alignment.CenterVertically
     ) {
-        Column(modifier = Modifier.weight(1f)) {
-            Text(
-                text = strings.mapTitle,
-                color = Color(0xFF51FAC1),
-                fontSize = 11.sp,
-                fontWeight = FontWeight.Bold,
-                letterSpacing = 1.2.sp
-            )
-            Text(
-                text = if (isEnglish) "$userName's Roadmap" else "Lộ trình của $userName",
-                color = Color.White,
-                fontSize = 22.sp,
-                fontWeight = FontWeight.Black,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
-            )
-            Text(
-                text = if (isEnglish) "Master English step-by-step" else "Lộ trình chinh phục tiếng Anh từng bước",
-                color = Color(0xB3FFFFFF),
-                fontSize = 12.sp
-            )
-        }
-        Spacer(modifier = Modifier.width(12.dp))
+        // Cột 1: Avatar Profile của user
         Box(
-            modifier = Modifier
-                .clip(RoundedCornerShape(18.dp))
-                .background(Color(0x3314142C))
-                .border(1.dp, Color(0x995C2A9D), RoundedCornerShape(18.dp))
-                .padding(horizontal = 14.dp, vertical = 10.dp),
+            modifier = Modifier.weight(1f),
             contentAlignment = Alignment.Center
         ) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(Icons.Default.Star, contentDescription = null, tint = Color(0xFFFFD166), modifier = Modifier.size(20.dp))
-                Spacer(modifier = Modifier.width(6.dp))
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text("$earnedStars", color = Color.White, fontSize = 18.sp, fontWeight = FontWeight.ExtraBold)
-                    Text(strings.starsLabel, color = Color(0xCCFFFFFF), fontSize = 9.sp, fontWeight = FontWeight.Bold)
+            Box(
+                modifier = Modifier
+                    .size(42.dp)
+                    .clip(CircleShape)
+                    .background(Color(0xFF14141E))
+                    .border(2.dp, Color(0xFFFFD166), CircleShape)
+                    .padding(2.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                if (avatarUri != null && (avatarUri.startsWith("http://") || avatarUri.startsWith("https://") || avatarUri.startsWith("content://"))) {
+                    AsyncImage(
+                        model = avatarUri,
+                        contentDescription = "Avatar",
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .clip(CircleShape),
+                        contentScale = ContentScale.Crop
+                    )
+                } else {
+                    AsyncImage(
+                        model = resolveAvatarResource(avatarUri),
+                        contentDescription = "Avatar",
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .clip(CircleShape),
+                        contentScale = ContentScale.Fit
+                    )
                 }
+            }
+        }
+
+        // Cột 2: Chuỗi ngày Streak 🔥
+        Box(
+            modifier = Modifier.weight(1f),
+            contentAlignment = Alignment.Center
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.Center
+            ) {
+                Image(
+                    painter = painterResource(id = R.drawable.ic_stat_streak),
+                    contentDescription = "Streak",
+                    modifier = Modifier.size(26.dp)
+                )
+                Spacer(modifier = Modifier.width(6.dp))
+                Text(
+                    text = "$streak",
+                    color = Color.White,
+                    fontSize = 17.sp,
+                    fontWeight = FontWeight.ExtraBold
+                )
+            }
+        }
+
+        // Cột 3: Số lượng tym Hearts ❤️
+        Box(
+            modifier = Modifier.weight(1f),
+            contentAlignment = Alignment.Center
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.Center
+            ) {
+                Image(
+                    painter = painterResource(id = R.drawable.ic_stat_heart),
+                    contentDescription = "Hearts",
+                    modifier = Modifier.size(26.dp)
+                )
+                Spacer(modifier = Modifier.width(6.dp))
+                Text(
+                    text = "$hearts",
+                    color = Color.White,
+                    fontSize = 17.sp,
+                    fontWeight = FontWeight.ExtraBold
+                )
+            }
+        }
+
+        // Cột 4: Số lượng khiên Shields 🛡️
+        Box(
+            modifier = Modifier.weight(1f),
+            contentAlignment = Alignment.Center
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.Center
+            ) {
+                Image(
+                    painter = painterResource(id = R.drawable.ic_stat_shield),
+                    contentDescription = "Shields",
+                    modifier = Modifier.size(26.dp)
+                )
+                Spacer(modifier = Modifier.width(6.dp))
+                Text(
+                    text = "$streakShields",
+                    color = Color.White,
+                    fontSize = 17.sp,
+                    fontWeight = FontWeight.ExtraBold
+                )
             }
         }
     }
@@ -268,6 +332,7 @@ private fun JourneyPath(
                 JourneyStageRow(
                     stage = stage,
                     index = index,
+                    totalStages = stages.size,
                     stageStep = stageStep,
                     strings = strings,
                     isSelected = selectedStageIndex == index,
@@ -297,6 +362,7 @@ private fun JourneyPath(
 private fun JourneyStageRow(
     stage: JourneyStageUiModel,
     index: Int,
+    totalStages: Int = -1,
     stageStep: Dp,
     strings: AppStrings,
     isSelected: Boolean,
@@ -304,19 +370,19 @@ private fun JourneyStageRow(
     onEnterChapter: () -> Unit
 ) {
     val isLeft = index % 2 == 0
-    val planetType = remember(index) { CosmicPlanetHelper.getPlanetTypeForStage(index) }
-    val planetDiameter = remember(index) { CosmicPlanetHelper.getPlanetDiameter(index) }
+    val planetType = remember(index, totalStages) { CosmicPlanetHelper.getPlanetTypeForStage(index, totalStages) }
+    val planetDiameter = remember(index, totalStages) { CosmicPlanetHelper.getPlanetDiameter(index, totalStages) }
     val isSaturn = planetType == CosmicPlanetType.SATURN_MONARCH
     val isSun = planetType == CosmicPlanetType.SOLAR_SUN
     val containerWidth = when {
         isSaturn -> planetDiameter + 68.dp
-        isSun    -> planetDiameter + 48.dp
-        else     -> planetDiameter + 28.dp
+        isSun    -> planetDiameter + 56.dp
+        else     -> planetDiameter + 52.dp
     }
     val containerHeight = when {
-        isSun    -> planetDiameter + 48.dp
+        isSun    -> planetDiameter + 56.dp
         isSaturn -> planetDiameter + 38.dp
-        else     -> planetDiameter + 28.dp
+        else     -> planetDiameter + 52.dp
     }
 
     BoxWithConstraints(
@@ -362,6 +428,7 @@ private fun JourneyStageRow(
         CosmicPlanetView(
             stage = stage,
             index = index,
+            totalStages = totalStages,
             modifier = nodeModifier,
             onClick = {
                 if (isSelected && stage.state != JourneyStageState.LOCKED) {
@@ -511,108 +578,6 @@ private fun JourneyStageInformationCard(
                     tint = if (locked) Color(0x88FFFFFF) else Color(0xFF00F5D4),
                     modifier = Modifier.size(17.dp)
                 )
-            }
-        }
-    }
-}
-
-@Composable
-private fun AiNextChapterCard(
-    isGenerating: Boolean,
-    strings: AppStrings,
-    onGenerate: () -> Unit
-) {
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 22.dp)
-            .clip(RoundedCornerShape(22.dp))
-            .background(
-                Brush.linearGradient(
-                    listOf(Color(0xFF130924), Color(0xFF0D1B2A))
-                )
-            )
-            .border(
-                1.5.dp,
-                Brush.linearGradient(
-                    listOf(Color(0xFF00F5D4), Color(0xFF8A2BE2), Color(0xFF00F5D4))
-                ),
-                RoundedCornerShape(22.dp)
-            )
-            .padding(18.dp)
-    ) {
-        Column(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.Center
-            ) {
-                Icon(
-                    imageVector = Icons.Default.AutoAwesome,
-                    contentDescription = null,
-                    tint = Color(0xFF00F5D4),
-                    modifier = Modifier.size(24.dp)
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(
-                    text = "AI Adaptive Learning",
-                    color = Color(0xFF00F5D4),
-                    fontSize = 13.sp,
-                    fontWeight = FontWeight.ExtraBold,
-                    letterSpacing = 1.sp
-                )
-            }
-            Spacer(modifier = Modifier.height(8.dp))
-            Text(
-                text = "Hệ thống AI sẵn sàng phân tích các lỗ hổng kiến thức để kiến tạo chặng học tiếp theo tối ưu cho bạn.",
-                color = Color(0xCCFFFFFF),
-                fontSize = 12.5.sp,
-                textAlign = TextAlign.Center,
-                lineHeight = 18.sp
-            )
-            Spacer(modifier = Modifier.height(14.dp))
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(50.dp)
-                    .clip(CircleShape)
-                    .background(
-                        if (isGenerating)
-                            Brush.linearGradient(listOf(Color(0xFF332050), Color(0xFF203050)))
-                        else
-                            Brush.linearGradient(listOf(Color(0xFF00F5D4), Color(0xFF8A2BE2)))
-                    )
-                    .clickable(enabled = !isGenerating, onClick = onGenerate),
-                contentAlignment = Alignment.Center
-            ) {
-                if (isGenerating) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        CircularProgressIndicator(
-                            modifier = Modifier.size(20.dp),
-                            color = Color(0xFF00F5D4),
-                            strokeWidth = 2.5.dp
-                        )
-                        Spacer(modifier = Modifier.width(10.dp))
-                        Text(
-                            text = strings.aiGeneratingNextChapter,
-                            color = Color(0xFF00F5D4),
-                            fontSize = 13.sp,
-                            fontWeight = FontWeight.Bold
-                        )
-                    }
-                } else {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text(
-                            text = strings.generateNextAiChapterButton,
-                            color = Color.White,
-                            fontSize = 14.sp,
-                            fontWeight = FontWeight.ExtraBold,
-                            letterSpacing = 1.sp
-                        )
-                    }
-                }
             }
         }
     }

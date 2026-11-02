@@ -81,7 +81,8 @@ enum class KikiExplorerSection {
 fun ProfileScreen(
     viewModel: StudyViewModel, 
     onLogout: () -> Unit = {},
-    onNavigateToRoadmap: () -> Unit = {}
+    onNavigateToRoadmap: () -> Unit = {},
+    onNavigateToShop: () -> Unit = {}
 ) {
     val strings = LocalAppStrings.current
     val context = LocalContext.current
@@ -221,6 +222,7 @@ fun ProfileScreen(
                                 haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.TextHandleMove)
                                 showSettingsSheet = true
                             },
+                            onNavigateToShop = onNavigateToShop,
                             onLogoutClick = {
                                 haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.TextHandleMove)
                                 showLogoutDialog = true
@@ -2010,6 +2012,7 @@ private fun KikiExplorerHubView(
     isEnglish: Boolean,
     onSectionSelect: (KikiExplorerSection) -> Unit,
     onSettingsClick: () -> Unit,
+    onNavigateToShop: () -> Unit = {},
     onLogoutClick: () -> Unit
 ) {
     Column(
@@ -2162,6 +2165,15 @@ private fun KikiExplorerHubView(
                 modifier = Modifier.padding(vertical = 4.dp)
             )
 
+            KikiNavDrawerItem(
+                title = if (isEnglish) "Cosmic Exchange Shop" else "Cửa Hàng Quy Đổi Sao & Khiên",
+                subtitle = if (isEnglish) "Redeem stars for streak freeze & hearts" else "Đổi sao lấy khiên bảo vệ streak, tim & vật phẩm",
+                badgeText = "⭐ Shop",
+                icon = Icons.Default.Store,
+                accentColor = Color(0xFFFFD166),
+                isSelected = false,
+                onClick = onNavigateToShop
+            )
             KikiNavDrawerItem(
                 title = if (isEnglish) "Settings & Preferences" else "Cài Đặt & Tuỳ Chọn",
                 subtitle = if (isEnglish) "Audio, notifications & learning level" else "Âm thanh, nhắc nhở & trình độ học",
