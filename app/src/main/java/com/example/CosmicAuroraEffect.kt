@@ -107,40 +107,6 @@ fun DrawScope.drawCosmicAuroraSegment(
         normY[k] = tx / len
     }
 
-    // ── 0. Cosmic Docking Glow (Quầng năng lượng tinh vân tiếp giáp tại 2 hành tinh) ──
-    val dockAlpha = if (isActive) 0.55f * alphaScale else 0.30f * alphaScale
-    val dockRadius = 88.dp.toPx()
-
-    drawCircle(
-        brush = Brush.radialGradient(
-            listOf(
-                Color(0xFFFF8AD8).copy(alpha = dockAlpha * 0.90f),
-                Color(0xFFFF2A85).copy(alpha = dockAlpha * 0.65f),
-                Color(0xFF581C87).copy(alpha = dockAlpha * 0.35f),
-                Color.Transparent
-            ),
-            center = Offset(startX, startY),
-            radius = dockRadius
-        ),
-        radius = dockRadius,
-        center = Offset(startX, startY)
-    )
-
-    drawCircle(
-        brush = Brush.radialGradient(
-            listOf(
-                Color(0xFFFFA050).copy(alpha = dockAlpha * 0.90f),
-                Color(0xFF9333EA).copy(alpha = dockAlpha * 0.65f),
-                Color(0xFF3B0764).copy(alpha = dockAlpha * 0.35f),
-                Color.Transparent
-            ),
-            center = Offset(endX, endY),
-            radius = dockRadius
-        ),
-        radius = dockRadius,
-        center = Offset(endX, endY)
-    )
-
     // ── 1. Cosmic Dust Gas Clouds (Mây khói tinh vân vũ trụ nền - Deep Violet & Magenta) ──
     val cloudAlpha = if (isActive) 0.28f * alphaScale else 0.16f * alphaScale
     val cloudSteps = 9

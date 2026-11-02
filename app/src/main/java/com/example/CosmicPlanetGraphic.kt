@@ -695,36 +695,6 @@ private fun DrawScope.drawMercuryRockyCratered(
     val mercurySway = (sin(Math.toRadians(cloudPhase.toDouble() * 0.70)) * radius * 0.035f).toFloat()
     val mCenterX = centerX + mercurySway
 
-    // 1. Đồng bằng dung nham núi lửa màu vàng cam hổ phách (Smooth Volcanic Plains)
-    val amberPatch1 = Offset(mCenterX - radius * 0.15f, centerY - radius * 0.20f)
-    drawOval(
-        brush = Brush.radialGradient(
-            colors = listOf(
-                Color(0x99FFA726).copy(alpha = 0.85f * alpha),
-                Color(0x66FF7043).copy(alpha = 0.60f * alpha),
-                Color.Transparent
-            ),
-            center = amberPatch1,
-            radius = radius * 0.45f
-        ),
-        topLeft = Offset(amberPatch1.x - radius * 0.35f, amberPatch1.y - radius * 0.25f),
-        size = Size(radius * 0.70f, radius * 0.50f)
-    )
-
-    val amberPatch2 = Offset(mCenterX + radius * 0.25f, centerY - radius * 0.35f)
-    drawOval(
-        brush = Brush.radialGradient(
-            colors = listOf(
-                Color(0x88FFB74D).copy(alpha = 0.75f * alpha),
-                Color.Transparent
-            ),
-            center = amberPatch2,
-            radius = radius * 0.35f
-        ),
-        topLeft = Offset(amberPatch2.x - radius * 0.25f, amberPatch2.y - radius * 0.20f),
-        size = Size(radius * 0.50f, radius * 0.40f)
-    )
-
     // 2. Vùng trũng bazan màu xanh coban sâu thẳm (Low-Reflectance Material Basalt Flows)
     val basaltFlow = Path().apply {
         moveTo(mCenterX - radius * 0.65f, centerY + radius * 0.05f)
@@ -806,14 +776,14 @@ private fun DrawScope.drawMercuryRockyCratered(
         )
     }
 
-    // Tâm siêu hố va chạm Kuiper phát sáng vàng chanh rực rỡ nhịp nhàng
+    // Tâm siêu hố va chạm Kuiper phát sáng điện quang lam trắng rực rỡ nhịp nhàng
     val corePulse = 0.85f + 0.15f * sin(Math.toRadians(cloudPhase.toDouble() * 1.8)).toFloat()
     drawCircle(
         brush = Brush.radialGradient(
             colors = listOf(
                 Color.White.copy(alpha = 0.95f * corePulse * alpha),
-                Color(0xFFFFF59D).copy(alpha = 0.85f * corePulse * alpha),
-                Color(0xFFFFD54F).copy(alpha = 0.60f * alpha),
+                Color(0xFFE0F7FA).copy(alpha = 0.85f * corePulse * alpha),
+                Color(0xFF80DEEA).copy(alpha = 0.60f * alpha),
                 Color(0xFF00E5FF).copy(alpha = 0.30f * alpha),
                 Color.Transparent
             ),
@@ -831,7 +801,7 @@ private fun DrawScope.drawMercuryRockyCratered(
         radius = radius * 0.055f
     )
     drawCircle(
-        color = Color(0xFFFFFF8D).copy(alpha = 0.95f * alpha),
+        color = Color(0xFFE0F7FA).copy(alpha = 0.95f * alpha),
         center = Offset(kuiperX - radius * 0.015f, kuiperY - radius * 0.015f),
         radius = radius * 0.035f
     )
@@ -2345,6 +2315,9 @@ private fun DrawScope.drawPlanetOrbitingMoonsAndSatellites(
     isBackPass: Boolean
 ) {
     when (type) {
+        CosmicPlanetType.MERCURY_ROCK -> {
+            // Sao Thủy không có vệ tinh tự nhiên, không vẽ vệ tinh tránh che khuất hoặc tạo vệt sáng sau lưng
+        }
         CosmicPlanetType.SATURN_MONARCH -> {
             // Sao Thổ đã có vành đai Cassini 3D với 40 hạt tiểu hành tinh xoay riêng biệt
         }
@@ -2494,9 +2467,6 @@ private fun DrawScope.drawPlanetOrbitingMoonsAndSatellites(
                 }
                 CosmicPlanetType.MOON_GRAY -> {
                     tiltDeg = 32f; orbitAFrac = 1.48f; orbitBFrac = 0.60f; beaconColor = Color(0xFF80DEEA); speed = 1.2f
-                }
-                CosmicPlanetType.MERCURY_ROCK -> {
-                    tiltDeg = -30f; orbitAFrac = 1.45f; orbitBFrac = 0.58f; beaconColor = Color(0xFFFFD54F); speed = 1.4f
                 }
                 CosmicPlanetType.VENUS_SULFUR -> {
                     tiltDeg = 35f; orbitAFrac = 1.50f; orbitBFrac = 0.62f; beaconColor = Color(0xFFFFAB91); speed = 1.1f
