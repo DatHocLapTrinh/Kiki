@@ -215,18 +215,6 @@ fun CosmicPlanetView(
         label = "shield_glow_pulse"
     )
 
-    // Sóng radar quét nhiệm vụ cho chặng CURRENT
-    val beaconRadarRadius by if (isCurrent) {
-        infiniteTransition.animateFloat(
-            initialValue = 0f,
-            targetValue = 1f,
-            animationSpec = infiniteRepeatable(tween(1400, easing = LinearEasing), RepeatMode.Restart),
-            label = "radar_sweep"
-        )
-    } else {
-        remember { mutableFloatStateOf(0f) }
-    }
-
     val contentDesc = "${stage.sequence}. ${stage.title} - ${CosmicPlanetHelper.getPlanetTypeName(planetType)}"
 
     Box(
@@ -374,63 +362,7 @@ fun CosmicPlanetView(
             }
         }
 
-        // ─── Holographic Mission Telemetry Badge ──────────────────────────────
-        // Thao tác nhỏ gọn ở rìa ngoài hành tinh cho chặng đang học hoặc hoàn thành
-        // (Khi LOCKED: Đã có khiên từ trường lượng tử + ổ khóa Neon Hologram bao bọc toàn bộ cực đẹp,
-        //  loại bỏ hoàn toàn huy hiệu tròn xám dán góc)
-        if (!isLocked) {
-            val badgeSize = (planetDiameter * 0.28f).coerceIn(22.dp, 30.dp)
-            Box(
-                modifier = Modifier
-                    .align(Alignment.BottomEnd)
-                    .offset(x = (-2).dp, y = (-2).dp)
-                    .size(badgeSize)
-                    .clip(CircleShape)
-                    .background(
-                        when {
-                            isCompleted -> Brush.radialGradient(listOf(Color(0xFF261801), Color(0xFF120A01)))
-                            isCurrent   -> Brush.radialGradient(listOf(Color(0xFF003830), Color(0xFF011814)))
-                            else        -> Brush.radialGradient(listOf(Color(0xFF092342), Color(0xFF041021)))
-                        }
-                    )
-                    .border(
-                        width = 1.5.dp,
-                        color = when {
-                            isCompleted -> Color(0xFFFFD166)
-                            isCurrent   -> Color(0xFF00F5D4)
-                            else        -> CosmicPlanetHelper.getPlanetPrimaryColor(planetType)
-                        },
-                        shape = CircleShape
-                    ),
-                contentAlignment = Alignment.Center
-            ) {
-                // Hiệu ứng sóng radar phát tín hiệu cho chặng CURRENT
-                if (isCurrent) {
-                    Canvas(modifier = Modifier.fillMaxSize()) {
-                        drawCircle(
-                            color = Color(0xFF00F5D4).copy(alpha = (1f - beaconRadarRadius) * 0.6f),
-                            radius = (size.minDimension / 2f) * (0.8f + beaconRadarRadius * 0.6f),
-                            style = Stroke(width = 1.5.dp.toPx())
-                        )
-                    }
-                }
 
-                Icon(
-                    imageVector = when {
-                        isCompleted -> Icons.Default.Check
-                        isCurrent   -> Icons.Default.PlayArrow
-                        else        -> Icons.AutoMirrored.Filled.ArrowForward
-                    },
-                    contentDescription = null,
-                    tint = when {
-                        isCompleted -> Color(0xFFFFD166)
-                        isCurrent   -> Color(0xFF00F5D4)
-                        else        -> Color.White
-                    },
-                    modifier = Modifier.size(badgeSize * 0.55f)
-                )
-            }
-        }
     }
 }
 
