@@ -257,109 +257,12 @@ fun CosmicScaffold(
                         }
                     }
             ) {
-                Box(
+                // Nền Vũ Trụ Siêu Thực: Dải Tinh Vân Tím-Hồng, Lam Điện, Sao 4 Cánh & Vành Đai Thiên Thạch 3D
+                CosmicPhotorealisticSpaceBackground(
+                    currentX = currentX,
+                    currentY = currentY,
                     modifier = Modifier.fillMaxSize()
-                        .background(
-                            Brush.radialGradient(
-                                colors = listOf(Color(0xFF3C0A78).copy(alpha = 0.6f), Color(0xFF05000A)),
-                                center = Offset(screenWidth * 0.1f, screenHeight * 0.2f),
-                                radius = screenWidth * 0.8f
-                            )
-                        )
-                        .background(
-                            Brush.radialGradient(
-                                colors = listOf(Color(0xFF0064C8).copy(alpha = 0.4f), Color.Transparent),
-                                center = Offset(screenWidth * 0.9f, screenHeight * 0.8f),
-                                radius = screenWidth * 0.6f
-                            )
-                        )
-                        .background(
-                            Brush.radialGradient(
-                                colors = listOf(Color(0xFF140028), Color.Transparent),
-                                center = Offset(screenWidth * 0.5f, screenHeight * 0.5f),
-                                radius = screenWidth
-                            )
-                        )
                 )
-
-                // Background Clouds 
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .graphicsLayer {
-                            translationX = currentX * 10f
-                            translationY = currentY * 10f
-                        }
-                ) {
-                    val infiniteTransition = rememberInfiniteTransition(label = "aurora")
-                    val auroraOffsetX by infiniteTransition.animateFloat(
-                        initialValue = -50f, targetValue = 50f,
-                        animationSpec = infiniteRepeatable(tween(15000, easing = LinearEasing), RepeatMode.Reverse),
-                        label = "auroraX"
-                    )
-                    Box(
-                        modifier = Modifier
-                            .offset(x = auroraOffsetX.dp, y = (auroraOffsetX * 0.5f).dp)
-                            .fillMaxWidth(0.8f)
-                            .fillMaxHeight(0.5f)
-                            .align(Alignment.TopStart)
-                            .blur(80.dp)
-                            .background(Brush.radialGradient(listOf(Color(0x268A2BE2), Color.Transparent)))
-                    )
-                    Box(
-                        modifier = Modifier
-                            .offset(x = (-auroraOffsetX).dp, y = (-auroraOffsetX * 0.5f).dp)
-                            .fillMaxWidth(0.6f)
-                            .fillMaxHeight(0.4f)
-                            .align(Alignment.BottomEnd)
-                            .blur(60.dp)
-                            .background(Brush.radialGradient(listOf(Color(0x1A00F5D4), Color.Transparent)))
-                    )
-                }
-
-                // Floating Icons
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .graphicsLayer {
-                            translationX = currentX * 45f
-                            translationY = currentY * 45f
-                        }
-                ) {
-                    val infiniteTransition = rememberInfiniteTransition(label = "icons")
-                    val float1 by infiniteTransition.animateFloat(initialValue = -20f, targetValue = 20f, animationSpec = infiniteRepeatable(tween(8000, easing = LinearEasing), RepeatMode.Reverse), label = "f1")
-                    val float2 by infiniteTransition.animateFloat(initialValue = -15f, targetValue = 15f, animationSpec = infiniteRepeatable(tween(4000, easing = LinearEasing), RepeatMode.Reverse), label = "f2")
-
-                    Icon(
-                        Icons.Default.AutoStories, contentDescription = null,
-                        tint = Color(0xFFFFD166),
-                        modifier = Modifier
-                            .offset(x = 60.dp, y = (150 + float1).dp)
-                            .size(64.dp)
-                            .blur(8.dp)
-                            .graphicsLayer { alpha = 0.4f }
-                    )
-                    Icon(
-                        Icons.Default.Diamond, contentDescription = null,
-                        tint = Color(0xFF51FAC1),
-                        modifier = Modifier
-                            .align(Alignment.CenterEnd)
-                            .offset(x = (-40).dp, y = (100 + float1).dp)
-                            .size(80.dp)
-                            .blur(10.dp)
-                            .graphicsLayer { alpha = 0.3f }
-                    )
-                    Icon(
-                        Icons.Default.School, contentDescription = null,
-                        tint = Color(0xFFFFCCB3),
-                        modifier = Modifier
-                            .align(Alignment.Center)
-                            .offset(x = 80.dp, y = (-50 + float2).dp)
-                            .size(48.dp)
-                            .blur(6.dp)
-                            .graphicsLayer { alpha = 0.5f }
-                    )
-                }
 
                 // Particle System
                 var timeMillis by remember { mutableLongStateOf(0L) }

@@ -4,6 +4,7 @@ import android.content.Context
 import android.net.Uri
 import androidx.compose.animation.*
 import androidx.compose.animation.core.*
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -24,10 +25,12 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -919,7 +922,7 @@ fun MainNavigation(viewModel: StudyViewModel, onLogout: () -> Unit) {
             composable("map") {
                 JourneyMapScreen(
                     viewModel = viewModel,
-                    onStartQuest = { navController.navigate("progression_map") },
+                    onStartQuest = { navController.navigate("quest_active") },
                     onStartActiveLesson = { navController.navigate("quest_active") },
                     onLogout = onLogout,
                     onViewStats = { navController.navigate("profile") { launchSingleTop = true } }
@@ -934,8 +937,8 @@ fun MainNavigation(viewModel: StudyViewModel, onLogout: () -> Unit) {
                 RankRevealScreen(
                     viewModel = viewModel,
                     onEnterRealm = {
-                        navController.navigate("progression_map") {
-                            popUpTo("map")
+                        navController.navigate("map") {
+                            popUpTo("map") { inclusive = false }
                         }
                     },
                     onViewAnalysis = {
@@ -946,7 +949,7 @@ fun MainNavigation(viewModel: StudyViewModel, onLogout: () -> Unit) {
                         val currentNode = viewModel.currentNode.value ?: 1
                         viewModel.selectChapterByTitle(currentChapter, currentNode)
                         navController.navigate("quest_active") {
-                            popUpTo("progression_map")
+                            popUpTo("map")
                         }
                     }
                 )
@@ -954,11 +957,14 @@ fun MainNavigation(viewModel: StudyViewModel, onLogout: () -> Unit) {
             composable("quest_review") { QuestReviewScreen(viewModel, onBack = { navController.popBackStack() }) }
             composable("quests") { QuestsScreen(viewModel) }
             composable("ask") { AskScreen(viewModel) }
+            composable("rank") { RankScreen(viewModel) }
+            composable("shop") { ShopScreen(viewModel) }
             composable("profile") { 
                 ProfileScreen(
                     viewModel = viewModel, 
                     onLogout = onLogout,
-                    onNavigateToRoadmap = { navController.navigate("progression_map") }
+                    onNavigateToRoadmap = { navController.navigate("map") { launchSingleTop = true } },
+                    onNavigateToShop = { navController.navigate("shop") }
                 ) 
             }
         }
@@ -974,7 +980,7 @@ fun MainNavigation(viewModel: StudyViewModel, onLogout: () -> Unit) {
     }
 }
 
-@OptIn(ExperimentalLayoutApi::class)
+@OptIn(ExperimentalLayoutApi::class, ExperimentalMaterial3Api::class)
 @Composable
 fun FloatingNavBar(
     navController: androidx.navigation.NavHostController,
@@ -985,6 +991,24 @@ fun FloatingNavBar(
     val currentRoute = navBackStackEntry?.destination?.route
     val strings = LocalAppStrings.current
     val isImeVisible = WindowInsets.isImeVisible
+
+    val currentUserId by viewModel?.currentUserId?.observeAsState(-1L) ?: remember { mutableStateOf(-1L) }
+    val dailyTasks by viewModel?.dailyTasks?.observeAsState(emptyList()) ?: remember { mutableStateOf(emptyList()) }
+    val chestOpened by viewModel?.isDailyChestOpened?.observeAsState(false) ?: remember { mutableStateOf(false) }
+
+    LaunchedEffect(currentUserId) {
+        if (currentUserId != -1L) {
+            viewModel?.refreshDailyTasks()
+        }
+    }
+
+    val completedQuestsCount = remember(dailyTasks, chestOpened) {
+        val claimableTasks = dailyTasks.count { (it.currentValue >= it.targetValue || it.status == "COMPLETED") && it.status != "CLAIMED" }
+        val totalTasks = dailyTasks.size
+        val finishedTasks = dailyTasks.count { it.currentValue >= it.targetValue || it.status == "COMPLETED" || it.status == "CLAIMED" }
+        val canOpenChest = totalTasks > 0 && finishedTasks >= totalTasks && !chestOpened
+        claimableTasks + (if (canOpenChest) 1 else 0)
+    }
 
     if (isImeVisible || currentRoute == "quest_active" || currentRoute == "rank_reveal" || currentRoute == "progression_map" || currentRoute == "quest_review") return
 
@@ -1009,13 +1033,21 @@ fun FloatingNavBar(
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
-        NavItem("map", Icons.Default.Map, strings.navMap, currentRoute, navController)
-        NavItem("quests", Icons.Default.TaskAlt, strings.navLearn, currentRoute, navController)
-        NavItem("ask", Icons.Default.ChatBubbleOutline, strings.navTutor, currentRoute, navController)
-        NavItem("rank", Icons.Default.EmojiEvents, strings.navRank, currentRoute, navController)
+        NavItem("map", R.drawable.ic_nav_roadmap, strings.navMap, currentRoute, navController)
+        NavItem(
+            route = "quests",
+            drawableRes = R.drawable.ic_nav_task,
+            label = strings.navLearn,
+            currentRoute = currentRoute,
+            navController = navController,
+            badgeCount = completedQuestsCount
+        )
+        NavItem("shop", R.drawable.ic_nav_shop, strings.navShop, currentRoute, navController)
+        NavItem("ask", R.drawable.ic_mentor_qa, strings.navTutor, currentRoute, navController)
+        NavItem("rank", R.drawable.ic_nav_ranking, strings.navRank, currentRoute, navController)
         NavItem(
             route = "profile",
-            icon = Icons.Default.Menu,
+            drawableRes = R.drawable.ic_nav_menu,
             label = strings.navMenu,
             currentRoute = currentRoute,
             navController = navController,
@@ -1026,20 +1058,21 @@ fun FloatingNavBar(
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun NavItem(
     route: String,
-    icon: ImageVector,
+    drawableRes: Int,
     label: String,
     currentRoute: String?,
     navController: androidx.navigation.NavHostController,
+    badgeCount: Int = 0,
     onClickExtra: (() -> Unit)? = null
 ) {
     val isSelected = currentRoute == route
     val haptic = LocalHapticFeedback.current
-    val color = if (isSelected) Color(0xFF51FAC1) else Color(0x99FFFFFF)
     val scale by animateFloatAsState(
-        targetValue = if (isSelected) 1.06f else 1f,
+        targetValue = if (isSelected) 1.10f else 1f,
         animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessMedium),
         label = "nav_scale"
     )
@@ -1063,15 +1096,35 @@ fun NavItem(
                     restoreState = true
                 }
             }
-            .padding(horizontal = 14.dp, vertical = 10.dp),
+            .padding(horizontal = 12.dp, vertical = 8.dp),
         contentAlignment = Alignment.Center
     ) {
-        Icon(
-            imageVector = icon,
-            contentDescription = label,
-            tint = color,
-            modifier = Modifier.size(26.dp)
-        )
+        BadgedBox(
+            badge = {
+                if (badgeCount > 0) {
+                    Badge(
+                        containerColor = Color(0xFFFFD166),
+                        contentColor = Color(0xFF1E1138)
+                    ) {
+                        Text(
+                            text = if (badgeCount > 99) "99+" else "$badgeCount",
+                            fontSize = 10.sp,
+                            fontWeight = FontWeight.ExtraBold
+                        )
+                    }
+                }
+            }
+        ) {
+            Image(
+                painter = painterResource(id = drawableRes),
+                contentDescription = label,
+                modifier = Modifier
+                    .size(28.dp)
+                    .graphicsLayer {
+                        alpha = if (isSelected) 1.0f else 0.68f
+                    }
+            )
+        }
     }
 }
 

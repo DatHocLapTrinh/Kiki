@@ -122,8 +122,8 @@ class StudyViewModel @Inject constructor(
         fun detectAiProvider(key: String): String {
             val clean = key.trim()
             return when {
-                clean.startsWith("AQ.") || clean.startsWith("AIza") -> PROVIDER_GEMINI
                 clean.startsWith("gsk_") -> PROVIDER_GROQ
+                clean.startsWith("AQ.") || clean.startsWith("AIza") -> PROVIDER_GEMINI
                 clean.startsWith("sk-ant-") -> PROVIDER_CLAUDE
                 clean.startsWith("sk-") -> PROVIDER_OPENAI
                 else -> PROVIDER_GEMINI
@@ -132,12 +132,12 @@ class StudyViewModel @Inject constructor(
 
         fun getProviderDisplayName(provider: String): String {
             return when (provider) {
-                PROVIDER_GEMINI -> "🧠 Gemini 2.5 Flash Native Dialog"
                 PROVIDER_GROQ -> "⚡ Groq (Llama 3.3 70B)"
+                PROVIDER_GEMINI -> "🧠 Gemini 2.5 Flash Native Dialog"
                 PROVIDER_CLAUDE -> "🎭 Claude 3.5 Sonnet"
                 PROVIDER_OPENAI -> "🤖 OpenAI GPT-4o"
                 PROVIDER_AUTO -> "🧠 Gemini 2.5 Flash (Tự Động)"
-                else -> "🧠 Gemini 2.5 Flash Mentor"
+                else -> "✨ Kiki AI Mentor"
             }
         }
 
@@ -186,6 +186,26 @@ class StudyViewModel @Inject constructor(
             cleaned = cleaned.replace(Regex("\n{3,}"), "\n\n")
             return cleaned.trim()
         }
+
+        /**
+         * Lọc sạch tiền tố câu hỏi (tra từ, tra tu, thành ngữ, look up, nghĩa là gì, ...)
+         * để lấy chính xác từ vựng hoặc cụm thành ngữ cốt lõi mà người dùng muốn tìm.
+         */
+        fun cleanTargetWordFromQuery(query: String): String {
+            if (query.isBlank()) return ""
+            var cleaned = query.trim()
+                // Xoá icon kính lúp và các tiền tố tra cứu tiếng Việt (cả có dấu và không dấu) hoặc tiếng Anh
+                .replace(Regex("(?i)^[🔍\\s]*(tra\\s+(từ\\s+vựng|từ|thành\\s+ngữ|thanh\\s+ngu|cụm\\s+từ|cum\\s+tu|tu\\s+vung|tu)|look\\s+up(\\s+(word|idiom))?|tìm\\s+từ|tim\\s+tu|thành\\s+ngữ|thanh\\s+ngu|cụm\\s+từ|cum\\s+tu|từ\\s+vựng|tu\\s+vung|từ|tu|what\\s+is|what's|define)\\s*:?\\s*"), "")
+                // Xoá các hậu tố hỏi nghĩa ở cuối câu (nghĩa là gì, là gì, meaning, ví dụ...)
+                .replace(Regex("(?i)\\s+(nghĩa\\s+là\\s+gì|nghia\\s+la\\s+gi|nghĩa|nghia|là\\s+gì|la\\s+gi|meaning|definition|&\\s*ví\\s*dụ.*|&\\s*vi\\s*du.*|in\\s+context.*)$"), "")
+                // Xoá dấu ngoặc kép, ngoặc đơn
+                .replace(Regex("['\"“”‘’]"), "")
+                .trim()
+
+            // Nếu câu bắt đầu bằng "thành ngữ " hoặc "cụm từ " mà bị dính ở đầu
+            cleaned = cleaned.replace(Regex("(?i)^(thành\\s+ngữ|thanh\\s+ngu|cụm\\s+từ|cum\\s+tu)\\s*:?\\s*"), "").trim()
+            return cleaned
+        }
     }
 
     private val genericHttpClient = OkHttpClient.Builder()
@@ -195,10 +215,9 @@ class StudyViewModel @Inject constructor(
         .build()
 
     private val _universalAiKey = MutableLiveData(
-        prefs.getString("gemini_custom_api_key", "")
-            ?.trim()?.takeIf { !it.startsWith("sk-") && !it.startsWith("gsk_") }
-            ?: prefs.getString("kiki_universal_ai_api_key", "")
-            ?.trim()?.takeIf { !it.startsWith("sk-") && !it.startsWith("gsk_") }
+        prefs.getString("kiki_universal_ai_api_key", "")
+            ?.ifBlank { prefs.getString("groq_custom_api_key", "") }
+            ?.ifBlank { prefs.getString("gemini_custom_api_key", "") }
             ?: ""
     )
     val universalAiKey: LiveData<String> = _universalAiKey
@@ -223,7 +242,7 @@ class StudyViewModel @Inject constructor(
 
     private val _geminiApiKey = MutableLiveData(
         prefs.getString("gemini_custom_api_key", "")
-            ?.trim()?.takeIf { !it.startsWith("sk-") && !it.startsWith("gsk_") }
+            ?.ifBlank { prefs.getString("kiki_universal_ai_api_key", "") }
             ?: ""
     )
     val geminiApiKey: LiveData<String> = _geminiApiKey
@@ -260,44 +279,85 @@ class StudyViewModel @Inject constructor(
             val f = BuildConfig::class.java.getField("GEMINI_API_KEY")
             f.get(null) as? String ?: ""
         } catch (_: Exception) { "" }
-        if (envGemini.isNotBlank() && !envGemini.contains("your_") && !envGemini.contains("here")) {
+        if (envGemini.isNotBlank() && !envGemini.contains("your_") && !envGemini.contains("here") && (envGemini.startsWith("AIza") || envGemini.startsWith("AQ."))) {
             return envGemini.trim()
         }
 
-        // 2. Custom key người dùng dán (chỉ chấp nhận key Gemini hợp lệ, bỏ qua key OpenAI sk- hoặc Groq gsk_)
+        // 2. Custom key người dùng dán nếu là key Gemini
         val customGemini = _geminiApiKey.value?.trim()
-        if (!customGemini.isNullOrBlank() && !customGemini.startsWith("sk-") && !customGemini.startsWith("gsk_")) {
+        if (!customGemini.isNullOrBlank() && (customGemini.startsWith("AIza") || customGemini.startsWith("AQ."))) {
             return customGemini
         }
 
         val custom = _universalAiKey.value?.trim()
-        if (!custom.isNullOrBlank() && !custom.startsWith("sk-") && !custom.startsWith("gsk_")) {
+        if (!custom.isNullOrBlank() && (custom.startsWith("AIza") || custom.startsWith("AQ."))) {
             return custom
         }
 
-        // 3. Fallback sang biến AI_API_KEY nếu không phải OpenAI/Groq
+        // 3. Fallback sang biến AI_API_KEY nếu là Gemini
         val envUniversal = try {
             val f = BuildConfig::class.java.getField("AI_API_KEY")
             f.get(null) as? String ?: ""
         } catch (_: Exception) { "" }
-        if (envUniversal.isNotBlank() && !envUniversal.contains("your_") && !envUniversal.contains("here") && !envUniversal.startsWith("sk-") && !envUniversal.startsWith("gsk_")) {
+        if (envUniversal.isNotBlank() && !envUniversal.contains("your_") && !envUniversal.contains("here") && (envUniversal.startsWith("AIza") || envUniversal.startsWith("AQ."))) {
             return envUniversal.trim()
         }
 
-        return ""
+        return getEffectiveUniversalApiKey()
     }
 
     fun getEffectiveUniversalApiKey(): String {
-        return getEffectiveGeminiApiKey()
+        val custom = _universalAiKey.value?.trim()
+        if (!custom.isNullOrBlank()) return custom
+        val customUser = _userApiKey.value?.trim()
+        if (!customUser.isNullOrBlank()) return customUser
+        val customGemini = _geminiApiKey.value?.trim()
+        if (!customGemini.isNullOrBlank()) return customGemini
+
+        return try {
+            val envUniversal = try {
+                val f = BuildConfig::class.java.getField("AI_API_KEY")
+                f.get(null) as? String ?: ""
+            } catch (_: Exception) { "" }
+            if (envUniversal.isNotBlank() && !envUniversal.contains("your_") && !envUniversal.contains("here")) {
+                return envUniversal.trim()
+            }
+
+            val envGroq = try {
+                val f = BuildConfig::class.java.getField("GROQ_API_KEY")
+                f.get(null) as? String ?: ""
+            } catch (_: Exception) { "" }
+            if (envGroq.isNotBlank() && !envGroq.contains("your_") && !envGroq.contains("here")) {
+                return envGroq.trim()
+            }
+
+            val envGemini = try {
+                val f = BuildConfig::class.java.getField("GEMINI_API_KEY")
+                f.get(null) as? String ?: ""
+            } catch (_: Exception) { "" }
+            if (envGemini.isNotBlank() && !envGemini.contains("your_") && !envGemini.contains("here")) {
+                return envGemini.trim()
+            }
+            ""
+        } catch (_: Exception) {
+            ""
+        }
     }
 
     fun getEffectiveActiveProvider(): String {
-        return PROVIDER_GEMINI
+        val userChoice = _aiProvider.value ?: PROVIDER_AUTO
+        if (userChoice != PROVIDER_AUTO) {
+            return userChoice
+        }
+        val key = getEffectiveUniversalApiKey()
+        if (key.isBlank()) return PROVIDER_GEMINI
+        return detectAiProvider(key)
     }
 
     val activeProviderDisplayTitle: LiveData<String> = MediatorLiveData<String>().apply {
         val update = {
-            value = getProviderDisplayName(PROVIDER_GEMINI)
+            val active = getEffectiveActiveProvider()
+            value = getProviderDisplayName(active)
         }
         addSource(_aiProvider) { update() }
         addSource(_universalAiKey) { update() }
@@ -307,7 +367,7 @@ class StudyViewModel @Inject constructor(
     }
 
     fun getEffectiveApiKey(): String {
-        return getEffectiveGeminiApiKey()
+        return getEffectiveUniversalApiKey()
     }
 
     private val _userName = MutableLiveData("Adventurer")
@@ -1251,21 +1311,24 @@ class StudyViewModel @Inject constructor(
 
                 // Augment vocab/lookup questions to strictly request the concise 1-card format
                 val cleanQuestion = question.trim()
+                val targetWord = cleanTargetWordFromQuery(cleanQuestion)
                 val isLookup = cleanQuestion.startsWith("🔍") ||
-                        cleanQuestion.contains("Tra từ", ignoreCase = true) ||
-                        cleanQuestion.contains("Tra thành ngữ", ignoreCase = true) ||
-                        cleanQuestion.contains("Look up", ignoreCase = true) ||
+                        cleanQuestion.contains("tra từ", ignoreCase = true) ||
+                        cleanQuestion.contains("tra tu", ignoreCase = true) ||
+                        cleanQuestion.contains("tra thành ngữ", ignoreCase = true) ||
+                        cleanQuestion.contains("tra thanh ngu", ignoreCase = true) ||
+                        cleanQuestion.contains("thành ngữ", ignoreCase = true) ||
+                        cleanQuestion.contains("thanh ngu", ignoreCase = true) ||
+                        cleanQuestion.contains("cụm từ", ignoreCase = true) ||
+                        cleanQuestion.contains("cum tu", ignoreCase = true) ||
+                        cleanQuestion.contains("look up", ignoreCase = true) ||
                         cleanQuestion.contains("nghĩa là gì", ignoreCase = true) ||
-                        (cleanQuestion.split(Regex("\\s+")).size <= 3 && !cleanQuestion.endsWith("?") && !cleanQuestion.contains("tại sao", ignoreCase = true) && !cleanQuestion.contains("why", ignoreCase = true))
+                        cleanQuestion.contains("nghia la gi", ignoreCase = true) ||
+                        cleanQuestion.contains("là gì", ignoreCase = true) ||
+                        cleanQuestion.contains("la gi", ignoreCase = true) ||
+                        (targetWord.isNotBlank() && targetWord.split(Regex("\\s+")).size <= 4 && !cleanQuestion.endsWith("?") && !cleanQuestion.contains("tại sao", ignoreCase = true) && !cleanQuestion.contains("why", ignoreCase = true))
 
-                val promptForAi = if (isLookup && imageUri == null) {
-                    val targetWord = cleanQuestion
-                        .replace(Regex("^🔍\\s*(Tra từ|Tra thành ngữ|Look up word|Look up idiom):?\\s*"), "")
-                        .replace(Regex("['\"]"), "")
-                        .replace(Regex("&\\s*ví dụ.*", RegexOption.IGNORE_CASE), "")
-                        .replace(Regex("in context.*", RegexOption.IGNORE_CASE), "")
-                        .trim()
-
+                val promptForAi = if (isLookup && imageUri == null && targetWord.isNotBlank()) {
                     "Giải thích từ/cụm từ: '$targetWord'. Trả lời NGẮN GỌN trong DUY NHẤT 1 câu trả lời theo đúng mẫu sau (tuyệt đối không chào hỏi, không giới thiệu, không bảng biểu, không dùng [STEP]):\n" +
                     "$targetWord /IPA/ (Từ loại)\n" +
                     "• Nghĩa: [Giải thích nghĩa tiếng Việt ngắn gọn, súc tích]\n" +
@@ -1276,52 +1339,10 @@ class StudyViewModel @Inject constructor(
                     cleanQuestion
                 }
 
-                if (imageUri != null) {
-                    answer = fetchAnswerFromAI(context, question, imageUri)
-                } else if (getEffectiveActiveProvider() == PROVIDER_GEMINI) {
-                    // Trực tiếp dùng Gemini 2.5 Flash Native Audio Dialog để tối ưu tốc độ và độ chính xác
-                    answer = fetchAnswerFromGemini(context, promptForAi, null)
-                    if (answer.startsWith("Lỗi kết nối") || answer.startsWith("⚠️")) {
-                        try {
-                            val token = authManager.getIdToken() ?: "mock_dev_token_kiki_explorer"
-                            val weakPoints = _weakPoints.value?.take(5)?.map { it.question } ?: emptyList()
-                            val request = MentorChatRequest(
-                                message = promptForAi,
-                                userLevel = _selectedLevel.value ?: "Intermediate",
-                                currentChapter = _currentChapterTitle.value ?: "English Fundamentals",
-                                recentWeakPoints = weakPoints
-                            )
-                            val response = backendApiService.mentorChat("Bearer $token", request)
-                            if (response.isSuccessful && response.body() != null) {
-                                val body = response.body()!!
-                                answer = body.reply
-                                grammarTip = body.grammarTip
-                                vocabularies = body.detectedVocabularies
-                            }
-                        } catch (_: Exception) {}
-                    }
+                answer = if (imageUri != null) {
+                    fetchAnswerFromAI(context, question, imageUri)
                 } else {
-                    try {
-                        val token = authManager.getIdToken() ?: "mock_dev_token_kiki_explorer"
-                        val weakPoints = _weakPoints.value?.take(5)?.map { it.question } ?: emptyList()
-                        val request = MentorChatRequest(
-                            message = promptForAi,
-                            userLevel = _selectedLevel.value ?: "Intermediate",
-                            currentChapter = _currentChapterTitle.value ?: "English Fundamentals",
-                            recentWeakPoints = weakPoints
-                        )
-                        val response = backendApiService.mentorChat("Bearer $token", request)
-                        if (response.isSuccessful && response.body() != null) {
-                            val body = response.body()!!
-                            answer = body.reply
-                            grammarTip = body.grammarTip
-                            vocabularies = body.detectedVocabularies
-                        } else {
-                            answer = fetchAnswerFromAI(context, promptForAi, null)
-                        }
-                    } catch (e: Exception) {
-                        answer = fetchAnswerFromAI(context, promptForAi, null)
-                    }
+                    fetchAnswerFromAI(context, promptForAi, null)
                 }
                 answer = sanitizeAiMentorReply(answer)
                 if (grammarTip != null) {
@@ -1330,23 +1351,31 @@ class StudyViewModel @Inject constructor(
 
                 // Trích xuất thẻ từ vựng tự động từ kết quả Gemini nếu backend offline
                 if (vocabularies.isEmpty() && isLookup && !answer.startsWith("Lỗi") && !answer.startsWith("⚠️")) {
-                    val lines = answer.lines()
-                    val headerLine = lines.firstOrNull { it.isNotBlank() } ?: ""
+                    val lines = answer.lines().map { it.trim() }.filter { it.isNotBlank() }
+                    val headerLine = lines.firstOrNull() ?: ""
                     val phoneticMatch = Regex("/([^/]+)/").find(headerLine)?.value
-                    val meaningLine = lines.firstOrNull { it.contains("Nghĩa:", ignoreCase = true) }
-                        ?.replace(Regex("^•?\\s*Nghĩa:\\s*", RegexOption.IGNORE_CASE), "")?.trim()
-                    val exampleLine = lines.firstOrNull { it.contains("Ví dụ:", ignoreCase = true) }
-                        ?.replace(Regex("^•?\\s*Ví dụ:\\s*", RegexOption.IGNORE_CASE), "")?.trim()
-                    if (!meaningLine.isNullOrBlank()) {
-                        val targetWord = cleanQuestion
-                            .replace(Regex("^🔍\\s*(Tra từ|Tra thành ngữ|Look up word|Look up idiom):?\\s*"), "")
-                            .replace(Regex("['\"]"), "")
-                            .replace(Regex("&\\s*ví dụ.*", RegexOption.IGNORE_CASE), "")
-                            .replace(Regex("in context.*", RegexOption.IGNORE_CASE), "")
-                            .trim()
+                    val meaningLine = lines.firstOrNull { it.contains("Nghĩa:", ignoreCase = true) || it.contains("Nghia:", ignoreCase = true) }
+                        ?.replace(Regex("^•?\\s*(Nghĩa|Nghia):\\s*", RegexOption.IGNORE_CASE), "")?.trim()
+                    val exampleLine = lines.firstOrNull { it.contains("Ví dụ:", ignoreCase = true) || it.contains("Vi du:", ignoreCase = true) }
+                        ?.replace(Regex("^•?\\s*(Ví dụ|Vi du):\\s*", RegexOption.IGNORE_CASE), "")?.trim()
+
+                    // Ưu tiên trích xuất từ gốc trực tiếp từ dòng đầu của AI reply (đoạn trước dấu '/')
+                    val aiExtractedWord = if (headerLine.contains("/")) {
+                        headerLine.substringBefore("/").replace("**", "").replace("*", "").replace(Regex("[^a-zA-Z\\s'-]"), "").trim()
+                    } else {
+                        ""
+                    }
+
+                    val finalWord = when {
+                        aiExtractedWord.isNotBlank() && aiExtractedWord.split(Regex("\\s+")).size <= 5 -> aiExtractedWord
+                        targetWord.isNotBlank() -> targetWord
+                        else -> cleanTargetWordFromQuery(cleanQuestion)
+                    }
+
+                    if (!meaningLine.isNullOrBlank() && finalWord.isNotBlank()) {
                         vocabularies = listOf(
                             VocabularyCardDto(
-                                word = targetWord,
+                                word = finalWord,
                                 phonetic = phoneticMatch,
                                 meaning = meaningLine,
                                 example = exampleLine
@@ -1995,28 +2024,40 @@ class StudyViewModel @Inject constructor(
                     Pair("Chặng 2: Giới Thiệu Chức Danh & Phòng Ban (Job Titles & Who I Am)", "Học nói về tên và công việc đơn giản: I am a / My job is..."),
                     Pair("Chặng 3: Đồ Dùng Văn Phòng & Nhờ Vả Cơ Bản (Office Items & Polite Requests)", "Nhờ vả đơn giản với Please, Thank you, Coffee, Water, Laptop."),
                     Pair("Chặng 4: Số Đếm, Giờ Giấc & Lịch Hẹn Đơn Giản (Numbers, Time & Schedules)", "Làm quen số đếm 1-100 và hỏi giờ họp đơn giản: What time is the meeting?"),
-                    Pair("Chặng 5: Đàm Thoại Ngắn Phản Xạ Nơi Làm Việc (Short Workplace Dialogues)", "Phản xạ giao tiếp 2-3 câu hàng ngày tự tin không vấp.")
+                    Pair("Chặng 5: Đàm Thoại Ngắn Phản Xạ Nơi Làm Việc (Short Workplace Dialogues)", "Phản xạ giao tiếp 2-3 câu hàng ngày tự tin không vấp."),
+                    Pair("Chặng 6: Nơi Chốn & Chỉ Đường Công Tác (Business Travel & Directions)", "Hỏi đường đến văn phòng đối tác, sân bay và khách sạn tự tin."),
+                    Pair("Chặng 7: Trao Đổi Dự Án & Ý Kiến Cá Nhân (Project Discussions & Feedback)", "Bày tỏ quan điểm và đề xuất cải tiến trong công việc hàng ngày."),
+                    Pair("Chặng 8: Tinh Hoa Lãnh Đạo & Giao Tiếp Toàn Diện (Executive Mastery & Fluency)", "Chinh phục đỉnh cao giao tiếp quốc tế với phản xạ đàm thoại trôi chảy.")
                 )
                 "Grammar & Vocabulary" -> listOf(
                     Pair("Chặng 1: Làm Quen Từ Vựng & Lời Chào Số 0 (Greetings & Daily Words)", "Bắt đầu từ số 0: Hello, Hi, Thank you, Yes, No, các từ căn bản nhất."),
                     Pair("Chặng 2: Đại Từ Nhân Xưng & Động Từ To Be (I am, You are, He is)", "Nắm vững bản chất I am, You are, He is với tên và nghề nghiệp cơ bản."),
                     Pair("Chặng 3: Đồ Vật Quanh Ta & Số Ít Số Nhiều (This, That, A, An)", "Nhận biết danh từ hàng ngày: a book, a pen, this is, that is."),
                     Pair("Chặng 4: Động Từ Hành Động Hàng Ngày (Action Verbs: Go, Like, Eat)", "Tạo câu 3 từ đơn giản: I like coffee, I go to work."),
-                    Pair("Chặng 5: Hỏi Đáp Đơn Giản Có/Không (Basic Yes/No Questions)", "Tự tin hỏi và trả lời câu hỏi Yes/No ngắn: Are you ready? Do you like tea?")
+                    Pair("Chặng 5: Hỏi Đáp Đơn Giản Có/Không (Basic Yes/No Questions)", "Tự tin hỏi và trả lời câu hỏi Yes/No ngắn: Are you ready? Do you like tea?"),
+                    Pair("Chặng 6: Từ Vựng Vị Trí & Nơi Chốn Đời Sống (Prepositions & Places)", "Làm chủ giới từ in, on, at, behind và các địa điểm quen thuộc."),
+                    Pair("Chặng 7: Tính Từ Mô Tả & Cảm Xúc Hàng Ngày (Descriptive Adjectives & Feelings)", "Vận dụng tính từ mô tả người, đồ vật và cảm xúc tự nhiên."),
+                    Pair("Chặng 8: Đỉnh Cao Cú Pháp & Giao Tiếp Toàn Diện (Syntax Apex & Mastery)", "Chinh phục cấu trúc câu tổng hợp và phản xạ đàm thoại toàn diện.")
                 )
                 "IELTS & TOEIC" -> listOf(
                     Pair("Chặng 1: Chào Hỏi & Giới Thiệu Bản Thân Đơn Giản (Speaking Part 1 Starter)", "Làm quen cách nói tên, tuổi và quê quán bằng các câu ngắn 3-4 từ."),
                     Pair("Chặng 2: Từ Vựng Gia Đình & Sở Thích Số 0 (Family & Basic Hobbies)", "Học từ vựng và câu đơn giản mô tả người thân và sở thích hàng ngày."),
                     Pair("Chặng 3: Nhận Diện Chữ Cái & Số Đếm Nghe Cơ Bản (Letters & Numbers Dictation)", "Luyện nghe bắt số điện thoại, ngày tháng và đánh vần tên cơ bản."),
                     Pair("Chặng 4: Mô Tả Đồ Vật & Vị Trí Đơn Giản (Describing Objects & Places)", "Cấu trúc There is / There are và các giới từ vị trí cơ bản in, on, at."),
-                    Pair("Chặng 5: Phản Xạ Trả Lời Câu Hỏi Ngắn (Short Q&A Reflex)", "Tự tin trả lời 3 câu hỏi phỏng vấn ngắn quen thuộc trong đời sống.")
+                    Pair("Chặng 5: Phản Xạ Trả Lời Câu Hỏi Ngắn (Short Q&A Reflex)", "Tự tin trả lời 3 câu hỏi phỏng vấn ngắn quen thuộc trong đời sống."),
+                    Pair("Chặng 6: Nơi Chốn, Bản Đồ & Định Hướng (Places & Map Labelling Starter)", "Từ vựng phương hướng và địa điểm thường gặp trong đề thi nghe."),
+                    Pair("Chặng 7: Diễn Đạt Ý Kiến & So Sánh Đơn Giản (Opinions & Simple Comparisons)", "Sử dụng cấu trúc so sánh hơn/nhất và nêu lý do Because."),
+                    Pair("Chặng 8: Bứt Phá Đỉnh Cao & Hoàn Thiện Bài Thi (Test Apex & Band Mastery)", "Mô phỏng phản xạ làm bài thi hoàn chỉnh với độ chính xác cao.")
                 )
                 else -> listOf(
                     Pair("Chặng 1: Chào Hỏi & Làm Quen Cơ Bản (Hello & Daily Greetings)", "Bắt đầu từ số 0 với các từ chào hỏi kinh điển Hello, Hi, Thank you, My name is."),
                     Pair("Chặng 2: Giới Thiệu Bản Thân & Hỏi Thăm (Personal Identity & How Are You)", "Tự tin giới thiệu bản thân và hỏi thăm bạn bè: How are you, I am fine."),
                     Pair("Chặng 3: Nhu Cầu & Đồ Vật Thiết Yếu (Everyday Essentials & Requests)", "Giao tiếp cơ bản khi xin phép, cảm ơn và gọi nước, đồ ăn hàng ngày."),
                     Pair("Chặng 4: Số Đếm, Thời Gian & Mua Sắm Cơ Bản (Numbers, Time & Basic Requests)", "Làm quen số đếm 1-10, hỏi giờ và hỏi giá đơn giản."),
-                    Pair("Chặng 5: Đàm Thoại Ngắn Phản Xạ Đời Sống (Short Daily Dialogue & Mastery)", "Phản xạ giao tiếp tự nhiên với các hội thoại ngắn đời thường 2-3 câu.")
+                    Pair("Chặng 5: Đàm Thoại Ngắn Phản Xạ Đời Sống (Short Daily Dialogue & Mastery)", "Phản xạ giao tiếp tự nhiên với các hội thoại ngắn đời thường 2-3 câu."),
+                    Pair("Chặng 6: Nơi Chốn & Chỉ Đường Du Lịch (Places, Transport & Directions)", "Học cách hỏi đường, gọi xe và gọi tên các địa điểm thông dụng: Where is the hotel?"),
+                    Pair("Chặng 7: Cảm Xúc, Ý Kiến & Phản Xạ Nâng Cao (Feelings, Opinions & Reflexes)", "Tự tin bày tỏ ý kiến, cảm xúc và trao đổi các chủ đề đa dạng hàng ngày."),
+                    Pair("Chặng 8: Đỉnh Cao Vũ Trụ & Giao Tiếp Toàn Diện (Cosmic Apex & Fluent Mastery)", "Chinh phục đỉnh cao thái dương hệ với năng lực phản xạ tiếng Anh toàn diện.")
                 )
             }
         }
@@ -2027,28 +2068,40 @@ class StudyViewModel @Inject constructor(
                 Pair("Chặng 2: Làm Chủ Câu Điều Kiện Giả Định (Conditionals)", "Nắm vững bản chất câu điều kiện loại 2 và 3 trong giao tiếp."),
                 Pair("Chặng 3: Đảo Ngữ & Trạng Từ Nhấn Mạnh (Inversion)", "Sử dụng các trạng từ phủ định đảo ngữ để nâng cao sắc thái biểu đạt."),
                 Pair("Chặng 4: Mệnh Đề Rút Gọn & Cú Pháp Nâng Cao (Reduced Clauses)", "Rút gọn mệnh đề quan hệ và mệnh đề trạng ngữ linh hoạt."),
-                Pair("Chặng 5: Tổng Hợp Ngữ Pháp Đỉnh Cao (Mastery Synthesis)", "Chinh phục bài tập phản xạ ngữ pháp tổng hợp toàn diện.")
+                Pair("Chặng 5: Tổng Hợp Ngữ Pháp Đỉnh Cao (Mastery Synthesis)", "Chinh phục bài tập phản xạ ngữ pháp tổng hợp toàn diện."),
+                Pair("Chặng 6: Ngữ Pháp Văn Bản & Liên Kết Đoạn (Discourse Cohesion)", "Xây dựng tính mạch lạc cho đoạn văn và bài nói dài."),
+                Pair("Chặng 7: Cụm Từ Cố Định & Phong Cách Diễn Đạt (Idiomatic Collocations)", "Làm chủ các sắc thái biểu cảm tinh tế của người bản xứ."),
+                Pair("Chặng 8: Đỉnh Cao Ngôn Ngữ & Phong Thái Tự Nhiên (Native Linguistic Apex)", "Hoàn thiện ngữ pháp chuẩn xác và phản xạ tự nhiên tuyệt đối.")
             )
             "IELTS & TOEIC" -> listOf(
                 Pair("Chặng 1: Nền Tảng Từ Vựng Học Thuật (Academic Lexicon)", "Làm chủ 20 collocations học thuật xuất hiện thường trực trong đề thi."),
                 Pair("Chặng 2: Nhận Diện Cấu Trúc Câu Phức Đề Thi (Complex Structures)", "Phân tích và dựng câu phức chuẩn mực cho bài thi viết và đọc."),
                 Pair("Chặng 3: Kỹ Thuật Nghe Bắt Ý Chính (Audio Gist Extraction)", "Rèn luyện tai nhận diện bẫy âm thanh và từ đồng nghĩa trong bài nghe."),
                 Pair("Chặng 4: Diễn Đạt Ý Nghĩa Đa Chiều (Paraphrasing Mastery)", "Kỹ năng biến đổi từ loại và cấu trúc câu tương đương tức thì."),
-                Pair("Chặng 5: Luyện Đề Bứt Phá Band Điểm (Exam Mastery Simulation)", "Thử thách phản xạ câu hỏi đề thi chuẩn hóa thời gian thực.")
+                Pair("Chặng 5: Luyện Đề Bứt Phá Band Điểm (Exam Mastery Simulation)", "Thử thách phản xạ câu hỏi đề thi chuẩn hóa thời gian thực."),
+                Pair("Chặng 6: Kỹ Thuật Đọc Quét & Phân Tích Dữ Liệu (Skimming & Scanning Mastery)", "Nâng cao tốc độ xử lý bài đọc và phân tích biểu đồ."),
+                Pair("Chặng 7: Tư Duy Phản Biện & Luận Điểm Sắc Bén (Critical Argumentation)", "Phát triển ý tưởng logic và bảo vệ luận điểm trong Speaking & Writing."),
+                Pair("Chặng 8: Chinh Phục Đỉnh Cao Band Điểm Mục Tiêu (Exam Apex & Band 8.0+)", "Bứt phá giới hạn với chiến thuật làm bài chuẩn quốc tế.")
             )
             "Career & Business" -> listOf(
                 Pair("Chặng 1: Giao Tiếp Công Sở & Email Chuẩn Mực (Workplace Etiquette)", "Sử dụng văn phong trang trọng và lịch thiệp trong trao đổi công việc."),
                 Pair("Chặng 2: Đàm Thoại & Thuyết Trình Dự Án (Business Pitching)", "Cấu trúc hóa luận điểm và trình bày báo cáo ngắn gọn, thuyết phục."),
                 Pair("Chặng 3: Thảo Luận & Từ Chối Khéo Léo (Professional Diplomacy)", "Nghệ thuật phản hồi bất đồng và thương lượng trong cuộc họp."),
                 Pair("Chặng 4: Đàm Phán & Thuyết Phục Đối Tác (Strategic Negotiation)", "Vận dụng các thuật ngữ nhượng bộ và chốt thỏa thuận kinh doanh."),
-                Pair("Chặng 5: Khẩu Ngữ Lãnh Đạo Chuyên Nghiệp (Executive Fluency)", "Nâng tầm phong thái phát âm và giao tiếp bản lĩnh.")
+                Pair("Chặng 5: Khẩu Ngữ Lãnh Đạo Chuyên Nghiệp (Executive Fluency)", "Nâng tầm phong thái phát âm và giao tiếp bản lĩnh."),
+                Pair("Chặng 6: Quản Trị Khủng Hoảng & Phản Hồi Truyền Thông (Crisis Management)", "Giao tiếp bình tĩnh, sắc bén trước các tình huống áp lực cao."),
+                Pair("Chặng 7: Xây Dựng Mạng Lưới Quan Hệ Toàn Cầu (Global Networking)", "Kết nối đối tác đa văn hóa với sự thấu hiểu và tự tin."),
+                Pair("Chặng 8: Đỉnh Cao Lãnh Đạo Doanh Nghiệp (Global Executive Apex)", "Làm chủ nghệ thuật truyền cảm hứng và dẫn dắt đội ngũ quốc tế.")
             )
             else -> listOf(
                 Pair("Chặng 1: Khởi Động & Phản Xạ Đàm Thoại (Daily Greetings)", "Tự tin mở đầu câu chuyện và phản xạ chào hỏi tự nhiên không vấp."),
                 Pair("Chặng 2: Giải Mã Nuốt Âm & Nối Âm (Connected Speech & Elision)", "Làm chủ hiện tượng nuốt âm could've, gonna trong tiếng Anh bản xứ."),
                 Pair("Chặng 3: Đặt Câu Hỏi Gián Tiếp Lịch Sự (Polite Indirect Inquiries)", "Giao tiếp lịch thiệp khi hỏi đường, nhờ vả và gọi món."),
                 Pair("Chặng 4: Cụm Động Từ Thông Dụng (High-Frequency Phrasal Verbs)", "Sử dụng phrasal verbs tự nhiên thay cho các từ đơn điệu."),
-                Pair("Chặng 5: Đột Phá Đàm Thoại Trôi Chảy (Mastery Conversational Fluency)", "Phản xạ giao tiếp Native Audio trôi chảy trong mọi ngữ cảnh.")
+                Pair("Chặng 5: Đột Phá Đàm Thoại Trôi Chảy (Mastery Conversational Fluency)", "Phản xạ giao tiếp Native Audio trôi chảy trong mọi ngữ cảnh."),
+                Pair("Chặng 6: Đàm Thoại Đa Chủ Đề Đời Sống (Multi-Topic Life Discussions)", "Giao tiếp tự nhiên về du lịch, ẩm thực, văn hóa và lối sống."),
+                Pair("Chặng 7: Nghệ Thuật Kể Chuyện & Bày Tỏ Cảm Xúc (Storytelling & Nuance)", "Lôi cuốn người nghe với lối kể chuyện giàu hình ảnh và cảm xúc."),
+                Pair("Chặng 8: Đỉnh Cao Phản Xạ Bản Xứ Toàn Diện (Native Fluency Apex)", "Chinh phục đỉnh cao thái dương hệ với năng lực tiếng Anh toàn diện.")
             )
         }
     }
@@ -2595,12 +2648,43 @@ class StudyViewModel @Inject constructor(
         prompt: String,
         uri: Uri?
     ): String {
-        val geminiKey = getEffectiveGeminiApiKey()
-        if (geminiKey.isBlank()) {
-            return "⚠️ Bạn chưa cài đặt GEMINI_API_KEY.\n\n• Vui lòng cấu hình biến GEMINI_API_KEY trong file .env để kích hoạt Gemini 2.5 Flash Native Audio Dialog.\n• Hoặc mở Cài đặt và dán khóa API của bạn."
+        val apiKey = getEffectiveUniversalApiKey()
+        if (apiKey.isBlank()) {
+            return "⚠️ Bạn chưa cài đặt AI API Key.\n\n• Vui lòng mở Cài đặt và dán API Key của bạn (hỗ trợ Groq, Gemini, Claude, OpenAI).\n• Hoặc cấu hình biến AI_API_KEY hoặc GROQ_API_KEY / GEMINI_API_KEY trong file .env."
         }
 
-        val answer = fetchAnswerFromGemini(context, prompt, uri, apiKey = geminiKey)
+        val activeProvider = getEffectiveActiveProvider()
+        val answer = when (activeProvider) {
+            PROVIDER_GROQ -> fetchAnswerFromGroq(context, prompt, uri, apiKey)
+            PROVIDER_GEMINI -> fetchAnswerFromGemini(context, prompt, uri, apiKey = apiKey)
+            PROVIDER_CLAUDE -> fetchAnswerFromClaude(context, prompt, uri, apiKey)
+            PROVIDER_OPENAI -> fetchAnswerFromOpenAI(context, prompt, uri, apiKey)
+            else -> fetchAnswerFromGroq(context, prompt, uri, apiKey)
+        }
+
+        val isError = answer.startsWith("Lỗi kết nối") ||
+                answer.startsWith("⚠️") ||
+                answer.startsWith("⚡ Máy chủ AI")
+
+        if (!isError) {
+            return sanitizeAiMentorReply(answer)
+        }
+
+        // Tự động chuyển provider dựa trên format key nếu provider đã chọn gặp sự cố
+        val detected = detectAiProvider(apiKey)
+        if (detected != activeProvider) {
+            val fallbackAnswer = when (detected) {
+                PROVIDER_GROQ -> fetchAnswerFromGroq(context, prompt, uri, apiKey)
+                PROVIDER_GEMINI -> fetchAnswerFromGemini(context, prompt, uri, apiKey = apiKey)
+                PROVIDER_CLAUDE -> fetchAnswerFromClaude(context, prompt, uri, apiKey)
+                PROVIDER_OPENAI -> fetchAnswerFromOpenAI(context, prompt, uri, apiKey)
+                else -> answer
+            }
+            if (!fallbackAnswer.startsWith("Lỗi kết nối") && !fallbackAnswer.startsWith("⚠️")) {
+                return sanitizeAiMentorReply(fallbackAnswer)
+            }
+        }
+
         return sanitizeAiMentorReply(answer)
     }
 
@@ -2614,8 +2698,19 @@ class StudyViewModel @Inject constructor(
     ): String = withContext(Dispatchers.IO) {
         try {
             val effectiveKey = if (!apiKey.isNullOrBlank()) apiKey else getEffectiveGeminiApiKey()
-            if (effectiveKey.isBlank() || effectiveKey.startsWith("sk-")) {
-                return@withContext "⚠️ Khóa API không hợp lệ cho Google Gemini. Vui lòng cấu hình GEMINI_API_KEY trong file .env để sử dụng Gemini 2.5 Flash Native Audio Dialog."
+            if (effectiveKey.isBlank()) {
+                return@withContext "⚠️ Bạn chưa cài đặt GEMINI_API_KEY.\n\n• Vui lòng cấu hình biến GEMINI_API_KEY trong file .env hoặc mở Cài đặt để dán khóa API."
+            }
+
+            // Cross-provider auto redirection:
+            if (effectiveKey.startsWith("gsk_")) {
+                return@withContext fetchAnswerFromGroq(context, prompt, uri, effectiveKey)
+            }
+            if (effectiveKey.startsWith("sk-ant-")) {
+                return@withContext fetchAnswerFromClaude(context, prompt, uri, effectiveKey)
+            }
+            if (effectiveKey.startsWith("sk-")) {
+                return@withContext fetchAnswerFromOpenAI(context, prompt, uri, effectiveKey)
             }
 
             val actualPrompt = if (prompt.isBlank() && uri != null) {

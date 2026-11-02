@@ -67,6 +67,7 @@ fun QuestScreen(viewModel: StudyViewModel, onFinish: () -> Unit) {
     val isEnglish by viewModel.isEnglish.observeAsState(false)
     val questions by viewModel.questions.observeAsState(emptyList())
     val chapterTitle by viewModel.currentChapterTitle.observeAsState("English Fundamentals")
+    val currentNode by viewModel.currentNode.observeAsState(1)
     val isSpeaking by viewModel.ttsManager.isSpeaking
     val coroutineScope = rememberCoroutineScope()
 
@@ -191,6 +192,17 @@ fun QuestScreen(viewModel: StudyViewModel, onFinish: () -> Unit) {
                 Spacer(modifier = Modifier.width(12.dp))
 
                 Column(modifier = Modifier.weight(1f), horizontalAlignment = Alignment.CenterHorizontally) {
+                    val safeLessonNode = currentNode.coerceIn(1, 5)
+                    Text(
+                        text = "$chapterTitle • ${if (isEnglish) "Lesson" else "Bài"} $safeLessonNode/5",
+                        color = Color(0xCCFFFFFF),
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Bold,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.padding(bottom = 4.dp)
+                    )
+
                     val progressRatio = (currentQuestion + 1).toFloat() / totalQuestions
                     Box(
                         modifier = Modifier
@@ -214,7 +226,7 @@ fun QuestScreen(viewModel: StudyViewModel, onFinish: () -> Unit) {
                         fontSize = 12.sp,
                         fontWeight = FontWeight.Bold,
                         letterSpacing = 1.sp,
-                        modifier = Modifier.padding(top = 6.dp)
+                        modifier = Modifier.padding(top = 4.dp)
                     )
                 }
 

@@ -1,6 +1,9 @@
 package com.example
 
+import android.widget.Toast
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
@@ -12,6 +15,7 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -21,6 +25,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.ui.res.painterResource
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.*
 import androidx.compose.material.icons.filled.*
@@ -43,9 +48,14 @@ import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import com.example.ui.BubbleArrowDirection
+import com.example.ui.CosmicSectionBanner
+import com.example.ui.CosmicSectionConfig
+import com.example.ui.CosmicSectionData
 import com.example.ui.SpeechBubbleShape
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -54,7 +64,10 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.layout.ContentScale
+import coil.compose.AsyncImage
 import com.example.viewmodel.StudyViewModel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 
@@ -68,7 +81,16 @@ fun JourneyMapScreen(
 ) {
     val strings = LocalAppStrings.current
     val scrollState = rememberScrollState()
+    val density = LocalDensity.current
+    val context = LocalContext.current
+    val haptic = LocalHapticFeedback.current
+    val coroutineScope = rememberCoroutineScope()
+
     val userName by viewModel.userName.observeAsState("Adventurer")
+    val avatarUri by viewModel.avatarUri.observeAsState(null)
+    val streak by viewModel.streak.observeAsState(0)
+    val hearts by viewModel.hearts.observeAsState(5)
+    val streakShields by viewModel.streakShields.observeAsState(0)
     val isEnglish by viewModel.isEnglish.observeAsState(false)
     val availableChapters by viewModel.availableChapters.observeAsState(emptyList())
     val chapterProgress by viewModel.chapterProgress.observeAsState(emptyList())
@@ -78,9 +100,63 @@ fun JourneyMapScreen(
     val stages = remember(availableChapters, chapterProgress) {
         JourneyStageMapper.mapStages(availableChapters, chapterProgress)
     }
-    val earnedStars = JourneyStageMapper.earnedStars(stages)
     val currentStageIndex = stages.indexOfFirst { it.state == JourneyStageState.CURRENT }
     var isNavigating by remember { mutableStateOf(false) }
+
+    val unlockEvent by viewModel.chapterUnlockEvent.observeAsState(null)
+    var animatingUnlockStageIndex by remember { mutableIntStateOf(-1) }
+    val unlockAnim = remember { Animatable(0f) }
+
+    fun triggerPlanetUnlock(targetIdx: Int) {
+        coroutineScope.launch {
+            if (targetIdx > 0 && targetIdx < stages.size && animatingUnlockStageIndex == -1) {
+                animatingUnlockStageIndex = targetIdx
+                val stageStepPx = with(density) { 255.dp.toPx() }
+                val bannerTotalHeightPx = with(density) { (106.dp + 16.dp).toPx() }
+                val targetPlanetY = ((targetIdx / 10) + 1) * bannerTotalHeightPx + targetIdx * stageStepPx + with(density) { 85.dp.toPx() }
+                val viewportHeightPx = scrollState.viewportSize.toFloat()
+                val desiredScroll = (targetPlanetY - (if (viewportHeightPx > 0) viewportHeightPx * 0.45f else 600f)).toInt().coerceAtLeast(0)
+
+                scrollState.animateScrollTo(desiredScroll, tween(800, easing = FastOutSlowInEasing))
+
+                unlockAnim.snapTo(0f)
+                viewModel.soundEffectManager.playCorrect(3)
+                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+
+                val shatterJob = launch {
+                    delay(1750) // Thời điểm khiên nổ tung sau Phase 1 & 2 (~65% của 2700ms)
+                    viewModel.soundEffectManager.playFanfare()
+                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                }
+
+                unlockAnim.animateTo(
+                    targetValue = 1f,
+                    animationSpec = tween(durationMillis = 2700, easing = LinearEasing)
+                )
+
+                shatterJob.cancel()
+                viewModel.clearChapterUnlockEvent()
+                animatingUnlockStageIndex = -1
+            }
+        }
+    }
+
+    LaunchedEffect(unlockEvent) {
+        val event = unlockEvent ?: return@LaunchedEffect
+        var targetIdx = stages.indexOfFirst { it.title.equals(event.nextChapterTitle, ignoreCase = true) }
+        if (targetIdx == -1) {
+            targetIdx = stages.indexOfFirst { it.state == JourneyStageState.LOCKED }
+        }
+        if (targetIdx > 0 && targetIdx < stages.size) {
+            triggerPlanetUnlock(targetIdx)
+        } else {
+            viewModel.clearChapterUnlockEvent()
+        }
+    }
+
+    LaunchedEffect(Unit) {
+        isNavigating = false
+    }
 
     LaunchedEffect(availableChapters) {
         if (availableChapters.isEmpty() && !chaptersLoading) {
@@ -92,54 +168,58 @@ fun JourneyMapScreen(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .verticalScroll(scrollState)
                 .statusBarsPadding()
-                .padding(top = 12.dp, bottom = 124.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            JourneyTopBar(
-                userName = userName,
-                isEnglish = isEnglish,
-                earnedStars = earnedStars,
-                strings = strings
+            // Banner chỉ số trên cùng (Avatar profile, Streak, Hearts, Shields) - 4 cột chia đều, không đóng khung
+            CosmicUserStatsBanner(
+                avatarUri = avatarUri,
+                streak = streak,
+                hearts = hearts,
+                streakShields = streakShields
             )
-            Spacer(modifier = Modifier.height(16.dp))
 
-            if (stages.isEmpty()) {
-                Box(modifier = Modifier.fillMaxWidth().height(420.dp), contentAlignment = Alignment.Center) {
-                    when {
-                        chaptersLoading -> JourneyLoadingState()
-                        chaptersError != null -> JourneyErrorState(
-                            message = chaptersError ?: strings.noChaptersFound,
-                            onRetry = viewModel::refreshChapters
-                        )
-                        else -> JourneyEmptyState(onRetry = viewModel::refreshChapters)
-                    }
-                }
-            } else {
-                JourneyPath(
-                    stages = stages,
-                    currentStageIndex = currentStageIndex,
-                    strings = strings,
-                    onStageClick = { stage ->
-                        if (!isNavigating && stage.state != JourneyStageState.LOCKED) {
-                            isNavigating = true
-                            viewModel.selectChapterByTitle(stage.title, stage.sequence)
-                            onStartQuest()
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .verticalScroll(scrollState)
+                    .padding(top = 8.dp, bottom = 124.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                if (stages.isEmpty()) {
+                    Box(modifier = Modifier.fillMaxWidth().height(420.dp), contentAlignment = Alignment.Center) {
+                        when {
+                            chaptersLoading -> JourneyLoadingState()
+                            chaptersError != null -> JourneyErrorState(
+                                message = chaptersError ?: strings.noChaptersFound,
+                                onRetry = viewModel::refreshChapters
+                            )
+                            else -> JourneyEmptyState(onRetry = viewModel::refreshChapters)
                         }
                     }
-                )
-
-                val isGeneratingNextChapter by viewModel.isGeneratingNextChapter.observeAsState(false)
-                val allCompleted = stages.isNotEmpty() && stages.all { it.state == JourneyStageState.COMPLETED }
-
-                if (allCompleted || stages.size >= 5) {
-                    Spacer(modifier = Modifier.height(24.dp))
-                    AiNextChapterCard(
-                        isGenerating = isGeneratingNextChapter,
+                } else {
+                    JourneyPath(
+                        stages = stages,
+                        currentStageIndex = currentStageIndex,
                         strings = strings,
-                        onGenerate = {
-                            viewModel.generateNextChapterOnDemand()
+                        animatingUnlockStageIndex = animatingUnlockStageIndex,
+                        unlockAnimProgress = unlockAnim.value,
+                        onStageClick = { stage ->
+                            if (stage.state == JourneyStageState.LOCKED) {
+                                Toast.makeText(
+                                    context,
+                                    "Chặng này đang bị khóa! Hoàn thành chặng trước để mở khóa (hoặc nhấn giữ để xem thử hoạt ảnh).",
+                                    Toast.LENGTH_SHORT
+                                ).show()
+                            } else if (!isNavigating) {
+                                isNavigating = true
+                                viewModel.selectChapterByTitle(stage.title, stage.sequence)
+                                onStartQuest()
+                            }
+                        },
+                        onStageLongClick = { _, index ->
+                            if (animatingUnlockStageIndex == -1) {
+                                triggerPlanetUnlock(index)
+                            }
                         }
                     )
                 }
@@ -149,57 +229,123 @@ fun JourneyMapScreen(
 }
 
 @Composable
-private fun JourneyTopBar(
-    userName: String,
-    isEnglish: Boolean,
-    earnedStars: Int,
-    strings: AppStrings
+private fun CosmicUserStatsBanner(
+    avatarUri: String?,
+    streak: Int,
+    hearts: Int,
+    streakShields: Int
 ) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 20.dp, vertical = 4.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.SpaceBetween
+            .padding(horizontal = 12.dp, vertical = 12.dp),
+        verticalAlignment = Alignment.CenterVertically
     ) {
-        Column(modifier = Modifier.weight(1f)) {
-            Text(
-                text = strings.mapTitle,
-                color = Color(0xFF51FAC1),
-                fontSize = 11.sp,
-                fontWeight = FontWeight.Bold,
-                letterSpacing = 1.2.sp
-            )
-            Text(
-                text = if (isEnglish) "$userName's Roadmap" else "Lộ trình của $userName",
-                color = Color.White,
-                fontSize = 22.sp,
-                fontWeight = FontWeight.Black,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
-            )
-            Text(
-                text = if (isEnglish) "Master English step-by-step" else "Lộ trình chinh phục tiếng Anh từng bước",
-                color = Color(0xB3FFFFFF),
-                fontSize = 12.sp
-            )
-        }
-        Spacer(modifier = Modifier.width(12.dp))
+        // Cột 1: Avatar Profile của user
         Box(
-            modifier = Modifier
-                .clip(RoundedCornerShape(18.dp))
-                .background(Color(0x3314142C))
-                .border(1.dp, Color(0x995C2A9D), RoundedCornerShape(18.dp))
-                .padding(horizontal = 14.dp, vertical = 10.dp),
+            modifier = Modifier.weight(1f),
             contentAlignment = Alignment.Center
         ) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(Icons.Default.Star, contentDescription = null, tint = Color(0xFFFFD166), modifier = Modifier.size(20.dp))
-                Spacer(modifier = Modifier.width(6.dp))
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text("$earnedStars", color = Color.White, fontSize = 18.sp, fontWeight = FontWeight.ExtraBold)
-                    Text(strings.starsLabel, color = Color(0xCCFFFFFF), fontSize = 9.sp, fontWeight = FontWeight.Bold)
+            Box(
+                modifier = Modifier
+                    .size(42.dp)
+                    .clip(CircleShape)
+                    .background(Color(0xFF14141E))
+                    .border(2.dp, Color(0xFFFFD166), CircleShape)
+                    .padding(2.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                if (avatarUri != null && (avatarUri.startsWith("http://") || avatarUri.startsWith("https://") || avatarUri.startsWith("content://"))) {
+                    AsyncImage(
+                        model = avatarUri,
+                        contentDescription = "Avatar",
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .clip(CircleShape),
+                        contentScale = ContentScale.Crop
+                    )
+                } else {
+                    AsyncImage(
+                        model = resolveAvatarResource(avatarUri),
+                        contentDescription = "Avatar",
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .clip(CircleShape),
+                        contentScale = ContentScale.Fit
+                    )
                 }
+            }
+        }
+
+        // Cột 2: Chuỗi ngày Streak 🔥
+        Box(
+            modifier = Modifier.weight(1f),
+            contentAlignment = Alignment.Center
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.Center
+            ) {
+                Image(
+                    painter = painterResource(id = R.drawable.ic_stat_streak),
+                    contentDescription = "Streak",
+                    modifier = Modifier.size(26.dp)
+                )
+                Spacer(modifier = Modifier.width(6.dp))
+                Text(
+                    text = "$streak",
+                    color = Color.White,
+                    fontSize = 17.sp,
+                    fontWeight = FontWeight.ExtraBold
+                )
+            }
+        }
+
+        // Cột 3: Số lượng tym Hearts ❤️
+        Box(
+            modifier = Modifier.weight(1f),
+            contentAlignment = Alignment.Center
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.Center
+            ) {
+                Image(
+                    painter = painterResource(id = R.drawable.ic_stat_heart),
+                    contentDescription = "Hearts",
+                    modifier = Modifier.size(26.dp)
+                )
+                Spacer(modifier = Modifier.width(6.dp))
+                Text(
+                    text = "$hearts",
+                    color = Color.White,
+                    fontSize = 17.sp,
+                    fontWeight = FontWeight.ExtraBold
+                )
+            }
+        }
+
+        // Cột 4: Số lượng khiên Shields 🛡️
+        Box(
+            modifier = Modifier.weight(1f),
+            contentAlignment = Alignment.Center
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.Center
+            ) {
+                Image(
+                    painter = painterResource(id = R.drawable.ic_stat_shield),
+                    contentDescription = "Shields",
+                    modifier = Modifier.size(26.dp)
+                )
+                Spacer(modifier = Modifier.width(6.dp))
+                Text(
+                    text = "$streakShields",
+                    color = Color.White,
+                    fontSize = 17.sp,
+                    fontWeight = FontWeight.ExtraBold
+                )
             }
         }
     }
@@ -212,10 +358,19 @@ private fun JourneyPath(
     stages: List<JourneyStageUiModel>,
     currentStageIndex: Int,
     strings: AppStrings,
-    onStageClick: (JourneyStageUiModel) -> Unit
+    animatingUnlockStageIndex: Int = -1,
+    unlockAnimProgress: Float = 0f,
+    onStageClick: (JourneyStageUiModel) -> Unit,
+    onStageLongClick: ((JourneyStageUiModel, Int) -> Unit)? = null
 ) {
-    val stageStep = 230.dp
-    val rewardTop = (stages.size * stageStep.value + 10).dp
+    val stageStep = 255.dp
+    val bannerHeight = 106.dp
+    val bannerSpacing = 16.dp
+    val bannerTotalHeight = bannerHeight + bannerSpacing
+
+    val totalBanners = if (stages.isEmpty()) 0 else (stages.lastIndex / 10) + 1
+    val totalPathHeight = (stages.size * stageStep.value + totalBanners * bannerTotalHeight.value + 190).dp
+    val rewardTop = (stages.size * stageStep.value + totalBanners * bannerTotalHeight.value + 10).dp
 
     val auroraAnim = rememberCosmicAuroraAnimation()
 
@@ -228,11 +383,11 @@ private fun JourneyPath(
         else (currentStageIndex + 1).coerceAtMost(stages.lastIndex)
 
     BoxWithConstraints(
-        modifier = Modifier.fillMaxWidth().height((stages.size * stageStep.value + 190).dp)
+        modifier = Modifier.fillMaxWidth().height(totalPathHeight)
     ) {
         Canvas(modifier = Modifier.matchParentSize()) {
-            val nodeX = { index: Int -> if (index % 2 == 0) 78.dp.toPx() else size.width - 78.dp.toPx() }
-            val nodeY = { index: Int -> index * stageStep.toPx() + 75.dp.toPx() }
+            val nodeX = { index: Int -> if (index % 2 == 0) 90.dp.toPx() else size.width - 90.dp.toPx() }
+            val nodeY = { index: Int -> ((index / 10) + 1) * bannerTotalHeight.toPx() + index * stageStep.toPx() + 85.dp.toPx() }
 
             if (stages.size > 1) {
                 for (s in 1..stages.lastIndex) {
@@ -244,6 +399,10 @@ private fun JourneyPath(
                     val endColor = getStageColor(s)
 
                     val isActive = s <= activeUpTo
+                    val isUnlockingThisSegment = (s == animatingUnlockStageIndex)
+                    val surgePulse = if (isUnlockingThisSegment && unlockAnimProgress < 0.35f) {
+                        (unlockAnimProgress / 0.35f).coerceIn(0f, 1f)
+                    } else null
 
                     drawCosmicAuroraSegment(
                         startX = startX,
@@ -254,29 +413,50 @@ private fun JourneyPath(
                         endColor = endColor,
                         animPhase = auroraAnim.phase.value,
                         waveOffsetPx = auroraAnim.waveOffset.value.dp.toPx(),
-                        isActive = isActive,
-                        alphaScale = if (isActive) 1f else 0.55f
+                        isActive = isActive || isUnlockingThisSegment,
+                        alphaScale = if (isActive || isUnlockingThisSegment) 1f else 0.55f,
+                        surgePulseProgress = surgePulse
                     )
                 }
             }
         }
 
-        var selectedStageIndex by remember { mutableStateOf<Int?>(null) }
-
         Column(modifier = Modifier.fillMaxWidth()) {
             stages.forEachIndexed { index, stage ->
+                if (index % 10 == 0) {
+                    val sectionNum = index / 10 + 1
+                    val sectionStages = stages.drop(index).take(10)
+                    val completedInSection = sectionStages.count { it.state == JourneyStageState.COMPLETED }
+                    val sectionData = CosmicSectionConfig.getSectionData(
+                        sectionNumber = sectionNum,
+                        completedPlanets = completedInSection,
+                        totalInThisSection = sectionStages.size
+                    )
+                    CosmicSectionBanner(
+                        section = sectionData,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(bannerHeight)
+                    )
+                    Spacer(modifier = Modifier.height(bannerSpacing))
+                }
+
+                val stageUnlockProgress = if (index == animatingUnlockStageIndex && unlockAnimProgress >= 0.35f) {
+                    ((unlockAnimProgress - 0.35f) / 0.65f).coerceIn(0f, 1f)
+                } else 0f
+
                 JourneyStageRow(
                     stage = stage,
                     index = index,
+                    totalStages = stages.size,
                     stageStep = stageStep,
                     strings = strings,
-                    isSelected = selectedStageIndex == index,
-                    onToggleSelect = {
-                        selectedStageIndex = if (selectedStageIndex == index) null else index
-                    },
-                    onEnterChapter = {
-                        selectedStageIndex = null
+                    unlockProgress = stageUnlockProgress,
+                    onStageClick = {
                         onStageClick(stage)
+                    },
+                    onStageLongClick = {
+                        onStageLongClick?.invoke(stage, index)
                     }
                 )
             }
@@ -291,48 +471,32 @@ private fun JourneyPath(
     }
 }
 
-// ─── Stage row — Cosmic Planet node & Smart info card ─────────────────────────
+// ─── Stage row — Cosmic Planet node ──────────────────────────────────────────
 
 @Composable
 private fun JourneyStageRow(
     stage: JourneyStageUiModel,
     index: Int,
+    totalStages: Int = -1,
     stageStep: Dp,
     strings: AppStrings,
-    isSelected: Boolean,
-    onToggleSelect: () -> Unit,
-    onEnterChapter: () -> Unit
+    unlockProgress: Float = 0f,
+    onStageClick: () -> Unit,
+    onStageLongClick: (() -> Unit)? = null
 ) {
     val isLeft = index % 2 == 0
-    val planetType = remember(index) { CosmicPlanetHelper.getPlanetTypeForStage(index) }
-    val planetDiameter = remember(index) { CosmicPlanetHelper.getPlanetDiameter(index) }
+    val planetType = remember(index, totalStages) { CosmicPlanetHelper.getPlanetTypeForStage(index, totalStages) }
+    val planetDiameter = remember(index, totalStages) { CosmicPlanetHelper.getPlanetDiameter(index, totalStages) }
     val isSaturn = planetType == CosmicPlanetType.SATURN_MONARCH
-    val isSun = planetType == CosmicPlanetType.SOLAR_SUN
-    val containerWidth = when {
-        isSaturn -> planetDiameter + 68.dp
-        isSun    -> planetDiameter + 48.dp
-        else     -> planetDiameter + 28.dp
-    }
-    val containerHeight = when {
-        isSun    -> planetDiameter + 48.dp
-        isSaturn -> planetDiameter + 38.dp
-        else     -> planetDiameter + 28.dp
-    }
+    val containerWidth = if (isSaturn) 236.dp else 216.dp
+    val containerHeight = 236.dp
 
     BoxWithConstraints(
         modifier = Modifier.fillMaxWidth().height(stageStep)
     ) {
-        val arrowDirection = if (isLeft) BubbleArrowDirection.LEFT else BubbleArrowDirection.RIGHT
-        val cardWidth = (maxWidth - 120.dp).coerceAtMost(maxWidth * 0.64f)
-        val cardModifier = if (isLeft) {
-            Modifier.align(Alignment.TopEnd).padding(end = 12.dp, top = 8.dp).width(cardWidth)
-        } else {
-            Modifier.align(Alignment.TopStart).padding(start = 12.dp, top = 8.dp).width(cardWidth)
-        }
-
-        // Tọa độ tâm nodeX = 78.dp, nodeY = 75.dp
-        val centerOffsetX = 78.dp - (containerWidth / 2f)
-        val centerOffsetY = 75.dp - (containerHeight / 2f)
+        // Tọa độ tâm nodeX = 90.dp, nodeY = 85.dp
+        val centerOffsetX = 90.dp - (containerWidth / 2f)
+        val centerOffsetY = 85.dp - (containerHeight / 2f)
 
         val nodeModifier = if (isLeft) {
             Modifier
@@ -344,31 +508,15 @@ private fun JourneyStageRow(
                 .offset(x = (-centerOffsetX).coerceAtMost(0.dp), y = centerOffsetY.coerceAtLeast(0.dp))
         }
 
-        AnimatedVisibility(
-            visible = isSelected,
-            modifier = cardModifier,
-            enter = fadeIn(tween(180)) + scaleIn(tween(180), initialScale = 0.88f),
-            exit = fadeOut(tween(150)) + scaleOut(tween(150), targetScale = 0.88f)
-        ) {
-            JourneyStageInformationCard(
-                stage = stage,
-                index = index,
-                strings = strings,
-                arrowDirection = arrowDirection,
-                onClick = onEnterChapter
-            )
-        }
-
         CosmicPlanetView(
             stage = stage,
             index = index,
+            totalStages = totalStages,
             modifier = nodeModifier,
+            unlockProgress = unlockProgress,
+            onLongClick = onStageLongClick,
             onClick = {
-                if (isSelected && stage.state != JourneyStageState.LOCKED) {
-                    onEnterChapter()
-                } else {
-                    onToggleSelect()
-                }
+                onStageClick()
             }
         )
     }
@@ -511,108 +659,6 @@ private fun JourneyStageInformationCard(
                     tint = if (locked) Color(0x88FFFFFF) else Color(0xFF00F5D4),
                     modifier = Modifier.size(17.dp)
                 )
-            }
-        }
-    }
-}
-
-@Composable
-private fun AiNextChapterCard(
-    isGenerating: Boolean,
-    strings: AppStrings,
-    onGenerate: () -> Unit
-) {
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 22.dp)
-            .clip(RoundedCornerShape(22.dp))
-            .background(
-                Brush.linearGradient(
-                    listOf(Color(0xFF130924), Color(0xFF0D1B2A))
-                )
-            )
-            .border(
-                1.5.dp,
-                Brush.linearGradient(
-                    listOf(Color(0xFF00F5D4), Color(0xFF8A2BE2), Color(0xFF00F5D4))
-                ),
-                RoundedCornerShape(22.dp)
-            )
-            .padding(18.dp)
-    ) {
-        Column(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.Center
-            ) {
-                Icon(
-                    imageVector = Icons.Default.AutoAwesome,
-                    contentDescription = null,
-                    tint = Color(0xFF00F5D4),
-                    modifier = Modifier.size(24.dp)
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(
-                    text = "AI Adaptive Learning",
-                    color = Color(0xFF00F5D4),
-                    fontSize = 13.sp,
-                    fontWeight = FontWeight.ExtraBold,
-                    letterSpacing = 1.sp
-                )
-            }
-            Spacer(modifier = Modifier.height(8.dp))
-            Text(
-                text = "Hệ thống AI sẵn sàng phân tích các lỗ hổng kiến thức để kiến tạo chặng học tiếp theo tối ưu cho bạn.",
-                color = Color(0xCCFFFFFF),
-                fontSize = 12.5.sp,
-                textAlign = TextAlign.Center,
-                lineHeight = 18.sp
-            )
-            Spacer(modifier = Modifier.height(14.dp))
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(50.dp)
-                    .clip(CircleShape)
-                    .background(
-                        if (isGenerating)
-                            Brush.linearGradient(listOf(Color(0xFF332050), Color(0xFF203050)))
-                        else
-                            Brush.linearGradient(listOf(Color(0xFF00F5D4), Color(0xFF8A2BE2)))
-                    )
-                    .clickable(enabled = !isGenerating, onClick = onGenerate),
-                contentAlignment = Alignment.Center
-            ) {
-                if (isGenerating) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        CircularProgressIndicator(
-                            modifier = Modifier.size(20.dp),
-                            color = Color(0xFF00F5D4),
-                            strokeWidth = 2.5.dp
-                        )
-                        Spacer(modifier = Modifier.width(10.dp))
-                        Text(
-                            text = strings.aiGeneratingNextChapter,
-                            color = Color(0xFF00F5D4),
-                            fontSize = 13.sp,
-                            fontWeight = FontWeight.Bold
-                        )
-                    }
-                } else {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text(
-                            text = strings.generateNextAiChapterButton,
-                            color = Color.White,
-                            fontSize = 14.sp,
-                            fontWeight = FontWeight.ExtraBold,
-                            letterSpacing = 1.sp
-                        )
-                    }
-                }
             }
         }
     }
