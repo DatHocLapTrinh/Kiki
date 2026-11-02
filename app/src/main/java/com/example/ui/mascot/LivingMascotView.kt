@@ -36,13 +36,13 @@ import com.example.model.MascotEmotion
  */
 fun resolveMascotDrawableForEmotion(emotion: MascotEmotion): Int {
     return when (emotion) {
-        MascotEmotion.EMPATHY -> R.drawable.kiki_state_sad
         MascotEmotion.CHEER,
         MascotEmotion.STREAK,
-        MascotEmotion.PETTED,
-        MascotEmotion.LISTENING -> R.drawable.kiki_state_happy
+        MascotEmotion.PETTED -> R.drawable.kiki_mascot_head
         MascotEmotion.IDLE,
-        MascotEmotion.THINKING -> R.drawable.kiki_state_wave
+        MascotEmotion.THINKING,
+        MascotEmotion.LISTENING,
+        MascotEmotion.EMPATHY -> R.drawable.kiki_icon
     }
 }
 

@@ -129,7 +129,7 @@ fun JourneyErrorState(
         verticalArrangement = Arrangement.Center
     ) {
         coil.compose.AsyncImage(
-            model = R.drawable.kiki_full_sad,
+            model = R.drawable.kiki_icon,
             contentDescription = "Kiki Sad Error State",
             contentScale = androidx.compose.ui.layout.ContentScale.Fit,
             modifier = Modifier.size(110.dp)
@@ -158,7 +158,7 @@ fun JourneyEmptyState(
         verticalArrangement = Arrangement.Center
     ) {
         coil.compose.AsyncImage(
-            model = R.drawable.kiki_full_wave,
+            model = R.drawable.kiki_icon,
             contentDescription = "Kiki Waving Empty State",
             contentScale = androidx.compose.ui.layout.ContentScale.Fit,
             modifier = Modifier.size(120.dp)

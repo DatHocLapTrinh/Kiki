@@ -573,7 +573,7 @@ fun PlacementQuizView(
                     modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp)
                 ) {
                     coil.compose.AsyncImage(
-                        model = com.example.R.drawable.kiki_state_happy,
+                        model = com.example.R.drawable.kiki_mascot_head,
                         contentDescription = "Kiki AI Diagnostic Mentor",
                         contentScale = androidx.compose.ui.layout.ContentScale.Fit,
                         modifier = Modifier

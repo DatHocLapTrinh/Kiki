@@ -61,14 +61,8 @@ import com.example.viewmodel.StudyViewModel
 
 fun resolveAvatarResource(avatarUri: String?): Int {
     return when (avatarUri) {
-        "kiki_state_wave" -> R.drawable.kiki_state_wave
-        "kiki_state_happy" -> R.drawable.kiki_state_happy
-        "kiki_state_sad" -> R.drawable.kiki_state_sad
-        "kiki_mascot_head" -> R.drawable.kiki_mascot_head
-        "companion_mascot" -> R.drawable.kiki_state_happy
-        "kiki_hero_intro" -> R.drawable.kiki_state_wave
-        "kiki_hero_auth" -> R.drawable.kiki_state_wave
-        else -> R.drawable.kiki_state_wave
+        "kiki_mascot_head", "kiki_state_happy" -> R.drawable.kiki_mascot_head
+        else -> R.drawable.kiki_icon
     }
 }
 
@@ -750,11 +744,8 @@ fun EditProfileDialog(
     var selectedAvatar by remember { mutableStateOf(currentAvatar ?: "kiki_icon") }
 
     val avatars = listOf(
-        "kiki_state_wave" to (if (isEnglish) "Waving" else "Chào hỏi"),
-        "kiki_state_happy" to (if (isEnglish) "Happy" else "Hào hứng"),
-        "kiki_state_sad" to (if (isEnglish) "Pensive" else "Tâm tư"),
-        "kiki_mascot_head" to (if (isEnglish) "Explorer" else "Thám hiểm"),
-        "companion_mascot" to (if (isEnglish) "Scholar" else "Học giả")
+        "kiki_icon" to (if (isEnglish) "Scholar" else "Học giả"),
+        "kiki_mascot_head" to (if (isEnglish) "Joyful" else "Hào hứng")
     )
 
     AlertDialog(

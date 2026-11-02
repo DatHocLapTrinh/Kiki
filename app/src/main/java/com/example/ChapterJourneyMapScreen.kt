@@ -542,7 +542,7 @@ private fun ChapterLessonNode(
                     .border(1.5.dp, Color(0xFF51FAC1), CircleShape)
             ) {
                 coil.compose.AsyncImage(
-                    model = R.drawable.kiki_state_wave,
+                    model = R.drawable.kiki_icon,
                     contentDescription = "Kiki Waving at Current Lesson",
                     contentScale = androidx.compose.ui.layout.ContentScale.Fit,
                     modifier = Modifier.fillMaxSize()

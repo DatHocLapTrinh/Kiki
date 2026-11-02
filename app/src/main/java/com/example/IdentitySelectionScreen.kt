@@ -606,7 +606,7 @@ fun HeroCharacter() {
                 .clip(CircleShape)
         ) {
             AsyncImage(
-                model = R.drawable.kiki_state_wave,
+                model = R.drawable.kiki_icon,
                 contentDescription = "Kiki Avatar Waving",
                 modifier = Modifier.fillMaxSize(),
                 contentScale = ContentScale.Fit

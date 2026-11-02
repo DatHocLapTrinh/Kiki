@@ -108,7 +108,7 @@ object KikiNotificationManager {
         )
 
         val largeIcon = try {
-            BitmapFactory.decodeResource(context.resources, R.drawable.companion_mascot)
+            BitmapFactory.decodeResource(context.resources, R.drawable.kiki_mascot_head)
         } catch (_: Exception) {
             null
         }
@@ -167,7 +167,7 @@ object KikiNotificationManager {
         )
 
         val largeIcon = try {
-            BitmapFactory.decodeResource(context.resources, R.drawable.companion_mascot)
+            BitmapFactory.decodeResource(context.resources, R.drawable.kiki_mascot_head)
         } catch (_: Exception) {
             null
         }
