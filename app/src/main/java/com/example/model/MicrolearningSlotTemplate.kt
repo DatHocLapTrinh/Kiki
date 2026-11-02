@@ -247,7 +247,9 @@ object SpiralCurriculumBlueprint {
                 t.contains("hỏi đường") || t.contains("nơi chốn") || t.contains("place") ||
                 t.contains("direction") || t.contains("màu sắc") || t.contains("trang phục") ||
                 t.contains("color") || t.contains("action verb") || t.contains("tổng hợp") ||
-                t.contains("milestone") || t.contains("stage 6") || t.contains("stage 7") ->
+                t.contains("milestone") || t.contains("chặng 6") || t.contains("chặng 7") ||
+                t.contains("chặng 8") || t.contains("stage 6") || t.contains("stage 7") ||
+                t.contains("stage 8") ->
                     CurriculumTheme.BEGINNER_STAGE_6_PLACES_ROUTINES
 
                 else -> CurriculumTheme.BEGINNER_STAGE_1_GREETINGS
