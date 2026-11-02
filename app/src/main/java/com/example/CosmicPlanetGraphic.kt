@@ -536,16 +536,16 @@ private fun DrawScope.drawPhotorealisticPlanet(
     clipPath(spherePath) {
         when (type) {
             CosmicPlanetType.MOON_GRAY -> {
-                drawMoonHighlandsAndCraters(centerX, centerY, radius, alphaFactor)
+                drawMoonHighlandsAndCraters(centerX, centerY, radius, cloudPhase, alphaFactor)
             }
             CosmicPlanetType.MARS_CRIMSON -> {
-                drawMarsCanyonsAndVolcano(centerX, centerY, radius, alphaFactor)
+                drawMarsCanyonsAndVolcano(centerX, centerY, radius, cloudPhase, alphaFactor)
             }
             CosmicPlanetType.TERRA_GAIA -> {
                 drawTerraGaiaBiosphere(centerX, centerY, radius, cloudPhase, alphaFactor)
             }
             CosmicPlanetType.JUPITER_STORM -> {
-                drawJupiterTurbulentBeltsAndRedSpot(centerX, centerY, radius, alphaFactor)
+                drawJupiterTurbulentBeltsAndRedSpot(centerX, centerY, radius, cloudPhase, alphaFactor)
             }
             CosmicPlanetType.SATURN_MONARCH -> {
                 drawSaturnBeltsAndHexagon(centerX, centerY, radius, alphaFactor)
@@ -661,8 +661,18 @@ private fun DrawScope.drawMoonHighlandsAndCraters(
     centerX: Float,
     centerY: Float,
     radius: Float,
+    cloudPhase: Float,
     alpha: Float
 ) {
+    // 0. Dao động trục Libration tự nhiên (Lunar Libration Sway):
+    // Mặt Trăng lắc lư nhẹ theo chu kỳ quỹ đạo hình sin, tạo cảm giác khối cầu lơ lửng 3D sống động
+    val librationAngle = Math.toRadians(cloudPhase.toDouble() * 0.8)
+    val libShiftX = (sin(librationAngle) * radius * 0.032f).toFloat()
+    val libShiftY = (cos(librationAngle * 2.0) * radius * 0.016f).toFloat()
+
+    val moonCenterX = centerX + libShiftX
+    val moonCenterY = centerY + libShiftY
+
     // 1. Biển dung nham basalt nguội sẫm màu (Lunar Maria - Chuẩn ảnh thiên văn Mặt Trăng)
     val mareDark = Color(0x881F262B).copy(alpha = 0.78f * alpha)
     val mareMid = Color(0x5537474F).copy(alpha = 0.70f * alpha)
@@ -671,25 +681,25 @@ private fun DrawScope.drawMoonHighlandsAndCraters(
     drawOval(
         brush = Brush.radialGradient(
             colors = listOf(mareDark, mareMid, Color.Transparent),
-            center = Offset(centerX - radius * 0.25f, centerY - radius * 0.30f),
+            center = Offset(moonCenterX - radius * 0.25f, moonCenterY - radius * 0.30f),
             radius = radius * 0.40f
         ),
-        topLeft = Offset(centerX - radius * 0.58f, centerY - radius * 0.55f),
+        topLeft = Offset(moonCenterX - radius * 0.58f, moonCenterY - radius * 0.55f),
         size = Size(radius * 0.62f, radius * 0.50f)
     )
 
     // Oceanus Procellarum (Đại dương Bão Tố trải dài phía tây)
     val oceanusPath = Path().apply {
-        moveTo(centerX - radius * 0.75f, centerY - radius * 0.15f)
+        moveTo(moonCenterX - radius * 0.75f, moonCenterY - radius * 0.15f)
         cubicTo(
-            centerX - radius * 0.50f, centerY - radius * 0.60f,
-            centerX - radius * 0.18f, centerY - radius * 0.38f,
-            centerX - radius * 0.20f, centerY + radius * 0.12f
+            moonCenterX - radius * 0.50f, moonCenterY - radius * 0.60f,
+            moonCenterX - radius * 0.18f, moonCenterY - radius * 0.38f,
+            moonCenterX - radius * 0.20f, moonCenterY + radius * 0.12f
         )
         cubicTo(
-            centerX - radius * 0.38f, centerY + radius * 0.35f,
-            centerX - radius * 0.85f, centerY + radius * 0.18f,
-            centerX - radius * 0.75f, centerY - radius * 0.15f
+            moonCenterX - radius * 0.38f, moonCenterY + radius * 0.35f,
+            moonCenterX - radius * 0.85f, moonCenterY + radius * 0.18f,
+            moonCenterX - radius * 0.75f, moonCenterY - radius * 0.15f
         )
         close()
     }
@@ -697,29 +707,31 @@ private fun DrawScope.drawMoonHighlandsAndCraters(
 
     // Mare Serenitatis & Mare Tranquillitatis (Biển Thanh Bình & Biển Tĩnh Lặng phía đông bắc)
     val serenitatisPath = Path().apply {
-        moveTo(centerX + radius * 0.08f, centerY - radius * 0.28f)
+        moveTo(moonCenterX + radius * 0.08f, moonCenterY - radius * 0.28f)
         cubicTo(
-            centerX + radius * 0.45f, centerY - radius * 0.38f,
-            centerX + radius * 0.65f, centerY - radius * 0.08f,
-            centerX + radius * 0.40f, centerY + radius * 0.26f
+            moonCenterX + radius * 0.45f, moonCenterY - radius * 0.38f,
+            moonCenterX + radius * 0.65f, moonCenterY - radius * 0.08f,
+            moonCenterX + radius * 0.40f, moonCenterY + radius * 0.26f
         )
         cubicTo(
-            centerX + radius * 0.12f, centerY + radius * 0.32f,
-            centerX + radius * 0.02f, centerY - radius * 0.08f,
-            centerX + radius * 0.08f, centerY - radius * 0.28f
+            moonCenterX + radius * 0.12f, moonCenterY + radius * 0.32f,
+            moonCenterX + radius * 0.02f, moonCenterY - radius * 0.08f,
+            moonCenterX + radius * 0.08f, moonCenterY - radius * 0.28f
         )
         close()
     }
     drawPath(serenitatisPath, color = mareMid)
 
-    // 2. Tia phóng xạ Tycho Crater (Tycho Ejecta Rays) - vệt bụi trắng mịn tỏa ra tự nhiên
-    val tychoX = centerX - radius * 0.14f
-    val tychoY = centerY + radius * 0.48f
-    val rayColor = Color(0x44ECEFF1).copy(alpha = 0.50f * alpha)
+    // 2. Tia phóng xạ Tycho Crater lấp lánh (Tycho Ejecta Rays Shimmer) - vệt bụi trắng mịn tỏa ra tự nhiên
+    val tychoX = moonCenterX - radius * 0.14f
+    val tychoY = moonCenterY + radius * 0.48f
+    val rayGlimmer = 0.38f + 0.22f * sin(Math.toRadians(cloudPhase.toDouble() * 2.5)).toFloat()
+    val rayColor = Color(0x44ECEFF1).copy(alpha = rayGlimmer * alpha)
     for (i in 0 until 12) {
         val rayAngle = (i * 30f + 12f) * (PI.toFloat() / 180f)
-        val endRx = tychoX + cos(rayAngle) * radius * 0.90f
-        val endRy = tychoY + sin(rayAngle) * radius * 0.90f
+        val dynamicRayLen = radius * (0.80f + 0.15f * sin(Math.toRadians(cloudPhase.toDouble() * 1.8 + i * 30.0)).toFloat())
+        val endRx = tychoX + cos(rayAngle) * dynamicRayLen
+        val endRy = tychoY + sin(rayAngle) * dynamicRayLen
         drawLine(
             brush = Brush.linearGradient(
                 colors = listOf(rayColor, rayColor.copy(alpha = 0.10f), Color.Transparent),
@@ -732,33 +744,50 @@ private fun DrawScope.drawMoonHighlandsAndCraters(
         )
     }
 
-    // 3. CÁC VẾT LÕM 3D CHÂN THỰC TRÊN MẶT TRĂNG (Concave Impact Craters with Real Depth)
-    // Phân bố tự nhiên theo bản đồ thiên văn học:
+    // 3. CÁC VẾT LÕM 3D CHÂN THỰC TRÊN MẶT TRĂNG VỚI HIỆU ỨNG PHẢN QUANG ĐỘNG
+    val glint = 0.80f + 0.20f * sin(Math.toRadians(cloudPhase.toDouble() * 1.6)).toFloat()
+
     // - Tycho (Nam Cực, có chóp núi trung tâm)
-    drawRealisticLunarCrater(tychoX, tychoY, radius * 0.20f, alpha, hasCentralPeak = true)
+    drawRealisticLunarCrater(tychoX, tychoY, radius * 0.20f, alpha, hasCentralPeak = true, glintFactor = glint)
 
     // - Copernicus (Vùng xích đạo tây, lòng chảo sâu)
-    drawRealisticLunarCrater(centerX - radius * 0.28f, centerY - radius * 0.08f, radius * 0.17f, alpha, hasCentralPeak = true)
+    drawRealisticLunarCrater(moonCenterX - radius * 0.28f, moonCenterY - radius * 0.08f, radius * 0.17f, alpha, hasCentralPeak = true, glintFactor = glint)
 
     // - Kepler (Phía tây Procellarum)
-    drawRealisticLunarCrater(centerX - radius * 0.54f, centerY + radius * 0.06f, radius * 0.10f, alpha)
+    drawRealisticLunarCrater(moonCenterX - radius * 0.54f, moonCenterY + radius * 0.06f, radius * 0.10f, alpha, glintFactor = glint)
 
     // - Plato (Miệng hố phẳng sẫm dung nham ở rìa bắc Biển Mưa)
-    drawRealisticLunarCrater(centerX - radius * 0.16f, centerY - radius * 0.52f, radius * 0.13f, alpha)
+    drawRealisticLunarCrater(moonCenterX - radius * 0.16f, moonCenterY - radius * 0.52f, radius * 0.13f, alpha, glintFactor = glint)
 
     // - Theophilus (Chuỗi hố va chạm phía đông nam)
-    drawRealisticLunarCrater(centerX + radius * 0.26f, centerY + radius * 0.16f, radius * 0.15f, alpha, hasCentralPeak = true)
+    drawRealisticLunarCrater(moonCenterX + radius * 0.26f, moonCenterY + radius * 0.16f, radius * 0.15f, alpha, hasCentralPeak = true, glintFactor = glint)
 
     // - Langrenus (Rìa đông)
-    drawRealisticLunarCrater(centerX + radius * 0.50f, centerY + radius * 0.02f, radius * 0.12f, alpha)
+    drawRealisticLunarCrater(moonCenterX + radius * 0.50f, moonCenterY + radius * 0.02f, radius * 0.12f, alpha, glintFactor = glint)
 
     // - Clavius (Lòng chảo cổ đại khổng lồ ở cực nam)
-    drawRealisticLunarCrater(centerX - radius * 0.02f, centerY + radius * 0.72f, radius * 0.18f, alpha)
+    drawRealisticLunarCrater(moonCenterX - radius * 0.02f, moonCenterY + radius * 0.72f, radius * 0.18f, alpha, glintFactor = glint)
 
     // - Các vết lõm vi mô dọc đường ranh giới bóng tối Terminator
-    drawRealisticLunarCrater(centerX + radius * 0.18f, centerY + radius * 0.42f, radius * 0.08f, alpha)
-    drawRealisticLunarCrater(centerX + radius * 0.36f, centerY - radius * 0.22f, radius * 0.09f, alpha)
-    drawRealisticLunarCrater(centerX - radius * 0.42f, centerY - radius * 0.32f, radius * 0.08f, alpha)
+    drawRealisticLunarCrater(moonCenterX + radius * 0.18f, moonCenterY + radius * 0.42f, radius * 0.08f, alpha, glintFactor = glint)
+    drawRealisticLunarCrater(moonCenterX + radius * 0.36f, moonCenterY - radius * 0.22f, radius * 0.09f, alpha, glintFactor = glint)
+    drawRealisticLunarCrater(moonCenterX - radius * 0.42f, moonCenterY - radius * 0.32f, radius * 0.08f, alpha, glintFactor = glint)
+
+    // 4. Các điểm tinh thể Regolith lấp lánh vi mô (Subtle Lunar Regolith Twinkles)
+    val twinklePoints = listOf(
+        Offset(moonCenterX - radius * 0.35f, moonCenterY + radius * 0.15f),
+        Offset(moonCenterX + radius * 0.12f, moonCenterY - radius * 0.45f),
+        Offset(moonCenterX - radius * 0.05f, moonCenterY - radius * 0.18f),
+        Offset(moonCenterX + radius * 0.38f, moonCenterY + radius * 0.32f)
+    )
+    for ((idx, pt) in twinklePoints.withIndex()) {
+        val ptAlpha = (0.20f + 0.50f * sin(Math.toRadians(cloudPhase.toDouble() * 3.0 + idx * 80.0)).toFloat()).coerceIn(0f, 1f) * alpha
+        drawCircle(
+            color = Color.White.copy(alpha = ptAlpha),
+            center = pt,
+            radius = 1.2.dp.toPx()
+        )
+    }
 }
 
 /**
@@ -772,13 +801,14 @@ private fun DrawScope.drawRealisticLunarCrater(
     cy: Float,
     craterRadius: Float,
     alpha: Float,
-    hasCentralPeak: Boolean = false
+    hasCentralPeak: Boolean = false,
+    glintFactor: Float = 1.0f
 ) {
     // 1. Vành ngoài đón sáng tạo gờ nổi (Raised outer sunlit rim highlight)
     drawCircle(
         brush = Brush.radialGradient(
             colors = listOf(
-                Color(0xBBECEFF1).copy(alpha = 0.85f * alpha),
+                Color(0xBBECEFF1).copy(alpha = (0.85f * glintFactor).coerceIn(0f, 1f) * alpha),
                 Color(0x44B0BEC5).copy(alpha = 0.40f * alpha),
                 Color.Transparent
             ),
@@ -823,7 +853,7 @@ private fun DrawScope.drawRealisticLunarCrater(
 
     // 4. Vách trong lòng chảo đối diện đón ánh sáng góc 4h (Sunlit inner wall)
     drawArc(
-        color = Color(0xBBECEFF1).copy(alpha = 0.80f * alpha),
+        color = Color(0xBBECEFF1).copy(alpha = (0.80f * glintFactor).coerceIn(0f, 1f) * alpha),
         startAngle = 15f,
         sweepAngle = 100f,
         useCenter = false,
@@ -850,51 +880,64 @@ private fun DrawScope.drawMarsCanyonsAndVolcano(
     centerX: Float,
     centerY: Float,
     radius: Float,
+    cloudPhase: Float,
     alpha: Float
 ) {
+    // 0. Chuyển động tự quay chậm của bề mặt Sao Hỏa (Mars Rotational Sway)
+    val marsSwayAngle = Math.toRadians(cloudPhase.toDouble() * 0.6)
+    val marsShiftX = (sin(marsSwayAngle) * radius * 0.038f).toFloat()
+
+    val mCenterX = centerX + marsShiftX
+
     // Vùng cao nguyên dung nham sẫm màu Syrtis Major (Mảng tối đặc trưng của Sao Hỏa)
     val syrtisMajorColor = Color(0x774A1204).copy(alpha = 0.8f * alpha)
     val syrtisPath = Path().apply {
-        moveTo(centerX + radius * 0.1f, centerY - radius * 0.45f)
+        moveTo(mCenterX + radius * 0.1f, centerY - radius * 0.45f)
         cubicTo(
-            centerX + radius * 0.45f, centerY - radius * 0.25f,
-            centerX + radius * 0.55f, centerY + radius * 0.15f,
-            centerX + radius * 0.20f, centerY + radius * 0.35f
+            mCenterX + radius * 0.45f, centerY - radius * 0.25f,
+            mCenterX + radius * 0.55f, centerY + radius * 0.15f,
+            mCenterX + radius * 0.20f, centerY + radius * 0.35f
         )
         cubicTo(
-            centerX + radius * 0.05f, centerY + radius * 0.15f,
-            centerX, centerY - radius * 0.2f,
-            centerX + radius * 0.1f, centerY - radius * 0.45f
+            mCenterX + radius * 0.05f, centerY + radius * 0.15f,
+            mCenterX, centerY - radius * 0.2f,
+            mCenterX + radius * 0.1f, centerY - radius * 0.45f
         )
         close()
     }
     drawPath(syrtisPath, color = syrtisMajorColor)
 
-    // Chỏm băng Bắc Cực (North Polar Ice Cap) trắng tuyết tinh khôi có rãnh xoắn
+    // Chỏm băng Bắc Cực (North Polar Ice Cap) phát quang thăng hoa nhịp nhàng
+    val icePulse = 0.82f + 0.18f * sin(Math.toRadians(cloudPhase.toDouble() * 1.5)).toFloat()
+    val iceCapW = radius * (0.76f + 0.04f * sin(Math.toRadians(cloudPhase.toDouble() * 1.5)).toFloat())
     drawOval(
         brush = Brush.radialGradient(
-            colors = listOf(Color.White, Color(0xFFFFFFFF), Color(0x00FFFFFF)),
+            colors = listOf(
+                Color.White.copy(alpha = icePulse * alpha),
+                Color(0xFFFFFFFF).copy(alpha = (icePulse * 0.85f) * alpha),
+                Color(0x00FFFFFF)
+            ),
             center = Offset(centerX, centerY - radius * 0.90f),
             radius = radius * 0.45f
         ),
-        topLeft = Offset(centerX - radius * 0.38f, centerY - radius * 0.98f),
-        size = Size(radius * 0.76f, radius * 0.28f),
-        alpha = alpha
+        topLeft = Offset(centerX - iceCapW / 2f, centerY - radius * 0.98f),
+        size = Size(iceCapW, radius * 0.28f)
     )
 
-    // Siêu núi lửa lớn nhất hệ mặt trời Olympus Mons
-    val volcanoX = centerX - radius * 0.32f
+    // Siêu núi lửa lớn nhất hệ mặt trời Olympus Mons với luồng nhiệt vi mô
+    val volcanoX = mCenterX - radius * 0.32f
     val volcanoY = centerY - radius * 0.25f
     val calderaRadius = radius * 0.20f
+    val volcanoPulse = 1.0f + 0.06f * sin(Math.toRadians(cloudPhase.toDouble() * 1.8)).toFloat()
 
     drawCircle(
         brush = Brush.radialGradient(
             colors = listOf(Color(0x995C1705), Color(0x66FF8A65), Color.Transparent),
             center = Offset(volcanoX, volcanoY),
-            radius = calderaRadius * 1.6f
+            radius = calderaRadius * 1.6f * volcanoPulse
         ),
         center = Offset(volcanoX, volcanoY),
-        radius = calderaRadius * 1.6f,
+        radius = calderaRadius * 1.6f * volcanoPulse,
         alpha = alpha
     )
     drawCircle(
@@ -906,11 +949,11 @@ private fun DrawScope.drawMarsCanyonsAndVolcano(
 
     // Đại hẻm núi Valles Marineris xé ngang xích đạo Sao Hỏa
     val canyonMain = Path().apply {
-        moveTo(centerX - radius * 0.70f, centerY + radius * 0.08f)
+        moveTo(mCenterX - radius * 0.70f, centerY + radius * 0.08f)
         cubicTo(
-            centerX - radius * 0.25f, centerY + radius * 0.28f,
-            centerX + radius * 0.15f, centerY + radius * 0.08f,
-            centerX + radius * 0.68f, centerY + radius * 0.35f
+            mCenterX - radius * 0.25f, centerY + radius * 0.28f,
+            mCenterX + radius * 0.15f, centerY + radius * 0.08f,
+            mCenterX + radius * 0.68f, centerY + radius * 0.35f
         )
     }
     // Lòng hẻm vực sâu thăm thẳm
@@ -920,24 +963,59 @@ private fun DrawScope.drawMarsCanyonsAndVolcano(
         style = Stroke(width = 4.5.dp.toPx(), cap = StrokeCap.Round),
         alpha = alpha
     )
-    // Vách đá hẻm núi rực sáng màu cam hổ phách
+    // Vách đá hẻm núi rực sáng màu cam hổ phách có ánh nắng chiếu xiên lấp lánh
+    val chasmGlint = 0.75f + 0.25f * sin(Math.toRadians(cloudPhase.toDouble() * 2.0)).toFloat()
     drawPath(
         canyonMain,
-        color = Color(0xFFFFB74D),
-        style = Stroke(width = 1.4.dp.toPx(), cap = StrokeCap.Round),
-        alpha = alpha
+        color = Color(0xFFFFB74D).copy(alpha = chasmGlint * alpha),
+        style = Stroke(width = 1.4.dp.toPx(), cap = StrokeCap.Round)
     )
 
     // Nhánh đứt gãy hẻm núi phụ
     val canyonBranch = Path().apply {
-        moveTo(centerX - radius * 0.15f, centerY + radius * 0.24f)
-        quadraticTo(centerX + radius * 0.12f, centerY + radius * 0.40f, centerX + radius * 0.45f, centerY + radius * 0.50f)
+        moveTo(mCenterX - radius * 0.15f, centerY + radius * 0.24f)
+        quadraticTo(mCenterX + radius * 0.12f, centerY + radius * 0.40f, mCenterX + radius * 0.45f, centerY + radius * 0.50f)
     }
     drawPath(
         canyonBranch,
         color = Color(0xFF260600),
         style = Stroke(width = 2.5.dp.toPx(), cap = StrokeCap.Round),
         alpha = alpha
+    )
+
+    // 4. Bão cát bụi đỏ khí quyển Sao Hỏa bay dập dờn (Martian Dust Storm Streams)
+    val dustAngle1 = Math.toRadians(cloudPhase.toDouble() * 1.1)
+    val dustShift1 = (sin(dustAngle1) * radius * 0.12f).toFloat()
+    val dustAlpha1 = (0.28f + 0.12f * cos(dustAngle1).toFloat()) * alpha
+
+    drawOval(
+        brush = Brush.radialGradient(
+            colors = listOf(
+                Color(0x88FF7043).copy(alpha = dustAlpha1),
+                Color(0x44D84315).copy(alpha = dustAlpha1 * 0.6f),
+                Color.Transparent
+            ),
+            center = Offset(centerX + dustShift1, centerY + radius * 0.12f),
+            radius = radius * 0.48f
+        ),
+        topLeft = Offset(centerX - radius * 0.48f + dustShift1, centerY - radius * 0.05f),
+        size = Size(radius * 0.96f, radius * 0.34f)
+    )
+
+    val dustAngle2 = Math.toRadians(cloudPhase.toDouble() * 0.7 + 90.0)
+    val dustShift2 = (cos(dustAngle2) * radius * 0.10f).toFloat()
+    val dustAlpha2 = (0.22f + 0.10f * sin(dustAngle2).toFloat()) * alpha
+    drawOval(
+        brush = Brush.radialGradient(
+            colors = listOf(
+                Color(0x66FFAB91).copy(alpha = dustAlpha2),
+                Color.Transparent
+            ),
+            center = Offset(centerX + dustShift2, centerY - radius * 0.35f),
+            radius = radius * 0.35f
+        ),
+        topLeft = Offset(centerX - radius * 0.35f + dustShift2, centerY - radius * 0.48f),
+        size = Size(radius * 0.70f, radius * 0.26f)
     )
 }
 
@@ -1192,9 +1270,10 @@ private fun DrawScope.drawJupiterTurbulentBeltsAndRedSpot(
     centerX: Float,
     centerY: Float,
     radius: Float,
+    cloudPhase: Float,
     alpha: Float
 ) {
-    // 1. Các dải khí quyển đối lưu đặc trưng của Sao Mộc (Alternating Belts & Zones)
+    // 1. Các dải khí quyển đối lưu nghịch hướng của Sao Mộc (Zonal Counter-Rotating Belts & Zones)
     // Bảng màu chuẩn mực NASA: Vàng kem vani, nâu caramel, cam quế, và đỏ gạch
     val beltColors = listOf(
         Color(0xFF3E1200), // Cực Bắc nâu sẫm
@@ -1209,19 +1288,22 @@ private fun DrawScope.drawJupiterTurbulentBeltsAndRedSpot(
     for (i in -4..4) {
         val yPos = centerY + (i * radius * 0.20f)
         val beltColor = beltColors[(i + 4) % beltColors.size]
-        val waveAmplitude = (if (i % 2 == 0) 1 else -1) * radius * 0.05f
+        val direction = if (i % 2 == 0) 1.0 else -1.0
+        val beltWavePhase = (cloudPhase * (1.2f * direction.toFloat()) + i * 40f) * (PI.toFloat() / 180f)
+        val dynamicWaveAmp = (if (i % 2 == 0) 1 else -1) * radius * (0.038f + 0.022f * sin(beltWavePhase))
+        val horizontalDrift = (sin(Math.toRadians(cloudPhase.toDouble() * 0.8 * direction + i * 30.0)) * radius * 0.06f).toFloat()
 
-        // Đường vân mây uốn lượn hình sin mô phỏng sóng cuộn Kelvin-Helmholtz
+        // Đường vân mây uốn lượn hình sin mô phỏng sóng cuộn Kelvin-Helmholtz chuyển động
         val beltPath = Path().apply {
             moveTo(centerX - radius, yPos)
             cubicTo(
-                centerX - radius * 0.5f, yPos + waveAmplitude,
-                centerX, yPos - waveAmplitude,
-                centerX + radius * 0.5f, yPos + waveAmplitude
+                centerX - radius * 0.5f + horizontalDrift, yPos + dynamicWaveAmp,
+                centerX + horizontalDrift, yPos - dynamicWaveAmp,
+                centerX + radius * 0.5f + horizontalDrift, yPos + dynamicWaveAmp
             )
             cubicTo(
-                centerX + radius * 0.75f, yPos - waveAmplitude,
-                centerX + radius * 0.95f, yPos + waveAmplitude,
+                centerX + radius * 0.75f + horizontalDrift, yPos - dynamicWaveAmp,
+                centerX + radius * 0.95f + horizontalDrift, yPos + dynamicWaveAmp,
                 centerX + radius, yPos
             )
         }
@@ -1232,17 +1314,21 @@ private fun DrawScope.drawJupiterTurbulentBeltsAndRedSpot(
         )
     }
 
-    // 2. VẾT ĐỎ LỚN (THE GREAT RED SPOT) - BIỂU TƯỢNG BẤT HỦ CỦA SAO MỘC
+    // 2. VẾT ĐỎ LỚN (THE GREAT RED SPOT) - SIÊU BÃO XOÁY NGHỊCH CO BÓP & QUAY TRÒN
     // Nằm ở Dải xích đạo Nam (SEB), kích thước khổng lồ, hình bầu dục cuốn xoáy
-    val spotX = centerX + radius * 0.22f
-    val spotY = centerY + radius * 0.24f
-    val spotWidth = radius * 0.46f
-    val spotHeight = radius * 0.28f
+    val spotDriftX = (sin(Math.toRadians(cloudPhase.toDouble() * 0.6)) * radius * 0.032f).toFloat()
+    val spotDriftY = (cos(Math.toRadians(cloudPhase.toDouble() * 0.4)) * radius * 0.012f).toFloat()
+    val spotX = centerX + radius * 0.22f + spotDriftX
+    val spotY = centerY + radius * 0.24f + spotDriftY
+    val spotPulse = sin(Math.toRadians(cloudPhase.toDouble() * 1.5)).toFloat()
+    val spotWidth = radius * (0.45f + 0.03f * spotPulse)
+    val spotHeight = radius * (0.28f - 0.02f * spotPulse)
 
     // Vệt dòng xoáy rẽ mây uốn quanh Vết Đỏ Lớn
+    val deflectionWave = (cos(Math.toRadians(cloudPhase.toDouble() * 1.2)) * radius * 0.015f).toFloat()
     val deflectionPath = Path().apply {
-        moveTo(spotX - spotWidth * 0.8f, spotY - spotHeight * 0.5f)
-        quadraticTo(spotX, spotY - spotHeight * 0.85f, spotX + spotWidth * 0.8f, spotY - spotHeight * 0.5f)
+        moveTo(spotX - spotWidth * 0.8f, spotY - spotHeight * 0.5f + deflectionWave)
+        quadraticTo(spotX, spotY - spotHeight * 0.85f - deflectionWave, spotX + spotWidth * 0.8f, spotY - spotHeight * 0.5f + deflectionWave)
     }
     drawPath(
         deflectionPath,
@@ -1268,20 +1354,37 @@ private fun DrawScope.drawJupiterTurbulentBeltsAndRedSpot(
         alpha = alpha
     )
 
-    // Vòng mây trắng cuộn xoáy trong mắt bão Vết Đỏ Lớn
-    drawOval(
-        color = Color(0xEEFFFFFF),
-        topLeft = Offset(spotX - spotWidth * 0.25f, spotY - spotHeight * 0.25f),
-        size = Size(spotWidth * 0.50f, spotHeight * 0.50f),
-        style = Stroke(width = 1.6.dp.toPx()),
-        alpha = alpha
-    )
+    // Vòng mây trắng cuộn xoáy trong mắt bão Vết Đỏ Lớn (Xoay ngược chiều kim đồng hồ)
+    val stormRotation = (-cloudPhase * 1.6f) % 360f
+    withTransform({
+        rotate(degrees = stormRotation, pivot = Offset(spotX, spotY))
+    }) {
+        drawOval(
+            color = Color(0xEEFFFFFF),
+            topLeft = Offset(spotX - spotWidth * 0.26f, spotY - spotHeight * 0.26f),
+            size = Size(spotWidth * 0.52f, spotHeight * 0.52f),
+            style = Stroke(width = 1.6.dp.toPx()),
+            alpha = alpha
+        )
+        // Mắt xoáy tâm bão
+        drawCircle(
+            color = Color(0xCCFFCCBC),
+            center = Offset(spotX + spotWidth * 0.08f, spotY),
+            radius = spotHeight * 0.18f,
+            alpha = alpha
+        )
+    }
 
-    // 3. Chuỗi ngọc bão trắng (String of Pearls) nối đuôi sau Vết Đỏ Lớn
-    val pearl1 = Offset(spotX - spotWidth * 0.75f, spotY + spotHeight * 0.05f)
-    val pearl2 = Offset(spotX - spotWidth * 1.25f, spotY + spotHeight * 0.08f)
-    drawCircle(color = Color(0xEEFFFFFF), center = pearl1, radius = radius * 0.055f, alpha = alpha)
-    drawCircle(color = Color(0xCCFFFFFF), center = pearl2, radius = radius * 0.045f, alpha = alpha)
+    // 3. Chuỗi ngọc bão trắng (String of Pearls) nối đuôi sau Vết Đỏ Lớn trôi dạt và lấp lánh
+    val pearlDrift1 = (sin(Math.toRadians(cloudPhase.toDouble() * 0.9 + 50.0)) * radius * 0.045f).toFloat()
+    val pearlDrift2 = (sin(Math.toRadians(cloudPhase.toDouble() * 0.9 + 110.0)) * radius * 0.045f).toFloat()
+    val pearlGlow1 = 0.75f + 0.25f * sin(Math.toRadians(cloudPhase.toDouble() * 2.0)).toFloat()
+    val pearlGlow2 = 0.70f + 0.30f * cos(Math.toRadians(cloudPhase.toDouble() * 2.2)).toFloat()
+
+    val pearl1 = Offset(spotX - spotWidth * 0.75f + pearlDrift1, spotY + spotHeight * 0.05f)
+    val pearl2 = Offset(spotX - spotWidth * 1.25f + pearlDrift2, spotY + spotHeight * 0.08f)
+    drawCircle(color = Color.White.copy(alpha = pearlGlow1 * alpha), center = pearl1, radius = radius * 0.055f)
+    drawCircle(color = Color.White.copy(alpha = pearlGlow2 * alpha), center = pearl2, radius = radius * 0.045f)
 }
 
 // ─── Chi Tiết Hành Tinh 3: SAO THỔ (SATURN_MONARCH - VÀNH ĐAI CASSINI 3D) ──────
@@ -1574,12 +1677,15 @@ private fun DrawScope.drawUranusIceAtmosphere(
 
     for (i in -4..4) {
         val yPos = centerY + (i * radius * 0.19f)
-        val waveAmplitude = (if (i % 2 == 0) 1 else -1) * radius * 0.025f
+        val bandWavePhase = (cloudPhase * (if (i % 2 == 0) 0.8f else -0.8f) + i * 36f) * (PI.toFloat() / 180f)
+        val dynamicAmp = (if (i % 2 == 0) 1 else -1) * radius * (0.018f + 0.012f * sin(bandWavePhase))
+        val bandShift = (sin(Math.toRadians(cloudPhase.toDouble() * 0.5 + i * 25.0)) * radius * 0.035f).toFloat()
+
         val bandPath = Path().apply {
             moveTo(centerX - radius, yPos)
             cubicTo(
-                centerX - radius * 0.4f, yPos + waveAmplitude,
-                centerX + radius * 0.4f, yPos - waveAmplitude,
+                centerX - radius * 0.4f + bandShift, yPos + dynamicAmp,
+                centerX + radius * 0.4f + bandShift, yPos - dynamicAmp,
                 centerX + radius, yPos
             )
         }
@@ -1591,88 +1697,107 @@ private fun DrawScope.drawUranusIceAtmosphere(
         )
     }
 
-    // 2. Chỏm Cực Bắc phát sáng rực rỡ đặc trưng (Luminous North Polar Cap/Hood - Chuẩn ảnh 1)
-    // Ở đỉnh trên cùng của quả cầu, có một vùng cực màu trắng sữa ngọc lam phát quang êm ái
+    // 2. Chỏm Cực Bắc phát sáng rực rỡ đặc trưng (Luminous North Polar Cap/Hood) với nhịp thở cực quang
+    val polarPulse = sin(Math.toRadians(cloudPhase.toDouble() * 1.5)).toFloat()
     val polarCenterY = centerY - radius * 0.82f
+    val polarCapRadius = radius * (0.48f + 0.04f * polarPulse)
+    val polarAlpha = (0.85f + 0.15f * polarPulse) * alpha
+
     drawOval(
         brush = Brush.radialGradient(
             colors = listOf(
-                Color.White.copy(alpha = 0.88f * alpha),
-                Color(0xCCE0F7FA).copy(alpha = 0.75f * alpha),
-                Color(0x6680DEEA).copy(alpha = 0.40f * alpha),
+                Color.White.copy(alpha = polarAlpha),
+                Color(0xCCE0F7FA).copy(alpha = polarAlpha * 0.85f),
+                Color(0x6680DEEA).copy(alpha = polarAlpha * 0.45f),
                 Color.Transparent
             ),
             center = Offset(centerX, polarCenterY),
-            radius = radius * 0.48f
+            radius = polarCapRadius
         ),
-        topLeft = Offset(centerX - radius * 0.45f, centerY - radius * 0.98f),
-        size = Size(radius * 0.90f, radius * 0.38f),
-        alpha = alpha
+        topLeft = Offset(centerX - polarCapRadius * 0.94f, polarCenterY - polarCapRadius * 0.35f),
+        size = Size(polarCapRadius * 1.88f, polarCapRadius * 0.80f)
     )
 
-    // Vầng hào quang cực quang vi mô quanh chỏm cực
+    // Vầng hào quang cực quang ngọc bích tỏa ra co giãn mềm mại
+    val auroraRadius = radius * (0.65f + 0.08f * cos(Math.toRadians(cloudPhase.toDouble() * 1.2)).toFloat())
     drawOval(
         brush = Brush.radialGradient(
             colors = listOf(
-                Color(0x55B2EBF2).copy(alpha = 0.50f * alpha),
+                Color(0x66B2EBF2).copy(alpha = (0.50f + 0.15f * polarPulse) * alpha),
                 Color.Transparent
             ),
             center = Offset(centerX, polarCenterY),
-            radius = radius * 0.65f
+            radius = auroraRadius
         ),
-        topLeft = Offset(centerX - radius * 0.60f, centerY - radius * 1.05f),
-        size = Size(radius * 1.20f, radius * 0.50f),
-        alpha = alpha
+        topLeft = Offset(centerX - auroraRadius * 0.92f, polarCenterY - auroraRadius * 0.38f),
+        size = Size(auroraRadius * 1.84f, auroraRadius * 0.76f)
     )
 
-    // 3. Vệt mây băng Methane tầng cao thanh mảnh (Methane Ice Cirrus Streaks)
-    val streakPhase = Math.toRadians(cloudPhase.toDouble() * 0.15)
-    val streakShiftX = (cos(streakPhase) * radius * 0.05f).toFloat()
+    // 3. Vệt mây băng Methane tầng cao thanh mảnh (Methane Ice Cirrus Streaks) lướt êm ái
+    val streak1Shift = (sin(Math.toRadians(cloudPhase.toDouble() * 0.70)) * radius * 0.08f).toFloat()
+    val streak2Shift = (-cos(Math.toRadians(cloudPhase.toDouble() * 0.55)) * radius * 0.07f).toFloat()
+    val streak3Shift = (sin(Math.toRadians(cloudPhase.toDouble() * 0.45 + 45.0)) * radius * 0.06f).toFloat()
 
     // Vệt mây xích đạo mỏng manh
     val streak1 = Path().apply {
-        moveTo(centerX - radius * 0.60f + streakShiftX, centerY - radius * 0.08f)
+        moveTo(centerX - radius * 0.60f + streak1Shift, centerY - radius * 0.08f)
         cubicTo(
-            centerX - radius * 0.20f + streakShiftX, centerY - radius * 0.12f,
-            centerX + radius * 0.20f + streakShiftX, centerY - radius * 0.04f,
-            centerX + radius * 0.55f + streakShiftX, centerY - radius * 0.10f
+            centerX - radius * 0.20f + streak1Shift, centerY - radius * 0.12f,
+            centerX + radius * 0.20f + streak1Shift, centerY - radius * 0.04f,
+            centerX + radius * 0.55f + streak1Shift, centerY - radius * 0.10f
         )
     }
     drawPath(
         streak1,
-        color = Color.White.copy(alpha = 0.45f * alpha),
+        color = Color.White.copy(alpha = 0.50f * alpha),
         style = Stroke(width = 2.2.dp.toPx(), cap = StrokeCap.Round)
     )
 
     // Vệt mây cận cực bắc
     val streak2 = Path().apply {
-        moveTo(centerX - radius * 0.40f - streakShiftX, centerY - radius * 0.42f)
+        moveTo(centerX - radius * 0.40f + streak2Shift, centerY - radius * 0.42f)
         cubicTo(
-            centerX - radius * 0.10f - streakShiftX, centerY - radius * 0.46f,
-            centerX + radius * 0.18f - streakShiftX, centerY - radius * 0.38f,
-            centerX + radius * 0.45f - streakShiftX, centerY - radius * 0.44f
+            centerX - radius * 0.10f + streak2Shift, centerY - radius * 0.46f,
+            centerX + radius * 0.18f + streak2Shift, centerY - radius * 0.38f,
+            centerX + radius * 0.45f + streak2Shift, centerY - radius * 0.44f
         )
     }
     drawPath(
         streak2,
-        color = Color(0xDDFFFFFF).copy(alpha = 0.40f * alpha),
+        color = Color(0xEEFFFFFF).copy(alpha = 0.45f * alpha),
         style = Stroke(width = 1.8.dp.toPx(), cap = StrokeCap.Round)
     )
 
     // Vệt mây ôn đới nam
     val streak3 = Path().apply {
-        moveTo(centerX - radius * 0.50f + streakShiftX * 0.8f, centerY + radius * 0.28f)
+        moveTo(centerX - radius * 0.50f + streak3Shift, centerY + radius * 0.28f)
         cubicTo(
-            centerX - radius * 0.15f + streakShiftX * 0.8f, centerY + radius * 0.24f,
-            centerX + radius * 0.15f + streakShiftX * 0.8f, centerY + radius * 0.32f,
-            centerX + radius * 0.48f + streakShiftX * 0.8f, centerY + radius * 0.26f
+            centerX - radius * 0.15f + streak3Shift, centerY + radius * 0.24f,
+            centerX + radius * 0.15f + streak3Shift, centerY + radius * 0.32f,
+            centerX + radius * 0.48f + streak3Shift, centerY + radius * 0.26f
         )
     }
     drawPath(
         streak3,
-        color = Color(0xAAFFFFFF).copy(alpha = 0.32f * alpha),
+        color = Color(0xBBFFFFFF).copy(alpha = 0.38f * alpha),
         style = Stroke(width = 1.6.dp.toPx(), cap = StrokeCap.Round)
     )
+
+    // 4. Các tinh thể băng Methane lấp lánh (Methane Diamond Ice Crystal Twinkles)
+    val iceGlintPoints = listOf(
+        Offset(centerX - radius * 0.25f, centerY - radius * 0.22f),
+        Offset(centerX + radius * 0.20f, centerY + radius * 0.15f),
+        Offset(centerX - radius * 0.10f, centerY + radius * 0.38f),
+        Offset(centerX + radius * 0.35f, centerY - radius * 0.30f)
+    )
+    for ((idx, pt) in iceGlintPoints.withIndex()) {
+        val glintAlpha = (0.20f + 0.60f * sin(Math.toRadians(cloudPhase.toDouble() * 2.8 + idx * 75.0)).toFloat()).coerceIn(0f, 1f) * alpha
+        drawCircle(
+            color = Color(0xFFE0F7FA).copy(alpha = glintAlpha),
+            center = pt,
+            radius = 1.3.dp.toPx()
+        )
+    }
 }
 
 // ─── Chi Tiết Hành Tinh 7: SAO HẢI VƯƠNG (NEPTUNE_STORM) ────────────────────
@@ -1695,12 +1820,15 @@ private fun DrawScope.drawNeptuneStormBands(
 
     for (i in -4..4) {
         val yPos = centerY + (i * radius * 0.20f)
-        val waveAmplitude = (if (i % 2 == 0) 1 else -1) * radius * 0.04f
+        val jetPhase = (cloudPhase * (if (i % 2 == 0) 1.5f else -1.5f) + i * 45f) * (PI.toFloat() / 180f)
+        val dynamicAmp = (if (i % 2 == 0) 1 else -1) * radius * (0.032f + 0.016f * sin(jetPhase))
+        val jetDrift = (sin(Math.toRadians(cloudPhase.toDouble() * 0.9 * (if (i % 2 == 0) 1.0 else -1.0) + i * 35.0)) * radius * 0.045f).toFloat()
+
         val bandPath = Path().apply {
             moveTo(centerX - radius, yPos)
             cubicTo(
-                centerX - radius * 0.4f, yPos + waveAmplitude,
-                centerX + radius * 0.4f, yPos - waveAmplitude,
+                centerX - radius * 0.4f + jetDrift, yPos + dynamicAmp,
+                centerX + radius * 0.4f + jetDrift, yPos - dynamicAmp,
                 centerX + radius, yPos
             )
         }
@@ -1712,12 +1840,12 @@ private fun DrawScope.drawNeptuneStormBands(
         )
     }
 
-    // 2. VẾT TỐI LỚN (The Great Dark Spot / GDS - Bán cầu nam góc dưới bên phải như ảnh 2)
-    val spotShift = (sin(Math.toRadians(cloudPhase.toDouble() * 0.10)) * radius * 0.03f).toFloat()
-    val spotX = centerX + radius * 0.32f + spotShift
-    val spotY = centerY + radius * 0.38f
-    val spotW = radius * 0.44f
-    val spotH = radius * 0.24f
+    // 2. VẾT TỐI LỚN (The Great Dark Spot / GDS - Siêu bão xoáy bán cầu nam co bóp và xoay)
+    val gdsOscillation = sin(Math.toRadians(cloudPhase.toDouble() * 1.2)).toFloat()
+    val spotX = centerX + radius * 0.32f + (gdsOscillation * radius * 0.04f)
+    val spotY = centerY + radius * 0.38f + (cos(Math.toRadians(cloudPhase.toDouble() * 0.8)).toFloat() * radius * 0.015f)
+    val spotW = radius * (0.44f + 0.04f * gdsOscillation)
+    val spotH = radius * (0.24f - 0.02f * gdsOscillation)
 
     // Vùng nhiễu loạn đối lưu bên ngoài Vết Tối
     drawOval(
@@ -1735,64 +1863,87 @@ private fun DrawScope.drawNeptuneStormBands(
         alpha = alpha
     )
 
-    // Lõi bão Vết Tối Lớn màu xanh đen chàm hun hút
-    drawOval(
-        brush = Brush.radialGradient(
-            colors = listOf(
-                Color(0xF5060D1A).copy(alpha = 0.95f * alpha),
-                Color(0xDD0D1B2A).copy(alpha = 0.88f * alpha),
-                Color(0x881E3A8A).copy(alpha = 0.60f * alpha),
-                Color.Transparent
+    // Lõi bão Vết Tối Lớn màu xanh đen chàm hun hút xoay theo dòng lốc xoáy
+    val darkVortexAngle = (-cloudPhase * 1.4f) % 360f
+    withTransform({
+        rotate(darkVortexAngle, Offset(spotX, spotY))
+    }) {
+        drawOval(
+            brush = Brush.radialGradient(
+                colors = listOf(
+                    Color(0xF5060D1A).copy(alpha = 0.95f * alpha),
+                    Color(0xDD0D1B2A).copy(alpha = 0.88f * alpha),
+                    Color(0x881E3A8A).copy(alpha = 0.60f * alpha),
+                    Color.Transparent
+                ),
+                center = Offset(spotX, spotY),
+                radius = spotW * 0.55f
             ),
-            center = Offset(spotX, spotY),
-            radius = spotW * 0.55f
-        ),
-        topLeft = Offset(spotX - spotW / 2f, spotY - spotH / 2f),
-        size = Size(spotW, spotH),
-        alpha = alpha
-    )
+            topLeft = Offset(spotX - spotW / 2f, spotY - spotH / 2f),
+            size = Size(spotW, spotH),
+            alpha = alpha
+        )
 
-    // 3. MÂY BĂNG METHANE "SCOOTER" SIÊU SÁNG (Brilliant White Cirrus Clouds - Chuẩn ảnh 2)
-    // Mây viền phía trên Vết Tối Lớn
-    val companionCloud = Path().apply {
-        moveTo(spotX - spotW * 0.45f, spotY - spotH * 0.30f)
-        quadraticTo(
-            spotX, spotY - spotH * 0.65f,
-            spotX + spotW * 0.50f, spotY - spotH * 0.20f
+        // Dải mây xoáy sẫm bên trong lõi bão
+        drawArc(
+            color = Color(0x66000000).copy(alpha = 0.8f * alpha),
+            startAngle = 30f,
+            sweepAngle = 140f,
+            useCenter = false,
+            topLeft = Offset(spotX - spotW * 0.35f, spotY - spotH * 0.35f),
+            size = Size(spotW * 0.70f, spotH * 0.70f),
+            style = Stroke(width = 1.5.dp.toPx())
         )
     }
-    drawPath(
-        companionCloud,
-        color = Color.White.copy(alpha = 0.88f * alpha),
-        style = Stroke(width = 2.4.dp.toPx(), cap = StrokeCap.Round)
-    )
 
-    // Mây Scooter vắt ngang luồng gió xích đạo (Equatorial Scooter Jet)
+    // 3. MÂY BĂNG METHANE "SCOOTER" SIÊU SÁNG & SIÊU TỐC (> 2.100 km/h)
+    // Mây Scooter vắt ngang luồng gió xích đạo lướt nhanh vun vút
+    val scooterAngle = Math.toRadians(cloudPhase.toDouble() * 2.2)
+    val scooterShiftX = (sin(scooterAngle) * radius * 0.15f).toFloat()
+    val scooterWaveY = (cos(scooterAngle * 1.8) * radius * 0.025f).toFloat()
+
     val equatorialScooter = Path().apply {
-        moveTo(centerX - radius * 0.62f + spotShift * 1.5f, centerY - radius * 0.05f)
+        moveTo(centerX - radius * 0.62f + scooterShiftX, centerY - radius * 0.05f + scooterWaveY)
         cubicTo(
-            centerX - radius * 0.25f + spotShift * 1.5f, centerY - radius * 0.10f,
-            centerX + radius * 0.15f + spotShift * 1.5f, centerY + radius * 0.02f,
-            centerX + radius * 0.58f + spotShift * 1.5f, centerY - radius * 0.06f
+            centerX - radius * 0.25f + scooterShiftX, centerY - radius * 0.10f - scooterWaveY,
+            centerX + radius * 0.15f + scooterShiftX, centerY + radius * 0.02f + scooterWaveY,
+            centerX + radius * 0.58f + scooterShiftX, centerY - radius * 0.06f - scooterWaveY
         )
     }
     drawPath(
         equatorialScooter,
-        color = Color(0xEEFFFFFF).copy(alpha = 0.78f * alpha),
-        style = Stroke(width = 2.0.dp.toPx(), cap = StrokeCap.Round)
+        color = Color(0xEEFFFFFF).copy(alpha = 0.85f * alpha),
+        style = Stroke(width = 2.2.dp.toPx(), cap = StrokeCap.Round)
     )
 
-    // Vệt mây phụ ở cực nam
-    val southStreak = Path().apply {
-        moveTo(spotX - radius * 0.20f, spotY + spotH * 0.45f)
+    // Mây viền đồng hành phía trên Vết Tối Lớn (Companion Cirrus Cloud) phập phồng theo gió bão
+    val companionPuff = (0.85f + 0.15f * sin(Math.toRadians(cloudPhase.toDouble() * 1.8)).toFloat()) * alpha
+    val companionShiftY = (sin(Math.toRadians(cloudPhase.toDouble() * 2.0)) * radius * 0.015f).toFloat()
+    val companionCloud = Path().apply {
+        moveTo(spotX - spotW * 0.45f, spotY - spotH * 0.30f + companionShiftY)
         quadraticTo(
-            spotX + radius * 0.05f, spotY + spotH * 0.60f,
-            spotX + radius * 0.28f, spotY + spotH * 0.38f
+            spotX, spotY - spotH * 0.65f - companionShiftY,
+            spotX + spotW * 0.50f, spotY - spotH * 0.20f + companionShiftY
+        )
+    }
+    drawPath(
+        companionCloud,
+        color = Color.White.copy(alpha = companionPuff),
+        style = Stroke(width = 2.4.dp.toPx(), cap = StrokeCap.Round)
+    )
+
+    // Vệt mây phụ ở cực nam lướt nhanh
+    val southShift = (-cos(Math.toRadians(cloudPhase.toDouble() * 1.6)) * radius * 0.08f).toFloat()
+    val southStreak = Path().apply {
+        moveTo(spotX - radius * 0.20f + southShift, spotY + spotH * 0.45f)
+        quadraticTo(
+            spotX + radius * 0.05f + southShift, spotY + spotH * 0.60f,
+            spotX + radius * 0.28f + southShift, spotY + spotH * 0.38f
         )
     }
     drawPath(
         southStreak,
-        color = Color(0xCCFFFFFF).copy(alpha = 0.65f * alpha),
+        color = Color(0xDDFFFFFF).copy(alpha = 0.70f * alpha),
         style = Stroke(width = 1.6.dp.toPx(), cap = StrokeCap.Round)
     )
 }
