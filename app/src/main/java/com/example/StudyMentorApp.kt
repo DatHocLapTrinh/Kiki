@@ -1016,9 +1016,9 @@ fun FloatingNavBar(
         verticalAlignment = Alignment.CenterVertically
     ) {
         NavItem("map", R.drawable.ic_nav_roadmap, strings.navMap, currentRoute, navController)
-        NavItem("quests", R.drawable.ic_nav_practice, strings.navLearn, currentRoute, navController)
+        NavItem("quests", R.drawable.ic_nav_task, strings.navLearn, currentRoute, navController)
         NavItem("shop", R.drawable.ic_nav_shop, strings.navShop, currentRoute, navController)
-        NavItem("ask", R.drawable.ic_nav_mentor, strings.navTutor, currentRoute, navController)
+        NavItem("ask", R.drawable.ic_mentor_qa, strings.navTutor, currentRoute, navController)
         NavItem("rank", R.drawable.ic_nav_ranking, strings.navRank, currentRoute, navController)
         NavItem(
             route = "profile",
