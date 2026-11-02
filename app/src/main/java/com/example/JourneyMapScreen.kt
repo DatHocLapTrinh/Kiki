@@ -54,6 +54,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.layout.ContentScale
+import coil.compose.AsyncImage
 import com.example.viewmodel.StudyViewModel
 import kotlinx.coroutines.launch
 
@@ -69,6 +71,10 @@ fun JourneyMapScreen(
     val strings = LocalAppStrings.current
     val scrollState = rememberScrollState()
     val userName by viewModel.userName.observeAsState("Adventurer")
+    val avatarUri by viewModel.avatarUri.observeAsState(null)
+    val streak by viewModel.streak.observeAsState(0)
+    val hearts by viewModel.hearts.observeAsState(5)
+    val streakShields by viewModel.streakShields.observeAsState(0)
     val isEnglish by viewModel.isEnglish.observeAsState(false)
     val availableChapters by viewModel.availableChapters.observeAsState(emptyList())
     val chapterProgress by viewModel.chapterProgress.observeAsState(emptyList())
@@ -92,18 +98,32 @@ fun JourneyMapScreen(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .verticalScroll(scrollState)
                 .statusBarsPadding()
-                .padding(top = 12.dp, bottom = 124.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            JourneyTopBar(
+            // Banner chỉ số trên cùng (Avatar, Streak, Hearts, Shields)
+            CosmicUserStatsBanner(
                 userName = userName,
-                isEnglish = isEnglish,
-                earnedStars = earnedStars,
-                strings = strings
+                avatarUri = avatarUri,
+                streak = streak,
+                hearts = hearts,
+                streakShields = streakShields,
+                onAvatarClick = onViewStats
             )
-            Spacer(modifier = Modifier.height(16.dp))
+
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .verticalScroll(scrollState)
+                    .padding(top = 8.dp, bottom = 124.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                JourneyTopBar(
+                    userName = userName,
+                    isEnglish = isEnglish,
+                    earnedStars = earnedStars,
+                    strings = strings
+                )
+                Spacer(modifier = Modifier.height(16.dp))
 
             if (stages.isEmpty()) {
                 Box(modifier = Modifier.fillMaxWidth().height(420.dp), contentAlignment = Alignment.Center) {
@@ -132,6 +152,7 @@ fun JourneyMapScreen(
             }
         }
     }
+}
 }
 
 @Composable
@@ -181,6 +202,157 @@ private fun JourneyTopBar(
                 }
             }
         }
+    }
+}
+
+@Composable
+private fun CosmicUserStatsBanner(
+    userName: String,
+    avatarUri: String?,
+    streak: Int,
+    hearts: Int,
+    streakShields: Int,
+    onAvatarClick: () -> Unit = {}
+) {
+    val haptic = LocalHapticFeedback.current
+
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 6.dp)
+            .clip(RoundedCornerShape(20.dp))
+            .background(
+                Brush.horizontalGradient(
+                    listOf(
+                        Color(0xDD130B29),
+                        Color(0xDD0D1630),
+                        Color(0xDD150E2D)
+                    )
+                )
+            )
+            .border(
+                1.2.dp,
+                Brush.horizontalGradient(
+                    listOf(
+                        Color(0x668A2BE2),
+                        Color(0x6651FAC1),
+                        Color(0x6600F5D4),
+                        Color(0x668A2BE2)
+                    )
+                ),
+                RoundedCornerShape(20.dp)
+            )
+            .padding(horizontal = 12.dp, vertical = 8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceBetween
+    ) {
+        // 1. Avatar bên trái
+        Box(
+            modifier = Modifier
+                .size(40.dp)
+                .clip(CircleShape)
+                .background(
+                    Brush.sweepGradient(
+                        listOf(Color(0xFF51FAC1), Color(0xFF8A2BE2), Color(0xFFFFD166), Color(0xFF51FAC1))
+                    )
+                )
+                .padding(2.dp)
+                .clip(CircleShape)
+                .background(Color(0xFF140D2B))
+                .clickable {
+                    haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                    onAvatarClick()
+                },
+            contentAlignment = Alignment.Center
+        ) {
+            if (!avatarUri.isNullOrBlank()) {
+                AsyncImage(
+                    model = avatarUri,
+                    contentDescription = "User Avatar",
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .clip(CircleShape)
+                )
+            } else {
+                Text(
+                    text = userName.trim().take(1).uppercase().ifBlank { "K" },
+                    color = Color(0xFF51FAC1),
+                    fontSize = 17.sp,
+                    fontWeight = FontWeight.Black
+                )
+            }
+        }
+
+        // Nhóm các chỉ số bên phải (Streak, Hearts, Shields)
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            // 2. Chuỗi ngày Streak 🔥
+            CosmicStatBadge(
+                icon = Icons.Default.LocalFireDepartment,
+                iconTint = Color(0xFFFF6D00),
+                value = "$streak",
+                valueColor = Color(0xFFFFD166),
+                badgeBg = Color(0x33FF6D00),
+                borderColor = Color(0x66FF6D00)
+            )
+
+            // 3. Số lượng tym Hearts ❤️
+            CosmicStatBadge(
+                icon = Icons.Default.Favorite,
+                iconTint = Color(0xFFFF2A6D),
+                value = "$hearts",
+                valueColor = Color(0xFFFF85A1),
+                badgeBg = Color(0x33FF2A6D),
+                borderColor = Color(0x66FF2A6D)
+            )
+
+            // 4. Số lượng khiên Shields 🛡️
+            CosmicStatBadge(
+                icon = Icons.Default.Shield,
+                iconTint = Color(0xFF00E5FF),
+                value = "$streakShields",
+                valueColor = Color(0xFF80D8FF),
+                badgeBg = Color(0x3300E5FF),
+                borderColor = Color(0x6600E5FF)
+            )
+        }
+    }
+}
+
+@Composable
+private fun CosmicStatBadge(
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    iconTint: Color,
+    value: String,
+    valueColor: Color,
+    badgeBg: Color,
+    borderColor: Color
+) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier
+            .clip(RoundedCornerShape(13.dp))
+            .background(badgeBg)
+            .border(1.dp, borderColor, RoundedCornerShape(13.dp))
+            .padding(horizontal = 9.dp, vertical = 5.dp)
+    ) {
+        Icon(
+            imageVector = icon,
+            contentDescription = null,
+            tint = iconTint,
+            modifier = Modifier.size(17.dp)
+        )
+        Spacer(modifier = Modifier.width(5.dp))
+        Text(
+            text = value,
+            color = valueColor,
+            fontSize = 13.5.sp,
+            fontWeight = FontWeight.ExtraBold,
+            letterSpacing = 0.3.sp
+        )
     }
 }
 
