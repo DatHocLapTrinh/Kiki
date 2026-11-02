@@ -149,26 +149,7 @@ fun ListeningChallengeView(
                     modifier = Modifier.padding(bottom = 16.dp)
                 )
 
-                // Duolingo-style Mascot Speaker
-                val listeningMascotRes = when {
-                    isChecked && isCorrect -> com.example.R.drawable.kiki_happy
-                    isChecked && !isCorrect -> com.example.R.drawable.kiki_sad
-                    else -> com.example.R.drawable.kiki_speaker
-                }
-                Box(
-                    modifier = Modifier
-                        .height(110.dp)
-                        .fillMaxWidth()
-                        .padding(bottom = 8.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    coil.compose.AsyncImage(
-                        model = listeningMascotRes,
-                        contentDescription = "Kiki Listening Mentor",
-                        contentScale = androidx.compose.ui.layout.ContentScale.Fit,
-                        modifier = Modifier.fillMaxHeight()
-                    )
-                }
+
 
                 // Audio buttons row
                 Row(

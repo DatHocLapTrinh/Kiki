@@ -414,6 +414,16 @@ class StudyViewModel @Inject constructor(
     private val _hearts = MutableLiveData(5)
     val hearts: LiveData<Int> = _hearts
 
+    fun deductHeart(amount: Int = 1) {
+        val current = _hearts.value ?: 5
+        val newHearts = (current - amount).coerceAtLeast(0)
+        _hearts.value = newHearts
+        val userId = _currentUserId.value ?: return
+        viewModelScope.launch {
+            repository.spendHearts(userId, amount)
+        }
+    }
+
     private val _shieldUsedNotice = MutableLiveData(false)
     val shieldUsedNotice: LiveData<Boolean> = _shieldUsedNotice
     fun dismissShieldNotice() { _shieldUsedNotice.value = false }

@@ -237,26 +237,7 @@ fun SpeakingChallengeView(
             }
         }
 
-        // Duolingo-style Mascot Speaker Reaction
-        val speakerMascotRes = when {
-            evaluationResult?.isPassed == true -> com.example.R.drawable.kiki_happy
-            evaluationResult != null && !evaluationResult!!.isPassed -> com.example.R.drawable.kiki_sad
-            else -> com.example.R.drawable.kiki_speaker
-        }
-        Box(
-            modifier = Modifier
-                .height(130.dp)
-                .fillMaxWidth()
-                .padding(vertical = 4.dp),
-            contentAlignment = Alignment.Center
-        ) {
-            coil.compose.AsyncImage(
-                model = speakerMascotRes,
-                contentDescription = "Kiki Speaking Mentor",
-                contentScale = androidx.compose.ui.layout.ContentScale.Fit,
-                modifier = Modifier.fillMaxHeight()
-            )
-        }
+
 
         Spacer(modifier = Modifier.height(10.dp))
 
