@@ -2,7 +2,7 @@ package com.example.ui
 
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
-import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -38,18 +38,16 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
-import androidx.compose.ui.geometry.CornerRadius
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
+import com.example.R
 
 /**
  * Dữ liệu cho một Chặng học lớn (1 chặng = 10 hành tinh).
@@ -72,7 +70,7 @@ object CosmicSectionConfig {
             sectionNumber = 1,
             startPlanet = 1,
             endPlanet = 10,
-            title = "Chào Hỏi, Làm Quen & Khởi Nguyên Giao Tiếp",
+            title = "Hệ Mặt Trời & Giao Tiếp Cơ Bản",
             description = "Làm chủ những mẫu câu nền tảng nhất: chào hỏi, giới thiệu bản thân, gia đình, đồ vật và thời gian trong không gian vũ trụ.",
             completedCount = 0,
             totalPlanets = 10,
@@ -92,7 +90,7 @@ object CosmicSectionConfig {
             sectionNumber = 2,
             startPlanet = 11,
             endPlanet = 20,
-            title = "Nơi Chốn, Du Lịch & Mua Sắm Không Gian",
+            title = "Thiên Hà & Nơi Chốn Du Lịch",
             description = "Tự tin hỏi đường, đặt vé tàu con thoi, giao dịch mua sắm và thưởng thức ẩm thực ngân hà.",
             completedCount = 0,
             totalPlanets = 10,
@@ -111,7 +109,7 @@ object CosmicSectionConfig {
             sectionNumber = 3,
             startPlanet = 21,
             endPlanet = 30,
-            title = "Công Việc, Đời Sống & Phản Xạ Nâng Cao",
+            title = "Tinh Vân & Đời Sống Công Sở",
             description = "Trình bày quan điểm cá nhân, trao đổi trong môi trường làm việc và tự do đàm thoại lưu loát.",
             completedCount = 0,
             totalPlanets = 10,
@@ -152,10 +150,11 @@ object CosmicSectionConfig {
 }
 
 /**
- * Banner Chặng học phong cách Duolingo (như ảnh người dùng yêu cầu):
- * - Nền màu xanh dương tươi sáng năng động
- * - Bên trái: Tag "PHẦN X, CỬA A - B" + Tiêu đề chặng to rõ + Thanh tiến độ mini
- * - Bên phải: Đường kẻ chia cắt + Icon Sổ tay hướng dẫn (Guidebook)
+ * Banner Chặng học chuẩn phong cách Vũ Trụ Sci-Fi / Cyberpunk Neon của Kiki:
+ * - Nền kính mờ Cosmic Deep Purple/Navy/Cyan Gradient
+ * - Viền Neon phát sáng đa sắc (Cyan - Purple - Sky Blue)
+ * - Bên trái: Tag "CHẶNG X • HÀNH TINH A - B" + Tiêu đề chặng to rõ + Thanh tiến độ mini
+ * - Bên phải: Đường kẻ chia cắt + Icon Sổ tay ứng dụng chính thức (R.drawable.ic_open_book)
  */
 @Composable
 fun CosmicSectionBanner(
@@ -173,9 +172,14 @@ fun CosmicSectionBanner(
     Card(
         modifier = modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 8.dp)
-            .shadow(10.dp, RoundedCornerShape(18.dp), ambientColor = Color(0x330075FF), spotColor = Color(0x5500A2FE)),
-        shape = RoundedCornerShape(18.dp),
+            .padding(horizontal = 16.dp, vertical = 6.dp)
+            .shadow(
+                elevation = 12.dp,
+                shape = RoundedCornerShape(20.dp),
+                ambientColor = Color(0x6600F5D4),
+                spotColor = Color(0x888B5CF6)
+            ),
+        shape = RoundedCornerShape(20.dp),
         colors = CardDefaults.cardColors(containerColor = Color.Transparent)
     ) {
         Box(
@@ -184,17 +188,24 @@ fun CosmicSectionBanner(
                 .background(
                     Brush.horizontalGradient(
                         colors = listOf(
-                            Color(0xFF0096FE), // Xanh dương tươi sáng phong cách Duolingo
-                            Color(0xFF0070E6)
+                            Color(0xF518123A), // Deep cosmic purple
+                            Color(0xF5111E48), // Deep navy
+                            Color(0xF50C283F)  // Cyan undertone
                         )
                     )
                 )
                 .border(
-                    width = 1.2.dp,
-                    color = Color(0x66BCE0FD),
-                    shape = RoundedCornerShape(18.dp)
+                    width = 1.4.dp,
+                    brush = Brush.horizontalGradient(
+                        listOf(
+                            Color(0xFF00F5D4), // Neon Cyan
+                            Color(0xFF8B5CF6), // Neon Purple
+                            Color(0xFF38BDF8)  // Sky Blue
+                        )
+                    ),
+                    shape = RoundedCornerShape(20.dp)
                 )
-                .padding(horizontal = 16.dp, vertical = 13.dp)
+                .padding(horizontal = 16.dp, vertical = 12.dp)
         ) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -204,29 +215,29 @@ fun CosmicSectionBanner(
                 Column(
                     modifier = Modifier.weight(1f)
                 ) {
-                    // Tag tiêu đề nhỏ: "PHẦN 1, CỬA 1 - 10"
+                    // Tag tiêu đề nhỏ: "CHẶNG 1 • HÀNH TINH 1 - 10"
                     Text(
-                        text = "PHẦN ${section.sectionNumber}, CỬA ${section.startPlanet} - ${section.endPlanet}".uppercase(),
-                        color = Color(0xE6FFFFFF),
-                        fontSize = 11.5.sp,
+                        text = "CHẶNG ${section.sectionNumber} • HÀNH TINH ${section.startPlanet} - ${section.endPlanet}".uppercase(),
+                        color = Color(0xFF00F5D4),
+                        fontSize = 11.sp,
                         fontWeight = FontWeight.ExtraBold,
                         letterSpacing = 0.8.sp
                     )
 
-                    Spacer(modifier = Modifier.height(3.dp))
+                    Spacer(modifier = Modifier.height(2.dp))
 
                     // Tiêu đề trọng tâm của chặng
                     Text(
                         text = section.title,
                         color = Color.White,
-                        fontSize = 16.sp,
+                        fontSize = 15.5.sp,
                         fontWeight = FontWeight.Bold,
-                        lineHeight = 21.sp,
-                        maxLines = 2,
+                        lineHeight = 20.sp,
+                        maxLines = 1,
                         overflow = TextOverflow.Ellipsis
                     )
 
-                    Spacer(modifier = Modifier.height(7.dp))
+                    Spacer(modifier = Modifier.height(6.dp))
 
                     // Thanh tiến độ mini của chặng
                     Row(
@@ -237,23 +248,27 @@ fun CosmicSectionBanner(
                                 .width(96.dp)
                                 .height(5.dp)
                                 .clip(CircleShape)
-                                .background(Color(0x3DFFFFFF))
+                                .background(Color(0x33FFFFFF))
                         ) {
                             Box(
                                 modifier = Modifier
                                     .fillMaxHeight()
                                     .fillMaxWidth(animatedProgress)
                                     .clip(CircleShape)
-                                    .background(Color(0xFF51FAC1))
+                                    .background(
+                                        Brush.horizontalGradient(
+                                            listOf(Color(0xFF00F5D4), Color(0xFF51FAC1))
+                                        )
+                                    )
                             )
                         }
 
                         Spacer(modifier = Modifier.width(8.dp))
 
                         Text(
-                            text = "${section.completedCount}/${section.totalPlanets} hành tinh",
-                            color = Color(0xE6FFFFFF),
-                            fontSize = 10.5.sp,
+                            text = "${section.completedCount}/${section.totalPlanets} hoàn thành",
+                            color = Color(0xCCFFFFFF),
+                            fontSize = 11.sp,
                             fontWeight = FontWeight.SemiBold
                         )
                     }
@@ -264,84 +279,27 @@ fun CosmicSectionBanner(
                     modifier = Modifier
                         .padding(horizontal = 12.dp)
                         .width(1.dp)
-                        .height(46.dp)
-                        .background(Color(0x33FFFFFF))
+                        .height(44.dp)
+                        .background(Color(0x3300F5D4))
                 )
 
-                // Nút bấm Sổ Tay Hướng Dẫn (Guidebook) bên phải (với biểu tượng gáy sổ lò xo như ảnh)
+                // Nút bấm Sổ Tay Hướng Dẫn (Guidebook) sử dụng icon chính thức ic_open_book của app
                 Box(
                     modifier = Modifier
-                        .size(46.dp)
-                        .clip(RoundedCornerShape(12.dp))
-                        .clickable { onOpenGuidebook(section) }
-                        .padding(4.dp),
+                        .size(44.dp)
+                        .clip(RoundedCornerShape(14.dp))
+                        .background(Color(0x2200F5D4))
+                        .border(1.dp, Color(0x6600F5D4), RoundedCornerShape(14.dp))
+                        .clickable { onOpenGuidebook(section) },
                     contentAlignment = Alignment.Center
                 ) {
-                    GuidebookNotebookIcon(
-                        modifier = Modifier.size(28.dp),
-                        color = Color.White
+                    Image(
+                        painter = painterResource(R.drawable.ic_open_book),
+                        contentDescription = "Sổ tay kiến thức",
+                        modifier = Modifier.size(26.dp)
                     )
                 }
             }
-        }
-    }
-}
-
-/**
- * Biểu tượng quyển sổ tay có 3 khuyên còng lò xo bên trái và 3 gạch dòng kẻ,
- * vẽ trực tiếp chuẩn xác 100% theo ảnh Duolingo người dùng cung cấp.
- */
-@Composable
-fun GuidebookNotebookIcon(
-    modifier: Modifier = Modifier,
-    color: Color = Color.White
-) {
-    Canvas(modifier = modifier) {
-        val w = size.width
-        val h = size.height
-
-        // Thân cuốn sổ bìa chữ nhật bo tròn mép phải
-        val bookLeft = w * 0.22f
-        val bookTop = h * 0.08f
-        val bookWidth = w * 0.72f
-        val bookHeight = h * 0.84f
-        val corner = 4.dp.toPx()
-
-        drawRoundRect(
-            color = color,
-            topLeft = Offset(bookLeft, bookTop),
-            size = Size(bookWidth, bookHeight),
-            cornerRadius = CornerRadius(corner, corner),
-            style = Stroke(width = 2.2.dp.toPx())
-        )
-
-        // 3 dòng kẻ ngang trong sổ
-        val lineXStart = bookLeft + bookWidth * 0.24f
-        val lineXEnd = bookLeft + bookWidth * 0.80f
-        val lineY1 = bookTop + bookHeight * 0.30f
-        val lineY2 = bookTop + bookHeight * 0.52f
-        val lineY3 = bookTop + bookHeight * 0.74f
-
-        drawLine(color = color, start = Offset(lineXStart, lineY1), end = Offset(lineXEnd, lineY1), strokeWidth = 2.dp.toPx())
-        drawLine(color = color, start = Offset(lineXStart, lineY2), end = Offset(lineXEnd, lineY2), strokeWidth = 2.dp.toPx())
-        drawLine(color = color, start = Offset(lineXStart, lineY3), end = Offset(lineXEnd, lineY3), strokeWidth = 2.dp.toPx())
-
-        // 3 khuyên còng lò xo móc ở gáy sổ bên trái
-        val ringRadiusX = w * 0.12f
-        val ringHeight = 3.dp.toPx()
-        val ringYPositions = listOf(
-            bookTop + bookHeight * 0.25f,
-            bookTop + bookHeight * 0.50f,
-            bookTop + bookHeight * 0.75f
-        )
-
-        for (ry in ringYPositions) {
-            drawRoundRect(
-                color = color,
-                topLeft = Offset(bookLeft - ringRadiusX * 0.7f, ry - ringHeight / 2),
-                size = Size(ringRadiusX * 1.4f, ringHeight),
-                cornerRadius = CornerRadius(ringHeight / 2, ringHeight / 2)
-            )
         }
     }
 }
@@ -363,7 +321,7 @@ fun CosmicGuidebookDialog(
                 .fillMaxWidth(0.92f)
                 .fillMaxHeight(0.82f)
                 .clip(RoundedCornerShape(24.dp))
-                .border(1.5.dp, Color(0xFF0096FE), RoundedCornerShape(24.dp)),
+                .border(1.5.dp, Color(0xFF00F5D4), RoundedCornerShape(24.dp)),
             colors = CardDefaults.cardColors(containerColor = Color(0xFF0B142B)),
             shape = RoundedCornerShape(24.dp)
         ) {
@@ -379,7 +337,11 @@ fun CosmicGuidebookDialog(
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        GuidebookNotebookIcon(modifier = Modifier.size(24.dp), color = Color(0xFF00F5D4))
+                        Image(
+                            painter = painterResource(R.drawable.ic_open_book),
+                            contentDescription = null,
+                            modifier = Modifier.size(24.dp)
+                        )
                         Spacer(modifier = Modifier.width(10.dp))
                         Text(
                             text = "Sổ Tay Chặng ${section.sectionNumber}",
@@ -496,12 +458,12 @@ fun CosmicGuidebookDialog(
                         .height(46.dp),
                     shape = RoundedCornerShape(14.dp),
                     colors = ButtonDefaults.buttonColors(
-                        containerColor = Color(0xFF0096FE)
+                        containerColor = Color(0xFF00F5D4)
                     )
                 ) {
                     Text(
                         text = "Đã hiểu, vào học tiếp!",
-                        color = Color.White,
+                        color = Color(0xFF0B142B),
                         fontSize = 14.5.sp,
                         fontWeight = FontWeight.Bold
                     )
@@ -510,4 +472,3 @@ fun CosmicGuidebookDialog(
         }
     }
 }
-

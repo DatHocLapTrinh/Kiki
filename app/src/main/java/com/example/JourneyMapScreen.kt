@@ -298,8 +298,8 @@ private fun JourneyPath(
     onStageClick: (JourneyStageUiModel) -> Unit,
     onOpenGuidebook: (CosmicSectionData) -> Unit
 ) {
-    val stageStep = 230.dp
-    val bannerHeight = 110.dp
+    val stageStep = 255.dp
+    val bannerHeight = 98.dp
     val bannerSpacing = 16.dp
     val bannerTotalHeight = bannerHeight + bannerSpacing
 
@@ -321,8 +321,8 @@ private fun JourneyPath(
         modifier = Modifier.fillMaxWidth().height(totalPathHeight)
     ) {
         Canvas(modifier = Modifier.matchParentSize()) {
-            val nodeX = { index: Int -> if (index % 2 == 0) 78.dp.toPx() else size.width - 78.dp.toPx() }
-            val nodeY = { index: Int -> ((index / 10) + 1) * bannerTotalHeight.toPx() + index * stageStep.toPx() + 75.dp.toPx() }
+            val nodeX = { index: Int -> if (index % 2 == 0) 90.dp.toPx() else size.width - 90.dp.toPx() }
+            val nodeY = { index: Int -> ((index / 10) + 1) * bannerTotalHeight.toPx() + index * stageStep.toPx() + 85.dp.toPx() }
 
             if (stages.size > 1) {
                 for (s in 1..stages.lastIndex) {
@@ -409,24 +409,15 @@ private fun JourneyStageRow(
     val planetType = remember(index, totalStages) { CosmicPlanetHelper.getPlanetTypeForStage(index, totalStages) }
     val planetDiameter = remember(index, totalStages) { CosmicPlanetHelper.getPlanetDiameter(index, totalStages) }
     val isSaturn = planetType == CosmicPlanetType.SATURN_MONARCH
-    val isSun = planetType == CosmicPlanetType.SOLAR_SUN
-    val containerWidth = when {
-        isSaturn -> planetDiameter + 72.dp
-        isSun    -> planetDiameter + 64.dp
-        else     -> planetDiameter + 60.dp
-    }
-    val containerHeight = when {
-        isSun    -> planetDiameter + 76.dp
-        isSaturn -> planetDiameter + 68.dp
-        else     -> planetDiameter + 72.dp
-    }
+    val containerWidth = if (isSaturn) 236.dp else 216.dp
+    val containerHeight = 236.dp
 
     BoxWithConstraints(
         modifier = Modifier.fillMaxWidth().height(stageStep)
     ) {
-        // Tọa độ tâm nodeX = 78.dp, nodeY = 75.dp
-        val centerOffsetX = 78.dp - (containerWidth / 2f)
-        val centerOffsetY = 75.dp - (containerHeight / 2f)
+        // Tọa độ tâm nodeX = 90.dp, nodeY = 85.dp
+        val centerOffsetX = 90.dp - (containerWidth / 2f)
+        val centerOffsetY = 85.dp - (containerHeight / 2f)
 
         val nodeModifier = if (isLeft) {
             Modifier

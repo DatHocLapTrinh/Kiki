@@ -2,6 +2,7 @@ package com.example
 
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -9,6 +10,7 @@ import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.res.painterResource
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.filled.*
@@ -72,22 +74,9 @@ object CosmicPlanetHelper {
         }
     }
 
-    fun getPlanetDiameter(index: Int, totalStages: Int = -1): Dp {
-        if (totalStages > 1 && index == totalStages - 1) {
-            return 134.dp
-        }
-        return when (index % 10) {
-            0 -> 70.dp   // Chặng 1: Sao Thủy (~70dp)
-            1 -> 78.dp   // Chặng 2: Sao Kim (~78dp)
-            2 -> 84.dp   // Chặng 3: Trái Đất (~84dp)
-            3 -> 74.dp   // Chặng 4: Mặt Trăng (~74dp)
-            4 -> 88.dp   // Chặng 5: Sao Hỏa (~88dp)
-            5 -> 106.dp  // Chặng 6: Sao Mộc (~106dp)
-            6 -> 96.dp   // Chặng 7: Sao Thổ (~96dp + vành đai)
-            7 -> 110.dp  // Chặng 8: Sao Thiên Vương (~110dp)
-            8 -> 118.dp  // Chặng 9: Sao Hải Vương (~118dp)
-            else -> 134.dp // Chặng 10 / Mốc Cuối: Mặt Trời (~134dp)
-        }
+    fun getPlanetDiameter(index: Int = 0, totalStages: Int = -1): Dp {
+        // Tất cả các hành tinh đều được phóng to đồng đều bằng kích thước của Mặt Trời (134.dp)
+        return 134.dp
     }
 
     fun getPlanetTypeName(type: CosmicPlanetType, isEnglish: Boolean = false): String {
@@ -139,16 +128,8 @@ fun CosmicPlanetView(
     val isSun = planetType == CosmicPlanetType.SOLAR_SUN
 
     // Kích thước container mở rộng cho vành đai Sao Thổ hoặc hào quang nhật hoa / tai lửa Mặt Trời
-    val containerWidth = when {
-        isSaturn -> planetDiameter + 72.dp
-        isSun    -> planetDiameter + 64.dp
-        else     -> planetDiameter + 60.dp
-    }
-    val containerHeight = when {
-        isSun    -> planetDiameter + 76.dp
-        isSaturn -> planetDiameter + 68.dp
-        else     -> planetDiameter + 72.dp
-    }
+    val containerWidth = if (isSaturn) 236.dp else 216.dp
+    val containerHeight = 236.dp
 
     val isCurrent = stage.state == JourneyStageState.CURRENT
     val isCompleted = stage.state == JourneyStageState.COMPLETED
@@ -363,143 +344,66 @@ fun CosmicPlanetView(
             }
         }
 
-        // Cờ tiêu lệnh phi hành gia trên đỉnh cực bắc chặng đang học (CURRENT)
-        if (isCurrent) {
-            Box(
+        val progressRingRadiusDp = (planetDiameter / 2f) + 10.dp
+
+        // ─── Cờ hiệu phi hành gia (flag.png) cắm chuẩn xác vào đỉnh vòng tròn tiến độ ───
+        if (!isLocked) {
+            Image(
+                painter = painterResource(R.drawable.flag),
+                contentDescription = "Mission Flag",
                 modifier = Modifier
-                    .align(Alignment.TopCenter)
-                    .offset(y = (-10).dp),
-                contentAlignment = Alignment.BottomCenter
-            ) {
-                Row(
-                    verticalAlignment = Alignment.Bottom
-                ) {
-                    // Cột cờ thẳng đứng màu bạc/trắng
-                    Box(
-                        modifier = Modifier
-                            .width(2.dp)
-                            .height(24.dp)
-                            .background(
-                                Brush.verticalGradient(
-                                    listOf(Color.White, Color(0xFF00F5D4), Color(0xFF06152B))
-                                )
-                            )
-                    )
-                    // Lá cờ vẫy có biểu tượng tên lửa/khám phá
-                    Box(
-                        modifier = Modifier
-                            .offset(x = 0.dp, y = (-6).dp)
-                            .clip(RoundedCornerShape(topStart = 2.dp, topEnd = 8.dp, bottomEnd = 8.dp, bottomStart = 2.dp))
-                            .background(
-                                Brush.horizontalGradient(
-                                    listOf(Color(0xFFFFFFFF), Color(0xFFE0F7FA))
-                                )
-                            )
-                            .border(1.dp, Color(0xFF00F5D4), RoundedCornerShape(topStart = 2.dp, topEnd = 8.dp, bottomEnd = 8.dp, bottomStart = 2.dp))
-                            .padding(horizontal = 6.dp, vertical = 2.dp)
-                    ) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(
-                                Icons.Default.Flag,
-                                contentDescription = null,
-                                tint = Color(0xFF0284C7),
-                                modifier = Modifier.size(11.dp)
-                            )
-                            Spacer(modifier = Modifier.width(3.dp))
-                            Text(
-                                text = "EXPLORING",
-                                color = Color(0xFF0F172A),
-                                fontSize = 8.sp,
-                                fontWeight = FontWeight.Black,
-                                letterSpacing = 0.6.sp
-                            )
-                        }
-                    }
-                }
-            }
+                    .align(Alignment.Center)
+                    .offset(x = 2.5.dp, y = -(progressRingRadiusDp + 18.dp))
+                    .size(40.dp)
+            )
         }
 
-        // Vương miện thiên hà sao vàng cho chặng đã hoàn thành (COMPLETED)
-        if (isCompleted) {
+        // ─── Text box hiển thị số bài (★ 3/5 bài) gắn trực tiếp vào đáy vòng tròn tiến độ ───
+        if (!isLocked) {
             Box(
                 modifier = Modifier
-                    .align(Alignment.TopCenter)
-                    .offset(y = (-8).dp)
-                    .clip(RoundedCornerShape(8.dp))
-                    .background(Brush.horizontalGradient(listOf(Color(0xFFFFD166), Color(0xFFFF9E00))))
-                    .border(1.dp, Color(0xFFFFF275), RoundedCornerShape(8.dp))
-                    .padding(horizontal = 6.dp, vertical = 2.dp)
-            ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(
-                        Icons.Default.Star,
-                        contentDescription = null,
-                        tint = Color(0xFF160F2B),
-                        modifier = Modifier.size(11.dp)
-                    )
-                    Spacer(modifier = Modifier.width(3.dp))
-                    Text(
-                        text = "CONQUERED",
-                        color = Color(0xFF160F2B),
-                        fontSize = 8.sp,
-                        fontWeight = FontWeight.Black,
-                        letterSpacing = 0.6.sp
-                    )
-                }
-            }
-        }
-
-        // ─── Huy hiệu viên nang hiển thị tiến độ (Pill Badge: 3/5 bài) ───────
-        Box(
-            modifier = Modifier
-                .align(Alignment.BottomCenter)
-                .offset(y = 12.dp)
-                .clip(CircleShape)
-                .background(
-                    Brush.horizontalGradient(
-                        listOf(
-                            Color(0xF00A132C),
-                            Color(0xF0132352)
+                    .align(Alignment.Center)
+                    .offset(y = progressRingRadiusDp)
+                    .clip(CircleShape)
+                    .background(
+                        Brush.horizontalGradient(
+                            listOf(
+                                Color(0xF20A132C),
+                                Color(0xF214224E)
+                            )
                         )
                     )
-                )
-                .border(
-                    width = 1.2.dp,
-                    brush = Brush.horizontalGradient(
-                        when {
-                            isCompleted -> listOf(Color(0xFFFFD166), Color(0xFFFF9E00))
-                            isCurrent   -> listOf(Color(0xFF51FAC1), Color(0xFF00E5FF))
-                            isLocked    -> listOf(Color(0x40FFFFFF), Color(0x20FFFFFF))
-                            else        -> listOf(Color(0x8038BDF8), Color(0x60818CF8))
-                        }
-                    ),
-                    shape = CircleShape
-                )
-                .padding(horizontal = 10.dp, vertical = 3.5.dp)
-        ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.Center
+                    .border(
+                        width = 1.4.dp,
+                        brush = Brush.horizontalGradient(
+                            when {
+                                isCompleted -> listOf(Color(0xFFFFD166), Color(0xFFFF9E00))
+                                else        -> listOf(Color(0xFF38BDF8), Color(0xFF00F5D4))
+                            }
+                        ),
+                        shape = CircleShape
+                    )
+                    .padding(horizontal = 14.dp, vertical = 4.dp)
             ) {
-                Icon(
-                    imageVector = if (isLocked) Icons.Default.Lock else Icons.Default.Star,
-                    contentDescription = null,
-                    tint = when {
-                        isCompleted -> Color(0xFFFFD166)
-                        isCurrent   -> Color(0xFF51FAC1)
-                        isLocked    -> Color(0x80FFFFFF)
-                        else        -> Color(0xFFFFD166)
-                    },
-                    modifier = Modifier.size(11.dp)
-                )
-                Spacer(modifier = Modifier.width(4.dp))
-                Text(
-                    text = if (isLocked) "Khóa" else "${stage.completedLessons}/${stage.totalLessons} bài",
-                    color = Color.White,
-                    fontSize = 11.sp,
-                    fontWeight = FontWeight.ExtraBold,
-                    letterSpacing = 0.3.sp
-                )
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Star,
+                        contentDescription = null,
+                        tint = if (isCompleted) Color(0xFFFFD166) else Color.White,
+                        modifier = Modifier.size(13.dp)
+                    )
+                    Spacer(modifier = Modifier.width(5.dp))
+                    Text(
+                        text = "${stage.completedLessons}/${stage.totalLessons} bài",
+                        color = Color.White,
+                        fontSize = 11.5.sp,
+                        fontWeight = FontWeight.ExtraBold,
+                        letterSpacing = 0.3.sp
+                    )
+                }
             }
         }
 
