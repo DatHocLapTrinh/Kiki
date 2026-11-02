@@ -331,14 +331,45 @@ fun CosmicPlanetView(
 
         // ─── Cờ hiệu phi hành gia (flag.png) cắm chuẩn xác vào đỉnh vòng tròn tiến độ ───
         if (!isLocked) {
-            Image(
-                painter = painterResource(R.drawable.flag),
-                contentDescription = "Mission Flag",
+            val flagOffsetY = -(progressRingRadiusDp + 20.dp)
+            Box(
                 modifier = Modifier
                     .align(Alignment.Center)
-                    .offset(x = 2.5.dp, y = -(progressRingRadiusDp + 18.dp))
-                    .size(40.dp)
-            )
+                    .offset(x = 2.5.dp, y = flagOffsetY),
+                contentAlignment = Alignment.Center
+            ) {
+                // 1. Quầng sáng hào quang năng lượng vũ trụ (Cosmic Starlight Beacon Halo)
+                Box(
+                    modifier = Modifier
+                        .size(48.dp)
+                        .background(
+                            brush = Brush.radialGradient(
+                                colors = listOf(
+                                    Color(0x9951FAC1), // Neon mint
+                                    Color(0x5500E5FF), // Electric cyan
+                                    Color(0x200284C7), // Space blue
+                                    Color.Transparent
+                                )
+                            ),
+                            shape = CircleShape
+                        )
+                )
+
+                // 2. Tấm khiên bóng tối không gian sâu (Deep Space Obsidian Contrast Backplate)
+                // Ngăn chặn 100% đường nối hoặc tinh vân phía sau làm chìm / xuyên thấu cờ
+                Box(
+                    modifier = Modifier
+                        .size(36.dp)
+                        .background(Color(0xE6080415), shape = CircleShape)
+                )
+
+                // 3. Hình ảnh lá cờ phi hành gia sắc nét, cắm vững chắc
+                Image(
+                    painter = painterResource(R.drawable.flag),
+                    contentDescription = "Mission Flag",
+                    modifier = Modifier.size(44.dp)
+                )
+            }
         }
 
         // ─── Text box hiển thị số bài (★ 3/5 bài) nhỏ gọn, không chạm vào hành tinh ───
