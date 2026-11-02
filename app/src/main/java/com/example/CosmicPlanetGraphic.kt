@@ -76,7 +76,7 @@ object CosmicPlanetHelper {
 
     fun getPlanetDiameter(index: Int = 0, totalStages: Int = -1): Dp {
         // Tất cả các hành tinh đều được phóng to đồng đều bằng kích thước của Mặt Trời (134.dp)
-        return 134.dp
+        return 118.dp
     }
 
     fun getPlanetTypeName(type: CosmicPlanetType, isEnglish: Boolean = false): String {
@@ -137,17 +137,6 @@ fun CosmicPlanetView(
 
     val infiniteTransition = rememberInfiniteTransition(label = "planet_anim")
 
-    // Nhịp thở tinh vân cho TOÀN BỘ hành tinh (Tạo cảm giác không gian vũ trụ sống động chân thực)
-    val pulseScale by infiniteTransition.animateFloat(
-        initialValue = if (isCurrent) 0.96f else 0.985f,
-        targetValue = if (isCurrent) 1.04f else 1.015f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(if (isCurrent) 1400 else 2200, easing = FastOutSlowInEasing),
-            repeatMode = RepeatMode.Reverse
-        ),
-        label = "pulse_scale"
-    )
-
     // Góc quay của mây/khí quyển bề mặt (Dynamic rotation tốc độ mượt mà, thấy rõ chuyển động)
     val cloudRotationPhase by infiniteTransition.animateFloat(
         initialValue = 0f,
@@ -172,13 +161,8 @@ fun CosmicPlanetView(
         label = "satellite_angle"
     )
 
-    // Hào quang nhật hoa tỏa sáng nhịp nhàng
-    val auraGlow by infiniteTransition.animateFloat(
-        initialValue = 0.35f,
-        targetValue = 0.90f,
-        animationSpec = infiniteRepeatable(tween(1800, easing = LinearEasing), RepeatMode.Reverse),
-        label = "aura_glow"
-    )
+    // Hào quang vũ trụ tĩnh ổn định (Đã loại bỏ hoàn toàn hiệu ứng nhịp thở phập phồng)
+    val auraGlow = 0.55f
 
     // Góc quay lồng khiên năng lượng từ trường 3D (Cosmic Force Field Geodesic Shield)
     val shieldRotationPhase by infiniteTransition.animateFloat(
@@ -207,7 +191,6 @@ fun CosmicPlanetView(
     Box(
         modifier = modifier
             .size(width = containerWidth, height = containerHeight)
-            .graphicsLayer(scaleX = pulseScale, scaleY = pulseScale)
             .semantics { contentDescription = contentDesc }
             .pointerInput(stage.id) {
                 detectTapGestures(onTap = { onClick() })
@@ -358,12 +341,15 @@ fun CosmicPlanetView(
             )
         }
 
-        // ─── Text box hiển thị số bài (★ 3/5 bài) gắn trực tiếp vào đáy vòng tròn tiến độ ───
+        // ─── Text box hiển thị số bài (★ 3/5 bài) nhỏ gọn, không chạm vào hành tinh ───
         if (!isLocked) {
+            // Đặt tâm textbox cách tâm hành tinh: bán kính hành tinh (planetDiameter/2) + 16dp
+            // Giúp mép trên của textbox cách bề mặt hành tinh ~6-7dp, hoàn toàn không chạm vào hành tinh
+            val textboxOffsetY = (planetDiameter / 2f) + 16.dp
             Box(
                 modifier = Modifier
                     .align(Alignment.Center)
-                    .offset(y = progressRingRadiusDp)
+                    .offset(y = textboxOffsetY)
                     .clip(CircleShape)
                     .background(
                         Brush.horizontalGradient(
@@ -374,7 +360,7 @@ fun CosmicPlanetView(
                         )
                     )
                     .border(
-                        width = 1.4.dp,
+                        width = 1.1.dp,
                         brush = Brush.horizontalGradient(
                             when {
                                 isCompleted -> listOf(Color(0xFFFFD166), Color(0xFFFF9E00))
@@ -383,7 +369,7 @@ fun CosmicPlanetView(
                         ),
                         shape = CircleShape
                     )
-                    .padding(horizontal = 14.dp, vertical = 4.dp)
+                    .padding(horizontal = 9.dp, vertical = 2.5.dp)
             ) {
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
@@ -392,16 +378,16 @@ fun CosmicPlanetView(
                     Icon(
                         imageVector = Icons.Default.Star,
                         contentDescription = null,
-                        tint = if (isCompleted) Color(0xFFFFD166) else Color.White,
-                        modifier = Modifier.size(13.dp)
+                        tint = if (isCompleted) Color(0xFFFFD166) else Color(0xFFFFD166),
+                        modifier = Modifier.size(11.dp)
                     )
-                    Spacer(modifier = Modifier.width(5.dp))
+                    Spacer(modifier = Modifier.width(3.5.dp))
                     Text(
                         text = "${stage.completedLessons}/${stage.totalLessons} bài",
                         color = Color.White,
-                        fontSize = 11.5.sp,
-                        fontWeight = FontWeight.ExtraBold,
-                        letterSpacing = 0.3.sp
+                        fontSize = 10.5.sp,
+                        fontWeight = FontWeight.Bold,
+                        letterSpacing = 0.2.sp
                     )
                 }
             }

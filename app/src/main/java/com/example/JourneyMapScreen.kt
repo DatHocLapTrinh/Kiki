@@ -51,7 +51,6 @@ import com.example.ui.BubbleArrowDirection
 import com.example.ui.CosmicSectionBanner
 import com.example.ui.CosmicSectionConfig
 import com.example.ui.CosmicSectionData
-import com.example.ui.CosmicGuidebookDialog
 import com.example.ui.SpeechBubbleShape
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -92,7 +91,6 @@ fun JourneyMapScreen(
     }
     val currentStageIndex = stages.indexOfFirst { it.state == JourneyStageState.CURRENT }
     var isNavigating by remember { mutableStateOf(false) }
-    var activeGuidebookSection by remember { mutableStateOf<CosmicSectionData?>(null) }
 
     LaunchedEffect(Unit) {
         isNavigating = false
@@ -147,20 +145,10 @@ fun JourneyMapScreen(
                                 viewModel.selectChapterByTitle(stage.title, stage.sequence)
                                 onStartQuest()
                             }
-                        },
-                        onOpenGuidebook = { sectionData ->
-                            activeGuidebookSection = sectionData
                         }
                     )
                 }
             }
-        }
-
-        activeGuidebookSection?.let { sectionData ->
-            CosmicGuidebookDialog(
-                section = sectionData,
-                onDismiss = { activeGuidebookSection = null }
-            )
         }
     }
 }
@@ -295,11 +283,10 @@ private fun JourneyPath(
     stages: List<JourneyStageUiModel>,
     currentStageIndex: Int,
     strings: AppStrings,
-    onStageClick: (JourneyStageUiModel) -> Unit,
-    onOpenGuidebook: (CosmicSectionData) -> Unit
+    onStageClick: (JourneyStageUiModel) -> Unit
 ) {
     val stageStep = 255.dp
-    val bannerHeight = 98.dp
+    val bannerHeight = 106.dp
     val bannerSpacing = 16.dp
     val bannerTotalHeight = bannerHeight + bannerSpacing
 
@@ -366,8 +353,7 @@ private fun JourneyPath(
                         section = sectionData,
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(bannerHeight),
-                        onOpenGuidebook = onOpenGuidebook
+                            .height(bannerHeight)
                     )
                     Spacer(modifier = Modifier.height(bannerSpacing))
                 }
