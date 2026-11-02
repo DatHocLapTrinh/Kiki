@@ -1929,7 +1929,7 @@ private fun KikiExplorerNavigationSheet(
                     title = if (isEnglish) "Log Out Account" else "Đăng Xuất Tài Khoản",
                     subtitle = if (isEnglish) "Safely sign out of current session" else "Thoát tài khoản người dùng an toàn",
                     badgeText = "🚪",
-                    icon = Icons.AutoMirrored.Filled.ExitToApp,
+                    iconRes = R.drawable.ic_logout,
                     accentColor = Color(0xFFFF5F6D),
                     isSelected = false,
                     onClick = onLogoutClick
@@ -2211,7 +2211,7 @@ private fun KikiExplorerHubView(
                 title = if (isEnglish) "Log Out Account" else "Đăng Xuất Tài Khoản",
                 subtitle = if (isEnglish) "Safely sign out of current session" else "Thoát tài khoản người dùng an toàn",
                 badgeText = "🚪",
-                icon = Icons.AutoMirrored.Filled.ExitToApp,
+                iconRes = R.drawable.ic_logout,
                 accentColor = Color(0xFFFF5F6D),
                 isSelected = false,
                 onClick = onLogoutClick
@@ -2384,11 +2384,10 @@ private fun ProfileSectionView(
                             .border(1.dp, Color(0x66FF5F6D), CircleShape),
                         contentAlignment = Alignment.Center
                     ) {
-                        Icon(
-                            Icons.AutoMirrored.Filled.ExitToApp,
+                        Image(
+                            painter = painterResource(R.drawable.ic_logout),
                             contentDescription = "Logout",
-                            tint = Color(0xFFFF5F6D),
-                            modifier = Modifier.size(22.dp)
+                            modifier = Modifier.size(26.dp)
                         )
                     }
                     Spacer(modifier = Modifier.width(14.dp))

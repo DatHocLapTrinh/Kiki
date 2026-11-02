@@ -77,13 +77,13 @@ fun QuestsScreen(viewModel: StudyViewModel) {
 
     val quests = dailyTasks.map { task ->
         val meta = when (task.taskType) {
-            "LESSON_COMPLETE" -> QuestMeta(strings.quest1Title, strings.quest1Desc, iconRes = R.drawable.ic_nav_practice, color = Color(0xFF51FAC1))
-            "LESSON_COMPLETE_2" -> QuestMeta(strings.quest4Title, strings.quest4Desc, iconRes = R.drawable.ic_nav_practice, color = Color(0xFF64B5F6))
-            "ANSWER_QUESTIONS" -> QuestMeta(strings.quest3Title, strings.quest3Desc, iconRes = R.drawable.ic_mentor_qa, color = Color(0xFF27E0A9))
+            "LESSON_COMPLETE" -> QuestMeta(strings.quest1Title, strings.quest1Desc, iconRes = R.drawable.ic_education, color = Color(0xFF51FAC1))
+            "LESSON_COMPLETE_2" -> QuestMeta(strings.quest4Title, strings.quest4Desc, iconRes = R.drawable.ic_education, color = Color(0xFF64B5F6))
+            "ANSWER_QUESTIONS" -> QuestMeta(strings.quest3Title, strings.quest3Desc, iconRes = R.drawable.ic_open_book, color = Color(0xFF27E0A9))
             "ANSWER_QUESTIONS_20" -> QuestMeta(strings.quest5Title, strings.quest5Desc, iconRes = R.drawable.ic_action_thinking, color = Color(0xFFFFB74D))
-            "PERFECT_SCORE" -> QuestMeta(strings.quest2Title, strings.quest2Desc, iconRes = R.drawable.ic_action_star, color = Color(0xFFFFD166))
-            "ASK_AI_TUTOR" -> QuestMeta(strings.quest6Title, strings.quest6Desc, iconRes = R.drawable.ic_nav_mentor, color = Color(0xFFBA68C8))
-            else -> QuestMeta(task.title, strings.quest3Desc, iconRes = R.drawable.ic_mentor_qa, color = Color(0xFF27E0A9))
+            "PERFECT_SCORE" -> QuestMeta(strings.quest2Title, strings.quest2Desc, iconRes = R.drawable.ic_100_point, color = Color(0xFFFFD166))
+            "ASK_AI_TUTOR" -> QuestMeta(strings.quest6Title, strings.quest6Desc, iconRes = R.drawable.ic_mentor_qa, color = Color(0xFFBA68C8))
+            else -> QuestMeta(task.title, strings.quest3Desc, iconRes = R.drawable.ic_open_book, color = Color(0xFF27E0A9))
         }
         // Phần thưởng sao: 15 + 20 + 15 + 20 + 15 + 15 = 100 ⭐ / ngày
         val starReward = when (task.taskType) {
