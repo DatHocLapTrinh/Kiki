@@ -41,6 +41,8 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.example.repository.DataRepository
 import com.example.ui.PlacementQuizView
+import com.example.ui.KikiVideoCallDialog
+import com.example.ui.PronunciationPracticeDialog
 import com.example.viewmodel.StudyViewModel
 import com.example.ui.theme.*
 import kotlinx.coroutines.delay
@@ -666,7 +668,10 @@ fun MainNavigation(viewModel: StudyViewModel, onLogout: () -> Unit) {
             }
         }
 
+        val strings = LocalAppStrings.current
         var showDuolingoMoreSheet by remember { mutableStateOf(false) }
+        var showVideoCall by remember { mutableStateOf(false) }
+        var showPronouncePractice by remember { mutableStateOf(false) }
 
         FloatingNavBar(
             navController = navController,
@@ -692,19 +697,15 @@ fun MainNavigation(viewModel: StudyViewModel, onLogout: () -> Unit) {
                 },
                 onNavigatePronounce = {
                     showDuolingoMoreSheet = false
-                    navController.navigate("progression_map")
+                    showPronouncePractice = true
                 },
                 onNavigateVideoCall = {
                     showDuolingoMoreSheet = false
-                    navController.navigate("ask") {
-                        popUpTo(navController.graph.startDestinationId) { saveState = true }
-                        launchSingleTop = true
-                        restoreState = true
-                    }
+                    showVideoCall = true
                 },
                 onNavigatePractice = {
                     showDuolingoMoreSheet = false
-                    viewModel.setKikiExplorerSection(KikiExplorerSection.VOCABULARY)
+                    viewModel.setKikiExplorerSection(KikiExplorerSection.MISTAKES)
                     navController.navigate("profile") {
                         popUpTo(navController.graph.startDestinationId) { saveState = true }
                         launchSingleTop = true
@@ -720,6 +721,20 @@ fun MainNavigation(viewModel: StudyViewModel, onLogout: () -> Unit) {
                         restoreState = true
                     }
                 }
+            )
+        }
+
+        if (showVideoCall) {
+            KikiVideoCallDialog(
+                viewModel = viewModel,
+                onDismiss = { showVideoCall = false }
+            )
+        }
+
+        if (showPronouncePractice) {
+            PronunciationPracticeDialog(
+                viewModel = viewModel,
+                onDismiss = { showPronouncePractice = false }
             )
         }
     }

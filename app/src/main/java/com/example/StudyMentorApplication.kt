@@ -12,6 +12,9 @@ import coil.Coil
 import coil.request.ImageRequest
 import com.example.model.KikiAnimationUrls
 import dagger.hilt.android.HiltAndroidApp
+import okhttp3.OkHttpClient
+import okhttp3.ResponseBody.Companion.toResponseBody
+import java.util.concurrent.TimeUnit
 
 @HiltAndroidApp
 class StudyMentorApplication : Application(), ImageLoaderFactory {
@@ -21,7 +24,43 @@ class StudyMentorApplication : Application(), ImageLoaderFactory {
     }
 
     override fun newImageLoader(): ImageLoader {
+        // OkHttpClient với Interceptor tối ưu hóa GIF:
+        // Tự động quét và vá delay frame 0 của GIF từ 240 (2.4s) xuống 4 (40ms),
+        // loại bỏ hoàn toàn hiện tượng đơ giật 5 giây khi bắt đầu hoạt ảnh!
+        val okHttpClient = OkHttpClient.Builder()
+            .connectTimeout(15, TimeUnit.SECONDS)
+            .readTimeout(30, TimeUnit.SECONDS)
+            .addInterceptor { chain ->
+                val request = chain.request()
+                val response = chain.proceed(request)
+                val body = response.body
+                val url = request.url.toString()
+                if (response.isSuccessful && body != null && url.contains(".gif", ignoreCase = true)) {
+                    val bytes = body.bytes()
+                    val scanLimit = (bytes.size - 6).coerceAtMost(2048)
+                    for (i in 0 until scanLimit) {
+                        if ((bytes[i].toInt() and 0xFF) == 0x21 &&
+                            (bytes[i + 1].toInt() and 0xFF) == 0xF9 &&
+                            (bytes[i + 2].toInt() and 0xFF) == 0x04
+                        ) {
+                            val delay = (bytes[i + 4].toInt() and 0xFF) or ((bytes[i + 5].toInt() and 0xFF) shl 8)
+                            if (delay > 10) {
+                                bytes[i + 4] = 4.toByte() // 40ms = 25fps mượt mà
+                                bytes[i + 5] = 0.toByte()
+                                break // Chỉ can thiệp frame 0 mở đầu
+                            }
+                        }
+                    }
+                    val newBody = bytes.toResponseBody(body.contentType())
+                    response.newBuilder().body(newBody).build()
+                } else {
+                    response
+                }
+            }
+            .build()
+
         return ImageLoader.Builder(this)
+            .okHttpClient(okHttpClient)
             .components {
                 if (Build.VERSION.SDK_INT >= 28) {
                     add(ImageDecoderDecoder.Factory())

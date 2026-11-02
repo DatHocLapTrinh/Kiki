@@ -1,4 +1,4 @@
-package com.example
+﻿package com.example
 
 import androidx.compose.animation.*
 import androidx.compose.animation.core.*
@@ -117,10 +117,10 @@ fun QuestScreen(viewModel: StudyViewModel, onFinish: () -> Unit) {
         when {
             isPetted -> MascotEmotion.PETTED
             isListeningActive -> MascotEmotion.LISTENING
-            isChecked && isCurrentCorrect && consecutiveCorrect >= 5 -> MascotEmotion.STREAK
+            isChecked && isCurrentCorrect && consecutiveCorrect >= 3 -> MascotEmotion.STREAK
             isChecked && isCurrentCorrect -> MascotEmotion.CHEER
             isChecked && !isCurrentCorrect -> MascotEmotion.EMPATHY
-            idleSeconds >= 5 -> MascotEmotion.THINKING
+            idleSeconds >= 3 -> MascotEmotion.THINKING
             else -> MascotEmotion.IDLE
         }
     }
@@ -225,7 +225,7 @@ fun QuestScreen(viewModel: StudyViewModel, onFinish: () -> Unit) {
                         coroutineScope.launch {
                             isPetted = true
                             val quoteEmotion = when {
-                                isChecked && isCurrentCorrect && consecutiveCorrect >= 5 -> MascotEmotion.STREAK
+                                isChecked && isCurrentCorrect && consecutiveCorrect >= 3 -> MascotEmotion.STREAK
                                 isChecked && isCurrentCorrect -> MascotEmotion.CHEER
                                 isChecked && !isCurrentCorrect -> MascotEmotion.EMPATHY
                                 currentEmotion == MascotEmotion.THINKING -> MascotEmotion.THINKING
@@ -263,7 +263,7 @@ fun QuestScreen(viewModel: StudyViewModel, onFinish: () -> Unit) {
             ) {
                 // Hiển thị linh vật Kiki đọc đề khi ở trong câu hỏi quá lâu (>5s)
                 AnimatedVisibility(
-                    visible = idleSeconds >= 5 && !isChecked,
+                    visible = idleSeconds >= 3 && !isChecked,
                     enter = fadeIn(tween(350)) + expandVertically(),
                     exit = fadeOut(tween(250)) + shrinkVertically()
                 ) {
@@ -821,7 +821,7 @@ fun QuestScreen(viewModel: StudyViewModel, onFinish: () -> Unit) {
                                 ) {
                                     // Linh vật Kiki sống động vỗ tay ăn mừng / chia buồn
                                     LivingMascotView(
-                                        emotion = if (isCurrentCorrect && consecutiveCorrect >= 5) MascotEmotion.STREAK
+                                        emotion = if (isCurrentCorrect && consecutiveCorrect >= 3) MascotEmotion.STREAK
                                                   else if (isCurrentCorrect) MascotEmotion.CHEER
                                                   else MascotEmotion.EMPATHY,
                                         isFullBody = true,
@@ -833,8 +833,8 @@ fun QuestScreen(viewModel: StudyViewModel, onFinish: () -> Unit) {
                                     Column(modifier = Modifier.weight(1f, fill = false)) {
                                         Text(
                                             text = if (isCurrentCorrect) {
-                                                if (consecutiveCorrect >= 5) {
-                                                    if (isEnglish) "🎉 AMAZING! 5 STREAK CLAP! 👏" else "🎉 ĐỈNH CAO! 5 CÂU LIÊN TIẾP! 👏"
+                                                if (consecutiveCorrect >= 3) {
+                                                    if (isEnglish) "🎉 AMAZING! 3+ STREAK CLAP! 👏" else "🎉 ĐỈNH CAO! 5 CÂU LIÊN TIẾP! 👏"
                                                 } else strings.correctNotice
                                             } else strings.incorrectNotice,
                                             color = Color.White,
