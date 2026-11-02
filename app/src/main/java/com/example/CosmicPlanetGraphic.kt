@@ -140,12 +140,12 @@ fun CosmicPlanetView(
     val containerWidth = when {
         isSaturn -> planetDiameter + 68.dp
         isSun    -> planetDiameter + 56.dp
-        else     -> planetDiameter + 28.dp
+        else     -> planetDiameter + 48.dp
     }
     val containerHeight = when {
         isSun    -> planetDiameter + 56.dp
         isSaturn -> planetDiameter + 38.dp
-        else     -> planetDiameter + 28.dp
+        else     -> planetDiameter + 48.dp
     }
 
     val isCurrent = stage.state == JourneyStageState.CURRENT
@@ -154,23 +154,22 @@ fun CosmicPlanetView(
 
     val infiniteTransition = rememberInfiniteTransition(label = "planet_anim")
 
-    // Nhịp thở tinh vân cho hành tinh hiện tại
-    val pulseScale by if (isCurrent) {
-        infiniteTransition.animateFloat(
-            initialValue = 0.98f,
-            targetValue = 1.02f,
-            animationSpec = infiniteRepeatable(tween(1600, easing = FastOutSlowInEasing), RepeatMode.Reverse),
-            label = "pulse_scale"
-        )
-    } else {
-        remember { mutableFloatStateOf(1f) }
-    }
+    // Nhịp thở tinh vân cho TOÀN BỘ hành tinh (Tạo cảm giác không gian vũ trụ sống động chân thực)
+    val pulseScale by infiniteTransition.animateFloat(
+        initialValue = if (isCurrent) 0.96f else 0.985f,
+        targetValue = if (isCurrent) 1.04f else 1.015f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(if (isCurrent) 1400 else 2200, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "pulse_scale"
+    )
 
-    // Góc quay của mây/khí quyển bề mặt (Dynamic rotation)
+    // Góc quay của mây/khí quyển bề mặt (Dynamic rotation tốc độ mượt mà, thấy rõ chuyển động)
     val cloudRotationPhase by infiniteTransition.animateFloat(
         initialValue = 0f,
         targetValue = 360f,
-        animationSpec = infiniteRepeatable(tween(24000, easing = LinearEasing), RepeatMode.Restart),
+        animationSpec = infiniteRepeatable(tween(6000, easing = LinearEasing), RepeatMode.Restart),
         label = "cloud_rotation"
     )
 
@@ -178,23 +177,23 @@ fun CosmicPlanetView(
     val ringRotationPhase by infiniteTransition.animateFloat(
         initialValue = 0f,
         targetValue = 360f,
-        animationSpec = infiniteRepeatable(tween(14000, easing = LinearEasing), RepeatMode.Restart),
+        animationSpec = infiniteRepeatable(tween(8000, easing = LinearEasing), RepeatMode.Restart),
         label = "saturn_ring_rotation"
     )
 
-    // Góc quay vệ tinh thăm dò 3D (Orbiting probe)
+    // Góc quay vệ tinh thăm dò / mặt trăng tự nhiên 3D (Orbiting moons & probes)
     val satelliteAngle by infiniteTransition.animateFloat(
         initialValue = 0f,
         targetValue = 360f,
-        animationSpec = infiniteRepeatable(tween(6000, easing = LinearEasing), RepeatMode.Restart),
+        animationSpec = infiniteRepeatable(tween(5000, easing = LinearEasing), RepeatMode.Restart),
         label = "satellite_angle"
     )
 
-    // Hào quang nhật hoa tỏa sáng mềm mại
+    // Hào quang nhật hoa tỏa sáng nhịp nhàng
     val auraGlow by infiniteTransition.animateFloat(
         initialValue = 0.35f,
-        targetValue = 0.85f,
-        animationSpec = infiniteRepeatable(tween(2000, easing = LinearEasing), RepeatMode.Reverse),
+        targetValue = 0.90f,
+        animationSpec = infiniteRepeatable(tween(1800, easing = LinearEasing), RepeatMode.Reverse),
         label = "aura_glow"
     )
 
@@ -236,12 +235,12 @@ fun CosmicPlanetView(
             val centerY = size.height / 2f
             val radius = planetDiameter.toPx() / 2f
 
-            // Hào quang vũ trụ tỏa tròn tự nhiên không viền góc
+            // Hào quang vũ trụ tỏa tròn tự nhiên không viền góc thở nhịp nhàng
             drawCircle(
                 brush = Brush.radialGradient(
                     colors = listOf(
-                        glowColor.copy(alpha = if (isCurrent) auraGlow * 0.35f else if (isCompleted) 0.22f else 0.10f),
-                        glowColor.copy(alpha = if (isCurrent) auraGlow * 0.12f else 0.03f),
+                        glowColor.copy(alpha = if (isCurrent) auraGlow * 0.40f else if (isCompleted) auraGlow * 0.25f else auraGlow * 0.16f),
+                        glowColor.copy(alpha = if (isCurrent) auraGlow * 0.15f else auraGlow * 0.05f),
                         Color.Transparent
                     ),
                     center = Offset(centerX, centerY),
@@ -251,16 +250,16 @@ fun CosmicPlanetView(
                 radius = radius * 1.50f
             )
 
-            // Vệ tinh quay 3D: Nửa sau lưng hành tinh (khi z < 0)
-            if (isCurrent) {
-                draw3DOrbitingProbe(
-                    centerX = centerX,
-                    centerY = centerY,
-                    planetRadius = radius,
-                    angleDeg = satelliteAngle,
-                    isBackPass = true
-                )
-            }
+            // Vệ tinh / Mặt trăng 3D bay quanh quỹ đạo: Nửa sau lưng hành tinh (khi z < 0)
+            drawPlanetOrbitingMoonsAndSatellites(
+                centerX = centerX,
+                centerY = centerY,
+                planetRadius = radius,
+                type = planetType,
+                angleDeg = satelliteAngle,
+                alphaFactor = if (isLocked) 0.85f else 1.0f,
+                isBackPass = true
+            )
 
             // Vẽ toàn bộ quả cầu hành tinh (Đảm bảo sắc nét, rõ đặc trưng kể cả khi LOCKED!)
             drawPhotorealisticPlanet(
@@ -274,16 +273,16 @@ fun CosmicPlanetView(
                 isCompleted = isCompleted
             )
 
-            // Vệ tinh quay 3D: Nửa trước mặt hành tinh (khi z >= 0)
-            if (isCurrent) {
-                draw3DOrbitingProbe(
-                    centerX = centerX,
-                    centerY = centerY,
-                    planetRadius = radius,
-                    angleDeg = satelliteAngle,
-                    isBackPass = false
-                )
-            }
+            // Vệ tinh / Mặt trăng 3D bay quanh quỹ đạo: Nửa trước mặt hành tinh (khi z >= 0)
+            drawPlanetOrbitingMoonsAndSatellites(
+                centerX = centerX,
+                centerY = centerY,
+                planetRadius = radius,
+                type = planetType,
+                angleDeg = satelliteAngle,
+                alphaFactor = if (isLocked) 0.85f else 1.0f,
+                isBackPass = false
+            )
         }
 
         // Cờ tiêu lệnh phi hành gia trên đỉnh cực bắc chặng đang học (CURRENT)
@@ -2339,6 +2338,232 @@ private fun DrawScope.drawNeptuneStormBands(
  * - Khi bay ra sau (isBackPass = true): thu nhỏ kích thước, làm mờ
  * - Khi bay ra trước (isBackPass = false): phóng to, bật sáng đuôi phản lực neon
  */
+/**
+ * Vẽ các vệ tinh tự nhiên (mặt trăng), trạm vũ trụ và vành đai chuyển động 3D quanh hành tinh:
+ * - Khi bay ra sau (isBackPass = true): thu nhỏ kích thước, làm mờ
+ * - Khi bay ra trước (isBackPass = false): phóng to, bật sáng hào quang
+ */
+private fun DrawScope.drawPlanetOrbitingMoonsAndSatellites(
+    centerX: Float,
+    centerY: Float,
+    planetRadius: Float,
+    type: CosmicPlanetType,
+    angleDeg: Float,
+    alphaFactor: Float,
+    isBackPass: Boolean
+) {
+    when (type) {
+        CosmicPlanetType.SATURN_MONARCH -> {
+            // Sao Thổ đã có vành đai Cassini 3D với 40 hạt tiểu hành tinh xoay riêng biệt
+        }
+        CosmicPlanetType.JUPITER_STORM -> {
+            // 4 Vệ tinh Galilean trứ danh của Sao Mộc (Io, Europa, Ganymede, Callisto) quay quanh elip Kepler
+            val tiltDeg = -16f
+            val moons = listOf(
+                QuadData(1.42f, 1.8f, 2.6f, Color(0xFFFFD54F)), // Io (vàng lưu huỳnh)
+                QuadData(1.68f, 1.3f, 2.2f, Color(0xFFE0F7FA)), // Europa (băng trắng)
+                QuadData(1.98f, 0.95f, 3.2f, Color(0xFFCFD8DC)), // Ganymede (lớn nhất)
+                QuadData(2.32f, 0.70f, 2.8f, Color(0xFF90A4AE))  // Callisto (xám sẫm)
+            )
+
+            withTransform({ rotate(tiltDeg, pivot = Offset(centerX, centerY)) }) {
+                for ((idx, moon) in moons.withIndex()) {
+                    val mAngle = (idx * 90f + angleDeg * moon.speed) % 360f
+                    val mRad = Math.toRadians(mAngle.toDouble())
+                    val sinM = sin(mRad).toFloat()
+                    val cosM = cos(mRad).toFloat()
+                    val isBehind = sinM < 0f
+                    if (isBehind != isBackPass) continue
+
+                    val mx = centerX + (planetRadius * moon.orbitFrac * cosM)
+                    val my = centerY + (planetRadius * moon.orbitFrac * 0.40f * sinM)
+                    val mScale = if (isBehind) 0.72f else 1.20f
+                    val mAlpha = if (isBehind) 0.45f * alphaFactor else 1.0f * alphaFactor
+
+                    drawCircle(
+                        color = moon.color.copy(alpha = 0.35f * mAlpha),
+                        radius = (moon.sizeDp * 1.8f).dp.toPx() * mScale,
+                        center = Offset(mx, my)
+                    )
+                    drawCircle(
+                        color = moon.color.copy(alpha = mAlpha),
+                        radius = moon.sizeDp.dp.toPx() * mScale,
+                        center = Offset(mx, my)
+                    )
+                }
+            }
+        }
+        CosmicPlanetType.MARS_CRIMSON -> {
+            // 2 Vệ tinh Phobos & Deimos của Sao Hỏa
+            val tiltDeg = 24f
+            val moons = listOf(
+                QuadData(1.48f, 1.9f, 2.2f, Color(0xFFFFAB91)), // Phobos
+                QuadData(1.88f, 1.2f, 1.8f, Color(0xFFFFCCBC))  // Deimos
+            )
+            withTransform({ rotate(tiltDeg, pivot = Offset(centerX, centerY)) }) {
+                for ((idx, moon) in moons.withIndex()) {
+                    val mAngle = (idx * 160f + angleDeg * moon.speed) % 360f
+                    val mRad = Math.toRadians(mAngle.toDouble())
+                    val sinM = sin(mRad).toFloat()
+                    val isBehind = sinM < 0f
+                    if (isBehind != isBackPass) continue
+
+                    val mx = centerX + (planetRadius * moon.orbitFrac * cos(mRad).toFloat())
+                    val my = centerY + (planetRadius * moon.orbitFrac * 0.45f * sinM)
+                    val mScale = if (isBehind) 0.70f else 1.20f
+                    val mAlpha = if (isBehind) 0.45f * alphaFactor else 0.95f * alphaFactor
+
+                    drawCircle(
+                        color = moon.color.copy(alpha = 0.40f * mAlpha),
+                        radius = (moon.sizeDp * 1.6f).dp.toPx() * mScale,
+                        center = Offset(mx, my)
+                    )
+                    drawCircle(
+                        color = moon.color.copy(alpha = mAlpha),
+                        radius = moon.sizeDp.dp.toPx() * mScale,
+                        center = Offset(mx, my)
+                    )
+                }
+            }
+        }
+        CosmicPlanetType.URANUS_ICE -> {
+            // Vành đai băng bụi ngọc bích thẳng đứng 82° của Sao Thiên Vương với các hạt tinh thể băng xoay tròn
+            val ringA = planetRadius * 1.55f
+            val ringB = planetRadius * 0.44f
+            val tiltDeg = 82f
+            withTransform({ rotate(tiltDeg, pivot = Offset(centerX, centerY)) }) {
+                if (!isBackPass) {
+                    drawOval(
+                        color = Color(0x554DD0E1).copy(alpha = 0.55f * alphaFactor),
+                        topLeft = Offset(centerX - ringA, centerY - ringB),
+                        size = Size(ringA * 2f, ringB * 2f),
+                        style = Stroke(width = 1.3.dp.toPx())
+                    )
+                }
+                for (p in 0 until 12) {
+                    val pAngle = (p * 30f + angleDeg * 1.1f) % 360f
+                    val pRad = Math.toRadians(pAngle.toDouble())
+                    val sinP = sin(pRad).toFloat()
+                    val isBehind = sinP < 0f
+                    if (isBehind != isBackPass) continue
+
+                    val px = centerX + (ringA * cos(pRad).toFloat())
+                    val py = centerY + (ringB * sinP)
+                    val pAlpha = if (isBehind) 0.35f * alphaFactor else 0.95f * alphaFactor
+                    drawCircle(
+                        color = Color.White.copy(alpha = pAlpha),
+                        radius = (if (p % 3 == 0) 1.6.dp else 1.0.dp).toPx(),
+                        center = Offset(px, py)
+                    )
+                }
+            }
+        }
+        CosmicPlanetType.NEPTUNE_STORM -> {
+            // Vệ tinh Triton bay quanh quỹ đạo ngược chiều (Retrograde orbit)
+            val tiltDeg = -32f
+            val orbitA = planetRadius * 1.62f
+            val orbitB = planetRadius * 0.65f
+            val angleRad = Math.toRadians((-angleDeg * 1.15).toDouble())
+            val sinA = sin(angleRad).toFloat()
+            val cosA = cos(angleRad).toFloat()
+            val isBehind = sinA < 0f
+            if (isBehind == isBackPass) {
+                withTransform({ rotate(tiltDeg, pivot = Offset(centerX, centerY)) }) {
+                    val tx = centerX + (orbitA * cosA)
+                    val ty = centerY + (orbitB * sinA)
+                    val tScale = if (isBehind) 0.70f else 1.25f
+                    val tAlpha = if (isBehind) 0.45f * alphaFactor else 1.0f * alphaFactor
+
+                    drawCircle(
+                        color = Color(0xFF93C5FD).copy(alpha = 0.40f * tAlpha),
+                        radius = 5.dp.toPx() * tScale,
+                        center = Offset(tx, ty)
+                    )
+                    drawCircle(
+                        color = Color(0xFFFBCFE8).copy(alpha = tAlpha),
+                        radius = 2.6.dp.toPx() * tScale,
+                        center = Offset(tx, ty)
+                    )
+                }
+            }
+        }
+        else -> {
+            // Các thiên thể khác (Trái Đất, Mặt Trăng, Sao Thủy, Sao Kim, Mặt Trời):
+            // Trang bị Trạm Không Gian / Vệ Tinh Quỹ Đạo 3D công nghệ cao bay quanh hành tinh
+            val tiltDeg: Float
+            val orbitAFrac: Float
+            val orbitBFrac: Float
+            val beaconColor: Color
+            val speed: Float
+
+            when (type) {
+                CosmicPlanetType.TERRA_GAIA -> {
+                    tiltDeg = -25f; orbitAFrac = 1.55f; orbitBFrac = 0.65f; beaconColor = Color(0xFF00F5D4); speed = 1.0f
+                }
+                CosmicPlanetType.MOON_GRAY -> {
+                    tiltDeg = 32f; orbitAFrac = 1.48f; orbitBFrac = 0.60f; beaconColor = Color(0xFF80DEEA); speed = 1.2f
+                }
+                CosmicPlanetType.MERCURY_ROCK -> {
+                    tiltDeg = -30f; orbitAFrac = 1.45f; orbitBFrac = 0.58f; beaconColor = Color(0xFFFFD54F); speed = 1.4f
+                }
+                CosmicPlanetType.VENUS_SULFUR -> {
+                    tiltDeg = 35f; orbitAFrac = 1.50f; orbitBFrac = 0.62f; beaconColor = Color(0xFFFFAB91); speed = 1.1f
+                }
+                CosmicPlanetType.SOLAR_SUN -> {
+                    tiltDeg = -18f; orbitAFrac = 1.60f; orbitBFrac = 0.70f; beaconColor = Color(0xFFFFE082); speed = 1.5f
+                }
+                else -> {
+                    tiltDeg = -25f; orbitAFrac = 1.52f; orbitBFrac = 0.68f; beaconColor = Color(0xFF00F5D4); speed = 1.0f
+                }
+            }
+
+            val angleRad = Math.toRadians((angleDeg * speed).toDouble())
+            val sinAngle = sin(angleRad).toFloat()
+            val cosAngle = cos(angleRad).toFloat()
+            val isBehind = sinAngle < 0f
+            if (isBehind == isBackPass) {
+                val orbitA = planetRadius * orbitAFrac
+                val orbitB = planetRadius * orbitBFrac
+
+                withTransform({ rotate(tiltDeg, pivot = Offset(centerX, centerY)) }) {
+                    val satX = centerX + (orbitA * cosAngle)
+                    val satY = centerY + (orbitB * sinAngle)
+                    val probeScale = if (isBehind) 0.68f else 1.20f
+                    val probeAlpha = if (isBehind) 0.45f * alphaFactor else 1.0f * alphaFactor
+
+                    // Đuôi luồng ion phản lực phát sáng
+                    drawCircle(
+                        color = beaconColor.copy(alpha = 0.50f * probeAlpha),
+                        radius = 6.dp.toPx() * probeScale,
+                        center = Offset(satX, satY)
+                    )
+                    // Thân vệ tinh / phi thuyền
+                    drawCircle(
+                        color = Color.White.copy(alpha = probeAlpha),
+                        radius = 3.0.dp.toPx() * probeScale,
+                        center = Offset(satX, satY)
+                    )
+                    // Tấm pin mặt trời 2 cánh
+                    val wingSpan = 5.5.dp.toPx() * probeScale
+                    drawLine(
+                        color = beaconColor.copy(alpha = probeAlpha),
+                        start = Offset(satX - wingSpan, satY),
+                        end = Offset(satX + wingSpan, satY),
+                        strokeWidth = 1.4.dp.toPx() * probeScale
+                    )
+                }
+            }
+        }
+    }
+}
+
+private data class QuadData(
+    val orbitFrac: Float,
+    val speed: Float,
+    val sizeDp: Float,
+    val color: Color
+)
+
 private fun DrawScope.draw3DOrbitingProbe(
     centerX: Float,
     centerY: Float,
