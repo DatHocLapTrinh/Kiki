@@ -16,15 +16,12 @@ import androidx.compose.ui.unit.dp
 import kotlin.math.*
 
 /**
- * Nền Không Gian Vũ Trụ Siêu Thực (Cosmic Deep Space Nebula & Asteroid Field):
- * 1. Dải Tinh Vân Thiên Hà Cực Quang Tím-Hồng (Upper Diagonal Violet-Magenta Nebula River)
- *    chạy chéo từ góc trên-phải qua giữa-trái với cụm sao siêu phát quang (Star Flare).
- * 2. Dải Tinh Vân Lam Điện-Tím (Lower Sweeping Cyan-Blue Nebula Arc) uốn cong ở nửa dưới màn hình
- *    với vườn ươm sao sáng chói (Stellar Nursery Core).
- * 3. Hệ thống Ngàn Sao Đa Tầng & Các Ngôi Sao 4 Cánh Phát Quang (Diffraction Spike Stars)
- *    tỏa sáng lấp lánh như kính thiên văn không gian Hubble/James Webb.
- * 4. Vành Đai Tiểu Hành Tinh & Thiên Thạch Đá 3D (3D Cratered Asteroid Field)
- *    trôi dạt chân thực ở tiền cảnh với hiệu ứng nổi khối, miệng hố va chạm và đổ bóng theo chiều sâu.
+ * Nền Không Gian Vũ Trụ Siêu Thực Dịu Mắt (Subtle Cosmic Deep Space Nebula Background):
+ * - Được tinh chỉnh độ sáng dịu mắt (Soft Ambient Lighting) đóng vai trò làm nền phụ trợ,
+ *   tuyệt đối không lấn át hay che khuất các hành tinh và lộ trình học tập ở tiền cảnh.
+ * - Dải tinh vân cực quang tím-hồng và lam điện lan tỏa mềm mại, êm ái.
+ * - Các ngôi sao 4 cánh và ngàn vì sao li ti được giảm độ sáng xuống mức tinh tế, thanh thoát.
+ * - Vành đai tiểu hành tinh 3D đổ bóng tự nhiên hòa vào không gian vũ trụ.
  */
 @Composable
 fun CosmicPhotorealisticSpaceBackground(
@@ -36,21 +33,21 @@ fun CosmicPhotorealisticSpaceBackground(
 
     // Nhịp trôi nhẹ của tinh vân khí quyển
     val nebulaDrift by infiniteTransition.animateFloat(
-        initialValue = -12f,
-        targetValue = 12f,
+        initialValue = -8f,
+        targetValue = 8f,
         animationSpec = infiniteRepeatable(
-            animation = tween(22000, easing = LinearEasing),
+            animation = tween(24000, easing = LinearEasing),
             repeatMode = RepeatMode.Reverse
         ),
         label = "nebula_drift"
     )
 
-    // Nhịp thở phát quang của các vì sao 4 cánh và lõi tinh vân
+    // Nhịp thở phát quang dịu nhẹ của các vì sao (biên độ nhỏ êm mắt)
     val starTwinkle by infiniteTransition.animateFloat(
-        initialValue = 0.82f,
-        targetValue = 1.18f,
+        initialValue = 0.88f,
+        targetValue = 1.12f,
         animationSpec = infiniteRepeatable(
-            animation = tween(2600, easing = FastOutSlowInEasing),
+            animation = tween(2800, easing = FastOutSlowInEasing),
             repeatMode = RepeatMode.Reverse
         ),
         label = "star_twinkle"
@@ -61,30 +58,29 @@ fun CosmicPhotorealisticSpaceBackground(
         initialValue = 0f,
         targetValue = 360f,
         animationSpec = infiniteRepeatable(
-            animation = tween(40000, easing = LinearEasing),
+            animation = tween(42000, easing = LinearEasing),
             repeatMode = RepeatMode.Restart
         ),
         label = "asteroid_tumble"
     )
 
-    // Khởi tạo danh sách sao ngẫu nhiên cố định (Seed cố định để không bị giật khi re-compose)
+    // Khởi tạo danh sách sao li ti nền dịu mắt (Seed cố định)
     val backgroundStars = remember {
         val random = java.util.Random(133742L)
-        List(190) {
+        List(170) {
             val x = random.nextFloat()
             val y = random.nextFloat()
             val size = when {
-                random.nextFloat() < 0.70f -> 0.7f + random.nextFloat() * 0.7f // Sao nhỏ
-                random.nextFloat() < 0.90f -> 1.4f + random.nextFloat() * 0.8f // Sao vừa
-                else                       -> 2.2f + random.nextFloat() * 0.9f // Sao lớn
+                random.nextFloat() < 0.82f -> 0.4f + random.nextFloat() * 0.45f // Sao chấm nhỏ li ti (0.4 - 0.85dp)
+                else                       -> 0.85f + random.nextFloat() * 0.45f // Sao vừa nhẹ (0.85 - 1.3dp)
             }
-            val baseAlpha = 0.35f + random.nextFloat() * 0.60f
-            val color = when (random.nextInt(5)) {
-                0 -> Color.White
-                1 -> Color(0xFFE0F2FE) // Xanh băng
-                2 -> Color(0xFFF3E8FF) // Tím ngọc trai
-                3 -> Color(0xFFDDD6FE) // Tím nhạt
-                else -> Color(0xFFBAE6FD) // Lam ngọc
+            // Độ sáng dịu mắt (10% - 32%) để đóng đúng vai trò nền phụ trợ
+            val baseAlpha = 0.10f + random.nextFloat() * 0.22f
+            val color = when (random.nextInt(4)) {
+                0 -> Color(0xDDE0F2FE) // Xanh băng dịu
+                1 -> Color(0xCCF3E8FF) // Tím ngọc trai mờ
+                2 -> Color(0xCCDDD6FE) // Tím lavender
+                else -> Color(0xEEFFFFFF) // Trắng dịu
             }
             CosmicBackgroundStar(
                 xFrac = x,
@@ -92,7 +88,7 @@ fun CosmicPhotorealisticSpaceBackground(
                 sizeDp = size,
                 baseAlpha = baseAlpha,
                 color = color,
-                twinkleSpeed = 0.7f + random.nextFloat() * 0.8f,
+                twinkleSpeed = 0.5f + random.nextFloat() * 0.5f,
                 phaseOffset = random.nextFloat() * 6.28f
             )
         }
@@ -106,30 +102,30 @@ fun CosmicPhotorealisticSpaceBackground(
         drawRect(
             brush = Brush.verticalGradient(
                 colors = listOf(
-                    Color(0xFF02000E), // Đen tím cực sâu trên cùng
-                    Color(0xFF06001E), // Tím đen vũ trụ trung tâm
-                    Color(0xFF080126), // Lam đen thẳm
-                    Color(0xFF020010)  // Đen tuyền đáy màn hình
+                    Color(0xFF02000E),
+                    Color(0xFF050019),
+                    Color(0xFF070122),
+                    Color(0xFF020010)
                 )
             )
         )
 
         // Độ dịch chuyển thị sai Parallax theo ngón tay người dùng
-        val parallaxNebulaX = currentX * 8.dp.toPx()
-        val parallaxNebulaY = currentY * 8.dp.toPx()
-        val parallaxStarsX = currentX * 16.dp.toPx()
-        val parallaxStarsY = currentY * 16.dp.toPx()
-        val parallaxAsteroidsX = currentX * 26.dp.toPx()
-        val parallaxAsteroidsY = currentY * 26.dp.toPx()
+        val parallaxNebulaX = currentX * 6.dp.toPx()
+        val parallaxNebulaY = currentY * 6.dp.toPx()
+        val parallaxStarsX = currentX * 12.dp.toPx()
+        val parallaxStarsY = currentY * 12.dp.toPx()
+        val parallaxAsteroidsX = currentX * 22.dp.toPx()
+        val parallaxAsteroidsY = currentY * 22.dp.toPx()
 
         // ─── 2. Dải Tinh Vân Thiên Hà Chạy Chéo Trên (Upper Diagonal Violet Nebula) ─
         withTransform({
-            translate(parallaxNebulaX + nebulaDrift, parallaxNebulaY + (nebulaDrift * 0.4f))
+            translate(parallaxNebulaX + nebulaDrift, parallaxNebulaY + (nebulaDrift * 0.35f))
         }) {
-            // Lớp 1: Khí ion tím thẫm lan tỏa nền rộng
+            // Lớp 1: Khí ion tím thẫm lan tỏa nền rộng êm ái
             drawCircle(
                 brush = Brush.radialGradient(
-                    colors = listOf(Color(0x604A044E), Color(0x303B0764), Color.Transparent),
+                    colors = listOf(Color(0x354A044E), Color(0x153B0764), Color.Transparent),
                     center = Offset(w * 0.80f, h * 0.16f),
                     radius = w * 0.58f
                 ),
@@ -138,7 +134,7 @@ fun CosmicPhotorealisticSpaceBackground(
             )
             drawCircle(
                 brush = Brush.radialGradient(
-                    colors = listOf(Color(0x70581C87), Color(0x354A044E), Color.Transparent),
+                    colors = listOf(Color(0x40581C87), Color(0x184A044E), Color.Transparent),
                     center = Offset(w * 0.55f, h * 0.28f),
                     radius = w * 0.52f
                 ),
@@ -147,7 +143,7 @@ fun CosmicPhotorealisticSpaceBackground(
             )
             drawCircle(
                 brush = Brush.radialGradient(
-                    colors = listOf(Color(0x756B21A8), Color(0x383B0764), Color.Transparent),
+                    colors = listOf(Color(0x456B21A8), Color(0x1C3B0764), Color.Transparent),
                     center = Offset(w * 0.36f, h * 0.43f),
                     radius = w * 0.55f
                 ),
@@ -156,7 +152,7 @@ fun CosmicPhotorealisticSpaceBackground(
             )
             drawCircle(
                 brush = Brush.radialGradient(
-                    colors = listOf(Color(0x55581C87), Color(0x203B0764), Color.Transparent),
+                    colors = listOf(Color(0x30581C87), Color(0x123B0764), Color.Transparent),
                     center = Offset(w * 0.15f, h * 0.54f),
                     radius = w * 0.42f
                 ),
@@ -164,10 +160,10 @@ fun CosmicPhotorealisticSpaceBackground(
                 radius = w * 0.42f
             )
 
-            // Lớp 2: Luồng mây phát quang Magenta & Ultraviolet rực rỡ
+            // Lớp 2: Luồng mây Magenta & Ultraviolet dịu nhẹ, không lóa
             drawCircle(
                 brush = Brush.radialGradient(
-                    colors = listOf(Color(0x909333EA), Color(0x457C3AED), Color.Transparent),
+                    colors = listOf(Color(0x409333EA), Color(0x1E7C3AED), Color.Transparent),
                     center = Offset(w * 0.70f, h * 0.22f),
                     radius = w * 0.32f
                 ),
@@ -176,7 +172,7 @@ fun CosmicPhotorealisticSpaceBackground(
             )
             drawCircle(
                 brush = Brush.radialGradient(
-                    colors = listOf(Color(0xAAC026D3), Color(0x509333EA), Color.Transparent),
+                    colors = listOf(Color(0x45C026D3), Color(0x209333EA), Color.Transparent),
                     center = Offset(w * 0.48f, h * 0.35f),
                     radius = w * 0.30f
                 ),
@@ -185,7 +181,7 @@ fun CosmicPhotorealisticSpaceBackground(
             )
             drawCircle(
                 brush = Brush.radialGradient(
-                    colors = listOf(Color(0xBBDA46EF), Color(0x60C026D3), Color.Transparent),
+                    colors = listOf(Color(0x48DA46EF), Color(0x22C026D3), Color.Transparent),
                     center = Offset(w * 0.362f, h * 0.433f),
                     radius = w * 0.32f
                 ),
@@ -194,7 +190,7 @@ fun CosmicPhotorealisticSpaceBackground(
             )
             drawCircle(
                 brush = Brush.radialGradient(
-                    colors = listOf(Color(0x88A855F7), Color(0x356B21A8), Color.Transparent),
+                    colors = listOf(Color(0x35A855F7), Color(0x156B21A8), Color.Transparent),
                     center = Offset(w * 0.24f, h * 0.49f),
                     radius = w * 0.24f
                 ),
@@ -202,35 +198,26 @@ fun CosmicPhotorealisticSpaceBackground(
                 radius = w * 0.24f
             )
 
-            // Lớp 3: Xoáy sợi bụi khí plasma hồng-trắng chói lòa tại trung tâm tinh vân
+            // Lớp 3: Bụi khí plasma trung tâm mềm mại êm dịu (Loại bỏ hoàn toàn đốm trắng chói trước đây)
             drawCircle(
                 brush = Brush.radialGradient(
-                    colors = listOf(Color(0xDDE879F9), Color(0x70C026D3), Color.Transparent),
+                    colors = listOf(Color(0x35E879F9), Color(0x12C026D3), Color.Transparent),
                     center = Offset(w * 0.362f, h * 0.433f),
                     radius = w * 0.16f
                 ),
                 center = Offset(w * 0.362f, h * 0.433f),
                 radius = w * 0.16f
             )
-            drawCircle(
-                brush = Brush.radialGradient(
-                    colors = listOf(Color(0xEEFDF4FF), Color(0x99F472B6), Color.Transparent),
-                    center = Offset(w * 0.362f, h * 0.433f),
-                    radius = w * 0.08f
-                ),
-                center = Offset(w * 0.362f, h * 0.433f),
-                radius = w * 0.08f
-            )
         }
 
         // ─── 3. Dải Tinh Vân Cung Cực Lam-Tím Dưới Đáy (Lower Sweeping Cyan Nebula) ──
         withTransform({
-            translate(parallaxNebulaX - nebulaDrift * 0.7f, parallaxNebulaY - nebulaDrift * 0.3f)
+            translate(parallaxNebulaX - nebulaDrift * 0.6f, parallaxNebulaY - nebulaDrift * 0.25f)
         }) {
             // Nền mây lam đậm & chàm tím uốn quanh góc dưới
             drawCircle(
                 brush = Brush.radialGradient(
-                    colors = listOf(Color(0x654C1D95), Color(0x250891B2), Color.Transparent),
+                    colors = listOf(Color(0x354C1D95), Color(0x120891B2), Color.Transparent),
                     center = Offset(w * 0.68f, h * 0.77f),
                     radius = w * 0.48f
                 ),
@@ -239,7 +226,7 @@ fun CosmicPhotorealisticSpaceBackground(
             )
             drawCircle(
                 brush = Brush.radialGradient(
-                    colors = listOf(Color(0x750E7490), Color(0x356D28D9), Color.Transparent),
+                    colors = listOf(Color(0x400E7490), Color(0x1C6D28D9), Color.Transparent),
                     center = Offset(w * 0.38f, h * 0.86f),
                     radius = w * 0.48f
                 ),
@@ -248,7 +235,7 @@ fun CosmicPhotorealisticSpaceBackground(
             )
             drawCircle(
                 brush = Brush.radialGradient(
-                    colors = listOf(Color(0x554338CA), Color(0x2006B6D4), Color.Transparent),
+                    colors = listOf(Color(0x284338CA), Color(0x1006B6D4), Color.Transparent),
                     center = Offset(w * 0.12f, h * 0.95f),
                     radius = w * 0.42f
                 ),
@@ -256,10 +243,10 @@ fun CosmicPhotorealisticSpaceBackground(
                 radius = w * 0.42f
             )
 
-            // Dải lam ngọc & cyan điện quang rực rỡ
+            // Dải lam ngọc & cyan điện quang dịu nhẹ
             drawCircle(
                 brush = Brush.radialGradient(
-                    colors = listOf(Color(0x8506B6D4), Color(0x350284C7), Color.Transparent),
+                    colors = listOf(Color(0x4006B6D4), Color(0x180284C7), Color.Transparent),
                     center = Offset(w * 0.52f, h * 0.81f),
                     radius = w * 0.28f
                 ),
@@ -268,7 +255,7 @@ fun CosmicPhotorealisticSpaceBackground(
             )
             drawCircle(
                 brush = Brush.radialGradient(
-                    colors = listOf(Color(0xAA38BDF8), Color(0x500891B2), Color.Transparent),
+                    colors = listOf(Color(0x4538BDF8), Color(0x200891B2), Color.Transparent),
                     center = Offset(w * 0.375f, h * 0.865f),
                     radius = w * 0.26f
                 ),
@@ -277,7 +264,7 @@ fun CosmicPhotorealisticSpaceBackground(
             )
             drawCircle(
                 brush = Brush.radialGradient(
-                    colors = listOf(Color(0x7506B6D4), Color(0x300369A1), Color.Transparent),
+                    colors = listOf(Color(0x3006B6D4), Color(0x120369A1), Color.Transparent),
                     center = Offset(w * 0.22f, h * 0.93f),
                     radius = w * 0.22f
                 ),
@@ -285,46 +272,29 @@ fun CosmicPhotorealisticSpaceBackground(
                 radius = w * 0.22f
             )
 
-            // Lõi ươm sao lam-trắng rực rỡ (Stellar Nursery Core)
+            // Lõi ươm sao lam dịu mắt
             drawCircle(
                 brush = Brush.radialGradient(
-                    colors = listOf(Color(0xCC67E8F9), Color(0x6006B6D4), Color.Transparent),
+                    colors = listOf(Color(0x4067E8F9), Color(0x1506B6D4), Color.Transparent),
                     center = Offset(w * 0.375f, h * 0.865f),
-                    radius = w * 0.14f
+                    radius = w * 0.12f
                 ),
                 center = Offset(w * 0.375f, h * 0.865f),
-                radius = w * 0.14f
-            )
-            drawCircle(
-                brush = Brush.radialGradient(
-                    colors = listOf(Color.White, Color(0x9967E8F9), Color.Transparent),
-                    center = Offset(w * 0.375f, h * 0.865f),
-                    radius = w * 0.05f
-                ),
-                center = Offset(w * 0.375f, h * 0.865f),
-                radius = w * 0.05f
+                radius = w * 0.12f
             )
         }
 
-        // ─── 4. Ngân Hà Ngàn Vì Sao (Dense Starfield Micro Stars) ────────────────
+        // ─── 4. Ngân Hà Ngàn Vì Sao Li Ti Nền (Subtle Background Micro Stars) ──────
         withTransform({
             translate(parallaxStarsX, parallaxStarsY)
         }) {
             backgroundStars.forEach { star ->
                 val sx = star.xFrac * w
                 val sy = star.yFrac * h
-                val twinkleMod = 0.85f + 0.30f * sin((starTwinkle * star.twinkleSpeed) + star.phaseOffset)
-                val alpha = (star.baseAlpha * twinkleMod).coerceIn(0.15f, 1.0f)
+                val twinkleMod = 0.88f + 0.24f * sin((starTwinkle * star.twinkleSpeed) + star.phaseOffset)
+                val alpha = (star.baseAlpha * twinkleMod).coerceIn(0.08f, 0.45f)
                 val r = star.sizeDp.dp.toPx()
 
-                if (star.sizeDp >= 2.0f) {
-                    // Quầng sáng mềm cho sao lớn
-                    drawCircle(
-                        color = star.color.copy(alpha = alpha * 0.40f),
-                        radius = r * 2.5f,
-                        center = Offset(sx, sy)
-                    )
-                }
                 drawCircle(
                     color = star.color.copy(alpha = alpha),
                     radius = r,
@@ -333,54 +303,54 @@ fun CosmicPhotorealisticSpaceBackground(
             }
         }
 
-        // ─── 5. Các Ngôi Sao 4 Cánh Phát Quang (Featured Diffraction Spike Stars) ──
+        // ─── 5. Các Ngôi Sao 4 Cánh Thanh Thoát (Delicate Background Cross Stars) ───
         withTransform({
             translate(parallaxStarsX, parallaxStarsY)
         }) {
-            // 1. Sao Siêu Lóa Trung Tâm Tinh Vân (Super-Flare Center Star): (0.362, 0.433)
+            // 1. Sao Tinh Vân Giữa (Subtle Center Star): (0.362, 0.433) - Giảm kích thước và độ chói
             drawCosmicDiffractionStar(
                 cx = w * 0.362f,
                 cy = h * 0.433f,
-                spikeH = 58.dp.toPx(),
-                spikeV = 72.dp.toPx(),
-                coreRadius = 3.4.dp.toPx(),
-                haloRadius = 28.dp.toPx(),
+                spikeH = 22.dp.toPx(),
+                spikeV = 26.dp.toPx(),
+                coreRadius = 1.3.dp.toPx(),
+                haloRadius = 13.dp.toPx(),
                 haloColor = Color(0xFFF472B6),
                 pulse = starTwinkle
             )
 
-            // 2. Sao Lõi Lam Dưới Đáy (Lower Cyan Stellar Core): (0.375, 0.865)
+            // 2. Sao Lõi Lam Dưới Đáy (Lower Cyan Star): (0.375, 0.865)
             drawCosmicDiffractionStar(
                 cx = w * 0.375f,
                 cy = h * 0.865f,
-                spikeH = 46.dp.toPx(),
-                spikeV = 56.dp.toPx(),
-                coreRadius = 3.0.dp.toPx(),
-                haloRadius = 24.dp.toPx(),
+                spikeH = 18.dp.toPx(),
+                spikeV = 22.dp.toPx(),
+                coreRadius = 1.2.dp.toPx(),
+                haloRadius = 11.dp.toPx(),
                 haloColor = Color(0xFF22D3EE),
-                pulse = starTwinkle * 1.05f
+                pulse = starTwinkle
             )
 
-            // 3. Sao Xanh Lam Khổng Lồ Góc Trên-Trái (Top-Left Blue Giant): (0.117, 0.175)
+            // 3. Sao Xanh Lam Góc Trên-Trái (Top-Left Blue Star): (0.117, 0.175)
             drawCosmicDiffractionStar(
                 cx = w * 0.117f,
                 cy = h * 0.175f,
-                spikeH = 38.dp.toPx(),
-                spikeV = 48.dp.toPx(),
-                coreRadius = 2.6.dp.toPx(),
-                haloRadius = 20.dp.toPx(),
+                spikeH = 18.dp.toPx(),
+                spikeV = 22.dp.toPx(),
+                coreRadius = 1.2.dp.toPx(),
+                haloRadius = 11.dp.toPx(),
                 haloColor = Color(0xFF38BDF8),
-                pulse = starTwinkle * 0.95f
+                pulse = starTwinkle
             )
 
-            // 4. Sao Lam Rực Rỡ Giữa-Phải (Mid-Right Azure Star): (0.728, 0.440)
+            // 4. Sao Lam Giữa-Phải (Mid-Right Azure Star): (0.728, 0.440)
             drawCosmicDiffractionStar(
                 cx = w * 0.728f,
                 cy = h * 0.440f,
-                spikeH = 32.dp.toPx(),
-                spikeV = 38.dp.toPx(),
-                coreRadius = 2.4.dp.toPx(),
-                haloRadius = 18.dp.toPx(),
+                spikeH = 15.dp.toPx(),
+                spikeV = 18.dp.toPx(),
+                coreRadius = 1.1.dp.toPx(),
+                haloRadius = 9.dp.toPx(),
                 haloColor = Color(0xFF60A5FA),
                 pulse = starTwinkle
             )
@@ -389,36 +359,36 @@ fun CosmicPhotorealisticSpaceBackground(
             drawCosmicDiffractionStar(
                 cx = w * 0.915f,
                 cy = h * 0.455f,
-                spikeH = 26.dp.toPx(),
-                spikeV = 32.dp.toPx(),
-                coreRadius = 2.0.dp.toPx(),
-                haloRadius = 15.dp.toPx(),
+                spikeH = 13.dp.toPx(),
+                spikeV = 16.dp.toPx(),
+                coreRadius = 1.0.dp.toPx(),
+                haloRadius = 8.dp.toPx(),
                 haloColor = Color(0xFFE879F9),
-                pulse = starTwinkle * 1.08f
+                pulse = starTwinkle
             )
 
-            // 6. Sao Phụ Dưới-Phải (Lower-Right Second Star): (0.920, 0.525)
+            // 6. Sao Phụ Dưới-Phải: (0.920, 0.525)
             drawCosmicDiffractionStar(
                 cx = w * 0.920f,
                 cy = h * 0.525f,
-                spikeH = 20.dp.toPx(),
-                spikeV = 24.dp.toPx(),
-                coreRadius = 1.8.dp.toPx(),
-                haloRadius = 12.dp.toPx(),
+                spikeH = 11.dp.toPx(),
+                spikeV = 13.dp.toPx(),
+                coreRadius = 0.9.dp.toPx(),
+                haloRadius = 6.dp.toPx(),
                 haloColor = Color(0xFFA78BFA),
-                pulse = starTwinkle * 0.92f
+                pulse = starTwinkle
             )
 
-            // 7. Sao Lam Đỉnh Đầu (Top-Center Blue Star): (0.550, 0.082)
+            // 7. Sao Lam Đỉnh Đầu: (0.550, 0.082)
             drawCosmicDiffractionStar(
                 cx = w * 0.550f,
                 cy = h * 0.082f,
-                spikeH = 22.dp.toPx(),
-                spikeV = 28.dp.toPx(),
-                coreRadius = 1.8.dp.toPx(),
-                haloRadius = 14.dp.toPx(),
+                spikeH = 12.dp.toPx(),
+                spikeV = 14.dp.toPx(),
+                coreRadius = 0.9.dp.toPx(),
+                haloRadius = 7.dp.toPx(),
                 haloColor = Color(0xFF93C5FD),
-                pulse = starTwinkle * 1.02f
+                pulse = starTwinkle
             )
         }
 
@@ -430,7 +400,7 @@ fun CosmicPhotorealisticSpaceBackground(
             draw3DRockyAsteroid(
                 cx = w * 0.845f,
                 cy = h * 0.755f,
-                sizeDp = 46.dp.toPx(),
+                sizeDp = 42.dp.toPx(),
                 rotationDeg = -15f + (asteroidTumble * 0.15f),
                 seed = 101L
             )
@@ -439,7 +409,7 @@ fun CosmicPhotorealisticSpaceBackground(
             draw3DRockyAsteroid(
                 cx = w * 0.925f,
                 cy = h * 0.720f,
-                sizeDp = 18.dp.toPx(),
+                sizeDp = 16.dp.toPx(),
                 rotationDeg = 35f - (asteroidTumble * 0.20f),
                 seed = 102L
             )
@@ -448,7 +418,7 @@ fun CosmicPhotorealisticSpaceBackground(
             draw3DRockyAsteroid(
                 cx = w * 0.590f,
                 cy = h * 0.660f,
-                sizeDp = 22.dp.toPx(),
+                sizeDp = 20.dp.toPx(),
                 rotationDeg = 45f + (asteroidTumble * 0.18f),
                 seed = 103L
             )
@@ -457,7 +427,7 @@ fun CosmicPhotorealisticSpaceBackground(
             draw3DRockyAsteroid(
                 cx = w * 0.122f,
                 cy = h * 0.656f,
-                sizeDp = 17.dp.toPx(),
+                sizeDp = 15.dp.toPx(),
                 rotationDeg = -40f + (asteroidTumble * 0.25f),
                 seed = 104L
             )
@@ -466,7 +436,7 @@ fun CosmicPhotorealisticSpaceBackground(
             draw3DRockyAsteroid(
                 cx = w * 0.051f,
                 cy = h * 0.727f,
-                sizeDp = 24.dp.toPx(),
+                sizeDp = 22.dp.toPx(),
                 rotationDeg = 20f - (asteroidTumble * 0.12f),
                 seed = 105L
             )
@@ -475,7 +445,7 @@ fun CosmicPhotorealisticSpaceBackground(
             draw3DRockyAsteroid(
                 cx = w * 0.044f,
                 cy = h * 0.582f,
-                sizeDp = 14.dp.toPx(),
+                sizeDp = 13.dp.toPx(),
                 rotationDeg = 75f + (asteroidTumble * 0.30f),
                 seed = 106L
             )
@@ -484,10 +454,10 @@ fun CosmicPhotorealisticSpaceBackground(
 }
 
 /**
- * Hàm vẽ Ngôi sao 4 cánh phát quang (Diffraction Spike Star) chuẩn thiên văn:
- * - Tia ngang và tia dọc phát quang xa
- * - Quầng sáng tròn mềm bao bọc
- * - Lõi sao trắng sáng rực rỡ ở tâm
+ * Hàm vẽ Ngôi sao 4 cánh phát quang thanh thoát, dịu mắt (Subtle Diffraction Spike Star):
+ * - Tia ngang và dọc mảnh, độ sáng dịu mắt để không lấn át giao diện chính
+ * - Quầng sáng mềm nhạt
+ * - Lõi sao nhỏ tinh tế
  */
 private fun DrawScope.drawCosmicDiffractionStar(
     cx: Float,
@@ -499,14 +469,14 @@ private fun DrawScope.drawCosmicDiffractionStar(
     haloColor: Color,
     pulse: Float = 1.0f
 ) {
-    val actualPulse = pulse.coerceIn(0.75f, 1.30f)
+    val actualPulse = pulse.coerceIn(0.85f, 1.15f)
 
-    // 1. Quầng sáng nhật hoa nở rộng
+    // 1. Quầng sáng mềm dịu mắt
     drawCircle(
         brush = Brush.radialGradient(
             colors = listOf(
-                haloColor.copy(alpha = 0.65f * actualPulse),
                 haloColor.copy(alpha = 0.20f * actualPulse),
+                haloColor.copy(alpha = 0.05f * actualPulse),
                 Color.Transparent
             ),
             center = Offset(cx, cy),
@@ -516,14 +486,14 @@ private fun DrawScope.drawCosmicDiffractionStar(
         radius = haloRadius * actualPulse
     )
 
-    // 2. Tia nhiễu xạ phát quang ngang (Horizontal Spike)
+    // 2. Tia nhiễu xạ phát quang ngang mảnh thanh thoát
     drawLine(
         brush = Brush.horizontalGradient(
             colors = listOf(
                 Color.Transparent,
-                haloColor.copy(alpha = 0.45f * actualPulse),
-                Color.White,
-                haloColor.copy(alpha = 0.45f * actualPulse),
+                haloColor.copy(alpha = 0.15f * actualPulse),
+                Color.White.copy(alpha = 0.40f * actualPulse),
+                haloColor.copy(alpha = 0.15f * actualPulse),
                 Color.Transparent
             ),
             startX = cx - spikeH * actualPulse,
@@ -531,17 +501,17 @@ private fun DrawScope.drawCosmicDiffractionStar(
         ),
         start = Offset(cx - spikeH * actualPulse, cy),
         end = Offset(cx + spikeH * actualPulse, cy),
-        strokeWidth = 1.6.dp.toPx()
+        strokeWidth = 0.8.dp.toPx()
     )
 
-    // 3. Tia nhiễu xạ phát quang dọc (Vertical Spike)
+    // 3. Tia nhiễu xạ phát quang dọc mảnh thanh thoát
     drawLine(
         brush = Brush.verticalGradient(
             colors = listOf(
                 Color.Transparent,
-                haloColor.copy(alpha = 0.45f * actualPulse),
-                Color.White,
-                haloColor.copy(alpha = 0.45f * actualPulse),
+                haloColor.copy(alpha = 0.15f * actualPulse),
+                Color.White.copy(alpha = 0.40f * actualPulse),
+                haloColor.copy(alpha = 0.15f * actualPulse),
                 Color.Transparent
             ),
             startY = cy - spikeV * actualPulse,
@@ -549,12 +519,12 @@ private fun DrawScope.drawCosmicDiffractionStar(
         ),
         start = Offset(cx, cy - spikeV * actualPulse),
         end = Offset(cx, cy + spikeV * actualPulse),
-        strokeWidth = 1.6.dp.toPx()
+        strokeWidth = 0.8.dp.toPx()
     )
 
-    // 4. Lõi sao trắng chói ở tâm
+    // 4. Lõi sao nhỏ ở tâm
     drawCircle(
-        color = Color.White,
+        color = Color.White.copy(alpha = 0.65f),
         radius = coreRadius * actualPulse,
         center = Offset(cx, cy)
     )
@@ -562,10 +532,7 @@ private fun DrawScope.drawCosmicDiffractionStar(
 
 /**
  * Hàm vẽ Tiểu Hành Tinh Đá 3D (3D Faceted Cratered Asteroid):
- * - Đường viền đa giác góc cạnh tự nhiên
- * - Chiếu sáng định hướng từ góc trên-trái (Key Light 10h) với mặt sáng đá tím-xám
- * - Đổ bóng không gian sâu ở nửa dưới-phải (Space Umbra Shadow)
- * - Miệng hố va chạm (Impact Craters) với gờ nổi và lòng hố tối
+ * - Chiếu sáng êm dịu, hòa cùng bóng đêm không gian sâu
  */
 private fun DrawScope.draw3DRockyAsteroid(
     cx: Float,
@@ -580,7 +547,6 @@ private fun DrawScope.draw3DRockyAsteroid(
         translate(cx, cy)
         rotate(rotationDeg)
     }) {
-        // Tạo hình khối đa giác đá gồ ghề từ 9 đỉnh
         val random = java.util.Random(seed)
         val vertexCount = 9
         val path = Path()
@@ -597,23 +563,23 @@ private fun DrawScope.draw3DRockyAsteroid(
         }
         path.close()
 
-        // 1. Tô khối đa giác với gradient ánh sáng 3D từ góc trên-trái xuống dưới-phải
+        // 1. Tô khối đa giác đá với ánh sáng êm dịu
         drawPath(
             path = path,
             brush = Brush.linearGradient(
                 colors = listOf(
-                    Color(0xFFC4B5FD), // Mặt sáng đón ánh sao: tím hoa cà sáng
-                    Color(0xFF7C6C93), // Mặt đá trung gian: xám tím khoáng thạch
-                    Color(0xFF38294E), // Mặt chuyển tối
-                    Color(0xFF140B22), // Bóng tối không gian sâu
-                    Color(0xFF090412)  // Đáy bóng tối
+                    Color(0xFF9E8FB2), // Mặt sáng đón ánh sao: xám tím khoáng thạch dịu
+                    Color(0xFF5D4E72), // Mặt đá trung gian
+                    Color(0xFF2C1E40), // Mặt chuyển tối
+                    Color(0xFF10071C), // Bóng tối không gian
+                    Color(0xFF07020E)  // Đáy bóng tối
                 ),
                 start = Offset(-r, -r),
                 end = Offset(r, r)
             )
         )
 
-        // 2. Viền phản quang sáng cạnh trên-trái (Specular Rim Highlight)
+        // 2. Viền phản quang sáng cạnh trên-trái thanh mảnh
         val highlightPath = Path()
         for (i in 4..7) {
             val idx = i % vertexCount
@@ -624,8 +590,8 @@ private fun DrawScope.draw3DRockyAsteroid(
         }
         drawPath(
             path = highlightPath,
-            color = Color(0xFFDDD6FE).copy(alpha = 0.70f),
-            style = Stroke(width = 1.2.dp.toPx(), cap = StrokeCap.Round)
+            color = Color(0xFFC4B5FD).copy(alpha = 0.45f),
+            style = Stroke(width = 0.9.dp.toPx(), cap = StrokeCap.Round)
         )
 
         // 3. Các hố va chạm thiên thạch (Impact Craters)
@@ -634,18 +600,18 @@ private fun DrawScope.draw3DRockyAsteroid(
         val c1Y = -r * 0.15f
         val c1R = r * 0.28f
         drawCircle(
-            color = Color(0xFF180F29),
+            color = Color(0xFF140A22),
             radius = c1R,
             center = Offset(c1X, c1Y)
         )
         drawArc(
-            color = Color(0xFFE9D5FF).copy(alpha = 0.80f),
+            color = Color(0xFFC4B5FD).copy(alpha = 0.50f),
             startAngle = 135f,
             sweepAngle = 180f,
             useCenter = false,
             topLeft = Offset(c1X - c1R, c1Y - c1R),
             size = Size(c1R * 2f, c1R * 2f),
-            style = Stroke(width = 1.1.dp.toPx())
+            style = Stroke(width = 0.8.dp.toPx())
         )
 
         // Hố va chạm 2 (Vừa)
@@ -653,18 +619,18 @@ private fun DrawScope.draw3DRockyAsteroid(
         val c2Y = r * 0.22f
         val c2R = r * 0.22f
         drawCircle(
-            color = Color(0xFF120820),
+            color = Color(0xFF0E0518),
             radius = c2R,
             center = Offset(c2X, c2Y)
         )
         drawArc(
-            color = Color(0xFFC4B5FD).copy(alpha = 0.65f),
+            color = Color(0xFFA78BFA).copy(alpha = 0.40f),
             startAngle = 140f,
             sweepAngle = 160f,
             useCenter = false,
             topLeft = Offset(c2X - c2R, c2Y - c2R),
             size = Size(c2R * 2f, c2R * 2f),
-            style = Stroke(width = 1.0.dp.toPx())
+            style = Stroke(width = 0.7.dp.toPx())
         )
 
         // Hố va chạm 3 (Nhỏ)
@@ -672,7 +638,7 @@ private fun DrawScope.draw3DRockyAsteroid(
         val c3Y = r * 0.36f
         val c3R = r * 0.16f
         drawCircle(
-            color = Color(0xFF0F061C),
+            color = Color(0xFF0A0312),
             radius = c3R,
             center = Offset(c3X, c3Y)
         )
