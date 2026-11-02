@@ -85,12 +85,12 @@ object CosmicPlanetHelper {
 
     fun getPlanetPrimaryColor(type: CosmicPlanetType): Color {
         return when (type) {
-            CosmicPlanetType.MOON_GRAY      -> Color(0xFFCFD8DC) // Lunar Silver / Cool Grey
-            CosmicPlanetType.MARS_CRIMSON   -> Color(0xFFFF5722) // Mars Flame Red/Orange
             CosmicPlanetType.TERRA_GAIA     -> Color(0xFF00B4D8) // Earth Cyan Blue
-            CosmicPlanetType.JUPITER_STORM  -> Color(0xFFFF9E00) // Jupiter Warm Caramel Amber
+            CosmicPlanetType.MOON_GRAY      -> Color(0xFFCFD8DC) // Lunar Slate Silver
+            CosmicPlanetType.SATURN_MONARCH -> Color(0xFFE2CA9E) // Saturn Warm Sand & Champagne Gold
+            CosmicPlanetType.JUPITER_STORM  -> Color(0xFFF97316) // Jupiter Warm Amber Caramel
+            CosmicPlanetType.MARS_CRIMSON   -> Color(0xFFEA580C) // Mars Terracotta Red
             CosmicPlanetType.SOLAR_SUN      -> Color(0xFFFFB703) // Blazing Solar Gold / Amber Orange
-            CosmicPlanetType.SATURN_MONARCH -> Color(0xFFFFD166) // Saturn Golden Ring
             CosmicPlanetType.NEPTUNE_STORM  -> Color(0xFF7B2CBF) // Deep Nebula Purple
         }
     }
@@ -205,21 +205,28 @@ fun CosmicPlanetView(
             isCurrent   -> CosmicPlanetHelper.getPlanetPrimaryColor(planetType)
             else        -> CosmicPlanetHelper.getPlanetPrimaryColor(planetType).copy(alpha = 0.45f)
         }
-        Box(
-            modifier = Modifier
-                .size(planetDiameter + 20.dp)
-                .blur(20.dp)
-                .background(
-                    glowColor.copy(alpha = if (isCurrent) auraGlow * 0.45f else if (isCompleted) 0.30f else 0.16f),
-                    CircleShape
-                )
-        )
 
         // Bề mặt hành tinh được vẽ hoàn toàn bằng Canvas với các chi tiết nhận diện đặc thù
+        // (Tuyệt đối không dùng Modifier.blur để tránh bị viền khung vuông do bounding box clipping)
         Canvas(modifier = Modifier.size(width = containerWidth, height = containerHeight)) {
             val centerX = size.width / 2f
             val centerY = size.height / 2f
             val radius = planetDiameter.toPx() / 2f
+
+            // Hào quang vũ trụ tỏa tròn tự nhiên không viền góc
+            drawCircle(
+                brush = Brush.radialGradient(
+                    colors = listOf(
+                        glowColor.copy(alpha = if (isCurrent) auraGlow * 0.35f else if (isCompleted) 0.22f else 0.10f),
+                        glowColor.copy(alpha = if (isCurrent) auraGlow * 0.12f else 0.03f),
+                        Color.Transparent
+                    ),
+                    center = Offset(centerX, centerY),
+                    radius = radius * 1.50f
+                ),
+                center = Offset(centerX, centerY),
+                radius = radius * 1.50f
+            )
 
             // Vệ tinh quay 3D: Nửa sau lưng hành tinh (khi z < 0)
             if (isCurrent) {
@@ -252,16 +259,6 @@ fun CosmicPlanetView(
                     planetRadius = radius,
                     angleDeg = satelliteAngle,
                     isBackPass = false
-                )
-            }
-
-            // Màng chắn năng lượng trường lực vi mô nếu chặng đang bị KHÓA (LOCKED)
-            // (Mỏng nhẹ, trong suốt, KHÔNG che lấp chi tiết hành tinh)
-            if (isLocked) {
-                drawSciFiStasisShield(
-                    centerX = centerX,
-                    centerY = centerY,
-                    radius = radius
                 )
             }
         }
@@ -478,12 +475,12 @@ private fun DrawScope.drawPhotorealisticPlanet(
             Color(0xFF3E1200)
         )
         CosmicPlanetType.SATURN_MONARCH -> listOf(
-            Color(0xFFFFFDE7),
-            Color(0xFFFFF176),
-            Color(0xFFFFD54F),
-            Color(0xFFFFB300),
-            Color(0xFF996500),
-            Color(0xFF382000)
+            Color(0xFFFBF6EC), // Highlight champagne đón sáng (NASA Cassini true-color)
+            Color(0xFFECD8B4), // Vàng cát ấm áp (warm golden sand)
+            Color(0xFFD8BE93), // Nâu vàng mật ong (honey ochre)
+            Color(0xFFA6855B), // Dải sẫm caramel
+            Color(0xFF5A3E20), // Hoàng hôn gỗ tếch
+            Color(0xFF191006)  // Góc khuất bóng tối sâu thẳm
         )
         CosmicPlanetType.NEPTUNE_STORM -> listOf(
             Color(0xFFE1F5FE),
@@ -562,7 +559,7 @@ private fun DrawScope.drawPhotorealisticPlanet(
             CosmicPlanetType.TERRA_GAIA     -> Color(0x4400B4D8)
             CosmicPlanetType.JUPITER_STORM  -> Color(0x44FFB74D)
             CosmicPlanetType.SOLAR_SUN      -> Color(0x44FFB703)
-            CosmicPlanetType.SATURN_MONARCH -> Color(0x44FFE082)
+            CosmicPlanetType.SATURN_MONARCH -> Color(0x44D8BE93)
             CosmicPlanetType.NEPTUNE_STORM  -> Color(0x4429B6F6)
         }
         drawCircle(
@@ -583,7 +580,7 @@ private fun DrawScope.drawPhotorealisticPlanet(
         CosmicPlanetType.TERRA_GAIA     -> Color(0xFF48CAE4)
         CosmicPlanetType.JUPITER_STORM  -> Color(0xFFFFCC80)
         CosmicPlanetType.SOLAR_SUN      -> Color(0xFFFFE082)
-        CosmicPlanetType.SATURN_MONARCH -> Color(0xFFFFE082)
+        CosmicPlanetType.SATURN_MONARCH -> Color(0xFFECD8B4)
         CosmicPlanetType.NEPTUNE_STORM  -> Color(0xFF81D4FA)
     }
 
@@ -877,7 +874,7 @@ private fun DrawScope.drawMarsCanyonsAndVolcano(
     )
 }
 
-// ─── Chi Tiết Hành Tinh 3: TRÁI ĐẤT (TERRA_GAIA) ────────────────────────────
+// ─── Chi Tiết Hành Tinh 1: TRÁI ĐẤT (TERRA_GAIA) ────────────────────────────
 
 private fun DrawScope.drawTerraGaiaBiosphere(
     centerX: Float,
@@ -886,80 +883,125 @@ private fun DrawScope.drawTerraGaiaBiosphere(
     cloudPhase: Float,
     alpha: Float
 ) {
-    // 1. Thềm lục địa nông viền màu ngọc lam rực rỡ (Turquoise shallow ocean shelves)
-    val shelfColor = Color(0x8848CAE4).copy(alpha = 0.88f * alpha)
-    val landColor = Color(0xFF2D6A4F).copy(alpha = 0.95f * alpha)
-    val desertColor = Color(0xFFDDA15E).copy(alpha = 0.88f * alpha)
+    // 1. Thềm lục địa nông viền màu ngọc lam rực rỡ (Turquoise shallow ocean shelves - Chuẩn ảnh Blue Marble)
+    val shelfColor = Color(0x9900B4D8).copy(alpha = 0.90f * alpha)
+    val deepShelfColor = Color(0x6648CAE4).copy(alpha = 0.85f * alpha)
+    val landColor = Color(0xFF235A3E).copy(alpha = 0.95f * alpha)
+    val highlandColor = Color(0xFF52796F).copy(alpha = 0.92f * alpha)
+    val desertColor = Color(0xFFC98A52).copy(alpha = 0.92f * alpha)
+    val aridColor = Color(0xFFBC6C25).copy(alpha = 0.90f * alpha)
 
-    // Lục địa Bắc (Hình khối Bắc Mỹ / Âu-Á rõ rệt)
-    val northLand = Path().apply {
-        moveTo(centerX - radius * 0.60f, centerY - radius * 0.28f)
+    // Lục địa Châu Á & Đông Nam Á (Bán đảo Đông Dương, Trung Quốc, Ấn Độ - Giống góc chụp ảnh 1)
+    val asiaLand = Path().apply {
+        moveTo(centerX - radius * 0.58f, centerY - radius * 0.22f)
         cubicTo(
-            centerX - radius * 0.35f, centerY - radius * 0.70f,
-            centerX + radius * 0.15f, centerY - radius * 0.60f,
-            centerX + radius * 0.48f, centerY - radius * 0.18f
+            centerX - radius * 0.45f, centerY - radius * 0.65f,
+            centerX + radius * 0.08f, centerY - radius * 0.58f,
+            centerX + radius * 0.38f, centerY - radius * 0.28f
         )
         cubicTo(
-            centerX + radius * 0.25f, centerY + radius * 0.05f,
-            centerX - radius * 0.15f, centerY - radius * 0.05f,
-            centerX - radius * 0.60f, centerY - radius * 0.28f
+            centerX + radius * 0.22f, centerY - radius * 0.05f,
+            centerX + radius * 0.05f, centerY + radius * 0.18f, // Mũi Cà Mau / Đông Nam Á
+            centerX - radius * 0.15f, centerY + radius * 0.12f
+        )
+        cubicTo(
+            centerX - radius * 0.22f, centerY - radius * 0.05f,
+            centerX - radius * 0.45f, centerY + radius * 0.05f,
+            centerX - radius * 0.58f, centerY - radius * 0.22f
         )
         close()
     }
-    // Viền thềm san hô ngọc lam
-    drawPath(northLand, color = shelfColor, style = Stroke(width = 4.dp.toPx()))
+    // Viền thềm san hô ngọc lam rộng tỏa ra đại dương
+    drawPath(asiaLand, color = deepShelfColor, style = Stroke(width = 5.dp.toPx()))
+    drawPath(asiaLand, color = shelfColor, style = Stroke(width = 2.5.dp.toPx()))
     // Mảng lục địa xanh rừng rậm
-    drawPath(northLand, color = landColor)
+    drawPath(asiaLand, color = landColor)
 
-    // Sa mạc Sahara màu cát vàng trên lục địa bắc
-    drawCircle(
+    // Vùng cao nguyên Tây Tạng & sa mạc Gobi màu cát nâu vàng
+    drawOval(
         color = desertColor,
-        center = Offset(centerX + radius * 0.08f, centerY - radius * 0.32f),
-        radius = radius * 0.18f
+        topLeft = Offset(centerX - radius * 0.22f, centerY - radius * 0.48f),
+        size = Size(radius * 0.38f, radius * 0.24f)
+    )
+    drawOval(
+        color = highlandColor,
+        topLeft = Offset(centerX - radius * 0.32f, centerY - radius * 0.38f),
+        size = Size(radius * 0.22f, radius * 0.16f)
     )
 
-    // Lục địa Nam (Hình khối Nam Mỹ / Châu Phi rõ rệt)
-    val southLand = Path().apply {
-        moveTo(centerX - radius * 0.28f, centerY + radius * 0.12f)
+    // Lục địa Châu Úc (Australia - Nổi bật ở góc đông nam như ảnh 1)
+    val australiaLand = Path().apply {
+        moveTo(centerX + radius * 0.18f, centerY + radius * 0.38f)
         cubicTo(
-            centerX + radius * 0.12f, centerY + radius * 0.05f,
-            centerX + radius * 0.38f, centerY + radius * 0.22f,
-            centerX + radius * 0.22f, centerY + radius * 0.68f
+            centerX + radius * 0.38f, centerY + radius * 0.32f,
+            centerX + radius * 0.58f, centerY + radius * 0.42f,
+            centerX + radius * 0.48f, centerY + radius * 0.68f
         )
         cubicTo(
-            centerX - radius * 0.05f, centerY + radius * 0.72f,
-            centerX - radius * 0.28f, centerY + radius * 0.42f,
-            centerX - radius * 0.28f, centerY + radius * 0.12f
+            centerX + radius * 0.28f, centerY + radius * 0.72f,
+            centerX + radius * 0.12f, centerY + radius * 0.55f,
+            centerX + radius * 0.18f, centerY + radius * 0.38f
         )
         close()
     }
-    drawPath(southLand, color = shelfColor, style = Stroke(width = 3.5.dp.toPx()))
-    drawPath(southLand, color = landColor)
+    drawPath(australiaLand, color = deepShelfColor, style = Stroke(width = 4.dp.toPx()))
+    drawPath(australiaLand, color = shelfColor, style = Stroke(width = 2.dp.toPx()))
+    drawPath(australiaLand, color = aridColor) // Vùng sa mạc đỏ Red Centre đặc trưng
+    // Bờ biển phía đông nước Úc xanh tươi
+    drawCircle(
+        color = landColor,
+        center = Offset(centerX + radius * 0.44f, centerY + radius * 0.52f),
+        radius = radius * 0.10f
+    )
 
-    // 2. Ánh đèn thành phố rực sáng về đêm (Night-side City Lights)
+    // Quần đảo Indonesia & Philippines (Chuỗi đảo ngọc lam)
+    val islands = listOf(
+        Offset(centerX - radius * 0.05f, centerY + radius * 0.24f),
+        Offset(centerX + radius * 0.10f, centerY + radius * 0.22f),
+        Offset(centerX + radius * 0.22f, centerY + radius * 0.16f),
+        Offset(centerX + radius * 0.15f, centerY + radius * 0.05f)
+    )
+    for (pt in islands) {
+        drawCircle(color = shelfColor, center = pt, radius = 3.5.dp.toPx())
+        drawCircle(color = landColor, center = pt, radius = 2.dp.toPx())
+    }
+
+    // 2. Ánh đèn thành phố rực sáng về đêm ở nửa khuất sáng (Night-side City Lights)
     val cityLightColor = Color(0xFFFFD54F).copy(alpha = 0.95f * alpha)
     val cityPoints = listOf(
-        Offset(centerX + radius * 0.32f, centerY + radius * 0.15f),
-        Offset(centerX + radius * 0.44f, centerY + radius * 0.25f),
-        Offset(centerX + radius * 0.36f, centerY + radius * 0.42f),
-        Offset(centerX + radius * 0.26f, centerY + radius * 0.50f),
-        Offset(centerX + radius * 0.50f, centerY - radius * 0.05f)
+        Offset(centerX + radius * 0.35f, centerY + radius * 0.15f),
+        Offset(centerX + radius * 0.48f, centerY + radius * 0.25f),
+        Offset(centerX + radius * 0.40f, centerY + radius * 0.42f),
+        Offset(centerX + radius * 0.30f, centerY + radius * 0.50f),
+        Offset(centerX + radius * 0.52f, centerY - radius * 0.05f)
     )
     cityPoints.forEach { pt ->
         drawCircle(color = cityLightColor, center = pt, radius = 1.6.dp.toPx())
-        drawCircle(color = Color(0x66FFA000), center = pt, radius = 4.dp.toPx())
+        drawCircle(color = Color(0x66FFA000), center = pt, radius = 3.8.dp.toPx())
     }
 
-    // 3. Mây bão khí quyển xoắn ốc tuyệt đẹp (Atmospheric Cyclone with Eye)
+    // 3. Mây bão khí quyển xoắn ốc tuyệt đẹp (Atmospheric Cyclone with Eye & Weather Fronts)
     val cloudOffsetRad = Math.toRadians(cloudPhase.toDouble() * 0.25)
     val cloudShiftX = (cos(cloudOffsetRad) * radius * 0.08f).toFloat()
 
     val cycloneCenter = Offset(centerX - radius * 0.15f + cloudShiftX, centerY - radius * 0.18f)
 
-    // Bóng đổ của mây lên đại dương
-    drawCycloneClouds(cycloneCenter.x + 3.5.dp.toPx(), cycloneCenter.y + 3.5.dp.toPx(), radius, Color(0x44000000))
+    // Bóng đổ của mây lên bề mặt biển tạo chiều sâu 3D
+    drawCycloneClouds(cycloneCenter.x + 3.dp.toPx(), cycloneCenter.y + 3.dp.toPx(), radius, Color(0x38000814))
     // Đám mây trắng xóa tinh khôi
     drawCycloneClouds(cycloneCenter.x, cycloneCenter.y, radius, Color(0xEEFFFFFF))
+
+    // Dải mây xoáy vĩ tuyến Nam (Southern oceanic cloud sweep - Giống dải mây vòng quanh Nam Cực trong ảnh 1)
+    val southCloudPath = Path().apply {
+        moveTo(centerX - radius * 0.70f + cloudShiftX * 0.5f, centerY + radius * 0.72f)
+        cubicTo(
+            centerX - radius * 0.30f, centerY + radius * 0.58f,
+            centerX + radius * 0.20f, centerY + radius * 0.78f,
+            centerX + radius * 0.70f, centerY + radius * 0.62f
+        )
+    }
+    drawPath(southCloudPath, color = Color(0x28000000), style = Stroke(width = 6.dp.toPx(), cap = StrokeCap.Round))
+    drawPath(southCloudPath, color = Color(0xCCFFFFFF), style = Stroke(width = 5.dp.toPx(), cap = StrokeCap.Round))
 }
 
 private fun DrawScope.drawCycloneClouds(cx: Float, cy: Float, radius: Float, color: Color) {
@@ -1090,7 +1132,7 @@ private fun DrawScope.drawJupiterTurbulentBeltsAndRedSpot(
     drawCircle(color = Color(0xCCFFFFFF), center = pearl2, radius = radius * 0.045f, alpha = alpha)
 }
 
-// ─── Chi Tiết Hành Tinh 5: SAO THỔ (SATURN_MONARCH - VÀNH ĐAI CASSINI 3D) ──────
+// ─── Chi Tiết Hành Tinh 3: SAO THỔ (SATURN_MONARCH - VÀNH ĐAI CASSINI 3D) ──────
 
 private fun DrawScope.drawSaturnBeltsAndHexagon(
     centerX: Float,
@@ -1098,54 +1140,83 @@ private fun DrawScope.drawSaturnBeltsAndHexagon(
     radius: Float,
     alpha: Float
 ) {
-    // 1. Các dải khí quyển vàng bơ, hổ phách dịu ngọt của Sao Thổ
-    for (i in -5..5) {
-        val yPos = centerY + (i * radius * 0.18f)
-        val bandColor = when (abs(i) % 4) {
-            0 -> Color(0x55FFE082)
-            1 -> Color(0x66FFB300)
-            2 -> Color(0x44FFA000)
-            else -> Color(0x336D3B00)
+    // 1. Các dải khí quyển êm dịu, uốn lượn cong theo khối cầu 3D của Sao Thổ
+    // Tông màu ảnh chụp Cassini chân thực: vàng cát ấm, mật ong, caramel, nâu nhạt, và chỏm cực ôliu
+    val bandData = listOf(
+        Triple(-0.72f, 0.14f, Color(0x664A4436)), // Cực Bắc xám ôliu
+        Triple(-0.55f, 0.13f, Color(0x44B8986E)), // Đới ôn đới bắc
+        Triple(-0.38f, 0.15f, Color(0x55E8D2AF)), // Dải sáng nhiệt đới bắc
+        Triple(-0.20f, 0.16f, Color(0x66A88554)), // Dải xích đạo bắc sẫm
+        Triple(-0.02f, 0.18f, Color(0x44F4E4CC)), // Vùng xích đạo sáng
+        Triple(0.18f, 0.16f, Color(0x55BA9665)),  // Dải xích đạo nam
+        Triple(0.36f, 0.14f, Color(0x44DFCA9E)),  // Dải nhiệt đới nam
+        Triple(0.54f, 0.13f, Color(0x559A774C)),  // Ôn đới nam
+        Triple(0.70f, 0.16f, Color(0x66543D26))   // Cực nam nâu đậm
+    )
+
+    for ((yFrac, hFrac, color) in bandData) {
+        val y = centerY + yFrac * radius
+        val h = hFrac * radius
+        // Dải vĩ tuyến cong tự nhiên theo độ cong khối cầu
+        val bandPath = Path().apply {
+            moveTo(centerX - radius, y)
+            cubicTo(
+                centerX - radius * 0.45f, y + radius * 0.05f,
+                centerX + radius * 0.45f, y + radius * 0.05f,
+                centerX + radius, y
+            )
+            lineTo(centerX + radius, y + h)
+            cubicTo(
+                centerX + radius * 0.45f, y + h + radius * 0.05f,
+                centerX - radius * 0.45f, y + h + radius * 0.05f,
+                centerX - radius, y + h
+            )
+            close()
         }
-        drawRect(
-            color = bandColor.copy(alpha = bandColor.alpha * alpha),
-            topLeft = Offset(centerX - radius, yPos - radius * 0.08f),
-            size = Size(radius * 2f, radius * 0.16f)
-        )
+        drawPath(bandPath, color = color.copy(alpha = color.alpha * alpha))
     }
 
-    // 2. Cơn bão lục giác kỳ bí ở Cực Bắc Sao Thổ (Saturn's North Polar Hexagon)
-    val hexRadius = radius * 0.22f
-    val hexCenterY = centerY - radius * 0.82f
+    // 2. Chỏm bão lục giác Cực Bắc kỳ vĩ (North Polar Hexagon) màu ôliu sẫm
+    val hexRadius = radius * 0.20f
+    val hexCenterY = centerY - radius * 0.84f
     val hexPath = Path()
     for (step in 0 until 6) {
         val angle = Math.toRadians((step * 60.0) - 30.0)
         val px = (centerX + hexRadius * cos(angle)).toFloat()
-        val py = (hexCenterY + (hexRadius * 0.55f) * sin(angle)).toFloat()
+        val py = (hexCenterY + (hexRadius * 0.45f) * sin(angle)).toFloat()
         if (step == 0) hexPath.moveTo(px, py) else hexPath.lineTo(px, py)
     }
     hexPath.close()
     drawPath(
         hexPath,
-        color = Color(0xAAFFB300),
-        style = Stroke(width = 2.dp.toPx()),
-        alpha = alpha
+        color = Color(0x884A4535).copy(alpha = 0.8f * alpha),
+        style = Stroke(width = 1.6.dp.toPx())
     )
 
-    // 3. Bóng đổ cong của vành đai vắt ngang bề mặt Sao Thổ (Ring Shadow on Globe)
+    // 3. Bóng đổ cong tự nhiên của vành đai vắt ngang bề mặt Sao Thổ (Ring Shadow on Globe)
+    // Tái hiện chân thực ảnh chụp không gian Cassini của NASA / Apple Wallpaper
     val ringShadowPath = Path().apply {
-        moveTo(centerX - radius * 0.96f, centerY - radius * 0.02f)
-        quadraticTo(centerX, centerY + radius * 0.32f, centerX + radius * 0.96f, centerY - radius * 0.02f)
-        lineTo(centerX + radius * 0.96f, centerY + radius * 0.16f)
-        quadraticTo(centerX, centerY + radius * 0.50f, centerX - radius * 0.96f, centerY + radius * 0.16f)
+        moveTo(centerX - radius * 0.96f, centerY - radius * 0.04f)
+        cubicTo(
+            centerX - radius * 0.4f, centerY + radius * 0.22f,
+            centerX + radius * 0.4f, centerY + radius * 0.22f,
+            centerX + radius * 0.96f, centerY - radius * 0.04f
+        )
+        lineTo(centerX + radius * 0.96f, centerY + radius * 0.12f)
+        cubicTo(
+            centerX + radius * 0.4f, centerY + radius * 0.38f,
+            centerX - radius * 0.4f, centerY + radius * 0.38f,
+            centerX - radius * 0.96f, centerY + radius * 0.12f
+        )
         close()
     }
-    drawPath(ringShadowPath, color = Color(0xCC180800), alpha = alpha)
+    drawPath(ringShadowPath, color = Color(0xDD0D0601).copy(alpha = 0.92f * alpha))
 }
 
 /**
  * Vẽ Hệ Thống Vành Đai Sao Thổ 3D Đa Tầng Lộng Lẫy (Realistic Multi-Ring System):
  * - Vành A, Rãnh tối Cassini (Cassini Division), Vành B rực rỡ, Vành C mờ
+ * - Bảng màu chân thực thiên văn: Cát vàng kem, ngà ấm, nâu khói và rãnh đen thẳm
  * - Phân chia chuẩn xác nửa sau (Back Ring) và nửa trước (Front Ring)
  * - Bóng đổ của hình cầu hành tinh hắt lên nửa sau vành đai
  */
@@ -1157,59 +1228,59 @@ private fun DrawScope.drawRealisticSaturnRings(
     alpha: Float,
     ringPhase: Float = 0f
 ) {
-    val ringTiltAngle = -24f
-    val ringOuterA = radius * 2.95f
-    val ringOuterB = radius * 0.90f
+    val ringTiltAngle = -22f
+    val ringOuterA = radius * 3.10f
+    val ringOuterB = radius * 0.92f
 
     withTransform({
         rotate(ringTiltAngle, pivot = Offset(centerX, centerY))
     }) {
         // Cắt nửa trước hoặc nửa sau theo trục hoành
         val clipRect = if (isFront) {
-            Rect(centerX - ringOuterA, centerY, centerX + ringOuterA, centerY + ringOuterB * 1.5f)
+            Rect(centerX - ringOuterA, centerY, centerX + ringOuterA, centerY + ringOuterB * 1.6f)
         } else {
-            Rect(centerX - ringOuterA, centerY - ringOuterB * 1.5f, centerX + ringOuterA, centerY)
+            Rect(centerX - ringOuterA, centerY - ringOuterB * 1.6f, centerX + ringOuterA, centerY)
         }
 
         clipRect(clipRect.left, clipRect.top, clipRect.right, clipRect.bottom) {
-            // Vành C trong cùng (Crepe Ring - mờ khói)
+            // Vành C trong cùng (Crepe Ring - nâu khói mờ ảo)
             val ringCW = ringOuterA * 0.65f
             val ringCH = ringOuterB * 0.65f
             drawOval(
-                color = Color(0x55FFD54F),
+                color = Color(0x444D3A27),
                 topLeft = Offset(centerX - ringCW / 2f, centerY - ringCH / 2f),
                 size = Size(ringCW, ringCH),
-                style = Stroke(width = radius * 0.10f),
+                style = Stroke(width = radius * 0.11f),
                 alpha = alpha
             )
 
-            // Vành B rực rỡ dày đặc (Dense main Ring B) - Vàng kim lộng lẫy
+            // Vành B rực rỡ dày đặc (Dense main Ring B) - Vàng cát & ngà ấm thanh lịch (Chuẩn ảnh Apple Wallpaper)
             val ringBW = ringOuterA * 0.84f
             val ringBH = ringOuterB * 0.84f
             drawOval(
                 brush = Brush.radialGradient(
                     colors = listOf(
-                        Color(0x00FFCA28),
-                        Color(0xFFFFB300),
-                        Color(0xFFFFF176),
-                        Color(0xFFFFC107),
-                        Color(0x00FF8F00)
+                        Color(0x00D4BE98),
+                        Color(0xFFCBB28C),
+                        Color(0xFFE8D7B8),
+                        Color(0xFFDFC49B),
+                        Color(0x00A88960)
                     ),
                     center = Offset(centerX, centerY),
                     radius = ringBW / 2f
                 ),
                 topLeft = Offset(centerX - ringBW / 2f, centerY - ringBH / 2f),
                 size = Size(ringBW, ringBH),
-                style = Stroke(width = radius * 0.24f),
+                style = Stroke(width = radius * 0.25f),
                 alpha = alpha
             )
 
             // Các rãnh vi mô bên trong Vành B (Fine sub-grooves)
-            for (g in 1..3) {
-                val grooveW = ringBW * (0.88f + g * 0.035f)
-                val grooveH = ringBH * (0.88f + g * 0.035f)
+            for (g in 1..4) {
+                val grooveW = ringBW * (0.86f + g * 0.032f)
+                val grooveH = ringBH * (0.86f + g * 0.032f)
                 drawOval(
-                    color = Color(0x334E2600),
+                    color = Color(0x333D2A18),
                     topLeft = Offset(centerX - grooveW / 2f, centerY - grooveH / 2f),
                     size = Size(grooveW, grooveH),
                     style = Stroke(width = 0.8.dp.toPx()),
@@ -1221,28 +1292,28 @@ private fun DrawScope.drawRealisticSaturnRings(
             val cassiniW = ringOuterA * 0.88f
             val cassiniH = ringOuterB * 0.88f
             drawOval(
-                color = Color(0xFF040209),
+                color = Color(0xFF030105),
                 topLeft = Offset(centerX - cassiniW / 2f, centerY - cassiniH / 2f),
                 size = Size(cassiniW, cassiniH),
-                style = Stroke(width = radius * 0.05f),
+                style = Stroke(width = radius * 0.055f),
                 alpha = alpha
             )
 
-            // Vành A ngoài (Outer Ring A)
+            // Vành A ngoài (Outer Ring A - Tông taupe xám vàng thanh nhã)
             drawOval(
                 brush = Brush.radialGradient(
                     colors = listOf(
-                        Color(0x00FFE082),
-                        Color(0xAAFFCA28),
-                        Color(0x99FFB300),
-                        Color(0x00FF8F00)
+                        Color(0x00B8A285),
+                        Color(0xAAB09B7E),
+                        Color(0x889E886D),
+                        Color(0x006B5842)
                     ),
                     center = Offset(centerX, centerY),
                     radius = ringOuterA / 2f
                 ),
                 topLeft = Offset(centerX - ringOuterA / 2f, centerY - ringOuterB / 2f),
                 size = Size(ringOuterA, ringOuterB),
-                style = Stroke(width = radius * 0.13f),
+                style = Stroke(width = radius * 0.14f),
                 alpha = alpha
             )
 
@@ -1250,10 +1321,10 @@ private fun DrawScope.drawRealisticSaturnRings(
             val enckeW = ringOuterA * 0.96f
             val enckeH = ringOuterB * 0.96f
             drawOval(
-                color = Color(0x55040209),
+                color = Color(0x66030105),
                 topLeft = Offset(centerX - enckeW / 2f, centerY - enckeH / 2f),
                 size = Size(enckeW, enckeH),
-                style = Stroke(width = 0.8.dp.toPx()),
+                style = Stroke(width = 0.9.dp.toPx()),
                 alpha = alpha
             )
 
@@ -1261,17 +1332,17 @@ private fun DrawScope.drawRealisticSaturnRings(
             val ringFW = ringOuterA * 1.05f
             val ringFH = ringOuterB * 1.05f
             drawOval(
-                color = Color(0x77FFE082),
+                color = Color(0x77C8B294),
                 topLeft = Offset(centerX - ringFW / 2f, centerY - ringFH / 2f),
                 size = Size(ringFW, ringFH),
-                style = Stroke(width = 1.4.dp.toPx()),
+                style = Stroke(width = 1.3.dp.toPx()),
                 alpha = alpha
             )
 
             // CHUYỂN ĐỘNG THẬT CỦA VÀNH ĐAI: CÁC TIỂU HÀNH TINH & HẠT BỤI BĂNG QUAY THEO QUỸ ĐẠO KEPLER
-            val particleCount = 36
+            val particleCount = 40
             for (p in 0 until particleCount) {
-                // Phân bổ hạt bụi trên 4 dải quỹ đạo: Vành C, Vành B trong, Vành B ngoài, Vành A
+                // Phân bổ hạt bụi trên các dải quỹ đạo: Vành C, Vành B trong, Vành B ngoài, Vành A
                 val trackFraction = when (p % 4) {
                     0 -> 0.65f // Vành C
                     1 -> 0.77f // Vành B trong
@@ -1295,21 +1366,21 @@ private fun DrawScope.drawRealisticSaturnRings(
                 val isFrontSide = py > centerY
                 val baseSparkle = (0.45f + 0.45f * sin(rad * 2.0 + p).absoluteValue.toFloat())
                 val particleAlpha = if (isFrontSide) {
-                    (baseSparkle * 0.95f).coerceIn(0.2f, 1f) * alpha
+                    (baseSparkle * 0.92f).coerceIn(0.2f, 1f) * alpha
                 } else {
-                    (baseSparkle * 0.60f).coerceIn(0.1f, 0.7f) * alpha
+                    (baseSparkle * 0.55f).coerceIn(0.1f, 0.65f) * alpha
                 }
 
                 val particleColor = when (p % 3) {
-                    0 -> Color(0xFFFFF9C4) // Tinh thể băng trắng ngà
-                    1 -> Color(0xFFFFD54F) // Bụi silicat vàng kim
+                    0 -> Color(0xFFF7EFE2) // Tinh thể băng champagne
+                    1 -> Color(0xFFDFCBB0) // Bụi silicat vàng cát
                     else -> Color(0xFFFFFFFF) // Ánh sao lấp lánh chói sáng
                 }
 
                 val pRadius = when {
-                    p % 6 == 0 -> 1.8.dp.toPx() // Tiểu hành tinh nhỏ
-                    p % 3 == 0 -> 1.2.dp.toPx()
-                    else -> 0.8.dp.toPx()       // Hạt bụi băng vi mô
+                    p % 6 == 0 -> 1.6.dp.toPx() // Tiểu hành tinh nhỏ
+                    p % 3 == 0 -> 1.1.dp.toPx()
+                    else -> 0.7.dp.toPx()       // Hạt bụi băng vi mô
                 }
 
                 drawCircle(
@@ -1321,8 +1392,8 @@ private fun DrawScope.drawRealisticSaturnRings(
                 // Hào quang lấp lánh cho hạt lớn
                 if (p % 6 == 0 && isFrontSide) {
                     drawCircle(
-                        color = Color.White.copy(alpha = particleAlpha * 0.5f),
-                        radius = pRadius * 2.0f,
+                        color = Color.White.copy(alpha = particleAlpha * 0.45f),
+                        radius = pRadius * 1.8f,
                         center = Offset(px, py)
                     )
                 }
@@ -1330,10 +1401,10 @@ private fun DrawScope.drawRealisticSaturnRings(
 
             // Nếu là nửa sau (Back Ring), vẽ bóng đổ của quả cầu Sao Thổ cắt qua vành đai
             if (!isFront) {
-                val shadowWidth = radius * 1.10f
-                val shadowHeight = ringOuterB * 0.85f
+                val shadowWidth = radius * 1.12f
+                val shadowHeight = ringOuterB * 0.88f
                 drawOval(
-                    color = Color(0xEE000000),
+                    color = Color(0xFA000000),
                     topLeft = Offset(centerX + radius * 0.15f, centerY - shadowHeight * 0.95f),
                     size = Size(shadowWidth, shadowHeight),
                     alpha = alpha
@@ -1456,27 +1527,6 @@ private fun DrawScope.draw3DOrbitingProbe(
             strokeWidth = 1.5.dp.toPx() * probeScale
         )
     }
-}
-
-/**
- * Vẽ màng bảo vệ trường lực Stasis Shield cho chặng LOCKED:
- * - Lưới từ trường lục giác mỏng nhẹ, trong suốt, KHÔNG che lấp bề mặt hành tinh
- */
-private fun DrawScope.drawSciFiStasisShield(
-    centerX: Float,
-    centerY: Float,
-    radius: Float
-) {
-    // Vành đai từ trường khóa mỏng nhẹ
-    drawCircle(
-        color = Color(0x6600F5D4),
-        center = Offset(centerX, centerY),
-        radius = radius * 1.04f,
-        style = Stroke(
-            width = 1.2.dp.toPx(),
-            pathEffect = PathEffect.dashPathEffect(floatArrayOf(8f, 8f), 0f)
-        )
-    )
 }
 
 // ─── Đỉnh Cao Vũ Trụ: MẶT TRỜI (THE SUN / SOLAR APEX - Level Cuối To Nhất) ────
