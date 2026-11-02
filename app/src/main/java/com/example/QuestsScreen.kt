@@ -1,6 +1,7 @@
 package com.example
 
 import androidx.compose.animation.core.*
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -17,6 +18,7 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
@@ -24,6 +26,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -41,8 +44,10 @@ data class QuestData(
     val desc: String,
     val current: Int,
     val total: Int,
-    val reward: String,
-    val icon: ImageVector,
+    val rewardXp: Int,
+    val rewardStar: Int,
+    val iconRes: Int? = null,
+    val icon: ImageVector? = null,
     val color: Color,
     val isCompleted: Boolean = current >= total,
     val isClaimed: Boolean = false
@@ -51,7 +56,8 @@ data class QuestData(
 private data class QuestMeta(
     val title: String,
     val desc: String,
-    val icon: ImageVector,
+    val iconRes: Int? = null,
+    val icon: ImageVector? = null,
     val color: Color
 )
 
@@ -71,13 +77,13 @@ fun QuestsScreen(viewModel: StudyViewModel) {
 
     val quests = dailyTasks.map { task ->
         val meta = when (task.taskType) {
-            "LESSON_COMPLETE" -> QuestMeta(strings.quest1Title, strings.quest1Desc, Icons.Default.AutoStories, Color(0xFF51FAC1))
-            "LESSON_COMPLETE_2" -> QuestMeta(strings.quest4Title, strings.quest4Desc, Icons.Default.School, Color(0xFF64B5F6))
-            "ANSWER_QUESTIONS" -> QuestMeta(strings.quest3Title, strings.quest3Desc, Icons.AutoMirrored.Filled.MenuBook, Color(0xFF27E0A9))
-            "ANSWER_QUESTIONS_20" -> QuestMeta(strings.quest5Title, strings.quest5Desc, Icons.Default.Psychology, Color(0xFFFFB74D))
-            "PERFECT_SCORE" -> QuestMeta(strings.quest2Title, strings.quest2Desc, Icons.Default.Star, Color(0xFFFFD166))
-            "ASK_AI_TUTOR" -> QuestMeta(strings.quest6Title, strings.quest6Desc, Icons.Default.ChatBubble, Color(0xFFBA68C8))
-            else -> QuestMeta(task.title, strings.quest3Desc, Icons.AutoMirrored.Filled.MenuBook, Color(0xFF27E0A9))
+            "LESSON_COMPLETE" -> QuestMeta(strings.quest1Title, strings.quest1Desc, iconRes = R.drawable.ic_nav_practice, color = Color(0xFF51FAC1))
+            "LESSON_COMPLETE_2" -> QuestMeta(strings.quest4Title, strings.quest4Desc, iconRes = R.drawable.ic_nav_practice, color = Color(0xFF64B5F6))
+            "ANSWER_QUESTIONS" -> QuestMeta(strings.quest3Title, strings.quest3Desc, iconRes = R.drawable.ic_mentor_qa, color = Color(0xFF27E0A9))
+            "ANSWER_QUESTIONS_20" -> QuestMeta(strings.quest5Title, strings.quest5Desc, iconRes = R.drawable.ic_action_thinking, color = Color(0xFFFFB74D))
+            "PERFECT_SCORE" -> QuestMeta(strings.quest2Title, strings.quest2Desc, iconRes = R.drawable.ic_action_star, color = Color(0xFFFFD166))
+            "ASK_AI_TUTOR" -> QuestMeta(strings.quest6Title, strings.quest6Desc, iconRes = R.drawable.ic_nav_mentor, color = Color(0xFFBA68C8))
+            else -> QuestMeta(task.title, strings.quest3Desc, iconRes = R.drawable.ic_mentor_qa, color = Color(0xFF27E0A9))
         }
         // Phần thưởng sao: 15 + 20 + 15 + 20 + 15 + 15 = 100 ⭐ / ngày
         val starReward = when (task.taskType) {
@@ -95,7 +101,9 @@ fun QuestsScreen(viewModel: StudyViewModel) {
             desc = meta.desc,
             current = task.currentValue.coerceAtMost(task.targetValue),
             total = task.targetValue,
-            reward = "${task.rewardXp} XP + ⭐$starReward",
+            rewardXp = task.rewardXp,
+            rewardStar = starReward,
+            iconRes = meta.iconRes,
             icon = meta.icon,
             color = meta.color,
             isCompleted = task.currentValue >= task.targetValue,
@@ -145,16 +153,27 @@ fun QuestsScreen(viewModel: StudyViewModel) {
                 .padding(horizontal = 20.dp, vertical = 10.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Icon(Icons.AutoMirrored.Filled.MenuBook, contentDescription = null, tint = Color(0xFFFFD166), modifier = Modifier.size(28.dp))
+            Image(
+                painter = painterResource(R.drawable.ic_nav_task),
+                contentDescription = null,
+                modifier = Modifier.size(34.dp)
+            )
             Spacer(modifier = Modifier.width(12.dp))
             Column {
                 Text(strings.dailyQuests, color = Color.White, fontSize = 22.sp, fontWeight = FontWeight.ExtraBold)
-                Text(
-                    text = if (isEnglish) "Complete 6 quests to earn 100 ⭐" else "Hoàn thành 6 nhiệm vụ nhận 100 ⭐",
-                    color = Color(0xFFFFD166),
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.SemiBold
-                )
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        text = if (isEnglish) "Complete 6 quests to earn 100 " else "Hoàn thành 6 nhiệm vụ nhận 100 ",
+                        color = Color(0xFFFFD166),
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                    Image(
+                        painter = painterResource(R.drawable.ic_action_star),
+                        contentDescription = null,
+                        modifier = Modifier.size(13.dp)
+                    )
+                }
             }
         }
 
@@ -191,11 +210,10 @@ fun QuestsScreen(viewModel: StudyViewModel) {
                             .border(1.5.dp, Color(0x6651FAC1), CircleShape),
                         contentAlignment = Alignment.Center
                     ) {
-                        Icon(
-                            Icons.Default.Celebration,
+                        Image(
+                            painter = painterResource(R.drawable.ic_reward_chest),
                             contentDescription = null,
-                            tint = Color(0xFF51FAC1),
-                            modifier = Modifier.size(38.dp)
+                            modifier = Modifier.size(46.dp)
                         )
                     }
                     Spacer(modifier = Modifier.height(16.dp))
@@ -282,20 +300,33 @@ fun DailyChestHeader(progress: Float, chestOpened: Boolean, onOpenChest: () -> U
                 // Chest Icon
                 Box(
                     modifier = Modifier
-                        .size(48.dp)
+                        .size(54.dp)
                         .scale(if (isFull && !chestOpened) pulse else 1f)
                         .graphicsLayer { rotationZ = if (isFull && !chestOpened) shake else 0f }
                         .clip(CircleShape)
-                        .background(if (isFull && !chestOpened) Color(0xFFFFD166).copy(alpha = 0.2f) else Color.Transparent)
+                        .background(if (isFull && !chestOpened) Color(0xFFFFD166).copy(alpha = 0.25f) else Color(0x1AFFFFFF))
                         .clickable(enabled = isFull && !chestOpened) { onOpenChest() },
                     contentAlignment = Alignment.Center
                 ) {
-                    Icon(
-                        imageVector = if (chestOpened) Icons.Default.CheckCircle else Icons.Default.Redeem, 
-                        contentDescription = "Chest", 
-                        tint = if (chestOpened) Color(0xFF51FAC1) else if (isFull) Color(0xFFFFD166) else Color(0x80FFFFFF),
-                        modifier = Modifier.size(32.dp)
-                    )
+                    if (chestOpened) {
+                        Image(
+                            painter = painterResource(R.drawable.ic_reward_chest),
+                            contentDescription = "Chest Opened",
+                            modifier = Modifier.size(38.dp).alpha(0.6f)
+                        )
+                        Icon(
+                            imageVector = Icons.Default.CheckCircle,
+                            contentDescription = "Claimed",
+                            tint = Color(0xFF51FAC1),
+                            modifier = Modifier.size(24.dp).align(Alignment.BottomEnd)
+                        )
+                    } else {
+                        Image(
+                            painter = painterResource(R.drawable.ic_reward_chest),
+                            contentDescription = "Chest",
+                            modifier = Modifier.size(38.dp)
+                        )
+                    }
                 }
             }
             
@@ -363,7 +394,15 @@ fun DailyChestHeader(progress: Float, chestOpened: Boolean, onOpenChest: () -> U
                         .border(1.2.dp, quest.color.copy(alpha = 0.45f), RoundedCornerShape(14.dp)),
                     contentAlignment = Alignment.Center
                 ) {
-                    Icon(quest.icon, contentDescription = null, tint = quest.color, modifier = Modifier.size(26.dp))
+                    if (quest.iconRes != null) {
+                        Image(
+                            painter = painterResource(quest.iconRes),
+                            contentDescription = null,
+                            modifier = Modifier.size(34.dp)
+                        )
+                    } else if (quest.icon != null) {
+                        Icon(quest.icon, contentDescription = null, tint = quest.color, modifier = Modifier.size(26.dp))
+                    }
                 }
                 
                 Spacer(modifier = Modifier.width(16.dp))
@@ -384,7 +423,15 @@ fun DailyChestHeader(progress: Float, chestOpened: Boolean, onOpenChest: () -> U
                         .border(1.dp, Color(0x66FFD166), RoundedCornerShape(10.dp))
                         .padding(horizontal = 9.dp, vertical = 5.dp)
                 ) {
-                    Text(quest.reward, color = Color(0xFFFFD166), fontWeight = FontWeight.ExtraBold, fontSize = 12.sp)
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text("${quest.rewardXp} XP + ", color = Color(0xFFFFD166), fontWeight = FontWeight.ExtraBold, fontSize = 12.sp)
+                        Image(
+                            painter = painterResource(R.drawable.ic_action_star),
+                            contentDescription = null,
+                            modifier = Modifier.size(13.dp)
+                        )
+                        Text(" ${quest.rewardStar}", color = Color(0xFFFFD166), fontWeight = FontWeight.ExtraBold, fontSize = 12.sp)
+                    }
                 }
             }
             

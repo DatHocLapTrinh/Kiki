@@ -10,6 +10,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.*
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -44,6 +45,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
@@ -105,16 +107,16 @@ fun AskScreen(viewModel: StudyViewModel) {
     val quickPrompts = remember(isEnglish) {
         if (isEnglish) {
             listOf(
-                "🔍 Look up word: 'Resilient' in context",
-                "🔍 Look up idiom: 'Bite the bullet'",
+                "Look up word: 'Resilient' & examples",
+                "Look up idiom: 'Bite the bullet'",
                 "Explain Present Perfect tense in 1 min",
                 "Difference between 'Affect' and 'Effect'",
                 "Fix my grammar: 'She don't know nothing'"
             )
         } else {
             listOf(
-                "🔍 Tra từ: 'Resilient' & ví dụ",
-                "🔍 Tra thành ngữ: 'Bite the bullet'",
+                "Tra từ: 'Resilient' & ví dụ",
+                "Tra thành ngữ: 'Bite the bullet'",
                 "Giải thích thì Hiện tại hoàn thành trong 1 phút",
                 "Phân biệt 'Affect' và 'Effect'",
                 "Sửa lỗi ngữ pháp câu này giúp tôi"
@@ -242,7 +244,11 @@ fun AskScreen(viewModel: StudyViewModel) {
         TopAppBar(
             title = {
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(Icons.Default.AutoFixHigh, contentDescription = null, tint = Color(0xFFFFD166), modifier = Modifier.size(22.dp))
+                    Image(
+                        painter = painterResource(R.drawable.ic_mentor_qa),
+                        contentDescription = null,
+                        modifier = Modifier.size(26.dp)
+                    )
                     Spacer(modifier = Modifier.width(8.dp))
                     val strings = LocalAppStrings.current
                     Text(strings.knowledgeDecoder, color = Color.White, fontWeight = FontWeight.Bold, fontSize = 18.sp)
@@ -268,11 +274,10 @@ fun AskScreen(viewModel: StudyViewModel) {
                             }
                         }
                     ) {
-                        Icon(
-                            imageVector = Icons.Default.CollectionsBookmark,
+                        Image(
+                            painter = painterResource(R.drawable.ic_action_save),
                             contentDescription = "Vocabulary Vault",
-                            tint = Color(0xFFFFD166),
-                            modifier = Modifier.size(22.dp)
+                            modifier = Modifier.size(24.dp)
                         )
                     }
                 }
@@ -353,7 +358,11 @@ fun AskScreen(viewModel: StudyViewModel) {
                                     verticalAlignment = Alignment.CenterVertically,
                                     modifier = Modifier.weight(1f, fill = false)
                                 ) {
-                                    Icon(Icons.Default.Psychology, contentDescription = null, tint = Color(0xFF51FAC1), modifier = Modifier.size(18.dp))
+                                    Image(
+                                        painter = painterResource(R.drawable.ic_action_thinking),
+                                        contentDescription = null,
+                                        modifier = Modifier.size(20.dp)
+                                    )
                                     Spacer(modifier = Modifier.width(6.dp))
                                     Text(
                                         strings.kikiAnalyzingSocratic,
@@ -395,11 +404,10 @@ fun AskScreen(viewModel: StudyViewModel) {
                                             },
                                         contentAlignment = Alignment.Center
                                     ) {
-                                        Icon(
-                                            Icons.Default.BookmarkBorder,
+                                        Image(
+                                            painter = painterResource(R.drawable.ic_action_save),
                                             contentDescription = "Save to Vault",
-                                            tint = Color(0xFFFFD166),
-                                            modifier = Modifier.size(17.dp)
+                                            modifier = Modifier.size(20.dp)
                                         )
                                     }
 
@@ -843,6 +851,11 @@ fun EmptyAskState(
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     quickPrompts.take(3).forEach { prompt ->
+                        val promptIconRes = when {
+                            prompt.contains("Tra từ") || prompt.contains("Tra thành ngữ") || prompt.contains("Look up") -> R.drawable.ic_action_search
+                            prompt.contains("ngữ pháp") || prompt.contains("grammar") || prompt.contains("Hiện tại hoàn thành") || prompt.contains("Present Perfect") -> R.drawable.ic_action_thinking
+                            else -> R.drawable.ic_action_star
+                        }
                         Box(
                             modifier = Modifier
                                 .fillMaxWidth()
@@ -853,11 +866,10 @@ fun EmptyAskState(
                                 .padding(horizontal = 14.dp, vertical = 11.dp)
                         ) {
                             Row(verticalAlignment = Alignment.CenterVertically) {
-                                Icon(
-                                    Icons.Default.Bolt,
+                                Image(
+                                    painter = painterResource(promptIconRes),
                                     contentDescription = null,
-                                    tint = Color(0xFFFFD166),
-                                    modifier = Modifier.size(16.dp)
+                                    modifier = Modifier.size(18.dp)
                                 )
                                 Spacer(modifier = Modifier.width(10.dp))
                                 Text(
@@ -1049,7 +1061,11 @@ fun StepGlassCard(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         IconButton(onClick = onCopy, modifier = Modifier.size(26.dp)) {
-                            Icon(Icons.Default.ContentCopy, contentDescription = "Copy text", tint = Color(0x80FFFFFF), modifier = Modifier.size(14.dp))
+                            Image(
+                                painter = painterResource(R.drawable.ic_action_copy),
+                                contentDescription = "Copy text",
+                                modifier = Modifier.size(16.dp)
+                            )
                         }
                         Spacer(modifier = Modifier.width(8.dp))
                         IconButton(onClick = onSpeak, modifier = Modifier.size(26.dp)) {
@@ -1254,6 +1270,11 @@ fun AskInputBar(
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 items(quickPrompts) { prompt ->
+                    val promptIconRes = when {
+                        prompt.contains("Tra từ") || prompt.contains("Tra thành ngữ") || prompt.contains("Look up") -> R.drawable.ic_action_search
+                        prompt.contains("ngữ pháp") || prompt.contains("grammar") || prompt.contains("Hiện tại hoàn thành") || prompt.contains("Present Perfect") -> R.drawable.ic_action_thinking
+                        else -> R.drawable.ic_action_star
+                    }
                     Box(
                         modifier = Modifier
                             .clip(RoundedCornerShape(16.dp))
@@ -1263,11 +1284,10 @@ fun AskInputBar(
                             .padding(horizontal = 12.dp, vertical = 7.dp)
                     ) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(
-                                Icons.Default.AutoAwesome,
+                            Image(
+                                painter = painterResource(promptIconRes),
                                 contentDescription = null,
-                                tint = Color(0xFFFFD166),
-                                modifier = Modifier.size(13.dp)
+                                modifier = Modifier.size(14.dp)
                             )
                             Spacer(modifier = Modifier.width(6.dp))
                             Text(
@@ -1330,11 +1350,10 @@ fun AskInputBar(
                         onClick = onPickImage,
                         modifier = Modifier.size(38.dp)
                     ) {
-                        Icon(
-                            imageVector = Icons.Default.CenterFocusStrong,
+                        Image(
+                            painter = painterResource(R.drawable.ic_action_capture),
                             contentDescription = "Camera",
-                            tint = Color(0xFF51FAC1),
-                            modifier = Modifier.size(20.dp)
+                            modifier = Modifier.size(24.dp)
                         )
                     }
 
@@ -1343,11 +1362,10 @@ fun AskInputBar(
                         onClick = onVoiceInput,
                         modifier = Modifier.size(38.dp)
                     ) {
-                        Icon(
-                            imageVector = Icons.Default.Mic,
+                        Image(
+                            painter = painterResource(R.drawable.ic_action_mic),
                             contentDescription = "Voice Input",
-                            tint = Color(0xFFFFD166),
-                            modifier = Modifier.size(22.dp)
+                            modifier = Modifier.size(24.dp)
                         )
                     }
 
@@ -1394,7 +1412,6 @@ fun AskInputBar(
 
                     val canSend = !isGenerating && (text.isNotBlank() || selectedImageUri != null)
                     val sendBtnColor = if (canSend) Brush.linearGradient(listOf(Color(0xFFFF9E00), Color(0xFFFF5400))) else Brush.linearGradient(listOf(Color(0x33FFFFFF), Color(0x22FFFFFF)))
-                    val sendIconColor = if (canSend) Color.White else Color(0x80FFFFFF)
                     Box(
                         modifier = Modifier
                             .size(40.dp)
@@ -1403,11 +1420,10 @@ fun AskInputBar(
                             .clickable(enabled = canSend, onClick = onSend),
                         contentAlignment = Alignment.Center
                     ) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.Send,
+                        Image(
+                            painter = painterResource(R.drawable.ic_action_send),
                             contentDescription = "Send",
-                            tint = sendIconColor,
-                            modifier = Modifier.size(18.dp)
+                            modifier = Modifier.size(22.dp)
                         )
                     }
                 }
