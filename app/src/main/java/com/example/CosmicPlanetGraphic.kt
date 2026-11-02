@@ -38,48 +38,60 @@ import kotlin.math.*
  * Mỗi hành tinh mang đặc trưng thiên văn học chân thực, sắc nét, nhìn phát nhận diện ngay lập tức!
  */
 enum class CosmicPlanetType {
-    MOON_GRAY,       // Cấp 1: Bé nhất (~80dp) - Mặt Trăng: Khoáng thạch bạc, miệng hố va chạm & tia phóng xạ Tycho
-    MARS_CRIMSON,    // Cấp 2: Nhỏ vừa (~114dp) - Sao Hỏa: Cát đỏ rực rỡ, chỏm băng bắc cực trắng tuyết & đại hẻm núi Valles Marineris
-    TERRA_GAIA,      // Cấp 3: Trung bình (~72dp) - Trái Đất: Đại dương xanh thẳm, mảng lục địa xanh, bão mây xoáy & đèn đêm
-    JUPITER_STORM,   // Cấp 4: Lớn (~102dp) - Sao Mộc: Dải mây cuộn sóng đối lưu, Vết Đỏ Lớn (Great Red Spot) & chuỗi ngọc bão
-    SOLAR_SUN,       // Cấp 6 / Level Cuối: To nhất (~128dp) - Mặt Trời: Ngôi sao mẹ rực lửa, lõi nhiệt hạch chói lọi, tai lửa nhật hoa & quầng bão từ khó nhất!
-    SATURN_MONARCH,  // Cấp 3: Sao Thổ: Vành đai Cassini 3D đa tầng lộng lẫy & bão lục giác cực bắc (~90dp)
-    NEPTUNE_STORM    // Tùy chọn mở rộng: Sao Hải Vương: Băng lam xanh thẳm & vết bão tối
+    TERRA_GAIA,      // Chặng 1: Trái Đất: Đại dương xanh thẳm, mảng lục địa xanh, mây lông vũ tự nhiên
+    MOON_GRAY,       // Chặng 2: Mặt Trăng: Khoáng thạch bạc, miệng hố va chạm 3D & tia Tycho
+    SATURN_MONARCH,  // Chặng 3: Sao Thổ: Vành đai Cassini 3D đa tầng xoay Kepler lộng lẫy
+    JUPITER_STORM,   // Chặng 4: Sao Mộc: Dải mây cuộn sóng đối lưu & Vết Đỏ Lớn (Great Red Spot)
+    MARS_CRIMSON,    // Chặng 5: Sao Hỏa: Cát đỏ rực rỡ, chỏm băng bắc cực & đại hẻm núi Valles Marineris
+    URANUS_ICE,      // Chặng 6: Sao Thiên Vương: Khối băng ngọc bích, chỏm cực bắc phát sáng chói lọi & dải vân mây êm dịu
+    NEPTUNE_STORM,   // Chặng 7: Sao Hải Vương: Băng lam coban sâu thẳm, Vết Tối Lớn (Great Dark Spot) & mây trắng Scooter
+    SOLAR_SUN        // Chặng 8 / Cuối: Mặt Trời: Siêu lóa sáng CME mép phải, tai lửa plasma & quang quyển sôi sục
 }
 
 object CosmicPlanetHelper {
 
-    fun getPlanetTypeForStage(index: Int): CosmicPlanetType {
-        return when (index % 6) {
+    fun getPlanetTypeForStage(index: Int, totalStages: Int = -1): CosmicPlanetType {
+        if (totalStages > 1 && index == totalStages - 1) {
+            return CosmicPlanetType.SOLAR_SUN
+        }
+        return when (index % 8) {
             0 -> CosmicPlanetType.TERRA_GAIA      // Chặng 1: Trái Đất (Địa Cầu Xanh)
             1 -> CosmicPlanetType.MOON_GRAY       // Chặng 2: Mặt Trăng (Vệ Tinh Bạc)
             2 -> CosmicPlanetType.SATURN_MONARCH  // Chặng 3: Sao Thổ (Vành Đai Vàng Cassini 3D)
             3 -> CosmicPlanetType.JUPITER_STORM   // Chặng 4: Sao Mộc (Vết Đỏ Lớn)
             4 -> CosmicPlanetType.MARS_CRIMSON    // Chặng 5: Sao Hỏa (Hành Tinh Đỏ)
-            else -> CosmicPlanetType.SOLAR_SUN    // Chặng 6 / Mốc Cuối: Mặt Trời (Đỉnh Cao Thái Dương)
+            5 -> CosmicPlanetType.URANUS_ICE      // Chặng 6: Sao Thiên Vương (Băng Lam Ngọc Bích)
+            6 -> CosmicPlanetType.NEPTUNE_STORM   // Chặng 7: Sao Hải Vương (Lam Thẫm & Vết Bão Tối)
+            else -> CosmicPlanetType.SOLAR_SUN    // Chặng 8 / Mốc Cuối: Mặt Trời (Đỉnh Cao Thái Dương)
         }
     }
 
-    fun getPlanetDiameter(index: Int): Dp {
-        return when (index % 6) {
-            0 -> 72.dp   // Cấp 1: Bé nhất (Trái Đất)
-            1 -> 80.dp   // Cấp 2: Nhỏ vừa (Mặt Trăng)
-            2 -> 90.dp   // Cấp 3: Vừa + vành đai Cassini (Sao Thổ)
-            3 -> 102.dp  // Cấp 4: Lớn (Sao Mộc)
-            4 -> 114.dp  // Cấp 5: Rất lớn (Sao Hỏa)
-            else -> 128.dp // Cấp 6: Mốc cuối cực đại (Mặt Trời)
+    fun getPlanetDiameter(index: Int, totalStages: Int = -1): Dp {
+        if (totalStages > 1 && index == totalStages - 1) {
+            return 132.dp
+        }
+        return when (index % 8) {
+            0 -> 74.dp   // Chặng 1: Trái Đất (~74dp)
+            1 -> 80.dp   // Chặng 2: Mặt Trăng (~80dp)
+            2 -> 88.dp   // Chặng 3: Sao Thổ (~88dp + vành đai)
+            3 -> 96.dp   // Chặng 4: Sao Mộc (~96dp)
+            4 -> 104.dp  // Chặng 5: Sao Hỏa (~104dp)
+            5 -> 112.dp  // Chặng 6: Sao Thiên Vương (~112dp)
+            6 -> 120.dp  // Chặng 7: Sao Hải Vương (~120dp)
+            else -> 132.dp // Chặng 8 / Mốc Cuối: Mặt Trời (~132dp)
         }
     }
 
     fun getPlanetTypeName(type: CosmicPlanetType, isEnglish: Boolean = false): String {
         return when (type) {
-            CosmicPlanetType.MOON_GRAY      -> if (isEnglish) "The Moon (Lunar Outpost)" else "Mặt Trăng (Vệ Tinh Bạc)"
-            CosmicPlanetType.MARS_CRIMSON   -> if (isEnglish) "Mars (Crimson Dunes)" else "Sao Hỏa (Hành Tinh Đỏ)"
             CosmicPlanetType.TERRA_GAIA     -> if (isEnglish) "Earth (Terra Gaia)" else "Trái Đất (Địa Cầu Xanh)"
-            CosmicPlanetType.JUPITER_STORM  -> if (isEnglish) "Jupiter (Great Red Spot)" else "Sao Mộc (Vết Đỏ Lớn)"
-            CosmicPlanetType.SOLAR_SUN      -> if (isEnglish) "The Sun (Solar Apex)" else "Mặt Trời (Đỉnh Cao Thái Dương)"
+            CosmicPlanetType.MOON_GRAY      -> if (isEnglish) "The Moon (Lunar Outpost)" else "Mặt Trăng (Vệ Tinh Bạc)"
             CosmicPlanetType.SATURN_MONARCH -> if (isEnglish) "Saturn (Cassini Monarch)" else "Sao Thổ (Vành Đai Vàng)"
-            CosmicPlanetType.NEPTUNE_STORM  -> if (isEnglish) "Neptune (Glacial Storm)" else "Sao Hải Vương"
+            CosmicPlanetType.JUPITER_STORM  -> if (isEnglish) "Jupiter (Great Red Spot)" else "Sao Mộc (Vết Đỏ Lớn)"
+            CosmicPlanetType.MARS_CRIMSON   -> if (isEnglish) "Mars (Crimson Dunes)" else "Sao Hỏa (Hành Tinh Đỏ)"
+            CosmicPlanetType.URANUS_ICE     -> if (isEnglish) "Uranus (Cyan Ice Giant)" else "Sao Thiên Vương"
+            CosmicPlanetType.NEPTUNE_STORM  -> if (isEnglish) "Neptune (Great Dark Spot)" else "Sao Hải Vương"
+            CosmicPlanetType.SOLAR_SUN      -> if (isEnglish) "The Sun (Solar Apex)" else "Mặt Trời (Đỉnh Cao Thái Dương)"
         }
     }
 
@@ -90,8 +102,9 @@ object CosmicPlanetHelper {
             CosmicPlanetType.SATURN_MONARCH -> Color(0xFFE2CA9E) // Saturn Warm Sand & Champagne Gold
             CosmicPlanetType.JUPITER_STORM  -> Color(0xFFF97316) // Jupiter Warm Amber Caramel
             CosmicPlanetType.MARS_CRIMSON   -> Color(0xFFEA580C) // Mars Terracotta Red
+            CosmicPlanetType.URANUS_ICE     -> Color(0xFF26C6DA) // Uranus Aquamarine / Pale Turquoise
+            CosmicPlanetType.NEPTUNE_STORM  -> Color(0xFF2563EB) // Neptune Deep Azure Cobalt
             CosmicPlanetType.SOLAR_SUN      -> Color(0xFFFFB703) // Blazing Solar Gold / Amber Orange
-            CosmicPlanetType.NEPTUNE_STORM  -> Color(0xFF7B2CBF) // Deep Nebula Purple
         }
     }
 }
@@ -116,11 +129,11 @@ fun CosmicPlanetView(
     // Kích thước container mở rộng cho vành đai Sao Thổ hoặc hào quang nhật hoa / tai lửa Mặt Trời
     val containerWidth = when {
         isSaturn -> planetDiameter + 68.dp
-        isSun    -> planetDiameter + 48.dp
+        isSun    -> planetDiameter + 56.dp
         else     -> planetDiameter + 28.dp
     }
     val containerHeight = when {
-        isSun    -> planetDiameter + 48.dp
+        isSun    -> planetDiameter + 56.dp
         isSaturn -> planetDiameter + 38.dp
         else     -> planetDiameter + 28.dp
     }
@@ -482,13 +495,23 @@ private fun DrawScope.drawPhotorealisticPlanet(
             Color(0xFF5A3E20), // Hoàng hôn gỗ tếch
             Color(0xFF191006)  // Góc khuất bóng tối sâu thẳm
         )
+        CosmicPlanetType.URANUS_ICE -> listOf(
+            Color(0xFFE0F7FA), // Highlight đón sáng trắng ngọc ở cực bắc
+            Color(0xFFB2EBF2), // Xanh ngọc lam nhạt
+            Color(0xFF4DD0E1), // Xanh ngọc bích tươi sáng
+            Color(0xFF26C6DA), // Cyan dịu
+            Color(0xFF0097A7), // Cyan sẫm
+            Color(0xFF004D40), // Chàm ngọc sâu thẳm
+            Color(0xFF00252B)  // Bóng tối vũ trụ
+        )
         CosmicPlanetType.NEPTUNE_STORM -> listOf(
-            Color(0xFFE1F5FE),
-            Color(0xFF4FC3F7),
-            Color(0xFF0288D1),
-            Color(0xFF01579B),
-            Color(0xFF0D254C),
-            Color(0xFF040E1E)
+            Color(0xFFDBEAFE), // Highlight đón sáng xanh lam ngọc nhạt
+            Color(0xFF93C5FD), // Lam ngọc sáng
+            Color(0xFF3B82F6), // Xanh dương coban
+            Color(0xFF2563EB), // Xanh sapphire đại dương
+            Color(0xFF1D4ED8), // Xanh thẳm
+            Color(0xFF1E3A8A), // Chàm sẫm
+            Color(0xFF0F172A)  // Bóng tối đại dương sâu thẳm
         )
     }
 
@@ -527,8 +550,11 @@ private fun DrawScope.drawPhotorealisticPlanet(
             CosmicPlanetType.SATURN_MONARCH -> {
                 drawSaturnBeltsAndHexagon(centerX, centerY, radius, alphaFactor)
             }
+            CosmicPlanetType.URANUS_ICE -> {
+                drawUranusIceAtmosphere(centerX, centerY, radius, cloudPhase, alphaFactor)
+            }
             CosmicPlanetType.NEPTUNE_STORM -> {
-                drawNeptuneStormBands(centerX, centerY, radius, alphaFactor)
+                drawNeptuneStormBands(centerX, centerY, radius, cloudPhase, alphaFactor)
             }
             CosmicPlanetType.SOLAR_SUN -> {
                 // Đã được vẽ riêng bởi drawTheSunSolarApex
@@ -560,7 +586,8 @@ private fun DrawScope.drawPhotorealisticPlanet(
             CosmicPlanetType.JUPITER_STORM  -> Color(0x44FFB74D)
             CosmicPlanetType.SOLAR_SUN      -> Color(0x44FFB703)
             CosmicPlanetType.SATURN_MONARCH -> Color(0x44D8BE93)
-            CosmicPlanetType.NEPTUNE_STORM  -> Color(0x4429B6F6)
+            CosmicPlanetType.URANUS_ICE     -> Color(0x444DD0E1)
+            CosmicPlanetType.NEPTUNE_STORM  -> Color(0x443B82F6)
         }
         drawCircle(
             brush = Brush.radialGradient(
@@ -581,7 +608,8 @@ private fun DrawScope.drawPhotorealisticPlanet(
         CosmicPlanetType.JUPITER_STORM  -> Color(0xFFFFCC80)
         CosmicPlanetType.SOLAR_SUN      -> Color(0xFFFFE082)
         CosmicPlanetType.SATURN_MONARCH -> Color(0xFFECD8B4)
-        CosmicPlanetType.NEPTUNE_STORM  -> Color(0xFF81D4FA)
+        CosmicPlanetType.URANUS_ICE     -> Color(0xFF4DD0E1)
+        CosmicPlanetType.NEPTUNE_STORM  -> Color(0xFF60A5FA)
     }
 
     drawCircle(
@@ -1525,17 +1553,28 @@ private fun DrawScope.drawRealisticSaturnRings(
     }
 }
 
-// ─── Chi Tiết Hành Tinh Mở Rộng: SAO HẢI VƯƠNG (NEPTUNE_STORM) ────────────────
+// ─── Chi Tiết Hành Tinh 6: SAO THIÊN VƯƠNG (URANUS_ICE) ─────────────────────
 
-private fun DrawScope.drawNeptuneStormBands(
+private fun DrawScope.drawUranusIceAtmosphere(
     centerX: Float,
     centerY: Float,
     radius: Float,
+    cloudPhase: Float,
     alpha: Float
 ) {
+    // 1. Các dải khí quyển zonal song song êm dịu (Subtle Parallel Ice Bands)
+    // Sao Thiên Vương có khí quyển băng methane mượt mà, các dải mây màu ngọc bích chuyển sắc tinh tế
+    val bandColors = listOf(
+        Color(0x334DD0E1), // Xanh ngọc pastel
+        Color(0x2280DEEA), // Xanh băng dịu
+        Color(0x3800ACC1), // Cyan đậm
+        Color(0x2800838F), // Cyan sâu
+        Color(0x3026C6DA)  // Ngọc lam sáng
+    )
+
     for (i in -4..4) {
-        val yPos = centerY + (i * radius * 0.21f)
-        val waveAmplitude = (if (i % 2 == 0) 1 else -1) * radius * 0.06f
+        val yPos = centerY + (i * radius * 0.19f)
+        val waveAmplitude = (if (i % 2 == 0) 1 else -1) * radius * 0.025f
         val bandPath = Path().apply {
             moveTo(centerX - radius, yPos)
             cubicTo(
@@ -1544,11 +1583,128 @@ private fun DrawScope.drawNeptuneStormBands(
                 centerX + radius, yPos
             )
         }
-        val bandColor = when (abs(i) % 3) {
-            0 -> Color(0x4481D4FA)
-            1 -> Color(0x5501579B)
-            else -> Color(0x330288D1)
+        val bandColor = bandColors[(i + 4) % bandColors.size]
+        drawPath(
+            bandPath,
+            color = bandColor.copy(alpha = bandColor.alpha * alpha),
+            style = Stroke(width = radius * 0.14f, cap = StrokeCap.Round)
+        )
+    }
+
+    // 2. Chỏm Cực Bắc phát sáng rực rỡ đặc trưng (Luminous North Polar Cap/Hood - Chuẩn ảnh 1)
+    // Ở đỉnh trên cùng của quả cầu, có một vùng cực màu trắng sữa ngọc lam phát quang êm ái
+    val polarCenterY = centerY - radius * 0.82f
+    drawOval(
+        brush = Brush.radialGradient(
+            colors = listOf(
+                Color.White.copy(alpha = 0.88f * alpha),
+                Color(0xCCE0F7FA).copy(alpha = 0.75f * alpha),
+                Color(0x6680DEEA).copy(alpha = 0.40f * alpha),
+                Color.Transparent
+            ),
+            center = Offset(centerX, polarCenterY),
+            radius = radius * 0.48f
+        ),
+        topLeft = Offset(centerX - radius * 0.45f, centerY - radius * 0.98f),
+        size = Size(radius * 0.90f, radius * 0.38f),
+        alpha = alpha
+    )
+
+    // Vầng hào quang cực quang vi mô quanh chỏm cực
+    drawOval(
+        brush = Brush.radialGradient(
+            colors = listOf(
+                Color(0x55B2EBF2).copy(alpha = 0.50f * alpha),
+                Color.Transparent
+            ),
+            center = Offset(centerX, polarCenterY),
+            radius = radius * 0.65f
+        ),
+        topLeft = Offset(centerX - radius * 0.60f, centerY - radius * 1.05f),
+        size = Size(radius * 1.20f, radius * 0.50f),
+        alpha = alpha
+    )
+
+    // 3. Vệt mây băng Methane tầng cao thanh mảnh (Methane Ice Cirrus Streaks)
+    val streakPhase = Math.toRadians(cloudPhase.toDouble() * 0.15)
+    val streakShiftX = (cos(streakPhase) * radius * 0.05f).toFloat()
+
+    // Vệt mây xích đạo mỏng manh
+    val streak1 = Path().apply {
+        moveTo(centerX - radius * 0.60f + streakShiftX, centerY - radius * 0.08f)
+        cubicTo(
+            centerX - radius * 0.20f + streakShiftX, centerY - radius * 0.12f,
+            centerX + radius * 0.20f + streakShiftX, centerY - radius * 0.04f,
+            centerX + radius * 0.55f + streakShiftX, centerY - radius * 0.10f
+        )
+    }
+    drawPath(
+        streak1,
+        color = Color.White.copy(alpha = 0.45f * alpha),
+        style = Stroke(width = 2.2.dp.toPx(), cap = StrokeCap.Round)
+    )
+
+    // Vệt mây cận cực bắc
+    val streak2 = Path().apply {
+        moveTo(centerX - radius * 0.40f - streakShiftX, centerY - radius * 0.42f)
+        cubicTo(
+            centerX - radius * 0.10f - streakShiftX, centerY - radius * 0.46f,
+            centerX + radius * 0.18f - streakShiftX, centerY - radius * 0.38f,
+            centerX + radius * 0.45f - streakShiftX, centerY - radius * 0.44f
+        )
+    }
+    drawPath(
+        streak2,
+        color = Color(0xDDFFFFFF).copy(alpha = 0.40f * alpha),
+        style = Stroke(width = 1.8.dp.toPx(), cap = StrokeCap.Round)
+    )
+
+    // Vệt mây ôn đới nam
+    val streak3 = Path().apply {
+        moveTo(centerX - radius * 0.50f + streakShiftX * 0.8f, centerY + radius * 0.28f)
+        cubicTo(
+            centerX - radius * 0.15f + streakShiftX * 0.8f, centerY + radius * 0.24f,
+            centerX + radius * 0.15f + streakShiftX * 0.8f, centerY + radius * 0.32f,
+            centerX + radius * 0.48f + streakShiftX * 0.8f, centerY + radius * 0.26f
+        )
+    }
+    drawPath(
+        streak3,
+        color = Color(0xAAFFFFFF).copy(alpha = 0.32f * alpha),
+        style = Stroke(width = 1.6.dp.toPx(), cap = StrokeCap.Round)
+    )
+}
+
+// ─── Chi Tiết Hành Tinh 7: SAO HẢI VƯƠNG (NEPTUNE_STORM) ────────────────────
+
+private fun DrawScope.drawNeptuneStormBands(
+    centerX: Float,
+    centerY: Float,
+    radius: Float,
+    cloudPhase: Float,
+    alpha: Float
+) {
+    // 1. Các dải khí quyển zonal đối lưu sâu thẳm (Deep Azure Zonal Belts - Chuẩn ảnh 2)
+    val neptuneBands = listOf(
+        Color(0x3860A5FA), // Xanh lam sáng tầng cao
+        Color(0x401E40AF), // Xanh coban đậm
+        Color(0x303B82F6), // Lam ngọc trung tính
+        Color(0x50172554), // Xanh chàm thẳm
+        Color(0x352563EB)  // Xanh sapphire rực rỡ
+    )
+
+    for (i in -4..4) {
+        val yPos = centerY + (i * radius * 0.20f)
+        val waveAmplitude = (if (i % 2 == 0) 1 else -1) * radius * 0.04f
+        val bandPath = Path().apply {
+            moveTo(centerX - radius, yPos)
+            cubicTo(
+                centerX - radius * 0.4f, yPos + waveAmplitude,
+                centerX + radius * 0.4f, yPos - waveAmplitude,
+                centerX + radius, yPos
+            )
         }
+        val bandColor = neptuneBands[(i + 4) % neptuneBands.size]
         drawPath(
             bandPath,
             color = bandColor.copy(alpha = bandColor.alpha * alpha),
@@ -1556,31 +1712,88 @@ private fun DrawScope.drawNeptuneStormBands(
         )
     }
 
-    val spotX = centerX + radius * 0.25f
-    val spotY = centerY + radius * 0.15f
-    val spotW = radius * 0.42f
-    val spotH = radius * 0.22f
+    // 2. VẾT TỐI LỚN (The Great Dark Spot / GDS - Bán cầu nam góc dưới bên phải như ảnh 2)
+    val spotShift = (sin(Math.toRadians(cloudPhase.toDouble() * 0.10)) * radius * 0.03f).toFloat()
+    val spotX = centerX + radius * 0.32f + spotShift
+    val spotY = centerY + radius * 0.38f
+    val spotW = radius * 0.44f
+    val spotH = radius * 0.24f
 
+    // Vùng nhiễu loạn đối lưu bên ngoài Vết Tối
     drawOval(
         brush = Brush.radialGradient(
-            colors = listOf(Color(0xFF001529), Color(0xDD002D54), Color.Transparent),
+            colors = listOf(
+                Color(0x550B132B).copy(alpha = 0.65f * alpha),
+                Color(0x221D4ED8).copy(alpha = 0.35f * alpha),
+                Color.Transparent
+            ),
             center = Offset(spotX, spotY),
-            radius = spotW
+            radius = spotW * 0.85f
+        ),
+        topLeft = Offset(spotX - spotW * 0.65f, spotY - spotH * 0.70f),
+        size = Size(spotW * 1.30f, spotH * 1.40f),
+        alpha = alpha
+    )
+
+    // Lõi bão Vết Tối Lớn màu xanh đen chàm hun hút
+    drawOval(
+        brush = Brush.radialGradient(
+            colors = listOf(
+                Color(0xF5060D1A).copy(alpha = 0.95f * alpha),
+                Color(0xDD0D1B2A).copy(alpha = 0.88f * alpha),
+                Color(0x881E3A8A).copy(alpha = 0.60f * alpha),
+                Color.Transparent
+            ),
+            center = Offset(spotX, spotY),
+            radius = spotW * 0.55f
         ),
         topLeft = Offset(spotX - spotW / 2f, spotY - spotH / 2f),
         size = Size(spotW, spotH),
         alpha = alpha
     )
 
-    val scooterPath = Path().apply {
-        moveTo(spotX - spotW * 0.4f, spotY + spotH * 0.3f)
-        quadraticTo(spotX, spotY + spotH * 0.55f, spotX + spotW * 0.45f, spotY + spotH * 0.1f)
+    // 3. MÂY BĂNG METHANE "SCOOTER" SIÊU SÁNG (Brilliant White Cirrus Clouds - Chuẩn ảnh 2)
+    // Mây viền phía trên Vết Tối Lớn
+    val companionCloud = Path().apply {
+        moveTo(spotX - spotW * 0.45f, spotY - spotH * 0.30f)
+        quadraticTo(
+            spotX, spotY - spotH * 0.65f,
+            spotX + spotW * 0.50f, spotY - spotH * 0.20f
+        )
     }
     drawPath(
-        scooterPath,
-        color = Color(0xEEFFFFFF),
-        style = Stroke(width = 2.dp.toPx(), cap = StrokeCap.Round),
-        alpha = alpha
+        companionCloud,
+        color = Color.White.copy(alpha = 0.88f * alpha),
+        style = Stroke(width = 2.4.dp.toPx(), cap = StrokeCap.Round)
+    )
+
+    // Mây Scooter vắt ngang luồng gió xích đạo (Equatorial Scooter Jet)
+    val equatorialScooter = Path().apply {
+        moveTo(centerX - radius * 0.62f + spotShift * 1.5f, centerY - radius * 0.05f)
+        cubicTo(
+            centerX - radius * 0.25f + spotShift * 1.5f, centerY - radius * 0.10f,
+            centerX + radius * 0.15f + spotShift * 1.5f, centerY + radius * 0.02f,
+            centerX + radius * 0.58f + spotShift * 1.5f, centerY - radius * 0.06f
+        )
+    }
+    drawPath(
+        equatorialScooter,
+        color = Color(0xEEFFFFFF).copy(alpha = 0.78f * alpha),
+        style = Stroke(width = 2.0.dp.toPx(), cap = StrokeCap.Round)
+    )
+
+    // Vệt mây phụ ở cực nam
+    val southStreak = Path().apply {
+        moveTo(spotX - radius * 0.20f, spotY + spotH * 0.45f)
+        quadraticTo(
+            spotX + radius * 0.05f, spotY + spotH * 0.60f,
+            spotX + radius * 0.28f, spotY + spotH * 0.38f
+        )
+    }
+    drawPath(
+        southStreak,
+        color = Color(0xCCFFFFFF).copy(alpha = 0.65f * alpha),
+        style = Stroke(width = 1.6.dp.toPx(), cap = StrokeCap.Round)
     )
 }
 
@@ -1703,6 +1916,90 @@ private fun DrawScope.drawTheSunSolarApex(
     drawSolarLoopProminence(centerX, centerY, 138f, 28f, radius, 0.24f, Color(0xFFFF7043), alphaFactor)
     drawSolarLoopProminence(centerX, centerY, 228f, 20f, radius, 0.18f, Color(0xFFFF9800), alphaFactor)
     drawSolarLoopProminence(centerX, centerY, 312f, 26f, radius, 0.22f, Color(0xFFFF3D00), alphaFactor)
+
+    // 3b. SIÊU LÓA SÁNG MẶT TRỜI & VỤ PHÓNG KHỐI LƯỢNG NHẬT HOA (GIANT X-CLASS FLARE / CME - Vị trí 3h-4h mép phải cực kỳ rực rỡ như ảnh 3)
+    val flareAngleDeg = 15f
+    val flareRad = Math.toRadians(flareAngleDeg.toDouble())
+    val flareCenter = Offset(
+        centerX + cos(flareRad).toFloat() * (radius * 0.94f),
+        centerY + sin(flareRad).toFloat() * (radius * 0.94f)
+    )
+
+    // A. Quầng năng lượng plasma bùng nổ tỏa rộng ra vũ trụ
+    drawCircle(
+        brush = Brush.radialGradient(
+            0.0f to Color(0xFFFF9800).copy(alpha = 0.55f * alphaFactor),
+            0.45f to Color(0xFFFF5722).copy(alpha = 0.35f * alphaFactor),
+            0.85f to Color(0xFFD84315).copy(alpha = 0.15f * alphaFactor),
+            1.0f to Color.Transparent,
+            center = flareCenter,
+            radius = radius * 0.70f
+        ),
+        center = flareCenter,
+        radius = radius * 0.70f
+    )
+
+    // B. Chùm tia từ trường nan hoa phóng ra ngoài mép đĩa (Flare Ejection Streamers)
+    val flareRayCount = 10
+    for (r in 0 until flareRayCount) {
+        val angleOffset = ((r - 4.5f) * 7.5f) * (PI.toFloat() / 180f)
+        val beamAngle = flareRad.toFloat() + angleOffset
+        val beamLength = radius * (1.30f + 0.35f * sin(r * 1.2f + cloudPhase * 0.08f).absoluteValue)
+        val endX = centerX + cos(beamAngle) * beamLength
+        val endY = centerY + sin(beamAngle) * beamLength
+        drawLine(
+            brush = Brush.linearGradient(
+                colors = listOf(
+                    Color.White.copy(alpha = 0.95f * alphaFactor),
+                    Color(0xFFFFD54F).copy(alpha = 0.70f * alphaFactor),
+                    Color(0xFFFF5722).copy(alpha = 0.25f * alphaFactor),
+                    Color.Transparent
+                ),
+                start = flareCenter,
+                end = Offset(endX, endY)
+            ),
+            start = flareCenter,
+            end = Offset(endX, endY),
+            strokeWidth = (3.5f - (r % 3) * 0.8f).dp.toPx(),
+            cap = StrokeCap.Round
+        )
+    }
+
+    // C. Cung từ trường lửa bọc quanh tâm lóa sáng
+    val flareLoop = Path().apply {
+        moveTo(flareCenter.x - radius * 0.15f, flareCenter.y - radius * 0.22f)
+        cubicTo(
+            flareCenter.x + radius * 0.35f, flareCenter.y - radius * 0.28f,
+            flareCenter.x + radius * 0.40f, flareCenter.y + radius * 0.28f,
+            flareCenter.x - radius * 0.15f, flareCenter.y + radius * 0.22f
+        )
+    }
+    drawPath(
+        flareLoop,
+        color = Color(0xFFFFAB00).copy(alpha = 0.80f * alphaFactor),
+        style = Stroke(width = 3.2.dp.toPx(), cap = StrokeCap.Round)
+    )
+    drawPath(
+        flareLoop,
+        color = Color(0xFFFFF9C4).copy(alpha = 0.95f * alphaFactor),
+        style = Stroke(width = 1.6.dp.toPx(), cap = StrokeCap.Round)
+    )
+
+    // D. Lõi phát nổ siêu nhiệt hạch trắng chói lòa
+    drawCircle(
+        brush = Brush.radialGradient(
+            colors = listOf(
+                Color.White.copy(alpha = 1.0f * alphaFactor),
+                Color(0xFFFFF9C4).copy(alpha = 0.92f * alphaFactor),
+                Color(0xFFFFD54F).copy(alpha = 0.65f * alphaFactor),
+                Color.Transparent
+            ),
+            center = flareCenter,
+            radius = radius * 0.26f
+        ),
+        center = flareCenter,
+        radius = radius * 0.26f
+    )
 
     // 4. Khối cầu quang quyển (Photosphere Core) với hiệu ứng Limb Darkening
     // Mặt Trời tự phát sáng: tâm cực nóng trắng-vàng, ra mép tối dần sang cam-đỏ plasma
@@ -1860,6 +2157,34 @@ private fun DrawScope.drawSolarGranulation(
                 center = Offset(cx, cy)
             )
         }
+    }
+
+    // Các điểm hoạt động từ trường cực nóng lốm đốm phát sáng rực rỡ (Active Magnetic Heating Regions - Chuẩn ảnh 3 NASA SDO)
+    val activeHotspots = listOf(
+        Offset(centerX + radius * 0.55f, centerY + radius * 0.18f) to 0.16f,
+        Offset(centerX + radius * 0.22f, centerY - radius * 0.22f) to 0.13f,
+        Offset(centerX - radius * 0.15f, centerY + radius * 0.28f) to 0.12f,
+        Offset(centerX - radius * 0.38f, centerY - radius * 0.10f) to 0.14f,
+        Offset(centerX + radius * 0.05f, centerY + radius * 0.42f) to 0.11f,
+        Offset(centerX + radius * 0.32f, centerY - radius * 0.40f) to 0.12f,
+        Offset(centerX - radius * 0.45f, centerY + radius * 0.15f) to 0.13f
+    )
+
+    for ((spot, rFactor) in activeHotspots) {
+        drawCircle(
+            brush = Brush.radialGradient(
+                colors = listOf(
+                    Color.White.copy(alpha = 0.90f * alpha),
+                    Color(0xFFFFF59D).copy(alpha = 0.70f * alpha),
+                    Color(0xFFFFB300).copy(alpha = 0.40f * alpha),
+                    Color.Transparent
+                ),
+                center = spot,
+                radius = radius * rFactor
+            ),
+            center = spot,
+            radius = radius * rFactor
+        )
     }
 }
 

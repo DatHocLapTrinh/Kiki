@@ -375,11 +375,11 @@ private fun JourneyStageRow(
     val isSun = planetType == CosmicPlanetType.SOLAR_SUN
     val containerWidth = when {
         isSaturn -> planetDiameter + 68.dp
-        isSun    -> planetDiameter + 48.dp
+        isSun    -> planetDiameter + 56.dp
         else     -> planetDiameter + 28.dp
     }
     val containerHeight = when {
-        isSun    -> planetDiameter + 48.dp
+        isSun    -> planetDiameter + 56.dp
         isSaturn -> planetDiameter + 38.dp
         else     -> planetDiameter + 28.dp
     }
