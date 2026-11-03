@@ -55,6 +55,7 @@ import com.example.ui.MatchingPairsView
 import com.example.ui.ListeningChallengeView
 import com.example.ui.SentenceBuilderView
 import com.example.ui.SpeakingChallengeView
+import com.example.ui.OutOfHeartsDialog
 import com.example.util.PronunciationResult
 import com.example.viewmodel.StudyViewModel
 import kotlinx.coroutines.launch
@@ -134,6 +135,8 @@ fun QuestScreen(viewModel: StudyViewModel, onFinish: () -> Unit) {
     val chapterTitle by viewModel.currentChapterTitle.observeAsState("English Fundamentals")
     val currentNode by viewModel.currentNode.observeAsState(1)
     val isSpeaking by viewModel.ttsManager.isSpeaking
+    val hearts by viewModel.hearts.observeAsState(5)
+    val stars by viewModel.stars.observeAsState(0)
 
     if (questions.isEmpty()) {
         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
@@ -151,6 +154,7 @@ fun QuestScreen(viewModel: StudyViewModel, onFinish: () -> Unit) {
     var isChecked by remember { mutableStateOf(false) }
     var isCurrentCorrect by remember { mutableStateOf(false) }
     var showExitDialog by remember { mutableStateOf(false) }
+    var showOutOfHeartsDialog by remember { mutableStateOf(false) }
     var mascotSpeech by remember { mutableStateOf<String?>(null) }
     var isSavedToVault by remember(currentQuestion) { mutableStateOf(false) }
     var consecutiveCorrect by remember { mutableIntStateOf(0) }
@@ -160,6 +164,13 @@ fun QuestScreen(viewModel: StudyViewModel, onFinish: () -> Unit) {
     var questionStartTime by remember(currentQuestion) { mutableLongStateOf(System.currentTimeMillis()) }
     val questionLatencies = remember { mutableStateMapOf<Int, Long>() }
     val questionHintsUsed = remember { mutableStateMapOf<Int, Boolean>() }
+
+    // Kiểm tra hết tim ngay khi vào bài học
+    LaunchedEffect(Unit) {
+        if ((viewModel.hearts.value ?: 5) <= 0) {
+            showOutOfHeartsDialog = true
+        }
+    }
 
     // Intercept hardware / gesture Back on Android
     BackHandler {
@@ -264,7 +275,6 @@ fun QuestScreen(viewModel: StudyViewModel, onFinish: () -> Unit) {
                 Spacer(modifier = Modifier.width(12.dp))
 
                 // Hearts Pill (consistent with home screen)
-                val hearts by viewModel.hearts.observeAsState(5)
                 Row(
                     modifier = Modifier
                         .clip(RoundedCornerShape(14.dp))
@@ -1072,6 +1082,14 @@ fun QuestScreen(viewModel: StudyViewModel, onFinish: () -> Unit) {
                                             userAnswers[currentQuestion] = selectedOption
                                         }
                                     }
+
+                                    // Logic xử lý khi hết tim: Game Over hoặc nạp tim bằng Sao để học tiếp
+                                    val currentHearts = viewModel.hearts.value ?: 5
+                                    if (currentHearts <= 0) {
+                                        showOutOfHeartsDialog = true
+                                        return@Button
+                                    }
+
                                     if (currentQuestion < totalQuestions - 1) {
                                         currentQuestion++
                                         selectedOption = -1
@@ -1189,6 +1207,42 @@ fun QuestScreen(viewModel: StudyViewModel, onFinish: () -> Unit) {
                     }
                 }
             }
+        }
+
+        // Hộp thoại Game Over khi hết tim (yêu cầu đổi sao nạp tim hoặc dừng học)
+        if (showOutOfHeartsDialog) {
+            OutOfHeartsDialog(
+                currentStars = stars,
+                isEnglish = isEnglish,
+                starCost = 20,
+                onRefillWithStars = {
+                    val success = viewModel.purchaseShopItem(
+                        itemId = "refill_hearts_quest",
+                        type = com.example.ShopItemType.HEART,
+                        starCost = 20,
+                        quantity = 5
+                    )
+                    if (success) {
+                        showOutOfHeartsDialog = false
+                        viewModel.soundEffectManager.playFanfare()
+                        if (isChecked && currentQuestion < totalQuestions - 1) {
+                            currentQuestion++
+                            selectedOption = -1
+                            selectedTokenIndices = emptyList()
+                            isMatchingCompleted = false
+                            matchingErrorCount = 0
+                            speakingResult = null
+                            isChecked = false
+                            isSavedToVault = false
+                            mascotSpeech = null
+                        }
+                    }
+                },
+                onQuitLesson = {
+                    showOutOfHeartsDialog = false
+                    onFinish()
+                }
+            )
         }
 
         // Hộp thoại xác nhận thoát bài học
