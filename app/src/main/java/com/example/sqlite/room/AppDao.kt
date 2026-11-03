@@ -38,6 +38,15 @@ interface AppDao {
     @Query("SELECT * FROM user_profiles ORDER BY total_xp DESC LIMIT 10")
     suspend fun getLeaderboard(): List<UserProfileEntity>
 
+    @Query("SELECT up.* FROM user_profiles up INNER JOIN users u ON up.user_id = u.user_id WHERE u.email NOT LIKE 'dummy%' AND u.email NOT LIKE 'guest_%' ORDER BY up.total_xp DESC")
+    suspend fun getRealUserProfiles(): List<UserProfileEntity>
+
+    @Query("DELETE FROM user_profiles WHERE user_id IN (SELECT user_id FROM users WHERE email LIKE 'dummy%')")
+    suspend fun deleteDummyUserProfiles()
+
+    @Query("DELETE FROM users WHERE email LIKE 'dummy%'")
+    suspend fun deleteDummyUsers()
+
     // --- Chapters ---
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertChapter(chapter: ChapterEntity): Long

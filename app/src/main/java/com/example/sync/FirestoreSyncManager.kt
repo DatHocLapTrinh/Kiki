@@ -286,8 +286,11 @@ class FirestoreSyncManager @Inject constructor(
 
             fun processDocument(doc: com.google.firebase.firestore.DocumentSnapshot) {
                 val uid = doc.getString("uid")?.takeIf { it.isNotBlank() } ?: doc.id
-                val rawName = (doc.getString("displayName") ?: doc.getString("name"))?.trim()
                 val email = doc.getString("email")?.trim() ?: ""
+                // Loại trừ hoàn toàn bất kỳ tài khoản mẫu dummy hoặc test nào
+                if (email.startsWith("dummy") || email.endsWith("@test.com")) return
+
+                val rawName = (doc.getString("displayName") ?: doc.getString("name"))?.trim()
                 val name = rawName?.takeIf { it.isNotBlank() }
                     ?: email.substringBefore("@").takeIf { it.isNotBlank() }
                     ?: "Học viên Kiki"
@@ -298,7 +301,6 @@ class FirestoreSyncManager @Inject constructor(
                 val totalXp = (doc.getLong("totalXp") ?: doc.getLong("xp"))?.toInt() ?: 0
                 val rawWeeklyXp = doc.getLong("weeklyXp")?.toInt() ?: 0
                 val docWeek = doc.getString("lastActiveWeek") ?: ""
-                // Nếu cùng tuần thì dùng weeklyXp, nếu tài khoản chưa thi đấu tuần này thì điểm tuần = 0
                 val weeklyXp = if (docWeek.isBlank() || docWeek == currentWeek) rawWeeklyXp else 0
                 val streak = (doc.getLong("currentStreak") ?: doc.getLong("streak"))?.toInt() ?: 0
                 val tierStr = doc.getString("tier") ?: doc.getString("leagueTier")
@@ -312,7 +314,8 @@ class FirestoreSyncManager @Inject constructor(
                         totalXp = maxOf(existing.totalXp, totalXp),
                         weeklyXp = maxOf(existing.weeklyXp, weeklyXp),
                         tier = if (existing.tier == LeagueTier.BRONZE && tier != LeagueTier.BRONZE) tier else existing.tier,
-                        streak = maxOf(existing.streak, streak)
+                        streak = maxOf(existing.streak, streak),
+                        email = existing.email.ifBlank { email }
                     )
                 } else {
                     mergedUsers[uid] = UnifiedUser(
@@ -331,26 +334,30 @@ class FirestoreSyncManager @Inject constructor(
             usersSnap?.documents?.forEach { processDocument(it) }
             leaderboardSnap?.documents?.forEach { processDocument(it) }
 
-            // 3. Bổ sung thêm các tài khoản đã đăng nhập cục bộ trên thiết bị từ Room SQLite (nếu chưa có trên Firebase)
+            // 3. Bổ sung các tài khoản THẬT đã từng đăng nhập Google trên thiết bị (tuyệt đối không nạp dummy)
             try {
-                val localProfiles = repository.getLeaderboard()
-                for (lp in localProfiles) {
-                    val matchingUid = if (lp.userId == currentUserId) currentUid else "local_user_${lp.userId}"
-                    if (!mergedUsers.containsKey(matchingUid) && !mergedUsers.values.any { it.email.isNotBlank() && it.email == lp.displayName }) {
+                val realLocalProfiles = repository.getRealUserProfiles()
+                for (lp in realLocalProfiles) {
+                    val isCurrent = lp.userId == currentUserId
+                    val matchingUid = if (isCurrent && currentUid.isNotBlank()) currentUid else "device_user_${lp.userId}"
+                    val alreadyInList = mergedUsers.containsKey(matchingUid) || 
+                        mergedUsers.values.any { it.name.equals(lp.displayName, ignoreCase = true) }
+
+                    if (!alreadyInList && lp.displayName.isNotBlank()) {
                         mergedUsers[matchingUid] = UnifiedUser(
                             uid = matchingUid,
-                            name = lp.displayName.ifBlank { "Học viên Kiki" },
+                            name = lp.displayName,
                             avatar = lp.avatarUri ?: "",
                             totalXp = lp.totalXp,
-                            weeklyXp = if (lp.userId == currentUserId) localWeeklyXp else lp.totalXp,
-                            tier = if (lp.userId == currentUserId) localTier else LeagueTier.BRONZE,
+                            weeklyXp = if (isCurrent) localWeeklyXp else lp.totalXp,
+                            tier = if (isCurrent) localTier else LeagueTier.BRONZE,
                             streak = lp.currentStreak,
                             email = ""
                         )
                     }
                 }
             } catch (e: Exception) {
-                Log.w(TAG, "Lỗi nạp local profiles: ${e.message}")
+                Log.w(TAG, "Lỗi nạp real local profiles: ${e.message}")
             }
 
             // 4. Lọc người chơi theo targetTier và tính điểm thi đấu
