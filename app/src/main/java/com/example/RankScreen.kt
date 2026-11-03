@@ -59,9 +59,7 @@ fun RankScreen(viewModel: StudyViewModel) {
     val players by viewModel.realtimeLeaderboard.observeAsState(emptyList())
     val isLoading by viewModel.isLeaderboardLoading.observeAsState(false)
     val settlementEvent by viewModel.leagueSettlementEvent.observeAsState(null)
-    val weeklyXp by viewModel.weeklyXp.observeAsState(0)
     val millisUntilMonday by viewModel.millisUntilMonday.observeAsState(0L)
-    val userName by viewModel.userName.observeAsState("")
     val isAuthLoading by viewModel.isAuthLoading.observeAsState(false)
 
     // Kiểm tra đăng nhập Google thời gian thực
@@ -115,31 +113,6 @@ fun RankScreen(viewModel: StudyViewModel) {
     val displayedTier = allTiers[pagerState.currentPage]
     val isViewingUserTier = displayedTier == userTier
 
-    // Người dùng hiện tại trong giải
-    val currentUserPlayer = players.find { it.isCurrentUser } ?: RankPlayer(
-        rank = if (players.isNotEmpty()) players.size + 1 else 1,
-        name = userName.ifBlank { strings.you },
-        title = userTier.subtitle,
-        score = weeklyXp,
-        avatarUrl = "",
-        isCurrentUser = true,
-        zone = viewModel.leagueManager.determineZone(
-            if (players.isNotEmpty()) players.size + 1 else 1,
-            userTier
-        ),
-        tier = userTier
-    )
-
-    val top5CutoffScore = players.getOrNull(4)?.score ?: 0
-    val xpGapToTop5 = if (currentUserPlayer.rank > 5) {
-        maxOf(1, top5CutoffScore - currentUserPlayer.score + 1)
-    } else null
-
-    val safeCutoffScore = players.getOrNull(14)?.score ?: 0
-    val xpGapToSafe = if (currentUserPlayer.rank > 15) {
-        maxOf(1, safeCutoffScore - currentUserPlayer.score + 1)
-    } else null
-
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -161,7 +134,7 @@ fun RankScreen(viewModel: StudyViewModel) {
                 .fillMaxSize()
                 .statusBarsPadding()
         ) {
-            // 1. Header Tinh Tế (Đã bỏ hoàn toàn nút tải lại)
+            // 1. Header Tinh Tế (Đã bỏ hoàn toàn nút tải lại & chữ thừa)
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -181,15 +154,15 @@ fun RankScreen(viewModel: StudyViewModel) {
                     Icon(
                         imageVector = Icons.Default.AccessTime,
                         contentDescription = null,
-                        tint = Color(0xFF51FAC1),
+                        tint = Color(0xFF8E9BAE),
                         modifier = Modifier.size(13.dp)
                     )
                     Spacer(modifier = Modifier.width(5.dp))
                     Text(
-                        text = "⏱ CÒN ${formatDaysRemaining(millisUntilMonday)} • ĐẦU TUẦN KẾT TOÁN",
-                        color = Color(0xFF51FAC1),
-                        fontSize = 11.sp,
-                        fontWeight = FontWeight.ExtraBold,
+                        text = formatDaysRemaining(millisUntilMonday),
+                        color = Color(0xFF8E9BAE),
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold,
                         letterSpacing = 0.5.sp
                     )
                 }
@@ -209,6 +182,7 @@ fun RankScreen(viewModel: StudyViewModel) {
                 ) { page ->
                     val tier = allTiers[page]
                     val isCurrent = tier == userTier
+                    val isLocked = tier.order > userTier.order
 
                     val pageOffset = ((pagerState.currentPage - page) + pagerState.currentPageOffsetFraction).absoluteValue
                     val scale = lerp(0.68f, 1.08f, 1f - pageOffset.coerceIn(0f, 1f))
@@ -230,8 +204,8 @@ fun RankScreen(viewModel: StudyViewModel) {
                             }
                     ) {
                         Box(contentAlignment = Alignment.Center) {
-                            // Hào quang vũ trụ phát sáng dịu theo màu cúp
-                            if (pageOffset < 0.5f) {
+                            // Hào quang vũ trụ phát sáng dịu theo màu cúp (khi chưa khóa)
+                            if (pageOffset < 0.5f && !isLocked) {
                                 Box(
                                     modifier = Modifier
                                         .size(130.dp)
@@ -248,14 +222,33 @@ fun RankScreen(viewModel: StudyViewModel) {
                                     .size(140.dp)
                                     .padding(4.dp),
                                 contentScale = ContentScale.Fit,
-                                alpha = alpha
+                                alpha = if (isLocked) alpha * 0.42f else alpha
                             )
+
+                            // Biểu tượng chìa khóa / ổ khóa cho các mốc cúp cao chưa mở khóa
+                            if (isLocked) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(38.dp)
+                                        .clip(CircleShape)
+                                        .background(Color(0xCC110C24))
+                                        .border(1.dp, Color(0x66FFD166), CircleShape),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.Lock,
+                                        contentDescription = "Chưa mở khóa",
+                                        tint = Color(0xFFFFD166),
+                                        modifier = Modifier.size(18.dp)
+                                    )
+                                }
+                            }
                         }
                     }
                 }
             }
 
-            // Subtitle & Status Badge theo Cúp đang xem
+            // Subtitle & Thanh chấm chỉ báo (Dots Indicator) 5 Cúp
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -264,12 +257,12 @@ fun RankScreen(viewModel: StudyViewModel) {
             ) {
                 Text(
                     text = displayedTier.subtitle,
-                    color = Color(0xCCFFFFFF),
+                    color = Color(0x99FFFFFF),
                     fontSize = 13.sp,
                     fontWeight = FontWeight.Medium
                 )
 
-                Spacer(modifier = Modifier.height(6.dp))
+                Spacer(modifier = Modifier.height(8.dp))
 
                 // Thanh chấm chỉ báo (Dots Indicator) 5 Cúp
                 Row(
@@ -299,58 +292,9 @@ fun RankScreen(viewModel: StudyViewModel) {
                         )
                     }
                 }
-
-                Spacer(modifier = Modifier.height(6.dp))
-
-                // Badge trạng thái
-                if (isViewingUserTier) {
-                    Box(
-                        modifier = Modifier
-                            .clip(RoundedCornerShape(12.dp))
-                            .background(Color(0x2E51FAC1))
-                            .border(1.dp, Color(0x6651FAC1), RoundedCornerShape(12.dp))
-                            .padding(horizontal = 10.dp, vertical = 3.dp)
-                    ) {
-                        Text(
-                            text = "⭐ GIẢI ĐẤU CỦA BẠN • ĐANG TRANH TÀI",
-                            color = Color(0xFF51FAC1),
-                            fontSize = 10.sp,
-                            fontWeight = FontWeight.Black
-                        )
-                    }
-                } else if (displayedTier.order < userTier.order) {
-                    Text(
-                        text = "✅ ĐÃ TỪNG CHINH PHỤC CÚP NÀY",
-                        color = Color(0x99FFFFFF),
-                        fontSize = 10.sp,
-                        fontWeight = FontWeight.Bold
-                    )
-                } else {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier.clickable {
-                            coroutineScope.launch {
-                                pagerState.animateScrollToPage(userTier.order - 1)
-                            }
-                        }
-                    ) {
-                        Text(
-                            text = "🔒 TOP 5 ĐỂ THĂNG CÚP • ",
-                            color = Color(0xFFFFD166),
-                            fontSize = 10.sp,
-                            fontWeight = FontWeight.Bold
-                        )
-                        Text(
-                            text = "Về giải của bạn ➔",
-                            color = Color(0xFF51FAC1),
-                            fontSize = 10.sp,
-                            fontWeight = FontWeight.ExtraBold
-                        )
-                    }
-                }
             }
 
-            Spacer(modifier = Modifier.height(10.dp))
+            Spacer(modifier = Modifier.height(14.dp))
 
             // Divider mờ ngân hà
             HorizontalDivider(
@@ -361,60 +305,49 @@ fun RankScreen(viewModel: StudyViewModel) {
 
             // 3. Nội dung bảng xếp hạng (Chỉ hiển thị cho giải đấu của cá nhân)
             if (!isViewingUserTier) {
-                // Khi vuốt xem cúp khác: Hiển thị lời truyền cảm hứng, không xem rank giải khác
+                // Khi vuốt xem cúp khác: Tối giản với biểu tượng chìa khóa / ổ khóa, không chữ rườm rà
+                val isLocked = displayedTier.order > userTier.order
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
                         .weight(1f)
-                        .padding(24.dp),
+                        .clickable {
+                            coroutineScope.launch {
+                                pagerState.animateScrollToPage(userTier.order - 1)
+                            }
+                        },
                     contentAlignment = Alignment.Center
                 ) {
                     Column(
                         horizontalAlignment = Alignment.CenterHorizontally,
-                        modifier = Modifier.fillMaxWidth()
+                        verticalArrangement = Arrangement.Center
                     ) {
-                        Image(
-                            painter = painterResource(displayedTier.trophyResId),
-                            contentDescription = null,
-                            modifier = Modifier.size(90.dp)
-                        )
-                        Spacer(modifier = Modifier.height(16.dp))
-                        Text(
-                            text = if (displayedTier.order > userTier.order) "Mục Tiêu Vinh Quang Đang Chờ Đón!" else "Cúp ${displayedTier.vietnameseTitle}",
-                            color = Color.White,
-                            fontSize = 18.sp,
-                            fontWeight = FontWeight.Black,
-                            textAlign = TextAlign.Center
-                        )
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Text(
-                            text = if (displayedTier.order > userTier.order) {
-                                "Chiếc cúp ${displayedTier.vietnameseTitle} danh giá sẽ thuộc về bạn khi bạn hoàn thành xuất sắc trong Top 5 của ${userTier.vietnameseTitle} trước ngày chốt sổ Thứ 2!"
-                            } else {
-                                "Bạn đã xuất sắc vượt qua mốc này và hiện đang tranh tài tại ${userTier.vietnameseTitle}."
-                            },
-                            color = Color(0xAAFFFFFF),
-                            fontSize = 13.sp,
-                            textAlign = TextAlign.Center,
-                            lineHeight = 19.sp
-                        )
-                        Spacer(modifier = Modifier.height(20.dp))
-                        Button(
-                            onClick = {
-                                coroutineScope.launch {
-                                    pagerState.animateScrollToPage(userTier.order - 1)
-                                }
-                            },
-                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF51FAC1)),
-                            shape = RoundedCornerShape(14.dp)
+                        Box(
+                            modifier = Modifier
+                                .size(64.dp)
+                                .clip(CircleShape)
+                                .background(if (isLocked) Color(0x1AFFFFFF) else Color(0x1A51FAC1))
+                                .border(
+                                    width = 1.dp,
+                                    color = if (isLocked) Color(0x33FFFFFF) else Color(0x3351FAC1),
+                                    shape = CircleShape
+                                ),
+                            contentAlignment = Alignment.Center
                         ) {
-                            Text(
-                                text = "Xem Bảng Đấu Của Bạn 🚀",
-                                color = Color(0xFF0F172A),
-                                fontWeight = FontWeight.Black,
-                                fontSize = 13.sp
+                            Icon(
+                                imageVector = if (isLocked) Icons.Default.Lock else Icons.Default.Check,
+                                contentDescription = if (isLocked) "Chưa mở khóa" else "Đã chinh phục",
+                                tint = if (isLocked) Color(0xFFFFD166) else Color(0xFF51FAC1),
+                                modifier = Modifier.size(28.dp)
                             )
                         }
+                        Spacer(modifier = Modifier.height(12.dp))
+                        Text(
+                            text = if (isLocked) "Chưa mở khóa" else "Đã chinh phục",
+                            color = Color(0x99FFFFFF),
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.SemiBold
+                        )
                     }
                 }
             } else if (isLoading && players.isEmpty()) {
@@ -454,7 +387,7 @@ fun RankScreen(viewModel: StudyViewModel) {
                         )
                         Spacer(modifier = Modifier.height(6.dp))
                         Text(
-                            text = "Hiện tại bạn đang dẫn đầu ${userTier.vietnameseTitle}. Hãy tích lũy thêm XP để củng cố vị trí trước giờ chốt sổ Thứ 2!",
+                            text = "Hiện tại bạn đang dẫn đầu ${userTier.vietnameseTitle}. Hãy tiếp tục tích lũy thêm XP nhé!",
                             color = Color(0x99FFFFFF),
                             fontSize = 13.sp,
                             textAlign = TextAlign.Center
@@ -466,7 +399,7 @@ fun RankScreen(viewModel: StudyViewModel) {
                     modifier = Modifier
                         .fillMaxWidth()
                         .weight(1f),
-                    contentPadding = PaddingValues(top = 4.dp, bottom = 170.dp)
+                    contentPadding = PaddingValues(top = 4.dp, bottom = 90.dp)
                 ) {
                     itemsIndexed(players, key = { _, p -> "fb_${p.uid}_${p.rank}" }) { index, player ->
                         // Vạch phân cách thăng hạng (Top 5)
@@ -490,25 +423,6 @@ fun RankScreen(viewModel: StudyViewModel) {
                         )
                     }
                 }
-            }
-        }
-
-        // 4. Thẻ ghim người dùng hiện tại ở đáy màn hình
-        if (isViewingUserTier) {
-            Box(
-                modifier = Modifier
-                    .align(Alignment.BottomCenter)
-                    .navigationBarsPadding()
-                    .padding(bottom = 84.dp)
-                    .fillMaxWidth()
-                    .padding(horizontal = 14.dp)
-            ) {
-                DuolingoCurrentUserCard(
-                    player = currentUserPlayer,
-                    userTier = userTier,
-                    xpGapToTop5 = xpGapToTop5,
-                    xpGapToSafe = xpGapToSafe
-                )
             }
         }
     }
@@ -681,76 +595,6 @@ fun ZoneLineDivider(title: String, color: Color) {
                 .height(1.dp)
                 .background(color.copy(alpha = 0.5f))
         )
-    }
-}
-
-/**
- * Thẻ cố định ở đáy hiển thị trạng thái của người dùng
- */
-@Composable
-fun DuolingoCurrentUserCard(
-    player: RankPlayer,
-    userTier: LeagueTier,
-    xpGapToTop5: Int?,
-    xpGapToSafe: Int?
-) {
-    Card(
-        shape = RoundedCornerShape(20.dp),
-        colors = CardDefaults.cardColors(containerColor = Color(0xF517112C)),
-        modifier = Modifier
-            .fillMaxWidth()
-            .shadow(16.dp, RoundedCornerShape(20.dp))
-            .border(1.5.dp, Color(0xFF51FAC1), RoundedCornerShape(20.dp))
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 12.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            // Rank Number
-            Text(
-                text = "#${player.rank}",
-                color = Color(0xFF51FAC1),
-                fontSize = 17.sp,
-                fontWeight = FontWeight.Black,
-                modifier = Modifier.width(36.dp)
-            )
-
-            // Info
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = "${player.name} (Bạn)",
-                    color = Color.White,
-                    fontWeight = FontWeight.Black,
-                    fontSize = 14.sp,
-                    maxLines = 1
-                )
-                Text(
-                    text = when {
-                        player.rank in 1..5 -> "🟢 Đang trong vùng Thăng Hạng!"
-                        xpGapToTop5 != null -> "🔥 Cần +$xpGapToTop5 XP lên Top 5"
-                        xpGapToSafe != null -> "⚠️ Cần +$xpGapToSafe XP để trụ hạng"
-                        else -> "⭐ Tiếp tục tích lũy điểm nhé"
-                    },
-                    color = when {
-                        player.rank in 1..5 -> Color(0xFF51FAC1)
-                        xpGapToTop5 != null -> Color(0xFFFFD166)
-                        else -> Color(0xFFFF5C5C)
-                    },
-                    fontSize = 11.sp,
-                    fontWeight = FontWeight.Bold
-                )
-            }
-
-            // Score
-            Text(
-                text = "${player.score} XP",
-                color = Color(0xFF51FAC1),
-                fontSize = 16.sp,
-                fontWeight = FontWeight.Black
-            )
-        }
     }
 }
 
