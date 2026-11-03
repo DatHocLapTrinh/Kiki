@@ -87,85 +87,6 @@ fun SpeakingChallengeView(
             .padding(horizontal = 0.dp, vertical = 2.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        // Tag Header: SPEAKING CHALLENGE 🎙️
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Box(
-                modifier = Modifier
-                    .weight(1f, fill = false)
-                    .clip(RoundedCornerShape(10.dp))
-                    .background(Color(0x33EC4899))
-                    .border(1.dp, Color(0x66EC4899), RoundedCornerShape(10.dp))
-                    .padding(horizontal = 10.dp, vertical = 6.dp)
-            ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(
-                        Icons.Default.Mic,
-                        contentDescription = null,
-                        tint = Color(0xFFF472B6),
-                        modifier = Modifier.size(14.dp)
-                    )
-                    Spacer(modifier = Modifier.width(6.dp))
-                    Text(
-                        text = if (isEnglish) "SPEAKING CHALLENGE 🎙️" else "LUYỆN NÓI & PHÁT ÂM 🎙️",
-                        color = Color(0xFFF472B6),
-                        fontWeight = FontWeight.ExtraBold,
-                        fontSize = 11.sp,
-                        letterSpacing = 0.5.sp,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                }
-            }
-
-            Spacer(modifier = Modifier.width(8.dp))
-
-            // Audio Reference Controls (Normal & Turtle 🐢) - Guaranteed spacing, zero overlap
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Box(
-                    modifier = Modifier
-                        .size(34.dp)
-                        .clip(CircleShape)
-                        .background(Color(0x3351FAC1))
-                        .border(1.dp, Color(0x6651FAC1), CircleShape)
-                        .clickable {
-                            haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                            onSpeakSentence(false)
-                        },
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        Icons.AutoMirrored.Filled.VolumeUp,
-                        contentDescription = "Speak Normal",
-                        tint = Color(0xFF51FAC1),
-                        modifier = Modifier.size(18.dp)
-                    )
-                }
-                Box(
-                    modifier = Modifier
-                        .size(34.dp)
-                        .clip(CircleShape)
-                        .background(Color(0x33FFB703))
-                        .border(1.dp, Color(0x66FFB703), CircleShape)
-                        .clickable {
-                            haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                            onSpeakSentence(true)
-                        },
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text("🐢", fontSize = 16.sp)
-                }
-            }
-        }
-
-        Spacer(modifier = Modifier.height(10.dp))
-
         // Target Sentence Box (Clickable words for pronunciation assistance)
         Box(
             modifier = Modifier
@@ -237,7 +158,9 @@ fun SpeakingChallengeView(
             }
         }
 
-        Spacer(modifier = Modifier.height(12.dp))
+
+
+        Spacer(modifier = Modifier.height(10.dp))
 
         // Permission Card vs Microphone Control Button
         if (!hasAudioPermission) {

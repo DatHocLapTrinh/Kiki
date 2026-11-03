@@ -57,6 +57,8 @@ import com.example.ui.CosmicSectionBanner
 import com.example.ui.CosmicSectionConfig
 import com.example.ui.CosmicSectionData
 import com.example.ui.SpeechBubbleShape
+import com.example.ui.CosmicPlanetLessonPopup
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
@@ -201,16 +203,11 @@ fun JourneyMapScreen(
                         stages = stages,
                         currentStageIndex = currentStageIndex,
                         strings = strings,
+                        isEnglish = isEnglish,
                         animatingUnlockStageIndex = animatingUnlockStageIndex,
                         unlockAnimProgress = unlockAnim.value,
-                        onStageClick = { stage ->
-                            if (stage.state == JourneyStageState.LOCKED) {
-                                Toast.makeText(
-                                    context,
-                                    "Chặng này đang bị khóa! Hoàn thành chặng trước để mở khóa (hoặc nhấn giữ để xem thử hoạt ảnh).",
-                                    Toast.LENGTH_SHORT
-                                ).show()
-                            } else if (!isNavigating) {
+                        onStageStartQuest = { stage ->
+                            if (!isNavigating) {
                                 isNavigating = true
                                 viewModel.selectChapterByTitle(stage.title, stage.sequence)
                                 onStartQuest()
@@ -219,6 +216,23 @@ fun JourneyMapScreen(
                         onStageLongClick = { _, index ->
                             if (animatingUnlockStageIndex == -1) {
                                 triggerPlanetUnlock(index)
+                            }
+                        },
+                        onEnsureVisible = { popupBottomPx, planetNodeYPx ->
+                            val viewportHeight = scrollState.viewportSize.toFloat()
+                            val currentScroll = scrollState.value.toFloat()
+                            if (viewportHeight > 0) {
+                                if (popupBottomPx > currentScroll + viewportHeight - 120) {
+                                    val targetScroll = (popupBottomPx - viewportHeight + 150).toInt()
+                                    coroutineScope.launch {
+                                        scrollState.animateScrollTo(targetScroll, tween(400, easing = FastOutSlowInEasing))
+                                    }
+                                } else if (planetNodeYPx - 120 < currentScroll) {
+                                    val targetScroll = (planetNodeYPx - 140).toInt().coerceAtLeast(0)
+                                    coroutineScope.launch {
+                                        scrollState.animateScrollTo(targetScroll, tween(400, easing = FastOutSlowInEasing))
+                                    }
+                                }
                             }
                         }
                     )
@@ -358,10 +372,12 @@ private fun JourneyPath(
     stages: List<JourneyStageUiModel>,
     currentStageIndex: Int,
     strings: AppStrings,
+    isEnglish: Boolean = false,
     animatingUnlockStageIndex: Int = -1,
     unlockAnimProgress: Float = 0f,
-    onStageClick: (JourneyStageUiModel) -> Unit,
-    onStageLongClick: ((JourneyStageUiModel, Int) -> Unit)? = null
+    onStageStartQuest: (JourneyStageUiModel) -> Unit,
+    onStageLongClick: ((JourneyStageUiModel, Int) -> Unit)? = null,
+    onEnsureVisible: ((Float, Float) -> Unit)? = null
 ) {
     val stageStep = 255.dp
     val bannerHeight = 106.dp
@@ -373,6 +389,9 @@ private fun JourneyPath(
     val rewardTop = (stages.size * stageStep.value + totalBanners * bannerTotalHeight.value + 10).dp
 
     val auroraAnim = rememberCosmicAuroraAnimation()
+    val density = LocalDensity.current
+    val haptic = LocalHapticFeedback.current
+    var selectedStageIndex by remember { mutableStateOf<Int?>(null) }
 
     fun getStageColor(index: Int): Color {
         val planetType = CosmicPlanetHelper.getPlanetTypeForStage(index)
@@ -385,6 +404,24 @@ private fun JourneyPath(
     BoxWithConstraints(
         modifier = Modifier.fillMaxWidth().height(totalPathHeight)
     ) {
+        val boxWidth = maxWidth
+
+        // 1. Scrim overlay trong suốt để chạm ra ngoài là đóng Popup
+        if (selectedStageIndex != null) {
+            Box(
+                modifier = Modifier
+                    .matchParentSize()
+                    .clickable(
+                        interactionSource = remember { MutableInteractionSource() },
+                        indication = null
+                    ) {
+                        haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                        selectedStageIndex = null
+                    }
+            )
+        }
+
+        // 2. Dải cực quang ngân hà nối các hành tinh (Cosmic Aurora Segments)
         Canvas(modifier = Modifier.matchParentSize()) {
             val nodeX = { index: Int -> if (index % 2 == 0) 90.dp.toPx() else size.width - 90.dp.toPx() }
             val nodeY = { index: Int -> ((index / 10) + 1) * bannerTotalHeight.toPx() + index * stageStep.toPx() + 85.dp.toPx() }
@@ -421,6 +458,7 @@ private fun JourneyPath(
             }
         }
 
+        // 3. Cột chứa Banner chương và các hành tinh (Column)
         Column(modifier = Modifier.fillMaxWidth()) {
             stages.forEachIndexed { index, stage ->
                 if (index % 10 == 0) {
@@ -453,7 +491,16 @@ private fun JourneyPath(
                     strings = strings,
                     unlockProgress = stageUnlockProgress,
                     onStageClick = {
-                        onStageClick(stage)
+                        haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                        val newIdx = if (selectedStageIndex == index) null else index
+                        selectedStageIndex = newIdx
+                        if (newIdx != null) {
+                            val bannerTotalHeightPx = with(density) { bannerTotalHeight.toPx() }
+                            val stageStepPx = with(density) { stageStep.toPx() }
+                            val nodeYPx = ((index / 10) + 1) * bannerTotalHeightPx + index * stageStepPx + with(density) { 85.dp.toPx() }
+                            val popupBottomPx = nodeYPx + with(density) { 68.dp.toPx() } + with(density) { 190.dp.toPx() }
+                            onEnsureVisible?.invoke(popupBottomPx, nodeYPx)
+                        }
                     },
                     onStageLongClick = {
                         onStageLongClick?.invoke(stage, index)
@@ -462,12 +509,50 @@ private fun JourneyPath(
             }
         }
 
+        // 4. Rương kho báu cuối chặng
         RewardChestCard(
             unlocked = JourneyStageMapper.rewardUnlocked(stages),
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(top = rewardTop, start = 22.dp, end = 22.dp)
         )
+
+        // 5. Duolingo-style Cosmic Planet Lesson Pop-up với mũi tên trỏ vào hành tinh
+        val currentSelectedIdx = selectedStageIndex
+        if (currentSelectedIdx != null && currentSelectedIdx in stages.indices) {
+            val selectedStage = stages[currentSelectedIdx]
+            val isLeft = currentSelectedIdx % 2 == 0
+            val planetNodeY = bannerTotalHeight * ((currentSelectedIdx / 10) + 1) + stageStep * currentSelectedIdx + 85.dp
+            val popupY = planetNodeY + 58.dp
+            val cardWidth = 270.dp.coerceAtMost(boxWidth - 40.dp)
+            val arrowX = if (isLeft) (90.dp - 20.dp) else (cardWidth - (90.dp - 20.dp))
+
+            key(currentSelectedIdx) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .offset(y = popupY)
+                        .padding(horizontal = 20.dp),
+                    contentAlignment = if (isLeft) Alignment.TopStart else Alignment.TopEnd
+                ) {
+                    CosmicPlanetLessonPopup(
+                        stage = selectedStage,
+                        index = currentSelectedIdx,
+                        totalStages = stages.size,
+                        isEnglish = isEnglish,
+                        arrowX = arrowX,
+                        modifier = Modifier.width(cardWidth),
+                        onStartQuest = {
+                            selectedStageIndex = null
+                            onStageStartQuest(selectedStage)
+                        },
+                        onDismiss = {
+                            selectedStageIndex = null
+                        }
+                    )
+                }
+            }
+        }
     }
 }
 

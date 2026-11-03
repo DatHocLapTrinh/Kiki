@@ -783,7 +783,7 @@ fun EmptyAskState(
                 contentAlignment = Alignment.Center
             ) {
                 AsyncImage(
-                    model = R.drawable.kiki_state_wave,
+                    model = R.drawable.kiki_icon,
                     contentDescription = "Kiki Mentor Waving",
                     contentScale = ContentScale.Fit,
                     modifier = Modifier.fillMaxSize().padding(3.dp).clip(CircleShape)
@@ -822,7 +822,7 @@ fun EmptyAskState(
                 contentAlignment = Alignment.Center
             ) {
                 AsyncImage(
-                    model = R.drawable.kiki_full_wave,
+                    model = R.drawable.kiki_icon,
                     contentDescription = "Kiki Mentor Welcoming",
                     contentScale = ContentScale.Fit,
                     modifier = Modifier.fillMaxSize().padding(6.dp)
@@ -1035,7 +1035,7 @@ fun StepGlassCard(
             contentAlignment = Alignment.Center
         ) {
             AsyncImage(
-                model = R.drawable.kiki_state_happy,
+                model = R.drawable.kiki_mascot_head,
                 contentDescription = "AI Mentor Kiki",
                 contentScale = ContentScale.Fit,
                 modifier = Modifier.fillMaxSize().padding(1.5.dp).clip(CircleShape)

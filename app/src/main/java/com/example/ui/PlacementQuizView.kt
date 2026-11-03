@@ -97,24 +97,15 @@ fun PlacementQuizView(
     ) {
         if (!isShowingRadarCard) {
             // === PHẦN 1: HEADER & ADAPTIVE STAGE INDICATOR ===
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.Center,
+            Box(
                 modifier = Modifier
                     .clip(RoundedCornerShape(20.dp))
                     .background(Color(0x3300F5D4))
                     .border(1.dp, Color(0x6600F5D4), RoundedCornerShape(20.dp))
                     .padding(horizontal = 14.dp, vertical = 6.dp)
             ) {
-                Icon(
-                    imageVector = Icons.Default.AutoAwesome,
-                    contentDescription = null,
-                    tint = Color(0xFF00F5D4),
-                    modifier = Modifier.size(16.dp)
-                )
-                Spacer(modifier = Modifier.width(6.dp))
                 Text(
-                    text = "CAT • CHẨN ĐOÁN THÍCH ỨNG IRT",
+                    text = "BÀI TEST TRÌNH ĐỘ",
                     color = Color(0xFF00F5D4),
                     fontWeight = FontWeight.Bold,
                     fontSize = 11.5.sp,
@@ -125,10 +116,10 @@ fun PlacementQuizView(
             Spacer(modifier = Modifier.height(10.dp))
 
             val stageSkillTitle = when (stage) {
-                1 -> "Giai đoạn 1/4: Khung Ngữ Pháp & Cú Pháp Cốt Lõi"
-                2 -> "Giai đoạn 2/4: Độ Rộng Vốn Từ & Kết Hợp Từ (Collocations)"
-                3 -> "Giai đoạn 3/4: Giải Mã Âm Thanh & Nuốt Âm (Acoustic)"
-                else -> "Giai đoạn 4/4: Khẩu Ngữ & Ngữ Điệu Phản Xạ (Speaking)"
+                1 -> "Câu hỏi 1/4: Ngữ Pháp"
+                2 -> "Câu hỏi 2/4: Từ Vựng"
+                3 -> "Câu hỏi 3/4: Luyện Nghe"
+                else -> "Câu hỏi 4/4: Phản Xạ Nói"
             }
 
             Text(
@@ -137,7 +128,7 @@ fun PlacementQuizView(
                 color = Color.White.copy(alpha = 0.9f),
                 textAlign = TextAlign.Center,
                 fontWeight = FontWeight.SemiBold,
-                fontSize = 13.sp
+                fontSize = 13.5.sp
             )
 
             Spacer(modifier = Modifier.height(14.dp))
@@ -146,7 +137,7 @@ fun PlacementQuizView(
             Row(
                 horizontalArrangement = Arrangement.Center,
                 verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.fillMaxWidth().padding(bottom = 14.dp)
+                modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp)
             ) {
                 for (s in 1..4) {
                     val isActive = s == stage
@@ -167,21 +158,6 @@ fun PlacementQuizView(
                 }
             }
 
-            // Real-time Theta estimation badge
-            val thetaCefrEstimate = when {
-                currentTheta < -0.3f -> "A1 - A2 (Sơ cấp)"
-                currentTheta < 0.7f -> "B1 - B2 (Trung cấp)"
-                else -> "B2+ - C1 (Nâng cao)"
-            }
-            Text(
-                text = "Ước lượng năng lực hiện tại: $thetaCefrEstimate • θ = ${(currentTheta * 100).roundToInt() / 100f}",
-                color = Color(0xFF00F5D4).copy(alpha = 0.85f),
-                fontSize = 11.sp,
-                fontWeight = FontWeight.Medium
-            )
-
-            Spacer(modifier = Modifier.height(14.dp))
-
             // === PHẦN 2: THẺ NỘI DUNG CÂU HỎI THÍCH ỨNG ===
             AnimatedContent(
                 targetState = currentItem.id,
@@ -195,16 +171,7 @@ fun PlacementQuizView(
                     horizontalAlignment = Alignment.CenterHorizontally,
                     modifier = Modifier.fillMaxWidth()
                 ) {
-                    // Skill Tag & CEFR Tier
-                    Text(
-                        text = "ĐỘ KHÓ b = ${currentItem.difficultyB} • KHUNG ${currentItem.cefrTier}",
-                        color = Color(0xFFFF9E00),
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 11.sp,
-                        letterSpacing = 1.sp
-                    )
-
-                    Spacer(modifier = Modifier.height(10.dp))
+                    Spacer(modifier = Modifier.height(4.dp))
 
                     // Question prompt container
                     Box(
@@ -287,6 +254,12 @@ fun PlacementQuizView(
 
                     // Trường hợp câu hỏi SPEAKING
                     if (currentItem.skillType == DiagnosticSkillType.SPEAKING) {
+                        val currentTargetSentence = currentItem.speakingSentence
+                        val evalResult = if (spokenRecognizedText.isNotBlank()) {
+                            com.example.util.PronunciationScorer.evaluate(currentTargetSentence, spokenRecognizedText)
+                        } else null
+                        val hasSpoken = spokenRecognizedText.isNotBlank()
+
                         Column(
                             horizontalAlignment = Alignment.CenterHorizontally,
                             modifier = Modifier.fillMaxWidth().padding(vertical = 6.dp)
@@ -300,19 +273,19 @@ fun PlacementQuizView(
                                     .clickable {
                                         ttsManager?.speak(currentItem.speakingSentence, isSlow = false)
                                     }
-                                    .padding(horizontal = 12.dp, vertical = 6.dp)
+                                    .padding(horizontal = 14.dp, vertical = 7.dp)
                             ) {
-                                Icon(Icons.Default.PlayArrow, contentDescription = null, tint = Color.White, modifier = Modifier.size(16.dp))
-                                Spacer(modifier = Modifier.width(4.dp))
-                                Text("Nghe mẫu chuẩn", color = Color.White, fontSize = 12.sp)
+                                Icon(Icons.Default.PlayArrow, contentDescription = null, tint = Color(0xFF00F5D4), modifier = Modifier.size(18.dp))
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text("Nghe câu phát âm mẫu", color = Color.White, fontSize = 12.5.sp, fontWeight = FontWeight.Medium)
                             }
 
-                            Spacer(modifier = Modifier.height(14.dp))
+                            Spacer(modifier = Modifier.height(16.dp))
 
                             // Nút Micro phát âm
                             Box(
                                 modifier = Modifier
-                                    .size(72.dp)
+                                    .size(76.dp)
                                     .clip(CircleShape)
                                     .background(
                                         if (isRecordingSpeaking) Brush.radialGradient(listOf(Color(0xFFFF6B6B), Color(0x33FF6B6B)))
@@ -332,7 +305,12 @@ fun PlacementQuizView(
                                                 onResult = { text ->
                                                     spokenRecognizedText = text
                                                     isRecordingSpeaking = false
-                                                    soundEffectManager?.playCorrect()
+                                                    val res = com.example.util.PronunciationScorer.evaluate(currentTargetSentence, text)
+                                                    if (res.overallScore >= 60) {
+                                                        soundEffectManager?.playCorrect()
+                                                    } else {
+                                                        soundEffectManager?.playIncorrect()
+                                                    }
                                                 },
                                                 onError = { _ ->
                                                     isRecordingSpeaking = false
@@ -346,41 +324,56 @@ fun PlacementQuizView(
                                     imageVector = if (isRecordingSpeaking) Icons.Default.GraphicEq else Icons.Default.Mic,
                                     contentDescription = "Microphone",
                                     tint = Color(0xFF0B0D1B),
-                                    modifier = Modifier.size(36.dp)
+                                    modifier = Modifier.size(38.dp)
                                 )
                             }
 
                             Spacer(modifier = Modifier.height(10.dp))
                             Text(
-                                text = if (isRecordingSpeaking) "Đang lắng nghe giọng bạn... (Hãy nói to rõ)" else "Nhấn micro để luyện nói câu trên",
+                                text = if (isRecordingSpeaking) "Đang lắng nghe... (Hãy nói to, rõ ràng)"
+                                       else if (!hasSpoken) "Chạm micro để phát âm câu trên"
+                                       else "Chạm micro nếu muốn phát âm lại",
                                 color = if (isRecordingSpeaking) Color(0xFFFF9E00) else Color.White.copy(alpha = 0.8f),
-                                fontSize = 12.sp
+                                fontSize = 12.5.sp
                             )
 
-                            if (spokenRecognizedText.isNotBlank()) {
-                                Spacer(modifier = Modifier.height(8.dp))
-                                Text(
-                                    text = "Đã nhận diện: \"$spokenRecognizedText\"",
-                                    color = Color(0xFF00F5D4),
-                                    fontWeight = FontWeight.SemiBold,
-                                    fontSize = 13.sp
-                                )
+                            if (hasSpoken && evalResult != null) {
+                                Spacer(modifier = Modifier.height(10.dp))
+                                val isScorePass = evalResult.overallScore >= 60
+                                Box(
+                                    modifier = Modifier
+                                        .clip(RoundedCornerShape(12.dp))
+                                        .background(if (isScorePass) Color(0x2E00F5D4) else Color(0x2EFF6B6B))
+                                        .border(1.dp, if (isScorePass) Color(0xFF00F5D4) else Color(0xFFFF6B6B), RoundedCornerShape(12.dp))
+                                        .padding(horizontal = 14.dp, vertical = 6.dp)
+                                ) {
+                                    Text(
+                                        text = "Đã nhận diện: \"$spokenRecognizedText\" (${evalResult.overallScore}%)" +
+                                               if (isScorePass) " 🎉" else " • Chưa chuẩn",
+                                        color = if (isScorePass) Color(0xFF00F5D4) else Color(0xFFFF6B6B),
+                                        fontWeight = FontWeight.SemiBold,
+                                        fontSize = 12.5.sp
+                                    )
+                                }
                             }
 
-                            Spacer(modifier = Modifier.height(16.dp))
+                            Spacer(modifier = Modifier.height(18.dp))
 
-                            // Nút xác nhận hoàn tất nói
+                            // Nút xác nhận hoàn tất nói (chỉ mở khi đã nói)
                             Box(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .height(50.dp)
                                     .clip(RoundedCornerShape(14.dp))
-                                    .background(Brush.linearGradient(listOf(Color(0xFF00F5D4), Color(0xFF00B4D8))))
-                                    .clickable(enabled = !isAnswered) {
+                                    .background(
+                                        if (hasSpoken) Brush.linearGradient(listOf(Color(0xFF00F5D4), Color(0xFF00B4D8)))
+                                        else Brush.linearGradient(listOf(Color(0x33FFFFFF), Color(0x1AFFFFFF)))
+                                    )
+                                    .clickable(enabled = hasSpoken && !isAnswered) {
                                         isAnswered = true
                                         val latency = System.currentTimeMillis() - itemStartTime
-                                        val isCorrect = true // Đánh giá hoàn tất luyện phát âm
-                                        soundEffectManager?.playCorrect()
+                                        val finalScore = evalResult?.overallScore ?: 0
+                                        val isCorrect = finalScore >= 60
 
                                         val newTheta = AdaptiveDiagnosticEngine.updateTheta(
                                             currentTheta,
@@ -395,14 +388,13 @@ fun PlacementQuizView(
                                                 selectedIndex = 0,
                                                 isCorrect = isCorrect,
                                                 latencyMs = latency,
-                                                speakingScore = 85
+                                                speakingScore = finalScore
                                             )
                                         )
                                         answeredIds.add(currentItem.id)
 
                                         scope.launch {
                                             delay(400)
-                                            // Hoàn thành cả 4 giai đoạn -> Đánh giá tổng hợp và hiện Radar Card
                                             val profile = AdaptiveDiagnosticEngine.evaluateFinalProfile(
                                                 userId = userId,
                                                 goal = goal,
@@ -420,10 +412,10 @@ fun PlacementQuizView(
                                 contentAlignment = Alignment.Center
                             ) {
                                 Text(
-                                    text = "Hoàn tất phát âm & Tiếp tục ✨",
-                                    color = Color(0xFF0B0D1B),
+                                    text = if (hasSpoken) "Hoàn Tất & Xem Kết Quả ➔" else "Bấm Micro Để Luyện Nói 🎙️",
+                                    color = if (hasSpoken) Color(0xFF0B0D1B) else Color.White.copy(alpha = 0.5f),
                                     fontWeight = FontWeight.Bold,
-                                    fontSize = 15.sp
+                                    fontSize = 14.5.sp
                                 )
                             }
                         }
@@ -573,57 +565,30 @@ fun PlacementQuizView(
                     modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp)
                 ) {
                     coil.compose.AsyncImage(
-                        model = com.example.R.drawable.kiki_state_happy,
+                        model = com.example.R.drawable.kiki_mascot_head,
                         contentDescription = "Kiki AI Diagnostic Mentor",
                         contentScale = androidx.compose.ui.layout.ContentScale.Fit,
                         modifier = Modifier
-                            .size(92.dp)
+                            .size(80.dp)
                             .clip(CircleShape)
                             .background(Color(0x2600F5D4))
                             .border(1.5.dp, Color(0xFF00F5D4), CircleShape)
                             .padding(4.dp)
                     )
 
-                    Spacer(modifier = Modifier.height(10.dp))
-
-                    Box(
-                        modifier = Modifier
-                            .clip(RoundedCornerShape(20.dp))
-                            .background(Color(0x3300F5D4))
-                            .border(1.dp, Color(0x6600F5D4), RoundedCornerShape(20.dp))
-                            .padding(horizontal = 14.dp, vertical = 6.dp)
-                    ) {
-                        Text(
-                            text = "✨ HỒ SƠ NĂNG LỰC AI KIKI (RADAR)",
-                            color = Color(0xFF00F5D4),
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 11.5.sp,
-                            letterSpacing = 1.sp
-                        )
-                    }
-
-                    Spacer(modifier = Modifier.height(12.dp))
+                    Spacer(modifier = Modifier.height(14.dp))
 
                     Text(
-                        text = "Kết quả Chuẩn Đoán Thích Ứng Đa Chiều",
+                        text = "Kết Quả Đánh Giá",
                         style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.Black,
                         color = Color.White,
                         textAlign = TextAlign.Center
                     )
 
-                    Spacer(modifier = Modifier.height(6.dp))
+                    Spacer(modifier = Modifier.height(16.dp))
 
-                    Text(
-                        text = "AI đã hiệu chuẩn tham số năng lực θ và thiết lập cấu hình Microlearning tối ưu riêng cho bạn.",
-                        color = Color.White.copy(alpha = 0.8f),
-                        fontSize = 12.5.sp,
-                        textAlign = TextAlign.Center
-                    )
-
-                    Spacer(modifier = Modifier.height(18.dp))
-
-                    // Khung kết quả CEFR & Theta
+                    // Khung kết quả CEFR
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -635,33 +600,30 @@ fun PlacementQuizView(
                     ) {
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
                             Text(
-                                text = "TRÌNH ĐỘ CEFR ĐÁNH GIÁ",
-                                color = Color(0xFF00F5D4),
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 11.sp,
-                                letterSpacing = 1.sp
-                            )
-                            Spacer(modifier = Modifier.height(4.dp))
-                            Text(
                                 text = when (profile.evaluatedCefr) {
-                                    "Beginner" -> "Sơ Cấp (Beginner - A1/A2)"
-                                    "Intermediate" -> "Trung Cấp (Intermediate - B1/B2)"
-                                    else -> "Nâng Cao (Advanced - C1)"
+                                    "Beginner" -> "Sơ Cấp (A1 - A2)"
+                                    "Intermediate" -> "Trung Cấp (B1 - B2)"
+                                    else -> "Nâng Cao (C1)"
                                 },
                                 color = Color.White,
                                 fontWeight = FontWeight.Black,
                                 fontSize = 18.sp
                             )
-                            Spacer(modifier = Modifier.height(6.dp))
+                            Spacer(modifier = Modifier.height(4.dp))
                             Text(
-                                text = "Năng lực Rasch: θ = ${(profile.thetaAbility * 100).roundToInt() / 100f} • Hệ số SM-2 EF₀ = ${(profile.initialEasinessFactor * 100).roundToInt() / 100f}",
-                                color = Color.White.copy(alpha = 0.75f),
-                                fontSize = 11.5.sp
+                                text = when (profile.evaluatedCefr) {
+                                    "Beginner" -> "Tập trung từ vựng cốt lõi & giao tiếp nền tảng"
+                                    "Intermediate" -> "Tăng tốc phản xạ & chuẩn hóa ngữ pháp"
+                                    else -> "Chuyên sâu từ vựng & phản xạ tự nhiên"
+                                },
+                                color = Color.White.copy(alpha = 0.8f),
+                                fontSize = 12.sp,
+                                textAlign = TextAlign.Center
                             )
                         }
                     }
 
-                    Spacer(modifier = Modifier.height(16.dp))
+                    Spacer(modifier = Modifier.height(14.dp))
 
                     // 4 Thanh kỹ năng Radar
                     Column(
@@ -673,7 +635,7 @@ fun PlacementQuizView(
                             .padding(16.dp)
                     ) {
                         Text(
-                            text = "PHÂN TÍCH MA TRẬN KỸ NĂNG",
+                            text = "KỸ NĂNG",
                             color = Color(0xFFFF9E00),
                             fontWeight = FontWeight.Bold,
                             fontSize = 11.sp,
@@ -681,41 +643,39 @@ fun PlacementQuizView(
                             modifier = Modifier.padding(bottom = 12.dp)
                         )
 
-                        RadarSkillProgressBar(label = "📝 Ngữ pháp & Cú pháp", percentage = profile.grammarAccuracy)
+                        RadarSkillProgressBar(label = "Ngữ pháp", percentage = profile.grammarAccuracy)
                         Spacer(modifier = Modifier.height(8.dp))
-                        RadarSkillProgressBar(label = "📚 Từ vựng & Kết hợp từ", percentage = profile.vocabularyAccuracy)
+                        RadarSkillProgressBar(label = "Từ vựng", percentage = profile.vocabularyAccuracy)
                         Spacer(modifier = Modifier.height(8.dp))
-                        RadarSkillProgressBar(label = "🎧 Thính giác & Nuốt âm", percentage = profile.acousticAccuracy)
+                        RadarSkillProgressBar(label = "Nghe hiểu", percentage = profile.acousticAccuracy)
                         Spacer(modifier = Modifier.height(8.dp))
-                        RadarSkillProgressBar(label = "🎙️ Khẩu ngữ & Ngữ điệu", percentage = profile.speakingAccuracy)
+                        RadarSkillProgressBar(label = "Phát âm", percentage = profile.speakingAccuracy)
                     }
 
-                    // Baseline Weak Points Tags nếu có
+                    // Điểm cần rèn luyện gọn gàng
                     if (profile.baselineWeakPoints.isNotEmpty()) {
-                        Spacer(modifier = Modifier.height(14.dp))
-                        Column(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clip(RoundedCornerShape(16.dp))
-                                .background(Color(0x1AFF6B6B))
-                                .border(1.dp, Color(0x4DFF6B6B), RoundedCornerShape(16.dp))
-                                .padding(12.dp)
-                        ) {
-                            Text(
-                                text = "🎯 TRỌNG TÂM AI CẦN ĐỘT PHÁ (WEAK POINTS)",
-                                color = Color(0xFFFF6B6B),
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 10.5.sp,
-                                letterSpacing = 0.8.sp
-                            )
-                            Spacer(modifier = Modifier.height(6.dp))
-                            Text(
-                                text = profile.baselineWeakPoints.joinToString(" • ") { it.replace("_", " ") },
-                                color = Color.White.copy(alpha = 0.9f),
-                                fontSize = 12.sp,
-                                fontWeight = FontWeight.Medium
-                            )
+                        val translatedWeak = profile.baselineWeakPoints.take(3).map { tag ->
+                            when (tag.replace(" ", "_").lowercase()) {
+                                "conditional_type_2" -> "Câu điều kiện"
+                                "basic_collocation" -> "Cụm từ thông dụng"
+                                "acoustic_everyday_greeting", "acoustic_everyday_greetings" -> "Nghe giao tiếp"
+                                "present_perfect" -> "Hiện tại hoàn thành"
+                                "past_simple" -> "Quá khứ đơn"
+                                "relative_clause" -> "Mệnh đề quan hệ"
+                                "passive_voice" -> "Câu bị động"
+                                "business_idiom" -> "Thành ngữ công sở"
+                                "linking_words" -> "Từ nối liên từ"
+                                "pronunciation_intonation" -> "Phát âm & ngữ điệu"
+                                else -> tag.replace("_", " ")
+                            }
                         }
+                        Spacer(modifier = Modifier.height(12.dp))
+                        Text(
+                            text = "Cần rèn luyện: " + translatedWeak.joinToString(" • "),
+                            color = Color.White.copy(alpha = 0.75f),
+                            fontSize = 12.sp,
+                            textAlign = TextAlign.Center
+                        )
                     }
 
                     Spacer(modifier = Modifier.height(20.dp))
@@ -724,7 +684,7 @@ fun PlacementQuizView(
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(54.dp)
+                            .height(52.dp)
                             .clip(RoundedCornerShape(16.dp))
                             .background(Brush.linearGradient(listOf(Color(0xFFFF9E00), Color(0xFF00F5D4))))
                             .clickable {
@@ -735,7 +695,7 @@ fun PlacementQuizView(
                         contentAlignment = Alignment.Center
                     ) {
                         Text(
-                            text = "Xác Nhận & Thiết Kế Lộ Trình AI ✨",
+                            text = "Tạo Lộ Trình ➔",
                             color = Color(0xFF0B0D1B),
                             fontWeight = FontWeight.Black,
                             fontSize = 15.sp

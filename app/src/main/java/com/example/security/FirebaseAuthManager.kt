@@ -47,6 +47,15 @@ class FirebaseAuthManager @Inject constructor(
         return getCurrentUser() != null
     }
 
+    fun isGoogleSignedIn(): Boolean {
+        val user = getCurrentUser() ?: return false
+        if (user.isAnonymous) return false
+        val hasGoogle = user.providerData.any {
+            it.providerId == GoogleAuthProvider.PROVIDER_ID || it.providerId == "google.com"
+        }
+        return hasGoogle || !user.email.isNullOrBlank()
+    }
+
     suspend fun getIdToken(forceRefresh: Boolean = false): String? {
         return try {
             val user = getCurrentUser() ?: return null

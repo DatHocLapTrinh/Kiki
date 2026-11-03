@@ -11,11 +11,11 @@ import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 
 enum class BubbleArrowDirection {
-    LEFT, RIGHT
+    LEFT, RIGHT, TOP, BOTTOM
 }
 
 /**
- * Speech Bubble Shape designed for celestial map info cards.
+ * Speech Bubble Shape designed for celestial map info cards and popups.
  * Seamlessly integrates an arrow pointer directed towards the lesson/stage planet sphere.
  */
 class SpeechBubbleShape(
@@ -23,7 +23,8 @@ class SpeechBubbleShape(
     val cornerRadius: Dp = 18.dp,
     val arrowWidth: Dp = 12.dp,
     val arrowHeight: Dp = 18.dp,
-    val arrowCenterY: Dp = 48.dp
+    val arrowCenterY: Dp = 48.dp,
+    val arrowCenterX: Dp = 90.dp
 ) : Shape {
     override fun createOutline(
         size: Size,
@@ -34,17 +35,27 @@ class SpeechBubbleShape(
         val aw = with(density) { arrowWidth.toPx() }
         val ah = with(density) { arrowHeight.toPx() }
         val cy = with(density) { arrowCenterY.toPx() }
+        val cx = with(density) { arrowCenterX.toPx() }
 
         val bodyLeft = if (direction == BubbleArrowDirection.LEFT) aw else 0f
         val bodyRight = if (direction == BubbleArrowDirection.RIGHT) size.width - aw else size.width
-        val bodyTop = 0f
-        val bodyBottom = size.height
+        val bodyTop = if (direction == BubbleArrowDirection.TOP) ah else 0f
+        val bodyBottom = if (direction == BubbleArrowDirection.BOTTOM) size.height - ah else size.height
 
         val path = Path().apply {
-            // Start at top-left, after top-left corner
+            // Start at top-left corner
             moveTo(bodyLeft + cr, bodyTop)
 
-            // Top edge
+            // Top edge (with arrow if pointing TOP)
+            if (direction == BubbleArrowDirection.TOP) {
+                val arrowLeft = (cx - aw / 2f).coerceIn(bodyLeft + cr, bodyRight - cr - aw)
+                val arrowTipX = arrowLeft + aw / 2f
+                val arrowRight = arrowLeft + aw
+
+                lineTo(arrowLeft, bodyTop)
+                lineTo(arrowTipX, 0f)
+                lineTo(arrowRight, bodyTop)
+            }
             lineTo(bodyRight - cr, bodyTop)
 
             // Top-right corner
@@ -65,7 +76,7 @@ class SpeechBubbleShape(
                 lineTo(size.width, arrowTipY)
                 lineTo(bodyRight, arrowBottom)
             }
-            lineTo(bodyRight, bodyBottom - cr)
+            lineTo(bodyRight - cr, bodyBottom)
 
             // Bottom-right corner
             arcTo(
@@ -75,7 +86,16 @@ class SpeechBubbleShape(
                 forceMoveTo = false
             )
 
-            // Bottom edge
+            // Bottom edge (with arrow if pointing BOTTOM)
+            if (direction == BubbleArrowDirection.BOTTOM) {
+                val arrowLeft = (cx - aw / 2f).coerceIn(bodyLeft + cr, bodyRight - cr - aw)
+                val arrowTipX = arrowLeft + aw / 2f
+                val arrowRight = arrowLeft + aw
+
+                lineTo(arrowRight, bodyBottom)
+                lineTo(arrowTipX, size.height)
+                lineTo(arrowLeft, bodyBottom)
+            }
             lineTo(bodyLeft + cr, bodyBottom)
 
             // Bottom-left corner
