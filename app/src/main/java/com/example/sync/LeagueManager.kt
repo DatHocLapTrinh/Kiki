@@ -86,48 +86,81 @@ class LeagueManager @Inject constructor(
         }
     }
 
+    private fun getWeeklyXpKey(userId: Long): String =
+        if (userId > 0) "${userId}_$KEY_WEEKLY_XP" else KEY_WEEKLY_XP
+
+    private fun getCurrentTierKey(userId: Long): String =
+        if (userId > 0) "${userId}_$KEY_CURRENT_TIER" else KEY_CURRENT_TIER
+
+    private fun getLastSavedWeekKey(userId: Long): String =
+        if (userId > 0) "${userId}_$KEY_LAST_SAVED_WEEK_FOR_XP" else KEY_LAST_SAVED_WEEK_FOR_XP
+
+    private fun getLastRecordedRankKey(userId: Long): String =
+        if (userId > 0) "${userId}_$KEY_LAST_RECORDED_RANK" else KEY_LAST_RECORDED_RANK
+
+    private fun getLastSettledWeekKey(userId: Long): String =
+        if (userId > 0) "${userId}_$KEY_LAST_SETTLED_WEEK" else KEY_LAST_SETTLED_WEEK
+
     /**
      * Cấp bậc cúp hiện tại của người dùng (mặc định khởi đầu là Đồng - BRONZE)
      */
-    fun getCurrentTier(): LeagueTier {
-        val raw = prefs.getString(KEY_CURRENT_TIER, LeagueTier.BRONZE.name)
+    fun getCurrentTier(userId: Long = -1L): LeagueTier {
+        val key = getCurrentTierKey(userId)
+        val raw = prefs.getString(key, null) ?: prefs.getString(KEY_CURRENT_TIER, LeagueTier.BRONZE.name)
         return LeagueTier.fromString(raw)
     }
 
-    fun setCurrentTier(tier: LeagueTier) {
-        prefs.edit().putString(KEY_CURRENT_TIER, tier.name).apply()
-        Log.d(TAG, "Đã cập nhật cấp bậc giải đấu lên: ${tier.vietnameseTitle}")
+    fun setCurrentTier(tier: LeagueTier, userId: Long = -1L) {
+        val key = getCurrentTierKey(userId)
+        prefs.edit().putString(key, tier.name).apply()
+        if (userId > 0) {
+            prefs.edit().putString(KEY_CURRENT_TIER, tier.name).apply()
+        }
+        Log.d(TAG, "Đã cập nhật cấp bậc giải đấu lên: ${tier.vietnameseTitle} (userId: $userId)")
     }
 
     /**
      * Điểm XP tích lũy trong tuần này
      */
-    fun getWeeklyXp(): Int {
-        checkAndResetWeeklyXpIfNewWeek()
-        return prefs.getInt(KEY_WEEKLY_XP, 0)
+    fun getWeeklyXp(userId: Long = -1L): Int {
+        checkAndResetWeeklyXpIfNewWeek(userId)
+        val key = getWeeklyXpKey(userId)
+        return if (prefs.contains(key)) prefs.getInt(key, 0) else prefs.getInt(KEY_WEEKLY_XP, 0)
+    }
+
+    fun setWeeklyXp(amount: Int, userId: Long = -1L) {
+        val key = getWeeklyXpKey(userId)
+        prefs.edit()
+            .putInt(key, amount)
+            .putString(getLastSavedWeekKey(userId), getCurrentWeekId())
+            .apply()
+        if (userId > 0) {
+            prefs.edit().putInt(KEY_WEEKLY_XP, amount).apply()
+        }
     }
 
     /**
      * Tích lũy thêm XP vào bảng xếp hạng tuần
      */
-    fun addWeeklyXp(amount: Int) {
+    fun addWeeklyXp(amount: Int, userId: Long = -1L) {
         if (amount <= 0) return
-        checkAndResetWeeklyXpIfNewWeek()
-        val current = prefs.getInt(KEY_WEEKLY_XP, 0)
+        checkAndResetWeeklyXpIfNewWeek(userId)
+        val current = getWeeklyXp(userId)
         val updated = current + amount
-        prefs.edit()
-            .putInt(KEY_WEEKLY_XP, updated)
-            .putString(KEY_LAST_SAVED_WEEK_FOR_XP, getCurrentWeekId())
-            .apply()
-        Log.d(TAG, "Cập nhật Weekly XP: +$amount => $updated XP (Tuần: ${getCurrentWeekId()})")
+        setWeeklyXp(updated, userId)
+        Log.d(TAG, "Cập nhật Weekly XP: +$amount => $updated XP (userId: $userId, Tuần: ${getCurrentWeekId()})")
     }
 
     /**
      * Lưu lại vị trí xếp hạng mới nhất của user trong tuần hiện tại
      */
-    fun recordCurrentRank(rank: Int) {
+    fun recordCurrentRank(rank: Int, userId: Long = -1L) {
         if (rank > 0) {
-            prefs.edit().putInt(KEY_LAST_RECORDED_RANK, rank).apply()
+            val key = getLastRecordedRankKey(userId)
+            prefs.edit().putInt(key, rank).apply()
+            if (userId > 0) {
+                prefs.edit().putInt(KEY_LAST_RECORDED_RANK, rank).apply()
+            }
         }
     }
 
@@ -137,15 +170,17 @@ class LeagueManager @Inject constructor(
      * - Top 6 - 15: Giữ nguyên cúp
      * - Top 16+: Tụt 1 cúp (nếu > Đồng)
      */
-    fun checkAndSettleWeeklyLeague(): LeagueSettlementResult? {
+    fun checkAndSettleWeeklyLeague(userId: Long = -1L): LeagueSettlementResult? {
         val currentWeek = getCurrentWeekId()
-        val lastSettledWeek = prefs.getString(KEY_LAST_SETTLED_WEEK, null)
+        val lastSettledWeekKey = getLastSettledWeekKey(userId)
+        val lastSavedWeekKey = getLastSavedWeekKey(userId)
+        val lastSettledWeek = prefs.getString(lastSettledWeekKey, null) ?: prefs.getString(KEY_LAST_SETTLED_WEEK, null)
 
         // Nếu mới cài app lần đầu, khởi tạo tuần hiện tại mà không trừ/thăng điểm
         if (lastSettledWeek == null) {
             prefs.edit()
-                .putString(KEY_LAST_SETTLED_WEEK, currentWeek)
-                .putString(KEY_LAST_SAVED_WEEK_FOR_XP, currentWeek)
+                .putString(lastSettledWeekKey, currentWeek)
+                .putString(lastSavedWeekKey, currentWeek)
                 .apply()
             return null
         }
@@ -156,13 +191,14 @@ class LeagueManager @Inject constructor(
         }
 
         // Đã bước sang tuần mới (Thứ 2 đầu tuần)! Bắt đầu kết toán kết quả tuần trước
-        val oldTier = getCurrentTier()
-        val finalRank = prefs.getInt(KEY_LAST_RECORDED_RANK, 10) // Mặc định ở vùng an toàn nếu chưa có rank
+        val oldTier = getCurrentTier(userId)
+        val rankKey = getLastRecordedRankKey(userId)
+        val finalRank = prefs.getInt(rankKey, prefs.getInt(KEY_LAST_RECORDED_RANK, 10))
 
         val result: LeagueSettlementResult = when {
             finalRank in 1..5 -> {
                 val newTier = oldTier.nextTier()
-                setCurrentTier(newTier)
+                setCurrentTier(newTier, userId)
                 LeagueSettlementResult.Promoted(oldTier, newTier, finalRank, lastSettledWeek)
             }
             finalRank in 6..15 -> {
@@ -170,20 +206,21 @@ class LeagueManager @Inject constructor(
             }
             else -> {
                 val newTier = oldTier.previousTier()
-                setCurrentTier(newTier)
+                setCurrentTier(newTier, userId)
                 LeagueSettlementResult.Demoted(oldTier, newTier, finalRank, lastSettledWeek)
             }
         }
 
         // Đặt lại điểm XP tuần mới = 0 và cập nhật mốc tuần đã kết toán
+        val xpKey = getWeeklyXpKey(userId)
         prefs.edit()
-            .putInt(KEY_WEEKLY_XP, 0)
-            .putString(KEY_LAST_SETTLED_WEEK, currentWeek)
-            .putString(KEY_LAST_SAVED_WEEK_FOR_XP, currentWeek)
-            .putInt(KEY_LAST_RECORDED_RANK, 0)
+            .putInt(xpKey, 0)
+            .putString(lastSettledWeekKey, currentWeek)
+            .putString(lastSavedWeekKey, currentWeek)
+            .putInt(rankKey, 0)
             .apply()
 
-        Log.i(TAG, "Kết toán mùa giải tuần $lastSettledWeek: Kết quả = $result")
+        Log.i(TAG, "Kết toán mùa giải tuần $lastSettledWeek (userId: $userId): Kết quả = $result")
         return result
     }
 
@@ -200,16 +237,16 @@ class LeagueManager @Inject constructor(
         }
     }
 
-    private fun checkAndResetWeeklyXpIfNewWeek() {
+    private fun checkAndResetWeeklyXpIfNewWeek(userId: Long = -1L) {
         val currentWeek = getCurrentWeekId()
-        val lastSavedWeek = prefs.getString(KEY_LAST_SAVED_WEEK_FOR_XP, null)
+        val keyWeek = getLastSavedWeekKey(userId)
+        val lastSavedWeek = prefs.getString(keyWeek, null)
         if (lastSavedWeek != null && lastSavedWeek != currentWeek) {
-            // Đã sang tuần mới nhưng chưa reset XP
+            val keyXp = getWeeklyXpKey(userId)
             prefs.edit()
-                .putInt(KEY_WEEKLY_XP, 0)
-                .putString(KEY_LAST_SAVED_WEEK_FOR_XP, currentWeek)
+                .putInt(keyXp, 0)
+                .putString(keyWeek, currentWeek)
                 .apply()
         }
     }
 }
-

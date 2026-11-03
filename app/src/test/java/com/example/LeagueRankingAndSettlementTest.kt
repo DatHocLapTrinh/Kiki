@@ -155,6 +155,28 @@ class LeagueRankingAndSettlementTest {
     }
 
     @Test
+    fun testPerUserIsolationOnSameDevice() {
+        val user1Id = 101L
+        val user2Id = 202L
+
+        // User 1 accumulates 150 XP and gets promoted to Silver
+        leagueManager.setWeeklyXp(150, user1Id)
+        leagueManager.setCurrentTier(LeagueTier.SILVER, user1Id)
+
+        // User 2 logs in on the same device with 40 XP and starts in Bronze
+        leagueManager.setWeeklyXp(40, user2Id)
+        leagueManager.setCurrentTier(LeagueTier.BRONZE, user2Id)
+
+        // Verify User 1 data remains intact
+        assertEquals(150, leagueManager.getWeeklyXp(user1Id))
+        assertEquals(LeagueTier.SILVER, leagueManager.getCurrentTier(user1Id))
+
+        // Verify User 2 data is isolated
+        assertEquals(40, leagueManager.getWeeklyXp(user2Id))
+        assertEquals(LeagueTier.BRONZE, leagueManager.getCurrentTier(user2Id))
+    }
+
+    @Test
     fun testMondaySettlementDemotesLowRankUser() {
         leagueManager.setCurrentTier(LeagueTier.SILVER)
         val prefs = context.getSharedPreferences("StudyMentorLeaguePrefs", Context.MODE_PRIVATE)
