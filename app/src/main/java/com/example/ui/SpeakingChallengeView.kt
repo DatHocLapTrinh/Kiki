@@ -92,8 +92,8 @@ fun SpeakingChallengeView(
             modifier = Modifier
                 .fillMaxWidth()
                 .clip(RoundedCornerShape(20.dp))
-                .background(Color(0x1F1A1B36))
-                .border(1.dp, Color(0x33FFFFFF), RoundedCornerShape(20.dp))
+                .background(Color(0xF0191530))
+                .border(1.5.dp, Color(0x55818CF8), RoundedCornerShape(20.dp))
                 .padding(horizontal = 16.dp, vertical = 12.dp),
             contentAlignment = Alignment.Center
         ) {
@@ -414,8 +414,8 @@ private fun IntonationContourGuide(
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(16.dp))
-            .background(Color(0x1451FAC1))
-            .border(1.dp, Color(0x3351FAC1), RoundedCornerShape(16.dp))
+            .background(Color(0xF0132332))
+            .border(1.5.dp, Color(0x5551FAC1), RoundedCornerShape(16.dp))
             .padding(horizontal = 14.dp, vertical = 10.dp)
     ) {
         Column {

@@ -67,9 +67,9 @@ fun ListeningChallengeView(
                 .clip(RoundedCornerShape(20.dp))
                 .background(
                     when {
-                        isChecked && isCorrect -> Color(0x2222C55E)
-                        isChecked && !isCorrect -> Color(0x22EF4444)
-                        else -> Color(0x1F14142B)
+                        isChecked && isCorrect -> Color(0xF0102E20)
+                        isChecked && !isCorrect -> Color(0xF038121E)
+                        else -> Color(0xF018152E)
                     }
                 )
                 .border(1.5.dp, assemblyBorderColor, RoundedCornerShape(20.dp))
@@ -79,7 +79,7 @@ fun ListeningChallengeView(
             if (selectedTokenIndices.isEmpty()) {
                 Text(
                     text = if (isEnglish) "Tap words below to assemble your answer 👇" else "Chạm vào các từ bên dưới để ghép câu nghe được 👇",
-                    color = Color(0x66FFFFFF),
+                    color = Color(0x99FFFFFF),
                     fontSize = 13.sp,
                     fontStyle = FontStyle.Italic,
                     textAlign = TextAlign.Center,
@@ -124,13 +124,13 @@ fun ListeningChallengeView(
                     Box(
                         modifier = Modifier
                             .clip(RoundedCornerShape(12.dp))
-                            .background(Color(0x0AFFFFFF))
-                            .border(1.dp, Color(0x1AFFFFFF), RoundedCornerShape(12.dp))
+                            .background(Color(0x15FFFFFF))
+                            .border(1.dp, Color(0x22FFFFFF), RoundedCornerShape(12.dp))
                             .padding(horizontal = 12.dp, vertical = 8.dp)
                     ) {
                         Text(
                             text = word,
-                            color = Color(0x22FFFFFF),
+                            color = Color(0x44FFFFFF),
                             fontSize = 14.sp,
                             fontWeight = FontWeight.SemiBold
                         )
@@ -166,7 +166,7 @@ private fun ListeningTokenChip(
         isInAssembly && isChecked && isCorrect -> Triple(Color(0xFF22C55E), Color(0xFF22C55E), Color(0xFF0D0A1A))
         isInAssembly && isChecked && !isCorrect -> Triple(Color(0xFFEF4444), Color(0xFFEF4444), Color.White)
         isInAssembly -> Triple(Color(0xFF1565C0), Color(0xFF42A5F5), Color.White)
-        else -> Triple(Color(0x261E1E38), Color(0x6642A5F5), Color(0xCCFFFFFF))
+        else -> Triple(Color(0xF21C1836), Color(0x66818CF8), Color.White)
     }
 
     Box(

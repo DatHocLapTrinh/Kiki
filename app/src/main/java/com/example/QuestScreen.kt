@@ -660,10 +660,10 @@ fun QuestScreen(viewModel: StudyViewModel, onFinish: () -> Unit) {
                                     val targetAlpha = if (isChecked && !isSelected && !isCorrectAnswer) 0.45f else 1f
 
                                     val (optionBg, optionBorder, optionTextColor) = when {
-                                        isChecked && isCorrectAnswer -> Triple(Color(0x3322C55E), Color(0xFF22C55E), Color(0xFF51FAC1))
-                                        isChecked && isSelected && !isCorrectAnswer -> Triple(Color(0x33EF4444), Color(0xFFEF4444), Color(0xFFFF7A7A))
-                                        isSelected -> Triple(Color(0x2651FAC1), Color(0xFF51FAC1), Color.White)
-                                        else -> Triple(Color(0x0DFFFFFF), Color(0x26FFFFFF), Color(0xCCFFFFFF))
+                                        isChecked && isCorrectAnswer -> Triple(Color(0xF20F2E20), Color(0xFF22C55E), Color(0xFF51FAC1))
+                                        isChecked && isSelected && !isCorrectAnswer -> Triple(Color(0xF238121E), Color(0xFFEF4444), Color(0xFFFF8A8A))
+                                        isSelected -> Triple(Color(0xF212263C), Color(0xFF51FAC1), Color.White)
+                                        else -> Triple(Color(0xF2191530), Color(0x55818CF8), Color.White)
                                     }
 
                                     val animatedBorderColor by animateColorAsState(targetValue = optionBorder, animationSpec = tween(250), label = "border_color")
@@ -682,7 +682,7 @@ fun QuestScreen(viewModel: StudyViewModel, onFinish: () -> Unit) {
                                             .clip(RoundedCornerShape(18.dp))
                                             .background(animatedBgColor)
                                             .border(
-                                                width = if (isSelected || (isChecked && isCorrectAnswer)) 2.dp else 1.dp,
+                                                width = if (isSelected || (isChecked && isCorrectAnswer) || (isChecked && isSelected)) 2.dp else 1.5.dp,
                                                 color = animatedBorderColor,
                                                 shape = RoundedCornerShape(18.dp)
                                             )
@@ -690,7 +690,7 @@ fun QuestScreen(viewModel: StudyViewModel, onFinish: () -> Unit) {
                                                 haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
                                                 selectedOption = index
                                             }
-                                            .padding(horizontal = 18.dp, vertical = 14.dp),
+                                            .padding(horizontal = 18.dp, vertical = 15.dp),
                                         verticalAlignment = Alignment.CenterVertically,
                                         horizontalArrangement = Arrangement.SpaceBetween
                                     ) {
@@ -699,31 +699,37 @@ fun QuestScreen(viewModel: StudyViewModel, onFinish: () -> Unit) {
                                                 isChecked && isCorrectAnswer -> Color(0xFF22C55E)
                                                 isChecked && isSelected && !isCorrectAnswer -> Color(0xFFEF4444)
                                                 isSelected -> Color(0xFF51FAC1)
-                                                else -> Color(0x1AFFFFFF)
+                                                else -> Color(0x33818CF8)
+                                            }
+                                            val badgeBorder = when {
+                                                isChecked && isCorrectAnswer -> Color(0xFF22C55E)
+                                                isChecked && isSelected && !isCorrectAnswer -> Color(0xFFEF4444)
+                                                isSelected -> Color(0xFF51FAC1)
+                                                else -> Color(0x80818CF8)
                                             }
                                             val badgeTextColor = if (isSelected && !isChecked) Color(0xFF0F172A) else Color.White
 
                                             Box(
                                                 modifier = Modifier
-                                                    .size(32.dp)
+                                                    .size(34.dp)
                                                     .clip(CircleShape)
                                                     .background(badgeBg)
-                                                    .border(1.dp, animatedBorderColor, CircleShape),
+                                                    .border(1.5.dp, badgeBorder, CircleShape),
                                                 contentAlignment = Alignment.Center
                                             ) {
                                                 Text(
                                                     labels[index],
                                                     color = badgeTextColor,
-                                                    fontWeight = FontWeight.ExtraBold,
-                                                    fontSize = 14.sp
+                                                    fontWeight = FontWeight.Black,
+                                                    fontSize = 14.5.sp
                                                 )
                                             }
                                             Spacer(modifier = Modifier.width(14.dp))
                                             Text(
                                                 text = text,
                                                 color = optionTextColor,
-                                                fontSize = 16.sp,
-                                                fontWeight = if (isSelected || (isChecked && isCorrectAnswer)) FontWeight.Bold else FontWeight.Normal
+                                                fontSize = 17.sp,
+                                                fontWeight = if (isSelected || (isChecked && isCorrectAnswer)) FontWeight.Bold else FontWeight.SemiBold
                                             )
                                         }
 
