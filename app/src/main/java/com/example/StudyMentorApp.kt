@@ -644,9 +644,9 @@ fun OnboardingScreen(viewModel: StudyViewModel, onFinish: () -> Unit) {
                                     Spacer(modifier = Modifier.height(24.dp))
 
                                     val statusText = when (phaseIndex) {
-                                        0 -> "🧠 Đang hiệu chuẩn vector năng lực θ & tham số SM-2..."
-                                        1 -> "✨ Ép khuôn JSON Schema 3C (Concept-Check-Consolidate)..."
-                                        else -> "📚 Khởi tạo Chapter 1 nhắm trúng các điểm yếu chẩn đoán..."
+                                        0 -> "🧠 Đang phân tích kết quả bài test..."
+                                        1 -> "🪐 Đang thiết lập 10 hành tinh tri thức..."
+                                        else -> "✨ Hoàn tất lộ trình cá nhân hóa..."
                                     }
 
                                     Box(
@@ -667,47 +667,48 @@ fun OnboardingScreen(viewModel: StudyViewModel, onFinish: () -> Unit) {
                             }
                             4 -> {
                                 // BƯỚC 4: HỒ SƠ & LỘ TRÌNH ĐÃ SẴN SÀNG
-                                Text(strings.profileInitialized, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Black, color = Color.White)
-                                Spacer(modifier = Modifier.height(10.dp))
-                                Text(strings.profileReady, textAlign = TextAlign.Center, color = Color.White.copy(alpha = 0.8f), fontSize = 12.5.sp)
+                                val displayGoal = when (selectedGoal) {
+                                    "Everyday Fluency" -> "Giao tiếp hàng ngày"
+                                    "Grammar & Vocabulary" -> "Ngữ pháp & Từ vựng"
+                                    "IELTS & TOEIC" -> "Luyện thi chứng chỉ"
+                                    "Career & Business" -> "Tiếng Anh công sở"
+                                    else -> selectedGoal
+                                }
+                                val displayLevel = when (selectedLevel) {
+                                    "Beginner" -> "Sơ Cấp (A1 - A2)"
+                                    "Intermediate" -> "Trung Cấp (B1 - B2)"
+                                    else -> "Nâng Cao (C1)"
+                                }
+
+                                Text("Lộ Trình Đã Sẵn Sàng", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Black, color = Color.White)
+                                Spacer(modifier = Modifier.height(8.dp))
+                                Text("10 hành tinh khám phá tiếng Anh đã được mở.", textAlign = TextAlign.Center, color = Color.White.copy(alpha = 0.8f), fontSize = 12.5.sp)
                                 Spacer(modifier = Modifier.height(16.dp))
 
-                                // Banner kết quả phân loại AI
+                                // Banner tóm tắt tối giản
                                 Box(
                                     modifier = Modifier
                                         .fillMaxWidth()
                                         .clip(RoundedCornerShape(16.dp))
                                         .background(Brush.linearGradient(listOf(Color(0x3300F5D4), Color(0x1A7209B7))))
                                         .border(1.2.dp, Color(0xFF00F5D4), RoundedCornerShape(16.dp))
-                                        .padding(14.dp),
+                                        .padding(16.dp),
                                     contentAlignment = Alignment.Center
                                 ) {
                                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
                                         Text(
-                                            text = "✨ " + strings.evaluatedLevelBanner.uppercase(),
-                                            color = Color(0xFF00F5D4),
-                                            fontWeight = FontWeight.Bold,
-                                            fontSize = 11.sp,
-                                            letterSpacing = 1.sp
-                                        )
-                                        Spacer(modifier = Modifier.height(4.dp))
-                                        Text(
-                                            text = when (selectedLevel) {
-                                                "Beginner" -> strings.beginnerTitle
-                                                "Intermediate" -> strings.intermediateTitle
-                                                else -> strings.advancedTitle
-                                            },
+                                            text = displayLevel,
                                             color = Color.White,
                                             fontWeight = FontWeight.Black,
-                                            fontSize = 16.sp
+                                            fontSize = 18.sp
                                         )
                                         Spacer(modifier = Modifier.height(6.dp))
                                         Text(
-                                            text = "🎯 Mục tiêu: $selectedGoal\n⏱️ Nhịp độ: $selectedPacingMinutes phút/ngày • ✨ Lộ trình AI cá nhân hóa",
+                                            text = "$displayGoal • $selectedPacingMinutes phút/ngày\n10 hành tinh tri thức",
                                             color = Color.White.copy(alpha = 0.85f),
-                                            fontSize = 11.5.sp,
+                                            fontSize = 12.sp,
                                             textAlign = TextAlign.Center,
-                                            lineHeight = 17.sp
+                                            lineHeight = 18.sp
                                         )
                                     }
                                 }

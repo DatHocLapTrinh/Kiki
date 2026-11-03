@@ -2034,7 +2034,19 @@ class StudyViewModel @Inject constructor(
 
             val prompt = """
                 You are Kiki AI, an elite Microlearning Pedagogical Curriculum Architect.
-                Design a 5-Stage Scientific Competency Roadmap for a learner with:
+                Design a 10-Stage Scientific Cosmic Roadmap matching the 10 Solar System planets:
+                1. Sao Thủy (Mercury)
+                2. Sao Kim (Venus)
+                3. Trái Đất (Earth)
+                4. Mặt Trăng (The Moon)
+                5. Sao Hỏa (Mars)
+                6. Sao Mộc (Jupiter)
+                7. Sao Thổ (Saturn)
+                8. Sao Thiên Vương (Uranus)
+                9. Sao Hải Vương (Neptune)
+                10. Mặt Trời (The Sun)
+
+                For a learner with:
                 - Goal: "${profile.goal}"
                 - Target CEFR Level: "${profile.evaluatedCefr}"
                 - Ability parameter Theta: ${profile.thetaAbility}
@@ -2044,26 +2056,15 @@ class StudyViewModel @Inject constructor(
 
                 $levelPedagogyGuidance
 
-                Return ONLY a raw JSON array of 5 objects (no markdown, no backticks) with this exact schema:
+                Return ONLY a raw JSON array of exactly 10 objects (no markdown, no backticks) with this exact schema:
                 [
                   {
-                    "title": "Stage 1 Short Title in Vietnamese with English subtitle",
+                    "title": "Chặng 1: Sao Thủy - [Chủ đề tiếng Việt ngắn gọn] ([English subtitle])",
                     "description": "Pedagogical single learning objective in Vietnamese (1 concise sentence)"
                   },
+                  ...
                   {
-                    "title": "Stage 2 Short Title in Vietnamese with English subtitle",
-                    "description": "Pedagogical single learning objective in Vietnamese (1 concise sentence)"
-                  },
-                  {
-                    "title": "Stage 3 Short Title in Vietnamese with English subtitle",
-                    "description": "Pedagogical single learning objective in Vietnamese (1 concise sentence)"
-                  },
-                  {
-                    "title": "Stage 4 Short Title in Vietnamese with English subtitle",
-                    "description": "Pedagogical single learning objective in Vietnamese (1 concise sentence)"
-                  },
-                  {
-                    "title": "Stage 5 Short Title in Vietnamese with English subtitle",
+                    "title": "Chặng 10: Mặt Trời - [Chủ đề tiếng Việt ngắn gọn] ([English subtitle])",
                     "description": "Pedagogical single learning objective in Vietnamese (1 concise sentence)"
                   }
                 ]
@@ -2071,14 +2072,14 @@ class StudyViewModel @Inject constructor(
 
             val contents = listOf(GeminiModels.Content(role = "user", parts = listOf(GeminiModels.Part(text = prompt))))
             val systemInstruction = GeminiModels.createSystemInstruction(
-                "You are Kiki AI, an expert Microlearning Curriculum Designer. Return ONLY raw JSON array containing exactly 5 stage objects. Strictly tailor the curriculum difficulty to the specified CEFR level: beginners MUST start from basic greetings (Hello/Hi/My name is) and must NOT receive idioms or connected speech."
+                "You are Kiki AI, an expert Microlearning Curriculum Designer. Return ONLY raw JSON array containing exactly 10 stage objects matching the 10 Solar System planets (Mercury to Sun). Strictly tailor the curriculum difficulty to the specified CEFR level: beginners MUST start from basic greetings (Hello/Hi/My name is) and must NOT receive idioms or connected speech."
             )
             val request = GeminiModels.GenerateContentRequest(
                 contents = contents,
                 systemInstruction = systemInstruction,
                 generationConfig = GeminiModels.GenerationConfig(
                     temperature = 0.3,
-                    maxOutputTokens = 1024,
+                    maxOutputTokens = 1536,
                     topP = 0.95,
                     topK = 40
                 )
@@ -2100,7 +2101,7 @@ class StudyViewModel @Inject constructor(
                     val desc = obj.optString("description", "Bài học Microlearning 3C tối ưu theo mục tiêu học.")
                     stages.add(Pair(title, desc))
                 }
-                if (stages.size >= 3) return@withContext stages
+                if (stages.size >= 10) return@withContext stages.take(10)
             }
         } catch (_: Exception) {}
 
@@ -2117,88 +2118,104 @@ class StudyViewModel @Inject constructor(
         if (isBeginner) {
             return when (profile.goal) {
                 "Career & Business" -> listOf(
-                    Pair("Chặng 1: Chào Hỏi Đồng Nghiệp & Làm Quen Cơ Bản (Office Greetings & Intro)", "Bắt đầu từ số 0 với Hello, Hi, Good morning, My name is nơi công sở."),
-                    Pair("Chặng 2: Giới Thiệu Chức Danh & Phòng Ban (Job Titles & Who I Am)", "Học nói về tên và công việc đơn giản: I am a / My job is..."),
-                    Pair("Chặng 3: Đồ Dùng Văn Phòng & Nhờ Vả Cơ Bản (Office Items & Polite Requests)", "Nhờ vả đơn giản với Please, Thank you, Coffee, Water, Laptop."),
-                    Pair("Chặng 4: Số Đếm, Giờ Giấc & Lịch Hẹn Đơn Giản (Numbers, Time & Schedules)", "Làm quen số đếm 1-100 và hỏi giờ họp đơn giản: What time is the meeting?"),
-                    Pair("Chặng 5: Đàm Thoại Ngắn Phản Xạ Nơi Làm Việc (Short Workplace Dialogues)", "Phản xạ giao tiếp 2-3 câu hàng ngày tự tin không vấp."),
-                    Pair("Chặng 6: Nơi Chốn & Chỉ Đường Công Tác (Business Travel & Directions)", "Hỏi đường đến văn phòng đối tác, sân bay và khách sạn tự tin."),
-                    Pair("Chặng 7: Trao Đổi Dự Án & Ý Kiến Cá Nhân (Project Discussions & Feedback)", "Bày tỏ quan điểm và đề xuất cải tiến trong công việc hàng ngày."),
-                    Pair("Chặng 8: Tinh Hoa Lãnh Đạo & Giao Tiếp Toàn Diện (Executive Mastery & Fluency)", "Chinh phục đỉnh cao giao tiếp quốc tế với phản xạ đàm thoại trôi chảy.")
+                    Pair("Chặng 1: Sao Thủy - Chào Hỏi Đồng Nghiệp & Làm Quen Cơ Bản (Office Greetings & Intro)", "Bắt đầu từ số 0 với Hello, Hi, Good morning, My name is nơi công sở."),
+                    Pair("Chặng 2: Sao Kim - Giới Thiệu Chức Danh & Phòng Ban (Job Titles & Who I Am)", "Học nói về tên và công việc đơn giản: I am a / My job is..."),
+                    Pair("Chặng 3: Trái Đất - Đồ Dùng Văn Phòng & Nhờ Vả Cơ Bản (Office Items & Polite Requests)", "Nhờ vả đơn giản với Please, Thank you, Coffee, Water, Laptop."),
+                    Pair("Chặng 4: Mặt Trăng - Số Đếm, Giờ Giấc & Lịch Hẹn Đơn Giản (Numbers, Time & Schedules)", "Làm quen số đếm 1-100 và hỏi giờ họp đơn giản: What time is the meeting?"),
+                    Pair("Chặng 5: Sao Hỏa - Đàm Thoại Ngắn Phản Xạ Nơi Làm Việc (Short Workplace Dialogues)", "Phản xạ giao tiếp 2-3 câu hàng ngày tự tin không vấp."),
+                    Pair("Chặng 6: Sao Mộc - Nơi Chốn & Chỉ Đường Công Tác (Business Travel & Directions)", "Hỏi đường đến văn phòng đối tác, sân bay và khách sạn tự tin."),
+                    Pair("Chặng 7: Sao Thổ - Trao Đổi Dự Án & Ý Kiến Cá Nhân (Project Discussions & Feedback)", "Bày tỏ quan điểm và đề xuất cải tiến trong công việc hàng ngày."),
+                    Pair("Chặng 8: Sao Thiên Vương - Thuyết Trình & Báo Cáo Cơ Bản (Presentations & Daily Reports)", "Trình bày số liệu và báo cáo tiến độ tuần đơn giản, rõ ràng."),
+                    Pair("Chặng 9: Sao Hải Vương - Đàm Phán & Xử Lý Tình Huống Công Sở (Workplace Problem Solving)", "Thương lượng lịch trình và xử lý tình huống phát sinh với đồng nghiệp."),
+                    Pair("Chặng 10: Mặt Trời - Tinh Hoa Lãnh Đạo & Giao Tiếp Toàn Diện (Executive Mastery & Fluency)", "Chinh phục đỉnh cao giao tiếp quốc tế với phản xạ đàm thoại trôi chảy.")
                 )
                 "Grammar & Vocabulary" -> listOf(
-                    Pair("Chặng 1: Làm Quen Từ Vựng & Lời Chào Số 0 (Greetings & Daily Words)", "Bắt đầu từ số 0: Hello, Hi, Thank you, Yes, No, các từ căn bản nhất."),
-                    Pair("Chặng 2: Đại Từ Nhân Xưng & Động Từ To Be (I am, You are, He is)", "Nắm vững bản chất I am, You are, He is với tên và nghề nghiệp cơ bản."),
-                    Pair("Chặng 3: Đồ Vật Quanh Ta & Số Ít Số Nhiều (This, That, A, An)", "Nhận biết danh từ hàng ngày: a book, a pen, this is, that is."),
-                    Pair("Chặng 4: Động Từ Hành Động Hàng Ngày (Action Verbs: Go, Like, Eat)", "Tạo câu 3 từ đơn giản: I like coffee, I go to work."),
-                    Pair("Chặng 5: Hỏi Đáp Đơn Giản Có/Không (Basic Yes/No Questions)", "Tự tin hỏi và trả lời câu hỏi Yes/No ngắn: Are you ready? Do you like tea?"),
-                    Pair("Chặng 6: Từ Vựng Vị Trí & Nơi Chốn Đời Sống (Prepositions & Places)", "Làm chủ giới từ in, on, at, behind và các địa điểm quen thuộc."),
-                    Pair("Chặng 7: Tính Từ Mô Tả & Cảm Xúc Hàng Ngày (Descriptive Adjectives & Feelings)", "Vận dụng tính từ mô tả người, đồ vật và cảm xúc tự nhiên."),
-                    Pair("Chặng 8: Đỉnh Cao Cú Pháp & Giao Tiếp Toàn Diện (Syntax Apex & Mastery)", "Chinh phục cấu trúc câu tổng hợp và phản xạ đàm thoại toàn diện.")
+                    Pair("Chặng 1: Sao Thủy - Làm Quen Từ Vựng & Lời Chào Số 0 (Greetings & Daily Words)", "Bắt đầu từ số 0: Hello, Hi, Thank you, Yes, No, các từ căn bản nhất."),
+                    Pair("Chặng 2: Sao Kim - Đại Từ Nhân Xưng & Động Từ To Be (I am, You are, He is)", "Nắm vững bản chất I am, You are, He is với tên và nghề nghiệp cơ bản."),
+                    Pair("Chặng 3: Trái Đất - Đồ Vật Quanh Ta & Số Ít Số Nhiều (This, That, A, An)", "Nhận biết danh từ hàng ngày: a book, a pen, this is, that is."),
+                    Pair("Chặng 4: Mặt Trăng - Động Từ Hành Động Hàng Ngày (Action Verbs: Go, Like, Eat)", "Tạo câu 3 từ đơn giản: I like coffee, I go to work."),
+                    Pair("Chặng 5: Sao Hỏa - Hỏi Đáp Đơn Giản Có/Không (Basic Yes/No Questions)", "Tự tin hỏi và trả lời câu hỏi Yes/No ngắn: Are you ready? Do you like tea?"),
+                    Pair("Chặng 6: Sao Mộc - Từ Vựng Vị Trí & Nơi Chốn Đời Sống (Prepositions & Places)", "Làm chủ giới từ in, on, at, behind và các địa điểm quen thuộc."),
+                    Pair("Chặng 7: Sao Thổ - Tính Từ Mô Tả & Cảm Xúc Hàng Ngày (Descriptive Adjectives & Feelings)", "Vận dụng tính từ mô tả người, đồ vật và cảm xúc tự nhiên."),
+                    Pair("Chặng 8: Sao Thiên Vương - Thì Quá Khứ Đơn Cơ Bản (Past Simple Basics)", "Nắm vững thì quá khứ đơn với động từ to be và các động từ có quy tắc."),
+                    Pair("Chặng 9: Sao Hải Vương - Thì Tương Lai Đơn & Kế Hoạch (Future Plans with Will & Going to)", "Diễn đạt dự định tương lai và kế hoạch sắp tới chuẩn xác."),
+                    Pair("Chặng 10: Mặt Trời - Đỉnh Cao Cú Pháp & Giao Tiếp Toàn Diện (Syntax Apex & Mastery)", "Chinh phục cấu trúc câu tổng hợp và phản xạ đàm thoại toàn diện.")
                 )
                 "IELTS & TOEIC" -> listOf(
-                    Pair("Chặng 1: Chào Hỏi & Giới Thiệu Bản Thân Đơn Giản (Speaking Part 1 Starter)", "Làm quen cách nói tên, tuổi và quê quán bằng các câu ngắn 3-4 từ."),
-                    Pair("Chặng 2: Từ Vựng Gia Đình & Sở Thích Số 0 (Family & Basic Hobbies)", "Học từ vựng và câu đơn giản mô tả người thân và sở thích hàng ngày."),
-                    Pair("Chặng 3: Nhận Diện Chữ Cái & Số Đếm Nghe Cơ Bản (Letters & Numbers Dictation)", "Luyện nghe bắt số điện thoại, ngày tháng và đánh vần tên cơ bản."),
-                    Pair("Chặng 4: Mô Tả Đồ Vật & Vị Trí Đơn Giản (Describing Objects & Places)", "Cấu trúc There is / There are và các giới từ vị trí cơ bản in, on, at."),
-                    Pair("Chặng 5: Phản Xạ Trả Lời Câu Hỏi Ngắn (Short Q&A Reflex)", "Tự tin trả lời 3 câu hỏi phỏng vấn ngắn quen thuộc trong đời sống."),
-                    Pair("Chặng 6: Nơi Chốn, Bản Đồ & Định Hướng (Places & Map Labelling Starter)", "Từ vựng phương hướng và địa điểm thường gặp trong đề thi nghe."),
-                    Pair("Chặng 7: Diễn Đạt Ý Kiến & So Sánh Đơn Giản (Opinions & Simple Comparisons)", "Sử dụng cấu trúc so sánh hơn/nhất và nêu lý do Because."),
-                    Pair("Chặng 8: Bứt Phá Đỉnh Cao & Hoàn Thiện Bài Thi (Test Apex & Band Mastery)", "Mô phỏng phản xạ làm bài thi hoàn chỉnh với độ chính xác cao.")
+                    Pair("Chặng 1: Sao Thủy - Chào Hỏi & Giới Thiệu Bản Thân Đơn Giản (Speaking Part 1 Starter)", "Làm quen cách nói tên, tuổi và quê quán bằng các câu ngắn 3-4 từ."),
+                    Pair("Chặng 2: Sao Kim - Từ Vựng Gia Đình & Sở Thích Số 0 (Family & Basic Hobbies)", "Học từ vựng và câu đơn giản mô tả người thân và sở thích hàng ngày."),
+                    Pair("Chặng 3: Trái Đất - Nhận Diện Chữ Cái & Số Đếm Nghe Cơ Bản (Letters & Numbers Dictation)", "Luyện nghe bắt số điện thoại, ngày tháng và đánh vần tên cơ bản."),
+                    Pair("Chặng 4: Mặt Trăng - Mô Tả Đồ Vật & Vị Trí Đơn Giản (Describing Objects & Places)", "Cấu trúc There is / There are và các giới từ vị trí cơ bản in, on, at."),
+                    Pair("Chặng 5: Sao Hỏa - Phản Xạ Trả Lời Câu Hỏi Ngắn (Short Q&A Reflex)", "Tự tin trả lời 3 câu hỏi phỏng vấn ngắn quen thuộc trong đời sống."),
+                    Pair("Chặng 6: Sao Mộc - Nơi Chốn, Bản Đồ & Định Hướng (Places & Map Labelling Starter)", "Từ vựng phương hướng và địa điểm thường gặp trong đề thi nghe."),
+                    Pair("Chặng 7: Sao Thổ - Diễn Đạt Ý Kiến & So Sánh Đơn Giản (Opinions & Simple Comparisons)", "Sử dụng cấu trúc so sánh hơn/nhất và nêu lý do Because."),
+                    Pair("Chặng 8: Sao Thiên Vương - Từ Vựng Biểu Đồ & Xu Hướng Cơ Bản (Basic Graph Trends)", "Nhận biết các động từ tăng giảm và mô tả xu hướng cơ bản."),
+                    Pair("Chặng 9: Sao Hải Vương - Luyện Nghe Đối Thoại Ngắn Đề Thi (Short Conversation Listening)", "Luyện nghe hiểu hội thoại ngắn đời thường và công sở trong đề thi."),
+                    Pair("Chặng 10: Mặt Trời - Bứt Phá Đỉnh Cao & Hoàn Thiện Bài Thi (Test Apex & Band Mastery)", "Mô phỏng phản xạ làm bài thi hoàn chỉnh với độ chính xác cao.")
                 )
                 else -> listOf(
-                    Pair("Chặng 1: Chào Hỏi & Làm Quen Cơ Bản (Hello & Daily Greetings)", "Bắt đầu từ số 0 với các từ chào hỏi kinh điển Hello, Hi, Thank you, My name is."),
-                    Pair("Chặng 2: Giới Thiệu Bản Thân & Hỏi Thăm (Personal Identity & How Are You)", "Tự tin giới thiệu bản thân và hỏi thăm bạn bè: How are you, I am fine."),
-                    Pair("Chặng 3: Nhu Cầu & Đồ Vật Thiết Yếu (Everyday Essentials & Requests)", "Giao tiếp cơ bản khi xin phép, cảm ơn và gọi nước, đồ ăn hàng ngày."),
-                    Pair("Chặng 4: Số Đếm, Thời Gian & Mua Sắm Cơ Bản (Numbers, Time & Basic Requests)", "Làm quen số đếm 1-10, hỏi giờ và hỏi giá đơn giản."),
-                    Pair("Chặng 5: Đàm Thoại Ngắn Phản Xạ Đời Sống (Short Daily Dialogue & Mastery)", "Phản xạ giao tiếp tự nhiên với các hội thoại ngắn đời thường 2-3 câu."),
-                    Pair("Chặng 6: Nơi Chốn & Chỉ Đường Du Lịch (Places, Transport & Directions)", "Học cách hỏi đường, gọi xe và gọi tên các địa điểm thông dụng: Where is the hotel?"),
-                    Pair("Chặng 7: Cảm Xúc, Ý Kiến & Phản Xạ Nâng Cao (Feelings, Opinions & Reflexes)", "Tự tin bày tỏ ý kiến, cảm xúc và trao đổi các chủ đề đa dạng hàng ngày."),
-                    Pair("Chặng 8: Đỉnh Cao Vũ Trụ & Giao Tiếp Toàn Diện (Cosmic Apex & Fluent Mastery)", "Chinh phục đỉnh cao thái dương hệ với năng lực phản xạ tiếng Anh toàn diện.")
+                    Pair("Chặng 1: Sao Thủy - Chào Hỏi & Làm Quen Cơ Bản (Mercury: Greetings & Hello)", "Bắt đầu cuộc hành trình từ hành tinh gần Mặt Trời nhất với các từ chào hỏi kinh điển: Hello, Hi, Thank you, My name is."),
+                    Pair("Chặng 2: Sao Kim - Giới Thiệu Bản Thân & Hỏi Thăm (Venus: Identity & How Are You)", "Vượt qua biển mây ngọc trai Sao Kim, tự tin giới thiệu bản thân và hỏi thăm bạn bè: How are you, I am fine."),
+                    Pair("Chặng 3: Trái Đất - Nhu Cầu & Đồ Vật Thiết Yếu (Earth: Daily Essentials & Requests)", "Dừng chân tại ốc đảo xanh Trái Đất, rèn luyện giao tiếp cơ bản khi xin phép, cảm ơn và gọi món đồ thiết yếu."),
+                    Pair("Chặng 4: Mặt Trăng - Số Đếm, Thời Gian & Lịch Trình (The Moon: Numbers & Schedules)", "Trạm tiếp vận vệ tinh Mặt Trăng: làm quen số đếm, hỏi giờ, hẹn lịch trình và hỏi giá đơn giản."),
+                    Pair("Chặng 5: Sao Hỏa - Đàm Thoại Ngắn Phản Xạ Đời Sống (Mars: Short Dialogue & Reflexes)", "Chinh phục bão cát hành tinh Đỏ với các đoạn hội thoại ngắn 2-3 câu phản xạ tự nhiên đời thường."),
+                    Pair("Chặng 6: Sao Mộc - Nơi Chốn & Chỉ Đường Du Lịch (Jupiter: Places & Directions)", "Khám phá bão xoáy khổng lồ Sao Mộc, học cách hỏi đường, gọi xe và tìm địa điểm du lịch thông dụng."),
+                    Pair("Chặng 7: Sao Thổ - Mua Sắm, Ăn Uống & Giá Cả (Saturn: Shopping, Dining & Prices)", "Lướt qua vành đai vàng Sao Thổ, tự tin đi mua sắm, gọi món nhà hàng và giao dịch thanh toán chuẩn xác."),
+                    Pair("Chặng 8: Sao Thiên Vương - Sở Thích, Thói Quen & Đời Sống (Uranus: Hobbies & Daily Routine)", "Tiến vào vùng băng ngọc bích Sao Thiên Vương, tự do chia sẻ sở thích cá nhân, hoạt động thể thao và thói quen."),
+                    Pair("Chặng 9: Sao Hải Vương - Cảm Xúc, Ý Kiến & Phản Xạ Nâng Cao (Neptune: Opinions & Reflexes)", "Vượt qua siêu bão lam thẳm Sao Hải Vương, bày tỏ quan điểm sâu sắc, cảm xúc và đàm thoại tự tin lưu loát."),
+                    Pair("Chặng 10: Mặt Trời - Đỉnh Cao Vũ Trụ & Giao Tiếp Toàn Diện (Solar Apex: Fluent Mastery)", "Chạm tới vầng thái dương rực rỡ, hoàn tất xuất sắc toàn bộ lộ trình phản xạ tiếng Anh toàn diện đỉnh cao.")
                 )
             }
         }
 
         return when (profile.goal) {
             "Grammar & Vocabulary" -> listOf(
-                Pair("Chặng 1: Củng Cố Cấu Trúc Cốt Lõi (Core Syntax)", "Xóa bỏ lỗi chia động từ và hòa hợp chủ vị cơ bản."),
-                Pair("Chặng 2: Làm Chủ Câu Điều Kiện Giả Định (Conditionals)", "Nắm vững bản chất câu điều kiện loại 2 và 3 trong giao tiếp."),
-                Pair("Chặng 3: Đảo Ngữ & Trạng Từ Nhấn Mạnh (Inversion)", "Sử dụng các trạng từ phủ định đảo ngữ để nâng cao sắc thái biểu đạt."),
-                Pair("Chặng 4: Mệnh Đề Rút Gọn & Cú Pháp Nâng Cao (Reduced Clauses)", "Rút gọn mệnh đề quan hệ và mệnh đề trạng ngữ linh hoạt."),
-                Pair("Chặng 5: Tổng Hợp Ngữ Pháp Đỉnh Cao (Mastery Synthesis)", "Chinh phục bài tập phản xạ ngữ pháp tổng hợp toàn diện."),
-                Pair("Chặng 6: Ngữ Pháp Văn Bản & Liên Kết Đoạn (Discourse Cohesion)", "Xây dựng tính mạch lạc cho đoạn văn và bài nói dài."),
-                Pair("Chặng 7: Cụm Từ Cố Định & Phong Cách Diễn Đạt (Idiomatic Collocations)", "Làm chủ các sắc thái biểu cảm tinh tế của người bản xứ."),
-                Pair("Chặng 8: Đỉnh Cao Ngôn Ngữ & Phong Thái Tự Nhiên (Native Linguistic Apex)", "Hoàn thiện ngữ pháp chuẩn xác và phản xạ tự nhiên tuyệt đối.")
+                Pair("Chặng 1: Sao Thủy - Củng Cố Cấu Trúc Cốt Lõi (Core Syntax)", "Xóa bỏ lỗi chia động từ và hòa hợp chủ vị cơ bản."),
+                Pair("Chặng 2: Sao Kim - Làm Chủ Câu Điều Kiện Giả Định (Conditionals)", "Nắm vững bản chất câu điều kiện loại 2 và 3 trong giao tiếp."),
+                Pair("Chặng 3: Trái Đất - Đảo Ngữ & Trạng Từ Nhấn Mạnh (Inversion)", "Sử dụng các trạng từ phủ định đảo ngữ để nâng cao sắc thái biểu đạt."),
+                Pair("Chặng 4: Mặt Trăng - Mệnh Đề Rút Gọn & Cú Pháp Nâng Cao (Reduced Clauses)", "Rút gọn mệnh đề quan hệ và mệnh đề trạng ngữ linh hoạt."),
+                Pair("Chặng 5: Sao Hỏa - Cụm Động Từ & Thành Ngữ Nâng Cao (Advanced Phrasal Verbs & Idioms)", "Vận dụng các cụm động từ tự nhiên của người bản xứ."),
+                Pair("Chặng 6: Sao Mộc - Ngữ Pháp Văn Bản & Liên Kết Đoạn (Discourse Cohesion)", "Xây dựng tính mạch lạc cho đoạn văn và bài nói dài."),
+                Pair("Chặng 7: Sao Thổ - Cụm Từ Cố Định & Phong Cách Diễn Đạt (Idiomatic Collocations)", "Làm chủ các sắc thái biểu cảm tinh tế của người bản xứ."),
+                Pair("Chặng 8: Sao Thiên Vương - Câu Bị Động Nâng Cao & Thể Truyền Khiến (Advanced Passive & Causative)", "Làm chủ cấu trúc bị động đặc biệt và thể nhờ bảo truyền khiến."),
+                Pair("Chặng 9: Sao Hải Vương - Giả Định Cách & Sắc Thái Tế Nhị (Subjunctive & Nuanced Modals)", "Sử dụng thức giả định và động từ khuyết thiếu tinh tế trong văn cảnh học thuật."),
+                Pair("Chặng 10: Mặt Trời - Đỉnh Cao Ngôn Ngữ & Phong Thái Tự Nhiên (Native Linguistic Apex)", "Hoàn thiện ngữ pháp chuẩn xác và phản xạ tự nhiên tuyệt đối.")
             )
             "IELTS & TOEIC" -> listOf(
-                Pair("Chặng 1: Nền Tảng Từ Vựng Học Thuật (Academic Lexicon)", "Làm chủ 20 collocations học thuật xuất hiện thường trực trong đề thi."),
-                Pair("Chặng 2: Nhận Diện Cấu Trúc Câu Phức Đề Thi (Complex Structures)", "Phân tích và dựng câu phức chuẩn mực cho bài thi viết và đọc."),
-                Pair("Chặng 3: Kỹ Thuật Nghe Bắt Ý Chính (Audio Gist Extraction)", "Rèn luyện tai nhận diện bẫy âm thanh và từ đồng nghĩa trong bài nghe."),
-                Pair("Chặng 4: Diễn Đạt Ý Nghĩa Đa Chiều (Paraphrasing Mastery)", "Kỹ năng biến đổi từ loại và cấu trúc câu tương đương tức thì."),
-                Pair("Chặng 5: Luyện Đề Bứt Phá Band Điểm (Exam Mastery Simulation)", "Thử thách phản xạ câu hỏi đề thi chuẩn hóa thời gian thực."),
-                Pair("Chặng 6: Kỹ Thuật Đọc Quét & Phân Tích Dữ Liệu (Skimming & Scanning Mastery)", "Nâng cao tốc độ xử lý bài đọc và phân tích biểu đồ."),
-                Pair("Chặng 7: Tư Duy Phản Biện & Luận Điểm Sắc Bén (Critical Argumentation)", "Phát triển ý tưởng logic và bảo vệ luận điểm trong Speaking & Writing."),
-                Pair("Chặng 8: Chinh Phục Đỉnh Cao Band Điểm Mục Tiêu (Exam Apex & Band 8.0+)", "Bứt phá giới hạn với chiến thuật làm bài chuẩn quốc tế.")
+                Pair("Chặng 1: Sao Thủy - Nền Tảng Từ Vựng Học Thuật (Academic Lexicon)", "Làm chủ 20 collocations học thuật xuất hiện thường trực trong đề thi."),
+                Pair("Chặng 2: Sao Kim - Nhận Diện Cấu Trúc Câu Phức Đề Thi (Complex Structures)", "Phân tích và dựng câu phức chuẩn mực cho bài thi viết và đọc."),
+                Pair("Chặng 3: Trái Đất - Kỹ Thuật Nghe Bắt Ý Chính (Audio Gist Extraction)", "Rèn luyện tai nhận diện bẫy âm thanh và từ đồng nghĩa trong bài nghe."),
+                Pair("Chặng 4: Mặt Trăng - Diễn Đạt Ý Nghĩa Đa Chiều (Paraphrasing Mastery)", "Kỹ năng biến đổi từ loại và cấu trúc câu tương đương tức thì."),
+                Pair("Chặng 5: Sao Hỏa - Luyện Đề Bứt Phá Band Điểm (Exam Mastery Simulation)", "Thử thách phản xạ câu hỏi đề thi chuẩn hóa thời gian thực."),
+                Pair("Chặng 6: Sao Mộc - Kỹ Thuật Đọc Quét & Phân Tích Dữ Liệu (Skimming & Scanning Mastery)", "Nâng cao tốc độ xử lý bài đọc và phân tích biểu đồ."),
+                Pair("Chặng 7: Sao Thổ - Tư Duy Phản Biện & Luận Điểm Sắc Bén (Critical Argumentation)", "Phát triển ý tưởng logic và bảo vệ luận điểm trong Speaking & Writing."),
+                Pair("Chặng 8: Sao Thiên Vương - Xử Lý Bẫy Nghe & Thông Tin Nhiễu (Distractor Traps & Listening Speed)", "Kỹ thuật loại trừ bẫy thông tin nhiễu trong phần thi nghe nâng cao."),
+                Pair("Chặng 9: Sao Hải Vương - Viết Luận Học Thuật & Báo Cáo Số Liệu (Academic Writing & Task 1/2)", "Phát triển đoạn văn mạch lạc với từ nối và cấu trúc học thuật."),
+                Pair("Chặng 10: Mặt Trời - Chinh Phục Đỉnh Cao Band Điểm Mục Tiêu (Exam Apex & Band 8.0+)", "Bứt phá giới hạn với chiến thuật làm bài chuẩn quốc tế.")
             )
             "Career & Business" -> listOf(
-                Pair("Chặng 1: Giao Tiếp Công Sở & Email Chuẩn Mực (Workplace Etiquette)", "Sử dụng văn phong trang trọng và lịch thiệp trong trao đổi công việc."),
-                Pair("Chặng 2: Đàm Thoại & Thuyết Trình Dự Án (Business Pitching)", "Cấu trúc hóa luận điểm và trình bày báo cáo ngắn gọn, thuyết phục."),
-                Pair("Chặng 3: Thảo Luận & Từ Chối Khéo Léo (Professional Diplomacy)", "Nghệ thuật phản hồi bất đồng và thương lượng trong cuộc họp."),
-                Pair("Chặng 4: Đàm Phán & Thuyết Phục Đối Tác (Strategic Negotiation)", "Vận dụng các thuật ngữ nhượng bộ và chốt thỏa thuận kinh doanh."),
-                Pair("Chặng 5: Khẩu Ngữ Lãnh Đạo Chuyên Nghiệp (Executive Fluency)", "Nâng tầm phong thái phát âm và giao tiếp bản lĩnh."),
-                Pair("Chặng 6: Quản Trị Khủng Hoảng & Phản Hồi Truyền Thông (Crisis Management)", "Giao tiếp bình tĩnh, sắc bén trước các tình huống áp lực cao."),
-                Pair("Chặng 7: Xây Dựng Mạng Lưới Quan Hệ Toàn Cầu (Global Networking)", "Kết nối đối tác đa văn hóa với sự thấu hiểu và tự tin."),
-                Pair("Chặng 8: Đỉnh Cao Lãnh Đạo Doanh Nghiệp (Global Executive Apex)", "Làm chủ nghệ thuật truyền cảm hứng và dẫn dắt đội ngũ quốc tế.")
+                Pair("Chặng 1: Sao Thủy - Giao Tiếp Công Sở & Email Chuẩn Mực (Workplace Etiquette)", "Sử dụng văn phong trang trọng và lịch thiệp trong trao đổi công việc."),
+                Pair("Chặng 2: Sao Kim - Đàm Thoại & Thuyết Trình Dự Án (Business Pitching)", "Cấu trúc hóa luận điểm và trình bày báo cáo ngắn gọn, thuyết phục."),
+                Pair("Chặng 3: Trái Đất - Thảo Luận & Từ Chối Khéo Léo (Professional Diplomacy)", "Nghệ thuật phản hồi bất đồng và thương lượng trong cuộc họp."),
+                Pair("Chặng 4: Mặt Trăng - Đàm Phán & Thuyết Phục Đối Tác (Strategic Negotiation)", "Vận dụng các thuật ngữ nhượng bộ và chốt thỏa thuận kinh doanh."),
+                Pair("Chặng 5: Sao Hỏa - Khẩu Ngữ Lãnh Đạo Chuyên Nghiệp (Executive Fluency)", "Nâng tầm phong thái phát âm và giao tiếp bản lĩnh."),
+                Pair("Chặng 6: Sao Mộc - Quản Trị Khủng Hoảng & Phản Hồi Truyền Thông (Crisis Management)", "Giao tiếp bình tĩnh, sắc bén trước các tình huống áp lực cao."),
+                Pair("Chặng 7: Sao Thổ - Xây Dựng Mạng Lưới Quan Hệ Toàn Cầu (Global Networking)", "Kết nối đối tác đa văn hóa với sự thấu hiểu và tự tin."),
+                Pair("Chặng 8: Sao Thiên Vương - Phân Tích Tài Chính & Chiến Lược Kinh Doanh (Financial & Business Strategy)", "Trao đổi tự tin về chiến lược doanh nghiệp, doanh thu và định hướng phát triển."),
+                Pair("Chặng 9: Sao Hải Vương - Giao Tiếp Đa Văn Hóa & Hợp Tác Quốc Tế (Cross-Cultural Communication)", "Vượt qua rào cản văn hóa khi làm việc với các đối tác toàn cầu."),
+                Pair("Chặng 10: Mặt Trời - Đỉnh Cao Lãnh Đạo Doanh Nghiệp (Global Executive Apex)", "Làm chủ nghệ thuật truyền cảm hứng và dẫn dắt đội ngũ quốc tế.")
             )
             else -> listOf(
-                Pair("Chặng 1: Khởi Động & Phản Xạ Đàm Thoại (Daily Greetings)", "Tự tin mở đầu câu chuyện và phản xạ chào hỏi tự nhiên không vấp."),
-                Pair("Chặng 2: Giải Mã Nuốt Âm & Nối Âm (Connected Speech & Elision)", "Làm chủ hiện tượng nuốt âm could've, gonna trong tiếng Anh bản xứ."),
-                Pair("Chặng 3: Đặt Câu Hỏi Gián Tiếp Lịch Sự (Polite Indirect Inquiries)", "Giao tiếp lịch thiệp khi hỏi đường, nhờ vả và gọi món."),
-                Pair("Chặng 4: Cụm Động Từ Thông Dụng (High-Frequency Phrasal Verbs)", "Sử dụng phrasal verbs tự nhiên thay cho các từ đơn điệu."),
-                Pair("Chặng 5: Đột Phá Đàm Thoại Trôi Chảy (Mastery Conversational Fluency)", "Phản xạ giao tiếp Native Audio trôi chảy trong mọi ngữ cảnh."),
-                Pair("Chặng 6: Đàm Thoại Đa Chủ Đề Đời Sống (Multi-Topic Life Discussions)", "Giao tiếp tự nhiên về du lịch, ẩm thực, văn hóa và lối sống."),
-                Pair("Chặng 7: Nghệ Thuật Kể Chuyện & Bày Tỏ Cảm Xúc (Storytelling & Nuance)", "Lôi cuốn người nghe với lối kể chuyện giàu hình ảnh và cảm xúc."),
-                Pair("Chặng 8: Đỉnh Cao Phản Xạ Bản Xứ Toàn Diện (Native Fluency Apex)", "Chinh phục đỉnh cao thái dương hệ với năng lực tiếng Anh toàn diện.")
+                Pair("Chặng 1: Sao Thủy - Khởi Động & Phản Xạ Đàm Thoại (Daily Greetings)", "Tự tin mở đầu câu chuyện và phản xạ chào hỏi tự nhiên không vấp."),
+                Pair("Chặng 2: Sao Kim - Giải Mã Nuốt Âm & Nối Âm (Connected Speech & Elision)", "Làm chủ hiện tượng nuốt âm could've, gonna trong tiếng Anh bản xứ."),
+                Pair("Chặng 3: Trái Đất - Đặt Câu Hỏi Gián Tiếp Lịch Sự (Polite Indirect Inquiries)", "Giao tiếp lịch thiệp khi hỏi đường, nhờ vả và gọi món."),
+                Pair("Chặng 4: Mặt Trăng - Cụm Động Từ Thông Dụng (High-Frequency Phrasal Verbs)", "Sử dụng phrasal verbs tự nhiên thay cho các từ đơn điệu."),
+                Pair("Chặng 5: Sao Hỏa - Đột Phá Đàm Thoại Trôi Chảy (Mastery Conversational Fluency)", "Phản xạ giao tiếp Native Audio trôi chảy trong mọi ngữ cảnh."),
+                Pair("Chặng 6: Sao Mộc - Đàm Thoại Đa Chủ Đề Đời Sống (Multi-Topic Life Discussions)", "Giao tiếp tự nhiên về du lịch, ẩm thực, văn hóa và lối sống."),
+                Pair("Chặng 7: Sao Thổ - Nghệ Thuật Kể Chuyện & Bày Tỏ Cảm Xúc (Storytelling & Nuance)", "Lôi cuốn người nghe với lối kể chuyện giàu hình ảnh và cảm xúc."),
+                Pair("Chặng 8: Sao Thiên Vương - Tranh Luận & Bảo Vệ Quan Điểm (Debating & Expressing Opinions)", "Bảo vệ quan điểm cá nhân một cách thuyết phục và hòa nhã."),
+                Pair("Chặng 9: Sao Hải Vương - Hài Hước & Tiếng Lóng Tự Nhiên (Humor, Sarcasm & Native Slang)", "Hiểu và sử dụng các lối nói hóm hỉnh, tiếng lóng thông dụng của giới trẻ."),
+                Pair("Chặng 10: Mặt Trời - Đỉnh Cao Phản Xạ Bản Xứ Toàn Diện (Native Fluency Apex)", "Chinh phục đỉnh cao thái dương hệ với năng lực tiếng Anh toàn diện.")
             )
         }
     }

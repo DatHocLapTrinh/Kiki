@@ -544,51 +544,24 @@ fun PlacementQuizView(
                         contentDescription = "Kiki AI Diagnostic Mentor",
                         contentScale = androidx.compose.ui.layout.ContentScale.Fit,
                         modifier = Modifier
-                            .size(92.dp)
+                            .size(80.dp)
                             .clip(CircleShape)
                             .background(Color(0x2600F5D4))
                             .border(1.5.dp, Color(0xFF00F5D4), CircleShape)
                             .padding(4.dp)
                     )
 
-                    Spacer(modifier = Modifier.height(10.dp))
-
-                    Box(
-                        modifier = Modifier
-                            .clip(RoundedCornerShape(20.dp))
-                            .background(Color(0x3300F5D4))
-                            .border(1.dp, Color(0x6600F5D4), RoundedCornerShape(20.dp))
-                            .padding(horizontal = 14.dp, vertical = 6.dp)
-                    ) {
-                        Text(
-                            text = "KẾT QUẢ ĐÁNH GIÁ",
-                            color = Color(0xFF00F5D4),
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 11.5.sp,
-                            letterSpacing = 1.sp
-                        )
-                    }
-
-                    Spacer(modifier = Modifier.height(12.dp))
+                    Spacer(modifier = Modifier.height(14.dp))
 
                     Text(
-                        text = "Kết Quả Đánh Giá Năng Lực",
+                        text = "Kết Quả Đánh Giá",
                         style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.Black,
                         color = Color.White,
                         textAlign = TextAlign.Center
                     )
 
-                    Spacer(modifier = Modifier.height(6.dp))
-
-                    Text(
-                        text = "Kiki đã phân tích năng lực và thiết lập lộ trình học tối ưu riêng cho bạn.",
-                        color = Color.White.copy(alpha = 0.8f),
-                        fontSize = 12.5.sp,
-                        textAlign = TextAlign.Center
-                    )
-
-                    Spacer(modifier = Modifier.height(18.dp))
+                    Spacer(modifier = Modifier.height(16.dp))
 
                     // Khung kết quả CEFR
                     Box(
@@ -602,14 +575,6 @@ fun PlacementQuizView(
                     ) {
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
                             Text(
-                                text = "TRÌNH ĐỘ CỦA BẠN",
-                                color = Color(0xFF00F5D4),
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 11.sp,
-                                letterSpacing = 1.sp
-                            )
-                            Spacer(modifier = Modifier.height(4.dp))
-                            Text(
                                 text = when (profile.evaluatedCefr) {
                                     "Beginner" -> "Sơ Cấp (A1 - A2)"
                                     "Intermediate" -> "Trung Cấp (B1 - B2)"
@@ -619,21 +584,21 @@ fun PlacementQuizView(
                                 fontWeight = FontWeight.Black,
                                 fontSize = 18.sp
                             )
-                            Spacer(modifier = Modifier.height(6.dp))
+                            Spacer(modifier = Modifier.height(4.dp))
                             Text(
                                 text = when (profile.evaluatedCefr) {
-                                    "Beginner" -> "Lộ trình tối ưu tập trung vào từ vựng cốt lõi và giao tiếp nền tảng."
-                                    "Intermediate" -> "Lộ trình tối ưu giúp tăng tốc phản xạ và chuẩn hóa ngữ pháp."
-                                    else -> "Lộ trình chuyên sâu giúp làm chủ từ vựng học thuật và phản xạ tự nhiên."
+                                    "Beginner" -> "Tập trung từ vựng cốt lõi & giao tiếp nền tảng"
+                                    "Intermediate" -> "Tăng tốc phản xạ & chuẩn hóa ngữ pháp"
+                                    else -> "Chuyên sâu từ vựng & phản xạ tự nhiên"
                                 },
-                                color = Color.White.copy(alpha = 0.75f),
-                                fontSize = 11.5.sp,
+                                color = Color.White.copy(alpha = 0.8f),
+                                fontSize = 12.sp,
                                 textAlign = TextAlign.Center
                             )
                         }
                     }
 
-                    Spacer(modifier = Modifier.height(16.dp))
+                    Spacer(modifier = Modifier.height(14.dp))
 
                     // 4 Thanh kỹ năng Radar
                     Column(
@@ -645,7 +610,7 @@ fun PlacementQuizView(
                             .padding(16.dp)
                     ) {
                         Text(
-                            text = "PHÂN TÍCH KỸ NĂNG",
+                            text = "KỸ NĂNG",
                             color = Color(0xFFFF9E00),
                             fontWeight = FontWeight.Bold,
                             fontSize = 11.sp,
@@ -653,41 +618,39 @@ fun PlacementQuizView(
                             modifier = Modifier.padding(bottom = 12.dp)
                         )
 
-                        RadarSkillProgressBar(label = "Ngữ pháp & Cú pháp", percentage = profile.grammarAccuracy)
+                        RadarSkillProgressBar(label = "Ngữ pháp", percentage = profile.grammarAccuracy)
                         Spacer(modifier = Modifier.height(8.dp))
-                        RadarSkillProgressBar(label = "Từ vựng & Cụm từ", percentage = profile.vocabularyAccuracy)
+                        RadarSkillProgressBar(label = "Từ vựng", percentage = profile.vocabularyAccuracy)
                         Spacer(modifier = Modifier.height(8.dp))
-                        RadarSkillProgressBar(label = "Khả năng Nghe hiểu", percentage = profile.acousticAccuracy)
+                        RadarSkillProgressBar(label = "Nghe hiểu", percentage = profile.acousticAccuracy)
                         Spacer(modifier = Modifier.height(8.dp))
-                        RadarSkillProgressBar(label = "Khẩu ngữ & Phát âm", percentage = profile.speakingAccuracy)
+                        RadarSkillProgressBar(label = "Phát âm", percentage = profile.speakingAccuracy)
                     }
 
-                    // Baseline Weak Points Tags nếu có
+                    // Điểm cần rèn luyện gọn gàng
                     if (profile.baselineWeakPoints.isNotEmpty()) {
-                        Spacer(modifier = Modifier.height(14.dp))
-                        Column(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clip(RoundedCornerShape(16.dp))
-                                .background(Color(0x1AFF6B6B))
-                                .border(1.dp, Color(0x4DFF6B6B), RoundedCornerShape(16.dp))
-                                .padding(12.dp)
-                        ) {
-                            Text(
-                                text = "🎯 ĐIỂM CẦN RÈN LUYỆN THÊM",
-                                color = Color(0xFFFF6B6B),
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 10.5.sp,
-                                letterSpacing = 0.8.sp
-                            )
-                            Spacer(modifier = Modifier.height(6.dp))
-                            Text(
-                                text = profile.baselineWeakPoints.joinToString(" • ") { it.replace("_", " ") },
-                                color = Color.White.copy(alpha = 0.9f),
-                                fontSize = 12.sp,
-                                fontWeight = FontWeight.Medium
-                            )
+                        val translatedWeak = profile.baselineWeakPoints.take(3).map { tag ->
+                            when (tag.replace(" ", "_").lowercase()) {
+                                "conditional_type_2" -> "Câu điều kiện"
+                                "basic_collocation" -> "Cụm từ thông dụng"
+                                "acoustic_everyday_greeting", "acoustic_everyday_greetings" -> "Nghe giao tiếp"
+                                "present_perfect" -> "Hiện tại hoàn thành"
+                                "past_simple" -> "Quá khứ đơn"
+                                "relative_clause" -> "Mệnh đề quan hệ"
+                                "passive_voice" -> "Câu bị động"
+                                "business_idiom" -> "Thành ngữ công sở"
+                                "linking_words" -> "Từ nối liên từ"
+                                "pronunciation_intonation" -> "Phát âm & ngữ điệu"
+                                else -> tag.replace("_", " ")
+                            }
                         }
+                        Spacer(modifier = Modifier.height(12.dp))
+                        Text(
+                            text = "Cần rèn luyện: " + translatedWeak.joinToString(" • "),
+                            color = Color.White.copy(alpha = 0.75f),
+                            fontSize = 12.sp,
+                            textAlign = TextAlign.Center
+                        )
                     }
 
                     Spacer(modifier = Modifier.height(20.dp))
@@ -696,7 +659,7 @@ fun PlacementQuizView(
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(54.dp)
+                            .height(52.dp)
                             .clip(RoundedCornerShape(16.dp))
                             .background(Brush.linearGradient(listOf(Color(0xFFFF9E00), Color(0xFF00F5D4))))
                             .clickable {
@@ -707,7 +670,7 @@ fun PlacementQuizView(
                         contentAlignment = Alignment.Center
                     ) {
                         Text(
-                            text = "Xác Nhận & Thiết Kế Lộ Trình AI ✨",
+                            text = "Tạo Lộ Trình ➔",
                             color = Color(0xFF0B0D1B),
                             fontWeight = FontWeight.Black,
                             fontSize = 15.sp
