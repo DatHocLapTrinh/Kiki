@@ -5,10 +5,8 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -33,11 +31,34 @@ import androidx.compose.ui.unit.sp
 import com.example.CosmicPlanetHelper
 import com.example.JourneyStageState
 import com.example.JourneyStageUiModel
-import com.example.LocalAppStrings
 
 /**
- * Pop-up thông tin bài học phong cách Galaxy của Kiki khi chạm vào hành tinh trên lộ trình.
- * Thiết kế mượt mà theo chuẩn Duolingo với mũi tên trỏ vào tâm hành tinh và nút CTA bắt đầu.
+ * Trích xuất tên bài học ngắn gọn, loại bỏ song ngữ tiếng Anh và tiền tố trùng lặp.
+ * Ví dụ: "Chặng 1: Sao Thủy - Chào Hỏi & Làm Quen Cơ Bản (Mercury: Greetings & Hello)"
+ *      -> "Chào Hỏi & Làm Quen Cơ Bản"
+ */
+fun cleanLessonTitle(rawTitle: String): String {
+    // 1. Loại bỏ phần trong ngoặc đơn (phần song ngữ tiếng Anh)
+    var cleaned = rawTitle.replace(Regex("\\s*\\([^)]*\\)"), "").trim()
+    // 2. Nếu có dấu gạch ngang (Chặng X: Tên Hành Tinh - Nội dung bài học), lấy nội dung bài học
+    if (cleaned.contains(" - ")) {
+        cleaned = cleaned.substringAfterLast(" - ").trim()
+    } else if (cleaned.contains(" – ")) {
+        cleaned = cleaned.substringAfterLast(" – ").trim()
+    } else if (cleaned.contains(" — ")) {
+        cleaned = cleaned.substringAfterLast(" — ").trim()
+    } else if (cleaned.contains(":")) {
+        cleaned = cleaned.substringAfterLast(":").trim()
+    }
+    return cleaned.ifBlank { rawTitle }
+}
+
+/**
+ * Pop-up bài học tối giản phong cách Duolingo kết hợp Galaxy của Kiki:
+ * - Nhỏ gọn, cân đối, không to thô.
+ * - Loại bỏ hoàn toàn chữ thừa, tên khoáng thạch, song ngữ trùng lặp.
+ * - Mũi tên trỏ chính xác vào tâm hành tinh.
+ * - Điểm +20 XP chỉ xuất hiện duy nhất ở nút bấm, bỏ icon tên lửa.
  */
 @Composable
 fun CosmicPlanetLessonPopup(
@@ -45,18 +66,14 @@ fun CosmicPlanetLessonPopup(
     index: Int,
     totalStages: Int = 100,
     isEnglish: Boolean = false,
-    arrowX: Dp,
+    arrowX: Dp = 70.dp,
     modifier: Modifier = Modifier,
     onStartQuest: () -> Unit,
-    onDismiss: () -> Unit
+    onDismiss: () -> Unit = {}
 ) {
-    val strings = LocalAppStrings.current
     val haptic = LocalHapticFeedback.current
     val planetType = remember(index, totalStages) {
         CosmicPlanetHelper.getPlanetTypeForStage(index, totalStages)
-    }
-    val planetName = remember(planetType) {
-        CosmicPlanetHelper.getPlanetTypeName(planetType)
     }
     val planetColor = remember(planetType) {
         CosmicPlanetHelper.getPlanetPrimaryColor(planetType)
@@ -64,53 +81,49 @@ fun CosmicPlanetLessonPopup(
 
     val isLocked = stage.state == JourneyStageState.LOCKED
     val isCompleted = stage.state == JourneyStageState.COMPLETED
+    val cleanTitle = remember(stage.title) {
+        cleanLessonTitle(stage.title)
+    }
 
-    // Mũi tên trỏ thẳng vào tâm hành tinh
-    // arrowX tính từ lề trái màn hình; trong container có padding ngang 16.dp
-    val localArrowX = (arrowX - 16.dp).coerceAtLeast(36.dp)
-
-    val popupShape = remember(localArrowX) {
+    val popupShape = remember(arrowX) {
         SpeechBubbleShape(
             direction = BubbleArrowDirection.TOP,
-            cornerRadius = 24.dp,
-            arrowWidth = 22.dp,
-            arrowHeight = 12.dp,
-            arrowCenterX = localArrowX
+            cornerRadius = 18.dp,
+            arrowWidth = 18.dp,
+            arrowHeight = 10.dp,
+            arrowCenterX = arrowX
         )
     }
 
     Box(
         modifier = modifier
-            .fillMaxWidth()
             .clickable(
                 interactionSource = remember { MutableInteractionSource() },
                 indication = null
             ) {
-                // Chặn sự kiện click xuyên qua nền
+                // Chặn click xuyên thấu
             }
     ) {
-        // Hào quang vũ trụ phát sáng dịu phía sau Popup
+        // Hào quang vũ trụ phát sáng dịu phía sau popup
         Box(
             modifier = Modifier
-                .fillMaxWidth()
-                .height(170.dp)
-                .padding(top = 12.dp)
-                .blur(32.dp)
-                .background(planetColor.copy(alpha = 0.28f), RoundedCornerShape(24.dp))
+                .matchParentSize()
+                .padding(top = 10.dp)
+                .blur(20.dp)
+                .background(planetColor.copy(alpha = 0.25f), RoundedCornerShape(18.dp))
         )
 
-        // Khung thân chính của Popup theo chuẩn Galaxy Design System
+        // Khung card chính tối giản, tinh tế
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .shadow(18.dp, popupShape)
+                .shadow(12.dp, popupShape)
                 .clip(popupShape)
                 .background(
                     Brush.verticalGradient(
                         listOf(
-                            planetColor.copy(alpha = 0.28f),
-                            Color(0xF5130D26),
-                            Color(0xF80B0718)
+                            Color(0xFF1E2238),
+                            Color(0xFF131626)
                         )
                     )
                 )
@@ -118,133 +131,70 @@ fun CosmicPlanetLessonPopup(
                     width = 1.5.dp,
                     brush = Brush.linearGradient(
                         listOf(
-                            planetColor.copy(alpha = 0.95f),
-                            Color(0xFF51FAC1).copy(alpha = 0.65f),
-                            Color(0x33FFFFFF)
+                            planetColor.copy(alpha = 0.9f),
+                            Color(0xFF51FAC1).copy(alpha = 0.5f)
                         )
                     ),
                     shape = popupShape
                 )
-                .padding(start = 20.dp, end = 20.dp, top = 22.dp, bottom = 18.dp)
+                .padding(start = 16.dp, end = 16.dp, top = 20.dp, bottom = 14.dp)
         ) {
             Column(modifier = Modifier.fillMaxWidth()) {
-                // Hàng 1: Badge thông tin Chặng & Nút Đóng (✕)
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        // Viên ngọc phát sáng theo màu hành tinh
-                        Box(
-                            modifier = Modifier
-                                .size(10.dp)
-                                .clip(CircleShape)
-                                .background(planetColor)
-                        )
-                        Spacer(modifier = Modifier.width(7.dp))
-                        Text(
-                            text = "CHẶNG ${index + 1} • $planetName".uppercase(),
-                            color = planetColor,
-                            fontSize = 11.5.sp,
-                            fontWeight = FontWeight.Black,
-                            letterSpacing = 1.sp
-                        )
-                    }
-
-                    // Nút đóng (✕) tinh gọn
-                    Box(
-                        modifier = Modifier
-                            .size(26.dp)
-                            .clip(CircleShape)
-                            .background(Color(0x26FFFFFF))
-                            .clickable {
-                                haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                                onDismiss()
-                            },
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Close,
-                            contentDescription = "Đóng",
-                            tint = Color(0xCCFFFFFF),
-                            modifier = Modifier.size(14.dp)
-                        )
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(6.dp))
-
-                // Hàng 2: Tiêu đề bài học lớn & nổi bật (như Duolingo "Sử dụng thì hiện tại")
+                // 1. Tiêu đề bài học ngắn gọn, rõ ràng, không lặp lại
                 Text(
-                    text = stage.title,
+                    text = cleanTitle,
                     color = Color.White,
-                    fontSize = 18.sp,
-                    fontWeight = FontWeight.Black,
-                    letterSpacing = (-0.2).sp,
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Bold,
+                    lineHeight = 22.sp,
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis
                 )
 
                 Spacer(modifier = Modifier.height(4.dp))
 
-                // Hàng 3: Trạng thái & thông số (Bài học 1 / 5 • +20 XP)
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    Text(
-                        text = when {
-                            isLocked -> if (isEnglish) "Locked milestone" else "Cửa ải đang khóa"
-                            isCompleted -> if (isEnglish) "Completed • Review" else "Đã hoàn thành • Ôn luyện"
-                            else -> if (isEnglish) "Lesson 1 / 5" else "Bài học 1 / 5"
-                        },
-                        color = Color(0xB3FFFFFF),
-                        fontSize = 13.sp,
-                        fontWeight = FontWeight.SemiBold
-                    )
+                // 2. Phụ đề tiến độ bài học (chỉ hiển thị tiến độ, không lặp lại XP)
+                Text(
+                    text = when {
+                        isLocked -> if (isEnglish) "Locked milestone" else "Chưa mở khóa"
+                        isCompleted -> if (isEnglish) "Completed" else "Đã hoàn thành"
+                        else -> if (isEnglish) "Lesson 1 / 5" else "Bài học 1 / 5"
+                    },
+                    color = Color(0xFF94A3B8),
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.Normal
+                )
 
-                    Text(
-                        text = "•",
-                        color = Color(0x66FFFFFF),
-                        fontSize = 13.sp
-                    )
+                Spacer(modifier = Modifier.height(14.dp))
 
-                    // Huy hiệu phần thưởng XP
-                    Text(
-                        text = if (isCompleted) "+10 XP" else "+20 XP",
-                        color = Color(0xFFFFD166),
-                        fontSize = 13.sp,
-                        fontWeight = FontWeight.Black
-                    )
-                }
-
-                Spacer(modifier = Modifier.height(16.dp))
-
-                // Hàng 4: Nút Kêu Gọi Hành Động (CTA Button) to bản chuẩn Duolingo
+                // 3. Nút bấm CTA phong cách Duolingo (chỉ đặt XP ở đây, bỏ icon tên lửa)
                 if (!isLocked) {
+                    val buttonColor = if (isCompleted) Color(0xFFFFC72C) else Color(0xFF51FAC1)
+                    val buttonTextColor = Color(0xFF0F172A)
+
                     Button(
                         onClick = {
                             haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                             onStartQuest()
                         },
                         colors = ButtonDefaults.buttonColors(
-                            containerColor = if (isCompleted) Color(0xFFFFD166) else Color(0xFF51FAC1)
+                            containerColor = buttonColor
                         ),
-                        shape = RoundedCornerShape(16.dp),
+                        shape = RoundedCornerShape(12.dp),
+                        contentPadding = PaddingValues(vertical = 12.dp),
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(50.dp)
+                            .height(44.dp)
                     ) {
                         Text(
                             text = if (isCompleted) {
-                                if (isEnglish) "REVIEW +10 XP ⭐" else "ÔN TẬP +10 XP ⭐"
+                                if (isEnglish) "REVIEW +10 XP" else "ÔN TẬP +10 XP"
                             } else {
-                                if (isEnglish) "START +20 XP 🚀" else "BẮT ĐẦU +20 XP 🚀"
+                                if (isEnglish) "START +20 XP" else "BẮT ĐẦU +20 XP"
                             },
-                            color = Color(0xFF0F172A),
+                            color = buttonTextColor,
                             fontWeight = FontWeight.Black,
-                            fontSize = 15.sp,
+                            fontSize = 14.sp,
                             letterSpacing = 0.5.sp
                         )
                     }
@@ -252,10 +202,10 @@ fun CosmicPlanetLessonPopup(
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(48.dp)
-                            .clip(RoundedCornerShape(16.dp))
-                            .background(Color(0x1AFFFFFF))
-                            .border(1.dp, Color(0x33FFFFFF), RoundedCornerShape(16.dp)),
+                            .height(42.dp)
+                            .clip(RoundedCornerShape(12.dp))
+                            .background(Color(0x22FFFFFF))
+                            .border(1.dp, Color(0x33FFFFFF), RoundedCornerShape(12.dp)),
                         contentAlignment = Alignment.Center
                     ) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -263,14 +213,14 @@ fun CosmicPlanetLessonPopup(
                                 imageVector = Icons.Default.Lock,
                                 contentDescription = null,
                                 tint = Color(0x99FFFFFF),
-                                modifier = Modifier.size(16.dp)
+                                modifier = Modifier.size(15.dp)
                             )
-                            Spacer(modifier = Modifier.width(8.dp))
+                            Spacer(modifier = Modifier.width(6.dp))
                             Text(
-                                text = if (isEnglish) "COMPLETE PREVIOUS PLANET" else "HOÀN THÀNH CHẶNG TRƯỚC",
+                                text = if (isEnglish) "LOCKED" else "CHƯA MỞ KHÓA",
                                 color = Color(0x99FFFFFF),
                                 fontWeight = FontWeight.Bold,
-                                fontSize = 13.sp
+                                fontSize = 12.5.sp
                             )
                         }
                     }

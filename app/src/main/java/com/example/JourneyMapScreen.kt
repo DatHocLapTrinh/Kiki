@@ -522,23 +522,26 @@ private fun JourneyPath(
         if (currentSelectedIdx != null && currentSelectedIdx in stages.indices) {
             val selectedStage = stages[currentSelectedIdx]
             val isLeft = currentSelectedIdx % 2 == 0
-            val planetNodeX = if (isLeft) 90.dp else boxWidth - 90.dp
             val planetNodeY = bannerTotalHeight * ((currentSelectedIdx / 10) + 1) + stageStep * currentSelectedIdx + 85.dp
-            val popupY = planetNodeY + 68.dp
+            val popupY = planetNodeY + 58.dp
+            val cardWidth = 270.dp.coerceAtMost(boxWidth - 40.dp)
+            val arrowX = if (isLeft) (90.dp - 20.dp) else (cardWidth - (90.dp - 20.dp))
 
             key(currentSelectedIdx) {
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
                         .offset(y = popupY)
-                        .padding(horizontal = 16.dp)
+                        .padding(horizontal = 20.dp),
+                    contentAlignment = if (isLeft) Alignment.TopStart else Alignment.TopEnd
                 ) {
                     CosmicPlanetLessonPopup(
                         stage = selectedStage,
                         index = currentSelectedIdx,
                         totalStages = stages.size,
                         isEnglish = isEnglish,
-                        arrowX = planetNodeX,
+                        arrowX = arrowX,
+                        modifier = Modifier.width(cardWidth),
                         onStartQuest = {
                             selectedStageIndex = null
                             onStageStartQuest(selectedStage)
