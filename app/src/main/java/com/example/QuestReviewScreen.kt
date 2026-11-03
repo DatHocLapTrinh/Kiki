@@ -127,9 +127,8 @@ fun QuestReviewScreen(viewModel: StudyViewModel, onBack: () -> Unit) {
                     Spacer(modifier = Modifier.width(12.dp))
 
                     val kikiGradeStateRes = when (grade) {
-                        "S", "A" -> R.drawable.kiki_state_happy
-                        "B" -> R.drawable.kiki_state_wave
-                        else -> R.drawable.kiki_state_sad
+                        "S", "A" -> R.drawable.kiki_mascot_head
+                        else -> R.drawable.kiki_icon
                     }
 
                     Row(

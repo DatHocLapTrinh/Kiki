@@ -4,13 +4,15 @@ package com.example.model
  * Các trạng thái cảm xúc của linh vật Kiki
  */
 enum class MascotEmotion {
+    GREETING,    // Chào khi vào app và khi click vào nhân vật Kiki
     IDLE,        // Thảnh thơi, thở nhẹ, chớp mắt tự nhiên
-    THINKING,    // Suy nghĩ lâu (>15s), nghiêng đầu, bóng đèn gợi ý
-    CHEER,       // Trả lời đúng, nhảy cẫng, sao vàng lấp lánh
-    STREAK,      // Combo đúng >= 3 câu, bùng cháy hào quang lửa ngầu lòi
-    EMPATHY,     // Trả lời sai, tai cụp nhẹ, an ủi động viên người học
+    THINKING,    // Suy nghĩ lâu (>5s), đọc đề
+    CHEER,       // Trả lời đúng 1 câu, vỗ tay thường
+    STREAK,      // Trả lời đúng 5 câu liên tiếp, vỗ tay liên tục ăn mừng
+    EMPATHY,     // Trả lời sai, buồn, an ủi động viên người học
     LISTENING,   // Đang trong thử thách luyện nói hoặc thu âm micro
-    PETTED       // Người học chạm/xoa đầu Kiki, cười khúc khích, tim bay
+    PETTED,      // Người học chạm/xoa đầu Kiki, cười khúc khích, tim bay
+    SPEAKING     // Kiki đọc câu hỏi và giơ tay trái về phía bóng thoại (Speaker Pose)
 }
 
 /**
@@ -19,6 +21,20 @@ enum class MascotEmotion {
 object MascotQuotes {
     fun getQuoteForEmotion(emotion: MascotEmotion, isEnglish: Boolean, streak: Int = 0): String {
         return when (emotion) {
+            MascotEmotion.GREETING -> if (isEnglish) {
+                listOf(
+                    "Hello friend! I'm Kiki, let's explore English together! 🌟",
+                    "Welcome back! Ready for an amazing learning adventure? 🚀",
+                    "Hi there! Tap me anytime for energy! 🐾"
+                ).random()
+            } else {
+                listOf(
+                    "Chào bạn nha! Kiki rất vui được đồng hành học cùng bạn! 🌟",
+                    "Chào mừng bạn đến với Kiki! Cùng khám phá tiếng Anh nào! 🚀",
+                    "Hi bạn! Chạm vào Kiki bất cứ lúc nào để nhận năng lượng nhé! 🐾"
+                ).random()
+            }
+
             MascotEmotion.IDLE -> if (isEnglish) {
                 listOf(
                     "Take your time, you've got this! ✨",
@@ -114,6 +130,20 @@ object MascotQuotes {
                     "Hihi, nhột quá đi! Cảm ơn bạn đã xoa đầu Kiki nhé! 🥰",
                     "Yay! Kiki được tiếp thêm 100% năng lượng rồi nè! 💖",
                     "Đập tay nào! Chúng mình cùng về đích xuất sắc nhé! 🐾"
+                ).random()
+            }
+
+            MascotEmotion.SPEAKING -> if (isEnglish) {
+                listOf(
+                    "Listen closely to the sentence, then repeat after me! 🗣️",
+                    "Here is the sentence! Follow my lead and pronounce it aloud! 🌟",
+                    "Ready? Speak aloud into the mic with confidence! 🎙️"
+                ).random()
+            } else {
+                listOf(
+                    "Lắng nghe Kiki đọc mẫu rồi nhắc lại theo nhé! 🗣️",
+                    "Câu hỏi đây rồi! Hãy tự tin phát âm to rõ theo Kiki nào! 🌟",
+                    "Sẵn sàng chưa? Hãy phát âm vào micro thật tự tin nhé! 🎙️"
                 ).random()
             }
         }

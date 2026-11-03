@@ -47,7 +47,12 @@ import com.example.audio.SoundEffectManager
 import com.example.audio.SpeechRecognitionManager
 import com.example.model.GenerateChapterRequest
 import com.example.network.KikiBackendApiService
+import com.example.model.LeagueSettlementResult
+import com.example.model.LeagueTier
+import com.example.model.LeagueZone
+import com.example.model.RankPlayer
 import com.example.security.FirebaseAuthManager
+import com.example.sync.LeagueManager
 import com.example.security.GoogleAuthResult
 import com.example.sync.FirestoreSyncManager
 import com.example.sqlite.room.VocabularyEntity
@@ -99,7 +104,7 @@ class StudyViewModel @Inject constructor(
     val isEnglish: LiveData<Boolean> = _isEnglish
     fun setEnglish(isEnglish: Boolean) { _isEnglish.value = isEnglish }
 
-    private val _kikiExplorerSection = MutableLiveData(KikiExplorerSection.HUB)
+    private val _kikiExplorerSection = MutableLiveData(KikiExplorerSection.PROFILE)
     val kikiExplorerSection: LiveData<KikiExplorerSection> = _kikiExplorerSection
     fun setKikiExplorerSection(section: KikiExplorerSection) { _kikiExplorerSection.value = section }
 
@@ -414,6 +419,16 @@ class StudyViewModel @Inject constructor(
     private val _hearts = MutableLiveData(5)
     val hearts: LiveData<Int> = _hearts
 
+    fun deductHeart(amount: Int = 1) {
+        val current = _hearts.value ?: 5
+        val newHearts = (current - amount).coerceAtLeast(0)
+        _hearts.value = newHearts
+        val userId = _currentUserId.value ?: return
+        viewModelScope.launch {
+            repository.spendHearts(userId, amount)
+        }
+    }
+
     private val _shieldUsedNotice = MutableLiveData(false)
     val shieldUsedNotice: LiveData<Boolean> = _shieldUsedNotice
     fun dismissShieldNotice() { _shieldUsedNotice.value = false }
@@ -504,6 +519,68 @@ class StudyViewModel @Inject constructor(
         viewModelScope.launch {
             val lb = repository.getLeaderboard()
             _leaderboard.value = lb
+        }
+    }
+
+    val leagueManager: LeagueManager get() = firestoreSyncManager.leagueManager
+
+    private val _selectedTierTab = MutableLiveData<LeagueTier>(LeagueTier.BRONZE)
+    val selectedTierTab: LiveData<LeagueTier> = _selectedTierTab
+
+    private val _realtimeLeaderboard = MutableLiveData<List<RankPlayer>>(emptyList())
+    val realtimeLeaderboard: LiveData<List<RankPlayer>> = _realtimeLeaderboard
+
+    private val _isLeaderboardLoading = MutableLiveData<Boolean>(false)
+    val isLeaderboardLoading: LiveData<Boolean> = _isLeaderboardLoading
+
+    private val _leagueSettlementEvent = MutableLiveData<LeagueSettlementResult?>(null)
+    val leagueSettlementEvent: LiveData<LeagueSettlementResult?> = _leagueSettlementEvent
+
+    private val _userTier = MutableLiveData<LeagueTier>(LeagueTier.BRONZE)
+    val userTier: LiveData<LeagueTier> = _userTier
+
+    private val _weeklyXp = MutableLiveData<Int>(0)
+    val weeklyXp: LiveData<Int> = _weeklyXp
+
+    private val _millisUntilMonday = MutableLiveData<Long>(0L)
+    val millisUntilMonday: LiveData<Long> = _millisUntilMonday
+
+    fun selectTierTab(tier: LeagueTier) {
+        _selectedTierTab.value = tier
+        fetchTierLeaderboard(tier)
+    }
+
+    fun dismissLeagueSettlementDialog() {
+        _leagueSettlementEvent.value = null
+    }
+
+    fun initializeLeagueData() {
+        val currentSettlement = leagueManager.checkAndSettleWeeklyLeague()
+        if (currentSettlement != null) {
+            _leagueSettlementEvent.value = currentSettlement
+        }
+        val currentTier = leagueManager.getCurrentTier()
+        _userTier.value = currentTier
+        _weeklyXp.value = leagueManager.getWeeklyXp()
+        _millisUntilMonday.value = leagueManager.getMillisUntilNextMonday()
+
+        if (_selectedTierTab.value == null || (_selectedTierTab.value == LeagueTier.BRONZE && currentTier != LeagueTier.BRONZE)) {
+            _selectedTierTab.value = currentTier
+        }
+        fetchTierLeaderboard(_selectedTierTab.value ?: currentTier)
+    }
+
+    fun fetchTierLeaderboard(tier: LeagueTier = _selectedTierTab.value ?: leagueManager.getCurrentTier()) {
+        val userId = _currentUserId.value ?: -1L
+        viewModelScope.launch {
+            _isLeaderboardLoading.value = true
+            _userTier.value = leagueManager.getCurrentTier()
+            _weeklyXp.value = leagueManager.getWeeklyXp()
+            _millisUntilMonday.value = leagueManager.getMillisUntilNextMonday()
+
+            val players = firestoreSyncManager.fetchRealtimeTierLeaderboard(tier, userId)
+            _realtimeLeaderboard.value = players
+            _isLeaderboardLoading.value = false
         }
     }
 
@@ -807,6 +884,16 @@ class StudyViewModel @Inject constructor(
 
     private val _questAnalysis = MutableLiveData<String?>(null)
     val questAnalysis: LiveData<String?> = _questAnalysis
+
+    fun recordAbandonedQuest(results: List<QuestItem>) {
+        _lastQuestResults.value = results
+        val isEng = _isEnglish.value ?: false
+        _questAnalysis.value = if (isEng) {
+            "• Lesson paused or abandoned.\n• Accuracy: 0%\n• Recommendation: Do not be discouraged! Practice makes perfect. Try again to conquer this level!"
+        } else {
+            "• Bài học đã dừng hoặc từ bỏ giữa chừng.\n• Độ chính xác: 0%\n• Lời khuyên: Đừng nản lòng nhé! Sai sót là cách học nhanh nhất. Hãy luyện lại để vượt qua chặng này!"
+        }
+    }
 
     fun analyzeQuestResults(context: Context, results: List<QuestItem>) {
         _lastQuestResults.value = results
@@ -1399,6 +1486,8 @@ class StudyViewModel @Inject constructor(
                     }
                     _history.value = data
                     repository.updateXP(userId, 20)
+                    leagueManager.addWeeklyXp(20)
+                    _weeklyXp.value = leagueManager.getWeeklyXp()
                     val newXp = (_xp.value ?: 0) + 20
                     _xp.value = newXp
                     _level.value = (newXp / 100) + 1
@@ -2443,7 +2532,10 @@ class StudyViewModel @Inject constructor(
         if (userId != null && userId != -1L) {
             viewModelScope.launch {
                 repository.updateXP(userId, amount)
+                leagueManager.addWeeklyXp(amount)
+                _weeklyXp.value = leagueManager.getWeeklyXp()
                 fetchLeaderboard()
+                fetchTierLeaderboard(_selectedTierTab.value ?: leagueManager.getCurrentTier())
                 firestoreSyncManager.syncUserProfile(userId)
             }
         }

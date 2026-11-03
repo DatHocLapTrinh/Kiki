@@ -1,39 +1,27 @@
 package com.example.ui
 
-import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.tween
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.VolumeUp
-import androidx.compose.material.icons.filled.Build
-import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.Extension
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
@@ -55,96 +43,9 @@ fun SentenceBuilderView(
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 0.dp, vertical = 2.dp),
+            .padding(horizontal = 4.dp, vertical = 2.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        // Tag & Audio Hint
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Box(
-                modifier = Modifier
-                    .weight(1f, fill = false)
-                    .clip(RoundedCornerShape(10.dp))
-                    .background(Color(0x33FFD166))
-                    .border(1.dp, Color(0x66FFD166), RoundedCornerShape(10.dp))
-                    .padding(horizontal = 10.dp, vertical = 6.dp)
-            ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(
-                        Icons.Default.Extension,
-                        contentDescription = null,
-                        tint = Color(0xFFFFD166),
-                        modifier = Modifier.size(14.dp)
-                    )
-                    Spacer(modifier = Modifier.width(6.dp))
-                    Text(
-                        text = if (isEnglish) "SENTENCE BUILDER 🧩" else "SẮP XẾP TẠO CÂU 🧩",
-                        color = Color(0xFFFFD166),
-                        fontWeight = FontWeight.ExtraBold,
-                        fontSize = 11.sp,
-                        letterSpacing = 0.5.sp,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                }
-            }
-
-            Spacer(modifier = Modifier.width(8.dp))
-
-            Box(
-                modifier = Modifier
-                    .size(34.dp)
-                    .clip(CircleShape)
-                    .background(Color(0x3351FAC1))
-                    .border(1.dp, Color(0x6651FAC1), CircleShape)
-                    .clickable {
-                        haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                        onSpeakPrompt()
-                    },
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    Icons.AutoMirrored.Filled.VolumeUp,
-                    contentDescription = "Speak Hint",
-                    tint = Color(0xFF51FAC1),
-                    modifier = Modifier.size(18.dp)
-                )
-            }
-        }
-
-        Spacer(modifier = Modifier.height(14.dp))
-
-        // Prompt Question Card
-        val sanitizedPrompt = if (promptText.contains(Regex("_{2,}"))) {
-            if (isEnglish) "Assemble the words below into a complete sentence 🧩" else "Sắp xếp các từ bên dưới thành câu hoàn chỉnh 🧩"
-        } else {
-            promptText
-        }
-
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .clip(RoundedCornerShape(20.dp))
-                .background(Color(0x1FFFFFFF))
-                .border(1.dp, Color(0x26FFFFFF), RoundedCornerShape(20.dp))
-                .padding(horizontal = 18.dp, vertical = 16.dp),
-            contentAlignment = Alignment.Center
-        ) {
-            Text(
-                text = sanitizedPrompt,
-                color = Color.White,
-                fontSize = 18.sp,
-                fontWeight = FontWeight.Bold,
-                textAlign = TextAlign.Center,
-                lineHeight = 26.sp
-            )
-        }
-
-        Spacer(modifier = Modifier.height(20.dp))
-
         // Assembly Area (Khu vực lắp ghép câu)
         val assemblyBorderColor by animateColorAsState(
             targetValue = when {
@@ -166,16 +67,16 @@ fun SentenceBuilderView(
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .defaultMinSize(minHeight = 110.dp)
-                .clip(RoundedCornerShape(22.dp))
+                .defaultMinSize(minHeight = 90.dp)
+                .clip(RoundedCornerShape(20.dp))
                 .background(assemblyBgColor)
-                .border(1.5.dp, assemblyBorderColor, RoundedCornerShape(22.dp))
+                .border(1.5.dp, assemblyBorderColor, RoundedCornerShape(20.dp))
                 .padding(14.dp),
             contentAlignment = Alignment.Center
         ) {
             if (selectedTokenIndices.isEmpty()) {
                 Text(
-                    text = if (isEnglish) "Tap words in the bank below to assemble the sentence 👇" else "Chạm vào các từ bên dưới để ghép thành câu hoàn chỉnh 👇",
+                    text = if (isEnglish) "Tap words below to assemble the sentence 👇" else "Chạm vào các từ bên dưới để ghép thành câu 👇",
                     color = Color(0x66FFFFFF),
                     fontSize = 13.sp,
                     fontStyle = FontStyle.Italic,
@@ -207,34 +108,12 @@ fun SentenceBuilderView(
             }
         }
 
-        Spacer(modifier = Modifier.height(24.dp))
+        Spacer(modifier = Modifier.height(20.dp))
 
-        // Word Bank Section (Kho từ vựng bên dưới)
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text(
-                text = if (isEnglish) "WORD BANK" else "KHO TỪ VỰNG",
-                color = Color(0x9951FAC1),
-                fontSize = 11.sp,
-                fontWeight = FontWeight.Bold,
-                letterSpacing = 1.sp
-            )
-            Spacer(modifier = Modifier.width(8.dp))
-            Box(
-                modifier = Modifier
-                    .weight(1f)
-                    .height(1.dp)
-                    .background(Color(0x22FFFFFF))
-            )
-        }
-
-        Spacer(modifier = Modifier.height(12.dp))
-
+        // Word Tokens Bank (Kho thẻ từ để chọn)
         FlowRow(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally),
             verticalArrangement = Arrangement.spacedBy(10.dp)
         ) {
             availableTokens.forEachIndexed { index, word ->

@@ -107,7 +107,7 @@ fun WeakPointsClinicDialog(
                                     contentAlignment = Alignment.Center
                                 ) {
                                     coil.compose.AsyncImage(
-                                        model = if (weakPoints.isEmpty()) com.example.R.drawable.kiki_state_happy else com.example.R.drawable.kiki_state_sad,
+                                        model = if (weakPoints.isEmpty()) com.example.R.drawable.kiki_mascot_head else com.example.R.drawable.kiki_icon,
                                         contentDescription = "Kiki Clinic Status",
                                         contentScale = androidx.compose.ui.layout.ContentScale.Fit,
                                         modifier = Modifier.fillMaxSize().padding(2.dp).clip(CircleShape)
@@ -218,7 +218,7 @@ fun WeakPointsClinicDialog(
                                         contentAlignment = Alignment.Center
                                     ) {
                                         coil.compose.AsyncImage(
-                                            model = com.example.R.drawable.kiki_full_happy,
+                                            model = com.example.R.drawable.kiki_mascot_head,
                                             contentDescription = "Kiki 100% Mastery",
                                             contentScale = androidx.compose.ui.layout.ContentScale.Fit,
                                             modifier = Modifier.fillMaxSize().padding(6.dp)

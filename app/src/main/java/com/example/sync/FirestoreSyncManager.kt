@@ -2,6 +2,10 @@ package com.example.sync
 
 import android.content.Context
 import android.util.Log
+import com.example.model.LeagueSettlementResult
+import com.example.model.LeagueTier
+import com.example.model.LeagueZone
+import com.example.model.RankPlayer
 import com.example.repository.DataRepository
 import com.example.security.FirebaseAuthManager
 import com.example.sqlite.room.UserProfileEntity
@@ -21,8 +25,10 @@ import javax.inject.Singleton
 class FirestoreSyncManager @Inject constructor(
     private val authManager: FirebaseAuthManager,
     private val repository: DataRepository,
+    val leagueManager: LeagueManager,
     @param:ApplicationContext private val appContext: Context
 ) {
+
     private val scope = CoroutineScope(Dispatchers.IO)
     private val firestore by lazy { FirebaseFirestore.getInstance() }
 
@@ -84,11 +90,19 @@ class FirestoreSyncManager @Inject constructor(
                     .set(userDoc, SetOptions.merge())
 
                 // 2. Cập nhật Bảng xếp hạng toàn cầu "leaderboard"
+                val currentTier = leagueManager.getCurrentTier()
+                val weeklyXp = leagueManager.getWeeklyXp()
+                val weekId = leagueManager.getCurrentWeekId()
+
                 val leaderboardDoc = hashMapOf(
                     "uid" to firebaseUser.uid,
                     "displayName" to profile.displayName,
                     "avatarUri" to (profile.avatarUri ?: ""),
                     "totalXp" to profile.totalXp,
+                    "weeklyXp" to weeklyXp,
+                    "tier" to currentTier.name,
+                    "lastActiveWeek" to weekId,
+                    "currentStreak" to profile.currentStreak,
                     "level" to ((profile.totalXp / 100) + 1),
                     "updatedAt" to Timestamp.now()
                 )
@@ -97,7 +111,7 @@ class FirestoreSyncManager @Inject constructor(
                     .document(firebaseUser.uid)
                     .set(leaderboardDoc, SetOptions.merge())
 
-                Log.d(TAG, "Đã đồng bộ hồ sơ user ${firebaseUser.uid} lên Firestore thành công.")
+                Log.d(TAG, "Đã đồng bộ hồ sơ user ${firebaseUser.uid} (Tier: ${currentTier.name}, WeeklyXP: $weeklyXp) lên Firestore.")
             } catch (e: Exception) {
                 Log.w(TAG, "Không thể đồng bộ hồ sơ lên Firestore: ${e.message}")
             }
@@ -215,6 +229,129 @@ class FirestoreSyncManager @Inject constructor(
         }
         false
     }
+
+    /**
+     * Tải danh sách xếp hạng thời gian thực từ Firestore collection "leaderboard",
+     * phân loại theo cấp bậc cúp (targetTier), tích hợp người dùng thật và các bạn học trong giải.
+     */
+    suspend fun fetchRealtimeTierLeaderboard(
+        targetTier: LeagueTier,
+        currentUserId: Long
+    ): List<RankPlayer> = withContext(Dispatchers.IO) {
+        try {
+            val currentWeek = leagueManager.getCurrentWeekId()
+            val currentFirebaseUser = authManager.getCurrentUser()
+            val currentUid = currentFirebaseUser?.uid ?: ""
+            val localProfile = repository.getUserProfile(currentUserId)
+            val localWeeklyXp = leagueManager.getWeeklyXp()
+            val localTier = leagueManager.getCurrentTier()
+
+            // 1. Tải danh sách người dùng từ Firestore "leaderboard"
+            val querySnapshot = try {
+                firestore.collection("leaderboard")
+                    .limit(100)
+                    .get()
+                    .await()
+            } catch (e: Exception) {
+                Log.w(TAG, "Không thể truy vấn Firestore leaderboard: ${e.message}")
+                null
+            }
+
+            val realPlayersInTier = mutableListOf<RankPlayer>()
+            var isLocalUserIncluded = false
+
+            if (querySnapshot != null && !querySnapshot.isEmpty) {
+                for (doc in querySnapshot.documents) {
+                    val uid = doc.getString("uid") ?: doc.id
+                    val name = doc.getString("displayName") ?: "Học viên Kiki"
+                    val avatar = doc.getString("avatarUri") ?: ""
+                    val tierStr = doc.getString("tier") ?: LeagueTier.BRONZE.name
+                    val docTier = LeagueTier.fromString(tierStr)
+                    val docWeek = doc.getString("lastActiveWeek") ?: ""
+                    val streak = doc.getLong("currentStreak")?.toInt() ?: 0
+
+                    val rawWeeklyXp = doc.getLong("weeklyXp")?.toInt() ?: 0
+                    // Nếu là tuần hiện tại thì dùng weeklyXp, nếu là tuần trước thì điểm tuần = 0
+                    val weeklyXp = if (docWeek == currentWeek) rawWeeklyXp else 0
+
+                    val isCurrentUser = (currentUid.isNotEmpty() && uid == currentUid) ||
+                            (localProfile != null && name == localProfile.displayName)
+
+                    if (isCurrentUser) {
+                        isLocalUserIncluded = true
+                        if (localTier == targetTier) {
+                            realPlayersInTier.add(
+                                RankPlayer(
+                                    rank = 0,
+                                    name = localProfile?.displayName?.ifBlank { name } ?: name,
+                                    title = targetTier.subtitle,
+                                    score = localWeeklyXp,
+                                    avatarUrl = localProfile?.avatarUri ?: avatar,
+                                    isCurrentUser = true,
+                                    streak = localProfile?.currentStreak ?: streak,
+                                    tier = targetTier,
+                                    uid = uid
+                                )
+                            )
+                        }
+                    } else if (docTier == targetTier) {
+                        realPlayersInTier.add(
+                            RankPlayer(
+                                rank = 0,
+                                name = name,
+                                title = targetTier.subtitle,
+                                score = weeklyXp,
+                                avatarUrl = avatar,
+                                isCurrentUser = false,
+                                streak = streak,
+                                tier = targetTier,
+                                uid = uid
+                            )
+                        )
+                    }
+                }
+            }
+
+            // 2. Nếu người dùng hiện tại đang ở targetTier nhưng chưa có trên Firestore, bổ sung local user
+            if (!isLocalUserIncluded && localTier == targetTier) {
+                val myName = localProfile?.displayName?.ifBlank { "Bạn" } ?: "Bạn"
+                realPlayersInTier.add(
+                    RankPlayer(
+                        rank = 0,
+                        name = myName,
+                        title = targetTier.subtitle,
+                        score = localWeeklyXp,
+                        avatarUrl = localProfile?.avatarUri ?: "",
+                        isCurrentUser = true,
+                        streak = localProfile?.currentStreak ?: 0,
+                        tier = targetTier,
+                        uid = currentUid
+                    )
+                )
+            }
+
+            // 3. Sắp xếp toàn bộ người dùng THẬT từ Firestore theo điểm tuần giảm dần
+            val finalRankedList = realPlayersInTier
+                .sortedWith(compareByDescending<RankPlayer> { it.score }.thenBy { it.name })
+                .mapIndexed { index, player ->
+                    val rank = index + 1
+                    val zone = leagueManager.determineZone(rank, targetTier)
+                    player.copy(rank = rank, zone = zone)
+                }
+
+            // Lưu lại vị trí của user nếu user đang thi đấu ở giải này
+            val myRank = finalRankedList.find { it.isCurrentUser }?.rank
+            if (myRank != null && localTier == targetTier) {
+                leagueManager.recordCurrentRank(myRank)
+            }
+
+            finalRankedList
+        } catch (e: Exception) {
+            Log.e(TAG, "Lỗi fetchRealtimeTierLeaderboard: ${e.message}", e)
+            emptyList()
+        }
+    }
+
 
     /**
      * Cập nhật FCM registration token của thiết bị người dùng lên Firestore
