@@ -1081,12 +1081,7 @@ fun NavItem(
         modifier = Modifier
             .scale(scale)
             .clip(RoundedCornerShape(20.dp))
-            .background(if (isSelected) Color(0x2E4EF3C5) else Color.Transparent)
-            .border(
-                width = if (isSelected) 1.dp else 0.dp,
-                color = if (isSelected) Color(0x4D51FAC1) else Color.Transparent,
-                shape = RoundedCornerShape(20.dp)
-            )
+            .background(if (isSelected) Color(0x264EF3C5) else Color.Transparent)
             .clickable {
                 haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
                 onClickExtra?.invoke()
