@@ -330,11 +330,8 @@ class FirestoreSyncManager @Inject constructor(
                 )
             }
 
-            // 3. Đảm bảo phân khu luôn đủ 20 - 25 bạn học để có trải nghiệm Top 5 thăng hạng & rớt hạng trọn vẹn
-            val fullDivision = completeDivisionWithPeers(targetTier, realPlayersInTier, currentWeek)
-
-            // 4. Sắp xếp theo điểm tuần giảm dần
-            val finalRankedList = fullDivision
+            // 3. Sắp xếp toàn bộ người dùng THẬT từ Firestore theo điểm tuần giảm dần
+            val finalRankedList = realPlayersInTier
                 .sortedWith(compareByDescending<RankPlayer> { it.score }.thenBy { it.name })
                 .mapIndexed { index, player ->
                     val rank = index + 1
@@ -353,75 +350,6 @@ class FirestoreSyncManager @Inject constructor(
             Log.e(TAG, "Lỗi fetchRealtimeTierLeaderboard: ${e.message}", e)
             emptyList()
         }
-    }
-
-    private fun completeDivisionWithPeers(
-        tier: LeagueTier,
-        existingList: List<RankPlayer>,
-        weekId: String
-    ): List<RankPlayer> {
-        val result = existingList.toMutableList()
-        val existingNames = existingList.map { it.name }.toSet()
-
-        val peerBank = listOf(
-            Pair("Minh Thư", "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80"),
-            Pair("Hải Đăng", "https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=150&auto=format&fit=crop&q=80"),
-            Pair("Khánh Vy", "https://images.unsplash.com/photo-1517841905240-472988babdf9?w=150&auto=format&fit=crop&q=80"),
-            Pair("Gia Huy", "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80"),
-            Pair("Bảo Long", "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&auto=format&fit=crop&q=80"),
-            Pair("Thùy Trang", "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&auto=format&fit=crop&q=80"),
-            Pair("Quang Dũng", "https://images.unsplash.com/photo-1522075469751-3a6694fb2f61?w=150&auto=format&fit=crop&q=80"),
-            Pair("Ngọc Ánh", "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=150&auto=format&fit=crop&q=80"),
-            Pair("Tuấn Kiệt", "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&auto=format&fit=crop&q=80"),
-            Pair("Phương Linh", "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150&auto=format&fit=crop&q=80"),
-            Pair("Thành Nam", "https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=150&auto=format&fit=crop&q=80"),
-            Pair("Lan Hương", "https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=150&auto=format&fit=crop&q=80"),
-            Pair("Đức Trí", "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=150&auto=format&fit=crop&q=80"),
-            Pair("Yến Nhi", "https://images.unsplash.com/photo-1529626455594-4ff0802cfb7e?w=150&auto=format&fit=crop&q=80"),
-            Pair("Hoàng Phúc", "https://images.unsplash.com/photo-1501196354995-cbb51c65aaea?w=150&auto=format&fit=crop&q=80"),
-            Pair("Mỹ Duyên", "https://images.unsplash.com/photo-1488426862026-3ee34a7d66df?w=150&auto=format&fit=crop&q=80"),
-            Pair("Việt Hoàng", "https://images.unsplash.com/photo-1513956589380-bad6acb9b9d4?w=150&auto=format&fit=crop&q=80"),
-            Pair("Kim Ngân", "https://images.unsplash.com/photo-1534751516642-a171edd27150?w=150&auto=format&fit=crop&q=80"),
-            Pair("Nhật Minh", "https://images.unsplash.com/photo-1492562080023-ab3db95bfbce?w=150&auto=format&fit=crop&q=80"),
-            Pair("Thu Hà", "https://images.unsplash.com/photo-1517841905240-472988babdf9?w=150&auto=format&fit=crop&q=80"),
-            Pair("Trọng Hiếu", "https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=150&auto=format&fit=crop&q=80"),
-            Pair("Mai Anh", "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150&auto=format&fit=crop&q=80")
-        )
-
-        val (baseXp, stepXp) = when (tier) {
-            LeagueTier.BRONZE -> 220 to 10
-            LeagueTier.SILVER -> 440 to 18
-            LeagueTier.GOLD -> 780 to 32
-            LeagueTier.PLATINUM -> 1350 to 55
-            LeagueTier.DIAMOND -> 2400 to 95
-        }
-
-        val weekSeed = (weekId.hashCode() and 0x7FFFFFFF) % 100
-
-        var peerIndex = 0
-        while (result.size < 22 && peerIndex < peerBank.size) {
-            val peer = peerBank[peerIndex]
-            if (!existingNames.contains(peer.first)) {
-                val variance = ((peer.first.hashCode() + weekSeed) and 0x7FFFFFFF) % (stepXp + 1)
-                val calculatedScore = maxOf(15, baseXp - (peerIndex * stepXp) + variance)
-                result.add(
-                    RankPlayer(
-                        rank = 0,
-                        name = peer.first,
-                        title = tier.subtitle,
-                        score = calculatedScore,
-                        avatarUrl = peer.second,
-                        isCurrentUser = false,
-                        streak = maxOf(1, (peerIndex * 3 + 2) % 20),
-                        tier = tier,
-                        uid = "peer_$peerIndex"
-                    )
-                )
-            }
-            peerIndex++
-        }
-
-        return result
     }
 
 

@@ -11,7 +11,7 @@ enum class LeagueTier(
     val tierName: String,
     val vietnameseTitle: String,
     val subtitle: String,
-    @param:DrawableRes val trophyResId: Int,
+    @DrawableRes val trophyResId: Int,
     val primaryColor: Color,
     val accentColor: Color,
     val order: Int
@@ -152,4 +152,3 @@ data class RankPlayer(
     val tier: LeagueTier = LeagueTier.BRONZE,
     val uid: String = ""
 )
-

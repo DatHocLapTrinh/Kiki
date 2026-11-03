@@ -1,21 +1,16 @@
 package com.example
 
+import android.widget.Toast
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.animateColorAsState
-import androidx.compose.animation.core.*
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
-import androidx.compose.animation.scaleIn
-import androidx.compose.animation.scaleOut
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -25,14 +20,15 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.graphics.ColorMatrix
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
@@ -50,7 +46,10 @@ import com.example.viewmodel.StudyViewModel
 
 @Composable
 fun RankScreen(viewModel: StudyViewModel) {
-    val selectedTier by viewModel.selectedTierTab.observeAsState(LeagueTier.BRONZE)
+    val context = LocalContext.current
+    val haptic = LocalHapticFeedback.current
+    val strings = LocalAppStrings.current
+
     val userTier by viewModel.userTier.observeAsState(LeagueTier.BRONZE)
     val players by viewModel.realtimeLeaderboard.observeAsState(emptyList())
     val isLoading by viewModel.isLeaderboardLoading.observeAsState(false)
@@ -58,11 +57,18 @@ fun RankScreen(viewModel: StudyViewModel) {
     val weeklyXp by viewModel.weeklyXp.observeAsState(0)
     val millisUntilMonday by viewModel.millisUntilMonday.observeAsState(0L)
     val userName by viewModel.userName.observeAsState("")
-    val strings = LocalAppStrings.current
-    val haptic = LocalHapticFeedback.current
+    val isAuthLoading by viewModel.isAuthLoading.observeAsState(false)
+
+    // Kiểm tra đăng nhập Google thời gian thực
+    var isGoogleLoggedIn by remember {
+        mutableStateOf(viewModel.authManager.isGoogleSignedIn())
+    }
 
     LaunchedEffect(Unit) {
-        viewModel.initializeLeagueData()
+        isGoogleLoggedIn = viewModel.authManager.isGoogleSignedIn()
+        if (isGoogleLoggedIn) {
+            viewModel.initializeLeagueData()
+        }
     }
 
     // Modal vinh danh hoặc thông báo kết toán Thứ 2 đầu tuần
@@ -74,7 +80,29 @@ fun RankScreen(viewModel: StudyViewModel) {
         )
     }
 
-    // Tìm vị trí của người dùng hiện tại trong giải
+    // Nếu chưa đăng nhập bằng Google, hiển thị cổng mở khóa Bảng Xếp Hạng
+    if (!isGoogleLoggedIn) {
+        GoogleSignInGateScreen(
+            userTier = userTier,
+            isLoading = isAuthLoading,
+            onSignInClick = {
+                viewModel.signInWithGoogle(
+                    activityContext = context,
+                    onSuccess = {
+                        isGoogleLoggedIn = true
+                        viewModel.initializeLeagueData()
+                        Toast.makeText(context, "Chào mừng bạn gia nhập Bảng Xếp Hạng!", Toast.LENGTH_SHORT).show()
+                    },
+                    onError = { errMsg ->
+                        Toast.makeText(context, errMsg, Toast.LENGTH_LONG).show()
+                    }
+                )
+            }
+        )
+        return
+    }
+
+    // Người dùng hiện tại trong giải
     val currentUserPlayer = players.find { it.isCurrentUser } ?: RankPlayer(
         rank = if (players.isNotEmpty()) players.size + 1 else 1,
         name = userName.ifBlank { strings.you },
@@ -84,12 +112,11 @@ fun RankScreen(viewModel: StudyViewModel) {
         isCurrentUser = true,
         zone = viewModel.leagueManager.determineZone(
             if (players.isNotEmpty()) players.size + 1 else 1,
-            selectedTier
+            userTier
         ),
-        tier = selectedTier
+        tier = userTier
     )
 
-    // Tính khoảng cách XP đến Top 5 (thăng hạng) hoặc vị trí an toàn
     val top5CutoffScore = players.getOrNull(4)?.score ?: 0
     val xpGapToTop5 = if (currentUserPlayer.rank > 5) {
         maxOf(1, top5CutoffScore - currentUserPlayer.score + 1)
@@ -103,344 +130,226 @@ fun RankScreen(viewModel: StudyViewModel) {
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(
-                Brush.verticalGradient(
-                    listOf(Color(0xFF0F0C20), Color(0xFF0B0914), Color(0xFF07050C))
-                )
-            )
+            .background(Color(0xFF13171B)) // Nền xám đen phẳng tinh tế chuẩn Duolingo
     ) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .statusBarsPadding()
         ) {
-            // Top Bar
-            Row(
+            // 1. Header phong cách Duolingo: Tên giải đấu & Đếm ngược
+            Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 20.dp, vertical = 10.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween
+                    .padding(horizontal = 20.dp, vertical = 12.dp)
             ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Image(
-                        painter = painterResource(R.drawable.ic_nav_ranking),
-                        contentDescription = null,
-                        modifier = Modifier.size(34.dp)
-                    )
-                    Spacer(modifier = Modifier.width(12.dp))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
                     Column {
                         Text(
-                            text = strings.rankedArena,
+                            text = "Giải đấu ${userTier.vietnameseTitle.replace("Giải ", "")}",
                             color = Color.White,
-                            fontSize = 22.sp,
-                            fontWeight = FontWeight.ExtraBold
+                            fontSize = 24.sp,
+                            fontWeight = FontWeight.Black,
+                            letterSpacing = (-0.3).sp
                         )
-                        Text(
-                            text = "Đấu trường giải đấu • Vinh danh tuần mới",
-                            color = Color(0x99FFFFFF),
-                            fontSize = 11.sp
+
+                        Spacer(modifier = Modifier.height(4.dp))
+
+                        // Countdown: ⏱ X NGÀY
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(
+                                imageVector = Icons.Default.AccessTime,
+                                contentDescription = null,
+                                tint = Color(0xFF8E9BAE),
+                                modifier = Modifier.size(14.dp)
+                            )
+                            Spacer(modifier = Modifier.width(5.dp))
+                            Text(
+                                text = formatDaysRemaining(millisUntilMonday),
+                                color = Color(0xFF8E9BAE),
+                                fontSize = 13.sp,
+                                fontWeight = FontWeight.Bold,
+                                letterSpacing = 0.5.sp
+                            )
+                        }
+                    }
+
+                    // Nút làm mới nhẹ nhàng
+                    IconButton(
+                        onClick = {
+                            haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                            viewModel.fetchTierLeaderboard(userTier)
+                        },
+                        modifier = Modifier.size(36.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Refresh,
+                            contentDescription = "Làm mới",
+                            tint = if (isLoading) Color(0xFF51FAC1) else Color(0xFF8E9BAE),
+                            modifier = Modifier.size(20.dp)
                         )
                     }
                 }
 
-                // Refresh Button
-                IconButton(
-                    onClick = {
-                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                        viewModel.fetchTierLeaderboard(selectedTier)
-                    },
-                    modifier = Modifier
-                        .size(38.dp)
-                        .clip(CircleShape)
-                        .background(Color(0x1AFFFFFF))
-                        .border(1.dp, Color(0x33FFFFFF), CircleShape)
-                ) {
-                    val infiniteTransition = rememberInfiniteTransition(label = "spin")
-                    val rotation by infiniteTransition.animateFloat(
-                        initialValue = 0f,
-                        targetValue = 360f,
-                        animationSpec = infiniteRepeatable(
-                            animation = tween(800, easing = LinearEasing),
-                            repeatMode = RepeatMode.Restart
-                        ),
-                        label = "rot"
-                    )
-                    Icon(
-                        imageVector = Icons.Default.Refresh,
-                        contentDescription = "Làm mới",
-                        tint = if (isLoading) Color(0xFF51FAC1) else Color.White,
-                        modifier = Modifier
-                            .size(20.dp)
-                            .then(if (isLoading) Modifier.rotate(rotation) else Modifier)
-                    )
-                }
+                Spacer(modifier = Modifier.height(16.dp))
+
+                // 2. Hàng cúp tiến trình nằm ngang (Duolingo Trophy Track)
+                DuolingoTrophyTrack(currentTier = userTier)
             }
 
-            // Horizontal 5-Cup League Tabs
-            TierSelectorBar(
-                selectedTier = selectedTier,
-                userTier = userTier,
-                onTierSelected = { tier ->
-                    haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                    viewModel.selectTierTab(tier)
-                }
+            // Divider mờ ngăn cách header với danh sách
+            HorizontalDivider(
+                color = Color(0x1FFFFFFF),
+                thickness = 1.dp,
+                modifier = Modifier.fillMaxWidth()
             )
 
-            Spacer(modifier = Modifier.height(4.dp))
-
-            // Main Content Area
-            LazyColumn(
-                modifier = Modifier.fillMaxWidth(),
-                contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 220.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                // 1. 3D Trophy Stage & Season Countdown
-                item {
-                    TrophyStageSection(
-                        tier = selectedTier,
-                        isUserCurrentTier = selectedTier == userTier,
-                        millisUntilMonday = millisUntilMonday,
-                        strings = strings
+            // 3. Danh sách xếp hạng người dùng thật từ Firebase
+            if (isLoading && players.isEmpty()) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .weight(1f),
+                    contentAlignment = Alignment.Center
+                ) {
+                    CircularProgressIndicator(
+                        color = Color(0xFF51FAC1),
+                        strokeWidth = 3.dp,
+                        modifier = Modifier.size(36.dp)
                     )
-                    Spacer(modifier = Modifier.height(10.dp))
                 }
-
-                // 2. League Rules Legend Bar (🟢 Top 5, ⚪ 6-15, 🔴 16+)
-                item {
-                    LeagueRulesLegendBar(strings = strings)
-                    Spacer(modifier = Modifier.height(12.dp))
-                }
-
-                if (isLoading && players.isEmpty()) {
-                    item {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(220.dp),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            CircularProgressIndicator(
-                                color = selectedTier.primaryColor,
-                                strokeWidth = 3.dp,
-                                modifier = Modifier.size(36.dp)
-                            )
-                        }
-                    }
-                } else if (players.isEmpty()) {
-                    item {
-                        EmptyLeagueState(selectedTier = selectedTier, strings = strings)
-                    }
-                } else {
-                    // 3. Royal Top 3 Podium
-                    item {
-                        RoyalPodiumSection(
-                            first = players.getOrNull(0) ?: RankPlayer(1, "-", strings.unranked, 0, ""),
-                            second = players.getOrNull(1) ?: RankPlayer(2, "-", strings.unranked, 0, ""),
-                            third = players.getOrNull(2) ?: RankPlayer(3, "-", strings.unranked, 0, ""),
-                            tier = selectedTier
+            } else if (players.isEmpty()) {
+                // Chưa có người khác trên Firebase
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .weight(1f)
+                        .padding(32.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Image(
+                            painter = painterResource(userTier.trophyResId),
+                            contentDescription = null,
+                            modifier = Modifier.size(90.dp)
                         )
-                        Spacer(modifier = Modifier.height(14.dp))
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Text(
+                            text = "Bạn là người tiên phong!",
+                            color = Color.White,
+                            fontSize = 18.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Spacer(modifier = Modifier.height(6.dp))
+                        Text(
+                            text = "Hiện tại bạn đang dẫn đầu ${userTier.vietnameseTitle}. Hãy tích lũy thêm XP để củng cố vị trí trước ngày chốt sổ Thứ 2!",
+                            color = Color(0x99FFFFFF),
+                            fontSize = 13.sp,
+                            textAlign = TextAlign.Center
+                        )
                     }
-
-                    // 4. Rank 4 and 5 in Promotion Zone (if available)
-                    val rank4And5 = players.drop(3).take(2)
-                    if (rank4And5.isNotEmpty()) {
-                        itemsIndexed(rank4And5, key = { _, p -> "top5_${selectedTier.name}_${p.rank}_${p.name}" }) { _, player ->
-                            LeagueRankItem(player = player, tier = selectedTier)
+                }
+            } else {
+                LazyColumn(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .weight(1f),
+                    contentPadding = PaddingValues(top = 4.dp, bottom = 170.dp)
+                ) {
+                    itemsIndexed(players, key = { _, p -> "fb_${p.uid}_${p.rank}" }) { index, player ->
+                        // Hiển thị vạch phân cách thăng hạng (Top 5)
+                        if (index == 5) {
+                            ZoneLineDivider(
+                                title = "VÙNG THĂNG HẠNG (TOP 5)",
+                                color = Color(0xFF51FAC1)
+                            )
                         }
-                    }
-
-                    // 5. Divider to Safe Zone (Top 6 - 15)
-                    val safeZonePlayers = players.drop(5).take(10)
-                    if (safeZonePlayers.isNotEmpty()) {
-                        item {
-                            ZoneDividerBanner(
-                                title = "VÙNG AN TOÀN (TRỤ HẠNG)",
-                                subtitle = "Hạng 6 - 15 giữ nguyên cúp",
-                                color = Color(0xFF94A3B8)
+                        // Hiển thị vạch phân cách rớt hạng (Top 16+)
+                        if (index == 15 && userTier != LeagueTier.BRONZE) {
+                            ZoneLineDivider(
+                                title = "VÙNG TỤT HẠNG (HẠNG 16+)",
+                                color = Color(0xFFFF5C5C)
                             )
                         }
 
-                        itemsIndexed(safeZonePlayers, key = { _, p -> "safe_${selectedTier.name}_${p.rank}_${p.name}" }) { _, player ->
-                            LeagueRankItem(player = player, tier = selectedTier)
-                        }
-                    }
-
-                    // 6. Divider to Demotion Zone (Top 16+)
-                    val demotionZonePlayers = players.drop(15)
-                    if (demotionZonePlayers.isNotEmpty()) {
-                        item {
-                            ZoneDividerBanner(
-                                title = if (selectedTier == LeagueTier.BRONZE) "VÙNG CUỐI BẢNG" else "VÙNG NGUY HIỂM (TỤT 1 CÚP)",
-                                subtitle = if (selectedTier == LeagueTier.BRONZE) "Hạng 16+ không bị tụt cúp" else "Hạng 16+ sẽ rớt xuống ${selectedTier.previousTier().vietnameseTitle}",
-                                color = if (selectedTier == LeagueTier.BRONZE) Color(0xFF94A3B8) else Color(0xFFFF5C5C)
-                            )
-                        }
-
-                        itemsIndexed(demotionZonePlayers, key = { _, p -> "demote_${selectedTier.name}_${p.rank}_${p.name}" }) { _, player ->
-                            LeagueRankItem(player = player, tier = selectedTier)
-                        }
+                        DuolingoRankRow(
+                            player = player,
+                            isCurrentUser = player.isCurrentUser
+                        )
                     }
                 }
             }
         }
 
-        // 7. Elevated Floating Sticky User Card (nổi trên thanh điều hướng)
+        // 4. Thẻ ghim người dùng hiện tại ở đáy màn hình
         Box(
             modifier = Modifier
                 .align(Alignment.BottomCenter)
                 .navigationBarsPadding()
-                .padding(bottom = 86.dp)
+                .padding(bottom = 84.dp)
                 .fillMaxWidth()
-                .padding(horizontal = 16.dp)
+                .padding(horizontal = 14.dp)
         ) {
-            CurrentUserLeagueBottomCard(
+            DuolingoCurrentUserCard(
                 player = currentUserPlayer,
                 userTier = userTier,
-                isViewingOwnTier = selectedTier == userTier,
                 xpGapToTop5 = xpGapToTop5,
-                xpGapToSafe = xpGapToSafe,
-                strings = strings
+                xpGapToSafe = xpGapToSafe
             )
         }
     }
 }
 
 /**
- * 3D Trophy Stage Section với hiệu ứng Hào quang (Aura Glow) và đồng hồ đếm ngược
+ * Hàng Cúp Tiến Trình Duolingo (Trophy Track)
+ * 5 Cúp nằm ngang trên mặt phẳng: Các cúp khác nhỏ và mờ, cúp hiện tại nổi bật to hơn
  */
 @Composable
-fun TrophyStageSection(
-    tier: LeagueTier,
-    isUserCurrentTier: Boolean,
-    millisUntilMonday: Long,
-    strings: AppStrings
-) {
-    val countdownText = remember(millisUntilMonday) {
-        val totalSec = millisUntilMonday / 1000
-        val days = totalSec / (24 * 3600)
-        val hours = (totalSec % (24 * 3600)) / 3600
-        val mins = (totalSec % 3600) / 60
-        if (days > 0) "${days} ngày ${hours} giờ" else "${hours} giờ ${mins} phút"
+fun DuolingoTrophyTrack(currentTier: LeagueTier) {
+    val allTiers = LeagueTier.entries.toTypedArray()
+    val grayscaleFilter = remember {
+        val matrix = ColorMatrix().apply { setToSaturation(0f) }
+        ColorFilter.colorMatrix(matrix)
     }
 
-    Box(
+    Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(26.dp))
-            .background(
-                Brush.verticalGradient(
-                    listOf(
-                        tier.primaryColor.copy(alpha = 0.16f),
-                        Color(0xFF131024),
-                        Color(0xFF0D0A18)
-                    )
-                )
-            )
-            .border(
-                1.5.dp,
-                Brush.verticalGradient(
-                    listOf(tier.primaryColor.copy(alpha = 0.6f), Color(0x22FFFFFF))
-                ),
-                RoundedCornerShape(26.dp)
-            )
-            .padding(vertical = 18.dp, horizontal = 16.dp),
-        contentAlignment = Alignment.Center
+            .padding(horizontal = 8.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.Bottom
     ) {
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            // Trophy with Aura
-            Box(contentAlignment = Alignment.Center) {
-                // Soft radial glow aura
-                Box(
-                    modifier = Modifier
-                        .size(140.dp)
-                        .blur(28.dp)
-                        .background(tier.primaryColor.copy(alpha = 0.35f), CircleShape)
-                )
+        allTiers.forEach { tier ->
+            val isCurrent = tier == currentTier
+            val isUnlocked = tier.order <= currentTier.order
 
-                // 3D Trophy Image from WebP
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                modifier = Modifier.weight(1f)
+            ) {
                 Image(
                     painter = painterResource(tier.trophyResId),
                     contentDescription = tier.vietnameseTitle,
                     modifier = Modifier
-                        .size(130.dp)
-                        .padding(4.dp),
-                    contentScale = ContentScale.Fit
+                        .size(if (isCurrent) 68.dp else 42.dp)
+                        .padding(2.dp),
+                    contentScale = ContentScale.Fit,
+                    colorFilter = if (isCurrent) null else grayscaleFilter,
+                    alpha = if (isCurrent) 1.0f else if (isUnlocked) 0.45f else 0.25f
                 )
-            }
 
-            Spacer(modifier = Modifier.height(10.dp))
-
-            // League Name
-            Text(
-                text = tier.vietnameseTitle.uppercase(),
-                color = tier.primaryColor,
-                fontSize = 20.sp,
-                fontWeight = FontWeight.Black,
-                letterSpacing = 1.sp
-            )
-
-            // Subtitle
-            Text(
-                text = tier.subtitle,
-                color = Color(0xCCFFFFFF),
-                fontSize = 13.sp,
-                fontWeight = FontWeight.Medium
-            )
-
-            Spacer(modifier = Modifier.height(10.dp))
-
-            // Badges Row
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.Center,
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                if (isUserCurrentTier) {
+                if (isCurrent) {
+                    Spacer(modifier = Modifier.height(4.dp))
                     Box(
                         modifier = Modifier
-                            .clip(RoundedCornerShape(12.dp))
-                            .background(tier.primaryColor.copy(alpha = 0.22f))
-                            .border(1.dp, tier.primaryColor.copy(alpha = 0.7f), RoundedCornerShape(12.dp))
-                            .padding(horizontal = 10.dp, vertical = 4.dp)
-                    ) {
-                        Text(
-                            text = "⭐ GIẢI ĐẤU CỦA BẠN",
-                            color = tier.primaryColor,
-                            fontSize = 11.sp,
-                            fontWeight = FontWeight.Bold
-                        )
-                    }
-                    Spacer(modifier = Modifier.width(8.dp))
-                }
-
-                // Countdown Pill
-                Box(
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(12.dp))
-                        .background(Color(0x22FFFFFF))
-                        .border(1.dp, Color(0x33FFFFFF), RoundedCornerShape(12.dp))
-                        .padding(horizontal = 10.dp, vertical = 4.dp)
-                ) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(
-                            imageVector = Icons.Default.Timer,
-                            contentDescription = null,
-                            tint = Color(0xFFFFD166),
-                            modifier = Modifier.size(13.dp)
-                        )
-                        Spacer(modifier = Modifier.width(5.dp))
-                        Text(
-                            text = "Còn $countdownText",
-                            color = Color(0xFFF1F5F9),
-                            fontSize = 11.sp,
-                            fontWeight = FontWeight.SemiBold
-                        )
-                    }
+                            .size(6.dp)
+                            .clip(CircleShape)
+                            .background(Color(0xFF51FAC1))
+                    )
                 }
             }
         }
@@ -448,339 +357,61 @@ fun TrophyStageSection(
 }
 
 /**
- * 5-Cup League Selector Tabs (Đồng, Bạc, Vàng, Bạch Kim, Kim Cương)
+ * Từng dòng trong bảng xếp hạng tối giản mượt mà theo chuẩn Duolingo
  */
 @Composable
-fun TierSelectorBar(
-    selectedTier: LeagueTier,
-    userTier: LeagueTier,
-    onTierSelected: (LeagueTier) -> Unit
-) {
-    val tiers = LeagueTier.entries.toTypedArray()
-    val scrollState = rememberScrollState()
+fun DuolingoRankRow(player: RankPlayer, isCurrentUser: Boolean) {
+    val rowBg = if (isCurrentUser) Color(0x1F51FAC1) else Color.Transparent
 
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .horizontalScroll(scrollState)
-            .padding(horizontal = 16.dp, vertical = 6.dp),
-        horizontalArrangement = Arrangement.spacedBy(8.dp)
+            .background(rowBg)
+            .padding(horizontal = 20.dp, vertical = 12.dp),
+        verticalAlignment = Alignment.CenterVertically
     ) {
-        tiers.forEach { tier ->
-            val isSelected = selectedTier == tier
-            val isUserTier = userTier == tier
-
-            val tabBg by animateColorAsState(
-                targetValue = if (isSelected) tier.primaryColor.copy(alpha = 0.25f) else Color(0x12FFFFFF),
-                animationSpec = tween(200),
-                label = "tab_bg"
-            )
-            val tabBorder by animateColorAsState(
-                targetValue = if (isSelected) tier.primaryColor else Color(0x20FFFFFF),
-                animationSpec = tween(200),
-                label = "tab_border"
-            )
-            val tabTextColor by animateColorAsState(
-                targetValue = if (isSelected) tier.primaryColor else Color(0x99FFFFFF),
-                animationSpec = tween(200),
-                label = "tab_text"
-            )
-
-            Box(
-                modifier = Modifier
-                    .clip(RoundedCornerShape(14.dp))
-                    .background(tabBg)
-                    .border(1.2.dp, tabBorder, RoundedCornerShape(14.dp))
-                    .clickable { onTierSelected(tier) }
-                    .padding(horizontal = 12.dp, vertical = 7.dp),
-                contentAlignment = Alignment.Center
-            ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Image(
-                        painter = painterResource(tier.trophyResId),
-                        contentDescription = null,
-                        modifier = Modifier.size(18.dp)
-                    )
-                    Spacer(modifier = Modifier.width(6.dp))
+        // 1. Huy hiệu thứ hạng (Top 1, 2, 3 có huy hiệu ribbon; 4+ là số phẳng)
+        Box(
+            modifier = Modifier.width(36.dp),
+            contentAlignment = Alignment.CenterStart
+        ) {
+            when (player.rank) {
+                1 -> {
+                    // Gold Medal #1
+                    RankRibbonMedal(rank = 1, bgColor = Color(0xFFFFD166), textColor = Color(0xFF8B5A00))
+                }
+                2 -> {
+                    // Silver Medal #2
+                    RankRibbonMedal(rank = 2, bgColor = Color(0xFFC0C0C0), textColor = Color(0xFF4A4A4A))
+                }
+                3 -> {
+                    // Bronze Medal #3
+                    RankRibbonMedal(rank = 3, bgColor = Color(0xFFCD7F32), textColor = Color(0xFF4A2500))
+                }
+                else -> {
                     Text(
-                        text = tier.vietnameseTitle.replace("Giải ", ""),
-                        color = tabTextColor,
-                        fontSize = 12.sp,
-                        fontWeight = if (isSelected) FontWeight.Black else FontWeight.SemiBold
-                    )
-                    if (isUserTier) {
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Box(
-                            modifier = Modifier
-                                .size(6.dp)
-                                .clip(CircleShape)
-                                .background(Color(0xFF51FAC1))
-                        )
-                    }
-                }
-            }
-        }
-    }
-}
-
-/**
- * Thanh giải thích 3 phân vùng (Top 1-5, 6-15, 16+)
- */
-@Composable
-fun LeagueRulesLegendBar(strings: AppStrings) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(14.dp))
-            .background(Color(0x14FFFFFF))
-            .border(1.dp, Color(0x1EFFFFFF), RoundedCornerShape(14.dp))
-            .padding(horizontal = 10.dp, vertical = 8.dp),
-        horizontalArrangement = Arrangement.SpaceAround,
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        // Promotion Rule
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Text("▲", color = Color(0xFF51FAC1), fontSize = 11.sp, fontWeight = FontWeight.Bold)
-            Spacer(modifier = Modifier.width(4.dp))
-            Text("Top 1-5: Thăng cúp", color = Color(0xFF51FAC1), fontSize = 11.sp, fontWeight = FontWeight.Bold)
-        }
-
-        Box(modifier = Modifier.width(1.dp).height(12.dp).background(Color(0x33FFFFFF)))
-
-        // Safe Rule
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Text("—", color = Color(0xFF94A3B8), fontSize = 11.sp, fontWeight = FontWeight.Bold)
-            Spacer(modifier = Modifier.width(4.dp))
-            Text("Hạng 6-15: Giữ", color = Color(0xFF94A3B8), fontSize = 11.sp, fontWeight = FontWeight.Medium)
-        }
-
-        Box(modifier = Modifier.width(1.dp).height(12.dp).background(Color(0x33FFFFFF)))
-
-        // Demotion Rule
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Text("▼", color = Color(0xFFFF5C5C), fontSize = 11.sp, fontWeight = FontWeight.Bold)
-            Spacer(modifier = Modifier.width(4.dp))
-            Text("Hạng 16+: Tụt cúp", color = Color(0xFFFF5C5C), fontSize = 11.sp, fontWeight = FontWeight.Bold)
-        }
-    }
-}
-
-/**
- * Royal Top 3 Podium Vinh Danh
- */
-@Composable
-fun RoyalPodiumSection(
-    first: RankPlayer,
-    second: RankPlayer,
-    third: RankPlayer,
-    tier: LeagueTier
-) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(top = 10.dp)
-            .height(230.dp),
-        horizontalArrangement = Arrangement.SpaceEvenly,
-        verticalAlignment = Alignment.Bottom
-    ) {
-        // Rank 2 (Silver)
-        RoyalPodiumItem(player = second, rank = 2, color = Color(0xFFC0C0C0), pillarHeight = 115.dp)
-
-        // Rank 1 (Gold/Tier Primary)
-        RoyalPodiumItem(player = first, rank = 1, color = Color(0xFFFFD166), pillarHeight = 150.dp, isChampion = true)
-
-        // Rank 3 (Bronze)
-        RoyalPodiumItem(player = third, rank = 3, color = Color(0xFFCD7F32), pillarHeight = 90.dp)
-    }
-}
-
-@Composable
-fun RoyalPodiumItem(
-    player: RankPlayer,
-    rank: Int,
-    color: Color,
-    pillarHeight: androidx.compose.ui.unit.Dp,
-    isChampion: Boolean = false
-) {
-    Column(
-        horizontalAlignment = Alignment.CenterHorizontally,
-        modifier = Modifier.width(105.dp)
-    ) {
-        // Avatar Box
-        Box(contentAlignment = Alignment.Center) {
-            if (isChampion) {
-                // Crown for Rank 1
-                Text(
-                    text = "👑",
-                    fontSize = 24.sp,
-                    modifier = Modifier.offset(y = (-32).dp)
-                )
-            }
-
-            // Glow Circle
-            Box(
-                modifier = Modifier
-                    .size(if (isChampion) 76.dp else 58.dp)
-                    .blur(14.dp)
-                    .background(color.copy(alpha = 0.5f), CircleShape)
-            )
-
-            // Avatar Container
-            Box(
-                modifier = Modifier
-                    .size(if (isChampion) 68.dp else 52.dp)
-                    .clip(CircleShape)
-                    .background(Color(0xFF14141E))
-                    .border(2.5.dp, color, CircleShape)
-            ) {
-                if (player.avatarUrl.isNotBlank()) {
-                    AsyncImage(
-                        model = player.avatarUrl,
-                        contentDescription = null,
-                        modifier = Modifier.fillMaxSize(),
-                        contentScale = ContentScale.Crop
-                    )
-                } else {
-                    Icon(
-                        imageVector = Icons.Default.Person,
-                        contentDescription = null,
-                        tint = color,
-                        modifier = Modifier
-                            .align(Alignment.Center)
-                            .size(28.dp)
+                        text = "${player.rank}",
+                        color = if (isCurrentUser) Color(0xFF51FAC1) else Color(0xFF8E9BAE),
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 15.sp
                     )
                 }
             }
-
-            // Green promotion arrow badge
-            Box(
-                modifier = Modifier
-                    .align(Alignment.BottomEnd)
-                    .size(18.dp)
-                    .clip(CircleShape)
-                    .background(Color(0xFF51FAC1))
-                    .border(1.dp, Color(0xFF0F0C20), CircleShape),
-                contentAlignment = Alignment.Center
-            ) {
-                Text("▲", color = Color(0xFF0F172A), fontSize = 10.sp, fontWeight = FontWeight.Black)
-            }
         }
 
-        Spacer(modifier = Modifier.height(8.dp))
+        Spacer(modifier = Modifier.width(8.dp))
 
-        // Pillar Platform
+        // 2. Avatar tròn
         Box(
             modifier = Modifier
-                .width(86.dp)
-                .height(pillarHeight)
-                .clip(RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp))
-                .background(
-                    Brush.verticalGradient(
-                        listOf(color.copy(alpha = 0.45f), color.copy(alpha = 0.1f), Color.Transparent)
-                    )
-                )
-                .border(
-                    1.2.dp,
-                    color.copy(alpha = 0.7f),
-                    RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp)
-                ),
-            contentAlignment = Alignment.TopCenter
-        ) {
-            Column(
-                horizontalAlignment = Alignment.CenterHorizontally,
-                modifier = Modifier.padding(top = 10.dp, start = 4.dp, end = 4.dp)
-            ) {
-                Text(
-                    text = "#$rank",
-                    color = color,
-                    fontSize = 24.sp,
-                    fontWeight = FontWeight.Black
-                )
-                Text(
-                    text = if (player.isCurrentUser) "${player.name} (Bạn)" else player.name,
-                    color = if (player.isCurrentUser) Color(0xFF51FAC1) else Color.White,
-                    fontSize = 11.sp,
-                    fontWeight = FontWeight.Bold,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
-                Spacer(modifier = Modifier.height(2.dp))
-                Text(
-                    text = "${player.score} XP",
-                    color = Color(0xFFFFD166),
-                    fontSize = 11.sp,
-                    fontWeight = FontWeight.ExtraBold
-                )
-            }
-        }
-    }
-}
-
-/**
- * Item từng hàng trong danh sách xếp hạng
- */
-@Composable
-fun LeagueRankItem(player: RankPlayer, tier: LeagueTier) {
-    val zoneColor = when (player.zone) {
-        LeagueZone.PROMOTION -> Color(0xFF51FAC1)
-        LeagueZone.SAFE -> Color(0xFF94A3B8)
-        LeagueZone.DEMOTION -> Color(0xFFFF5C5C)
-    }
-
-    val arrowSymbol = when (player.zone) {
-        LeagueZone.PROMOTION -> "▲"
-        LeagueZone.SAFE -> "—"
-        LeagueZone.DEMOTION -> "▼"
-    }
-
-    val itemBg = if (player.isCurrentUser) {
-        Color(0x2851FAC1)
-    } else {
-        Color(0x14FFFFFF)
-    }
-
-    val itemBorder = if (player.isCurrentUser) {
-        Color(0xFF51FAC1)
-    } else {
-        zoneColor.copy(alpha = 0.3f)
-    }
-
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(16.dp))
-            .background(itemBg)
-            .border(if (player.isCurrentUser) 1.5.dp else 1.dp, itemBorder, RoundedCornerShape(16.dp))
-            .padding(horizontal = 14.dp, vertical = 11.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        // Rank Number & Arrow
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.width(46.dp)
-        ) {
-            Text(
-                text = "#${player.rank}",
-                color = if (player.isCurrentUser) Color(0xFF51FAC1) else Color.White,
-                fontWeight = FontWeight.Black,
-                fontSize = 15.sp
-            )
-            Spacer(modifier = Modifier.width(4.dp))
-            Text(
-                text = arrowSymbol,
-                color = zoneColor,
-                fontWeight = FontWeight.Bold,
-                fontSize = 11.sp
-            )
-        }
-
-        // Avatar
-        Box(
-            modifier = Modifier
-                .size(40.dp)
+                .size(44.dp)
                 .clip(CircleShape)
-                .background(Color(0xFF14141E))
-                .border(1.2.dp, if (player.isCurrentUser) Color(0xFF51FAC1) else zoneColor, CircleShape)
+                .background(Color(0xFF1E262B))
+                .border(
+                    width = if (isCurrentUser) 2.dp else 1.dp,
+                    color = if (isCurrentUser) Color(0xFF51FAC1) else Color(0x33FFFFFF),
+                    shape = CircleShape
+                )
         ) {
             if (player.avatarUrl.isNotBlank()) {
                 AsyncImage(
@@ -793,43 +424,26 @@ fun LeagueRankItem(player: RankPlayer, tier: LeagueTier) {
                 Icon(
                     imageVector = Icons.Default.Person,
                     contentDescription = null,
-                    tint = zoneColor,
-                    modifier = Modifier.align(Alignment.Center).size(22.dp)
+                    tint = if (isCurrentUser) Color(0xFF51FAC1) else Color.White,
+                    modifier = Modifier
+                        .align(Alignment.Center)
+                        .size(24.dp)
                 )
             }
         }
 
-        Spacer(modifier = Modifier.width(12.dp))
+        Spacer(modifier = Modifier.width(14.dp))
 
-        // Name & Subtitle
+        // 3. Tên người dùng thật từ Firebase
         Column(modifier = Modifier.weight(1f)) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(
-                    text = player.name,
-                    color = if (player.isCurrentUser) Color(0xFF51FAC1) else Color.White,
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 14.sp,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
-                if (player.isCurrentUser) {
-                    Spacer(modifier = Modifier.width(6.dp))
-                    Box(
-                        modifier = Modifier
-                            .clip(RoundedCornerShape(6.dp))
-                            .background(Color(0x3351FAC1))
-                            .padding(horizontal = 5.dp, vertical = 2.dp)
-                    ) {
-                        Text(
-                            text = "BẠN",
-                            color = Color(0xFF51FAC1),
-                            fontSize = 9.sp,
-                            fontWeight = FontWeight.Black
-                        )
-                    }
-                }
-            }
-
+            Text(
+                text = if (isCurrentUser) "${player.name} (Bạn)" else player.name,
+                color = if (isCurrentUser) Color(0xFF51FAC1) else Color.White,
+                fontWeight = if (isCurrentUser) FontWeight.Black else FontWeight.Bold,
+                fontSize = 15.sp,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
             if (player.streak > 0) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(
@@ -838,252 +452,247 @@ fun LeagueRankItem(player: RankPlayer, tier: LeagueTier) {
                         tint = Color(0xFFFF9F1C),
                         modifier = Modifier.size(12.dp)
                     )
-                    Spacer(modifier = Modifier.width(2.dp))
+                    Spacer(modifier = Modifier.width(3.dp))
                     Text(
-                        text = "${player.streak} ngày streak",
-                        color = Color(0x99FFFFFF),
-                        fontSize = 11.sp
+                        text = "${player.streak}",
+                        color = Color(0xFF8E9BAE),
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold
                     )
                 }
             }
         }
 
-        // Score Pill
-        Box(
-            modifier = Modifier
-                .clip(RoundedCornerShape(10.dp))
-                .background(Color(0x22FFD166))
-                .border(1.dp, Color(0x44FFD166), RoundedCornerShape(10.dp))
-                .padding(horizontal = 9.dp, vertical = 5.dp)
-        ) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Image(
-                    painter = painterResource(R.drawable.ic_action_star),
-                    contentDescription = null,
-                    modifier = Modifier.size(13.dp)
-                )
-                Spacer(modifier = Modifier.width(4.dp))
-                Text(
-                    text = "${player.score} XP",
-                    color = Color(0xFFFFD166),
-                    fontWeight = FontWeight.Black,
-                    fontSize = 12.sp
-                )
-            }
-        }
+        // 4. Điểm XP tuần (Ví dụ: "1290 XP")
+        Text(
+            text = "${player.score} XP",
+            color = if (isCurrentUser) Color(0xFF51FAC1) else Color(0xFF8E9BAE),
+            fontWeight = FontWeight.Black,
+            fontSize = 15.sp
+        )
     }
 }
 
 /**
- * Vạch phân cách các khu vực giải đấu
+ * Huy hiệu Ribbon huy chương Top 1, 2, 3 phong cách Duolingo
  */
 @Composable
-fun ZoneDividerBanner(title: String, subtitle: String, color: Color) {
+fun RankRibbonMedal(rank: Int, bgColor: Color, textColor: Color) {
+    Box(
+        modifier = Modifier
+            .size(26.dp)
+            .clip(CircleShape)
+            .background(bgColor),
+        contentAlignment = Alignment.Center
+    ) {
+        Text(
+            text = "$rank",
+            color = textColor,
+            fontWeight = FontWeight.Black,
+            fontSize = 13.sp
+        )
+    }
+}
+
+/**
+ * Vạch phân cách thăng hạng / rớt hạng tinh gọn
+ */
+@Composable
+fun ZoneLineDivider(title: String, color: Color) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 6.dp),
+            .padding(horizontal = 20.dp, vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Box(
             modifier = Modifier
                 .weight(1f)
                 .height(1.dp)
-                .background(Brush.horizontalGradient(listOf(Color.Transparent, color.copy(alpha = 0.5f))))
+                .background(color.copy(alpha = 0.5f))
         )
         Spacer(modifier = Modifier.width(10.dp))
-        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            Text(
-                text = title,
-                color = color,
-                fontSize = 10.sp,
-                fontWeight = FontWeight.Black,
-                letterSpacing = 0.8.sp
-            )
-            Text(
-                text = subtitle,
-                color = color.copy(alpha = 0.7f),
-                fontSize = 9.sp
-            )
-        }
+        Text(
+            text = title,
+            color = color,
+            fontSize = 11.sp,
+            fontWeight = FontWeight.Black,
+            letterSpacing = 0.5.sp
+        )
         Spacer(modifier = Modifier.width(10.dp))
         Box(
             modifier = Modifier
                 .weight(1f)
                 .height(1.dp)
-                .background(Brush.horizontalGradient(listOf(color.copy(alpha = 0.5f), Color.Transparent)))
+                .background(color.copy(alpha = 0.5f))
         )
     }
 }
 
 /**
- * Thẻ ghim người dùng hiện tại ở đáy màn hình
+ * Thẻ cố định ở đáy hiển thị trạng thái của người dùng
  */
 @Composable
-fun CurrentUserLeagueBottomCard(
+fun DuolingoCurrentUserCard(
     player: RankPlayer,
     userTier: LeagueTier,
-    isViewingOwnTier: Boolean,
     xpGapToTop5: Int?,
-    xpGapToSafe: Int?,
-    strings: AppStrings
+    xpGapToSafe: Int?
 ) {
-    val zoneColor = when (player.zone) {
-        LeagueZone.PROMOTION -> Color(0xFF51FAC1)
-        LeagueZone.SAFE -> Color(0xFF94A3B8)
-        LeagueZone.DEMOTION -> Color(0xFFFF5C5C)
-    }
-
-    Column(
+    Card(
+        shape = RoundedCornerShape(20.dp),
+        colors = CardDefaults.cardColors(containerColor = Color(0xFF1C242A)),
         modifier = Modifier
             .fillMaxWidth()
-            .shadow(16.dp, RoundedCornerShape(22.dp))
-            .clip(RoundedCornerShape(22.dp))
-            .background(
-                Brush.verticalGradient(
-                    listOf(Color(0xF51E1438), Color(0xF50D0A18))
-                )
-            )
-            .border(1.5.dp, zoneColor, RoundedCornerShape(22.dp))
-            .padding(horizontal = 16.dp, vertical = 12.dp)
+            .shadow(12.dp, RoundedCornerShape(20.dp))
+            .border(1.5.dp, Color(0xFF51FAC1), RoundedCornerShape(20.dp))
     ) {
-        // Status Row
         Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
-        ) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Image(
-                    painter = painterResource(userTier.trophyResId),
-                    contentDescription = null,
-                    modifier = Modifier.size(16.dp)
-                )
-                Spacer(modifier = Modifier.width(6.dp))
-                Text(
-                    text = "${userTier.vietnameseTitle.uppercase()} • HẠNG CỦA BẠN",
-                    color = userTier.primaryColor,
-                    fontSize = 11.sp,
-                    fontWeight = FontWeight.Black,
-                    letterSpacing = 0.8.sp
-                )
-            }
-
-            // Dynamic guidance message
-            if (player.rank in 1..5) {
-                Text(
-                    text = "🟢 Đang trong vùng Thăng hạng! ▲",
-                    color = Color(0xFF51FAC1),
-                    fontSize = 11.sp,
-                    fontWeight = FontWeight.Bold
-                )
-            } else if (xpGapToTop5 != null) {
-                Text(
-                    text = "🔥 Cần +$xpGapToTop5 XP lên Top 5",
-                    color = Color(0xFFFFD166),
-                    fontSize = 11.sp,
-                    fontWeight = FontWeight.Bold
-                )
-            } else if (xpGapToSafe != null) {
-                Text(
-                    text = "⚠️ Cần +$xpGapToSafe XP để trụ hạng",
-                    color = Color(0xFFFF5C5C),
-                    fontSize = 11.sp,
-                    fontWeight = FontWeight.Bold
-                )
-            }
-        }
-
-        Spacer(modifier = Modifier.height(8.dp))
-
-        // Info Row
-        Row(
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 12.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             // Rank Number
-            Box(
-                modifier = Modifier
-                    .size(34.dp)
-                    .clip(CircleShape)
-                    .background(zoneColor.copy(alpha = 0.2f))
-                    .border(1.dp, zoneColor, CircleShape),
-                contentAlignment = Alignment.Center
-            ) {
-                Text(
-                    text = "#${player.rank}",
-                    color = zoneColor,
-                    fontWeight = FontWeight.Black,
-                    fontSize = 14.sp
-                )
-            }
+            Text(
+                text = "#${player.rank}",
+                color = Color(0xFF51FAC1),
+                fontSize = 17.sp,
+                fontWeight = FontWeight.Black,
+                modifier = Modifier.width(36.dp)
+            )
 
-            Spacer(modifier = Modifier.width(12.dp))
-
-            // Avatar
-            Box(
-                modifier = Modifier
-                    .size(38.dp)
-                    .clip(CircleShape)
-                    .background(Color(0xFF14141E))
-                    .border(1.5.dp, zoneColor, CircleShape)
-            ) {
-                if (player.avatarUrl.isNotBlank()) {
-                    AsyncImage(
-                        model = player.avatarUrl,
-                        contentDescription = null,
-                        modifier = Modifier.fillMaxSize(),
-                        contentScale = ContentScale.Crop
-                    )
-                } else {
-                    Icon(
-                        imageVector = Icons.Default.Person,
-                        contentDescription = null,
-                        tint = zoneColor,
-                        modifier = Modifier.align(Alignment.Center).size(22.dp)
-                    )
-                }
-            }
-
-            Spacer(modifier = Modifier.width(10.dp))
-
-            // Name
+            // Info
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = "${player.name} (Bạn)",
                     color = Color.White,
-                    fontWeight = FontWeight.Bold,
+                    fontWeight = FontWeight.Black,
                     fontSize = 14.sp,
                     maxLines = 1
                 )
                 Text(
-                    text = userTier.subtitle,
-                    color = userTier.primaryColor,
-                    fontSize = 11.sp
+                    text = when {
+                        player.rank in 1..5 -> "🟢 Đang trong vùng Thăng Hạng!"
+                        xpGapToTop5 != null -> "🔥 Cần +$xpGapToTop5 XP lên Top 5"
+                        xpGapToSafe != null -> "⚠️ Cần +$xpGapToSafe XP để trụ hạng"
+                        else -> "⭐ Tiếp tục tích lũy điểm nhé"
+                    },
+                    color = when {
+                        player.rank in 1..5 -> Color(0xFF51FAC1)
+                        xpGapToTop5 != null -> Color(0xFFFFD166)
+                        else -> Color(0xFFFF5C5C)
+                    },
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.Bold
                 )
             }
 
-            // Score Pill
-            Box(
+            // Score
+            Text(
+                text = "${player.score} XP",
+                color = Color(0xFF51FAC1),
+                fontSize = 16.sp,
+                fontWeight = FontWeight.Black
+            )
+        }
+    }
+}
+
+/**
+ * Màn hình yêu cầu đăng nhập bằng Google để mở khóa Bảng Xếp Hạng
+ */
+@Composable
+fun GoogleSignInGateScreen(
+    userTier: LeagueTier,
+    isLoading: Boolean,
+    onSignInClick: () -> Unit
+) {
+    val haptic = LocalHapticFeedback.current
+
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color(0xFF13171B))
+            .statusBarsPadding()
+            .padding(horizontal = 24.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            // Cúp Vàng 3D cắt gọn sắc nét, không viền hộp
+            Image(
+                painter = painterResource(R.drawable.trophy_gold),
+                contentDescription = "Cúp Vàng",
                 modifier = Modifier
-                    .clip(RoundedCornerShape(12.dp))
-                    .background(Color(0x3351FAC1))
-                    .border(1.dp, Color(0x6651FAC1), RoundedCornerShape(12.dp))
-                .padding(horizontal = 10.dp, vertical = 6.dp)
+                    .size(140.dp)
+                    .padding(8.dp),
+                contentScale = ContentScale.Fit
+            )
+
+            Spacer(modifier = Modifier.height(20.dp))
+
+            Text(
+                text = "Mở Khóa Đấu Trường",
+                color = Color.White,
+                fontSize = 24.sp,
+                fontWeight = FontWeight.Black,
+                textAlign = TextAlign.Center
+            )
+
+            Spacer(modifier = Modifier.height(10.dp))
+
+            Text(
+                text = "Bảng xếp hạng đấu trường chỉ dành cho người dùng đăng nhập tài khoản Google để đồng bộ điểm số và tranh tài cùng cộng đồng học viên thực tế!",
+                color = Color(0xFF8E9BAE),
+                fontSize = 14.sp,
+                textAlign = TextAlign.Center,
+                lineHeight = 20.sp
+            )
+
+            Spacer(modifier = Modifier.height(28.dp))
+
+            // Nút đăng nhập Google phong cách chuẩn
+            Button(
+                onClick = {
+                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                    onSignInClick()
+                },
+                enabled = !isLoading,
+                shape = RoundedCornerShape(16.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Color.White,
+                    contentColor = Color(0xFF1E262B)
+                ),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(52.dp)
             ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Image(
-                        painter = painterResource(R.drawable.ic_action_star),
-                        contentDescription = null,
-                        modifier = Modifier.size(14.dp)
+                if (isLoading) {
+                    CircularProgressIndicator(
+                        color = Color(0xFF1E262B),
+                        strokeWidth = 2.5.dp,
+                        modifier = Modifier.size(22.dp)
                     )
-                    Spacer(modifier = Modifier.width(4.dp))
-                    Text(
-                        text = "${player.score} XP",
-                        color = Color(0xFF51FAC1),
-                        fontWeight = FontWeight.Black,
-                        fontSize = 13.sp
-                    )
+                } else {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        // Icon Google G
+                        Text(
+                            text = "G",
+                            color = Color(0xFF4285F4),
+                            fontSize = 20.sp,
+                            fontWeight = FontWeight.Black
+                        )
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Text(
+                            text = "Tiếp tục với Google",
+                            color = Color(0xFF1E262B),
+                            fontSize = 15.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
                 }
             }
         }
@@ -1091,7 +700,7 @@ fun CurrentUserLeagueBottomCard(
 }
 
 /**
- * Modal hiển thị kết quả mùa giải Thứ 2 đầu tuần (Thăng hạng, Trụ hạng, Tụt hạng)
+ * Modal hiển thị kết quả mùa giải Thứ 2 đầu tuần
  */
 @Composable
 fun LeagueSettlementModal(
@@ -1143,20 +752,11 @@ fun LeagueSettlementModal(
                     .padding(24.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                // Glow & Trophy
-                Box(contentAlignment = Alignment.Center) {
-                    Box(
-                        modifier = Modifier
-                            .size(120.dp)
-                            .blur(24.dp)
-                            .background(accentColor.copy(alpha = 0.4f), CircleShape)
-                    )
-                    Image(
-                        painter = painterResource(trophyRes),
-                        contentDescription = null,
-                        modifier = Modifier.size(110.dp)
-                    )
-                }
+                Image(
+                    painter = painterResource(trophyRes),
+                    contentDescription = null,
+                    modifier = Modifier.size(110.dp)
+                )
 
                 Spacer(modifier = Modifier.height(16.dp))
 
@@ -1203,32 +803,9 @@ fun LeagueSettlementModal(
 
 private data class Tuple4<A, B, C, D>(val first: A, val second: B, val third: C, val fourth: D)
 
-@Composable
-fun EmptyLeagueState(selectedTier: LeagueTier, strings: AppStrings) {
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(32.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        Image(
-            painter = painterResource(selectedTier.trophyResId),
-            contentDescription = null,
-            modifier = Modifier.size(72.dp)
-        )
-        Spacer(modifier = Modifier.height(16.dp))
-        Text(
-            text = "Chưa có ai ở ${selectedTier.vietnameseTitle}",
-            color = Color.White,
-            fontSize = 16.sp,
-            fontWeight = FontWeight.Bold
-        )
-        Spacer(modifier = Modifier.height(6.dp))
-        Text(
-            text = "Hãy học thật chăm chỉ để trở thành người đầu tiên đạt được chiếc cúp này!",
-            color = Color(0x99FFFFFF),
-            fontSize = 12.sp,
-            textAlign = TextAlign.Center
-        )
-    }
+private fun formatDaysRemaining(millis: Long): String {
+    val totalSec = millis / 1000
+    val days = totalSec / (24 * 3600)
+    val hours = (totalSec % (24 * 3600)) / 3600
+    return if (days > 0) "$days NGÀY" else "$hours GIỜ"
 }

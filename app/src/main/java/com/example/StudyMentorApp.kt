@@ -1044,7 +1044,7 @@ fun FloatingNavBar(
         )
         NavItem("shop", R.drawable.ic_nav_shop, strings.navShop, currentRoute, navController)
         NavItem("ask", R.drawable.ic_mentor_qa, strings.navTutor, currentRoute, navController)
-        NavItem("rank", R.drawable.ic_nav_ranking, strings.navRank, currentRoute, navController)
+        NavItem("rank", R.drawable.trophy_gold, strings.navRank, currentRoute, navController)
         NavItem(
             route = "profile",
             drawableRes = R.drawable.ic_nav_menu,
