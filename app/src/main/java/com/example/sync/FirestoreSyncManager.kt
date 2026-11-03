@@ -2,6 +2,10 @@ package com.example.sync
 
 import android.content.Context
 import android.util.Log
+import com.example.model.LeagueSettlementResult
+import com.example.model.LeagueTier
+import com.example.model.LeagueZone
+import com.example.model.RankPlayer
 import com.example.repository.DataRepository
 import com.example.security.FirebaseAuthManager
 import com.example.sqlite.room.UserProfileEntity
@@ -21,8 +25,10 @@ import javax.inject.Singleton
 class FirestoreSyncManager @Inject constructor(
     private val authManager: FirebaseAuthManager,
     private val repository: DataRepository,
+    val leagueManager: LeagueManager,
     @param:ApplicationContext private val appContext: Context
 ) {
+
     private val scope = CoroutineScope(Dispatchers.IO)
     private val firestore by lazy { FirebaseFirestore.getInstance() }
 
@@ -84,11 +90,19 @@ class FirestoreSyncManager @Inject constructor(
                     .set(userDoc, SetOptions.merge())
 
                 // 2. Cập nhật Bảng xếp hạng toàn cầu "leaderboard"
+                val currentTier = leagueManager.getCurrentTier()
+                val weeklyXp = leagueManager.getWeeklyXp()
+                val weekId = leagueManager.getCurrentWeekId()
+
                 val leaderboardDoc = hashMapOf(
                     "uid" to firebaseUser.uid,
                     "displayName" to profile.displayName,
                     "avatarUri" to (profile.avatarUri ?: ""),
                     "totalXp" to profile.totalXp,
+                    "weeklyXp" to weeklyXp,
+                    "tier" to currentTier.name,
+                    "lastActiveWeek" to weekId,
+                    "currentStreak" to profile.currentStreak,
                     "level" to ((profile.totalXp / 100) + 1),
                     "updatedAt" to Timestamp.now()
                 )
@@ -97,7 +111,7 @@ class FirestoreSyncManager @Inject constructor(
                     .document(firebaseUser.uid)
                     .set(leaderboardDoc, SetOptions.merge())
 
-                Log.d(TAG, "Đã đồng bộ hồ sơ user ${firebaseUser.uid} lên Firestore thành công.")
+                Log.d(TAG, "Đã đồng bộ hồ sơ user ${firebaseUser.uid} (Tier: ${currentTier.name}, WeeklyXP: $weeklyXp) lên Firestore.")
             } catch (e: Exception) {
                 Log.w(TAG, "Không thể đồng bộ hồ sơ lên Firestore: ${e.message}")
             }
@@ -215,6 +229,201 @@ class FirestoreSyncManager @Inject constructor(
         }
         false
     }
+
+    /**
+     * Tải danh sách xếp hạng thời gian thực từ Firestore collection "leaderboard",
+     * phân loại theo cấp bậc cúp (targetTier), tích hợp người dùng thật và các bạn học trong giải.
+     */
+    suspend fun fetchRealtimeTierLeaderboard(
+        targetTier: LeagueTier,
+        currentUserId: Long
+    ): List<RankPlayer> = withContext(Dispatchers.IO) {
+        try {
+            val currentWeek = leagueManager.getCurrentWeekId()
+            val currentFirebaseUser = authManager.getCurrentUser()
+            val currentUid = currentFirebaseUser?.uid ?: ""
+            val localProfile = repository.getUserProfile(currentUserId)
+            val localWeeklyXp = leagueManager.getWeeklyXp()
+            val localTier = leagueManager.getCurrentTier()
+
+            // 1. Tải danh sách người dùng từ Firestore "leaderboard"
+            val querySnapshot = try {
+                firestore.collection("leaderboard")
+                    .limit(100)
+                    .get()
+                    .await()
+            } catch (e: Exception) {
+                Log.w(TAG, "Không thể truy vấn Firestore leaderboard: ${e.message}")
+                null
+            }
+
+            val realPlayersInTier = mutableListOf<RankPlayer>()
+            var isLocalUserIncluded = false
+
+            if (querySnapshot != null && !querySnapshot.isEmpty) {
+                for (doc in querySnapshot.documents) {
+                    val uid = doc.getString("uid") ?: doc.id
+                    val name = doc.getString("displayName") ?: "Học viên Kiki"
+                    val avatar = doc.getString("avatarUri") ?: ""
+                    val tierStr = doc.getString("tier") ?: LeagueTier.BRONZE.name
+                    val docTier = LeagueTier.fromString(tierStr)
+                    val docWeek = doc.getString("lastActiveWeek") ?: ""
+                    val streak = doc.getLong("currentStreak")?.toInt() ?: 0
+
+                    val rawWeeklyXp = doc.getLong("weeklyXp")?.toInt() ?: 0
+                    // Nếu là tuần hiện tại thì dùng weeklyXp, nếu là tuần trước thì điểm tuần = 0
+                    val weeklyXp = if (docWeek == currentWeek) rawWeeklyXp else 0
+
+                    val isCurrentUser = (currentUid.isNotEmpty() && uid == currentUid) ||
+                            (localProfile != null && name == localProfile.displayName)
+
+                    if (isCurrentUser) {
+                        isLocalUserIncluded = true
+                        if (localTier == targetTier) {
+                            realPlayersInTier.add(
+                                RankPlayer(
+                                    rank = 0,
+                                    name = localProfile?.displayName?.ifBlank { name } ?: name,
+                                    title = targetTier.subtitle,
+                                    score = localWeeklyXp,
+                                    avatarUrl = localProfile?.avatarUri ?: avatar,
+                                    isCurrentUser = true,
+                                    streak = localProfile?.currentStreak ?: streak,
+                                    tier = targetTier,
+                                    uid = uid
+                                )
+                            )
+                        }
+                    } else if (docTier == targetTier) {
+                        realPlayersInTier.add(
+                            RankPlayer(
+                                rank = 0,
+                                name = name,
+                                title = targetTier.subtitle,
+                                score = weeklyXp,
+                                avatarUrl = avatar,
+                                isCurrentUser = false,
+                                streak = streak,
+                                tier = targetTier,
+                                uid = uid
+                            )
+                        )
+                    }
+                }
+            }
+
+            // 2. Nếu người dùng hiện tại đang ở targetTier nhưng chưa có trên Firestore, bổ sung local user
+            if (!isLocalUserIncluded && localTier == targetTier) {
+                val myName = localProfile?.displayName?.ifBlank { "Bạn" } ?: "Bạn"
+                realPlayersInTier.add(
+                    RankPlayer(
+                        rank = 0,
+                        name = myName,
+                        title = targetTier.subtitle,
+                        score = localWeeklyXp,
+                        avatarUrl = localProfile?.avatarUri ?: "",
+                        isCurrentUser = true,
+                        streak = localProfile?.currentStreak ?: 0,
+                        tier = targetTier,
+                        uid = currentUid
+                    )
+                )
+            }
+
+            // 3. Đảm bảo phân khu luôn đủ 20 - 25 bạn học để có trải nghiệm Top 5 thăng hạng & rớt hạng trọn vẹn
+            val fullDivision = completeDivisionWithPeers(targetTier, realPlayersInTier, currentWeek)
+
+            // 4. Sắp xếp theo điểm tuần giảm dần
+            val finalRankedList = fullDivision
+                .sortedWith(compareByDescending<RankPlayer> { it.score }.thenBy { it.name })
+                .mapIndexed { index, player ->
+                    val rank = index + 1
+                    val zone = leagueManager.determineZone(rank, targetTier)
+                    player.copy(rank = rank, zone = zone)
+                }
+
+            // Lưu lại vị trí của user nếu user đang thi đấu ở giải này
+            val myRank = finalRankedList.find { it.isCurrentUser }?.rank
+            if (myRank != null && localTier == targetTier) {
+                leagueManager.recordCurrentRank(myRank)
+            }
+
+            finalRankedList
+        } catch (e: Exception) {
+            Log.e(TAG, "Lỗi fetchRealtimeTierLeaderboard: ${e.message}", e)
+            emptyList()
+        }
+    }
+
+    private fun completeDivisionWithPeers(
+        tier: LeagueTier,
+        existingList: List<RankPlayer>,
+        weekId: String
+    ): List<RankPlayer> {
+        val result = existingList.toMutableList()
+        val existingNames = existingList.map { it.name }.toSet()
+
+        val peerBank = listOf(
+            Pair("Minh Thư", "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80"),
+            Pair("Hải Đăng", "https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=150&auto=format&fit=crop&q=80"),
+            Pair("Khánh Vy", "https://images.unsplash.com/photo-1517841905240-472988babdf9?w=150&auto=format&fit=crop&q=80"),
+            Pair("Gia Huy", "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80"),
+            Pair("Bảo Long", "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&auto=format&fit=crop&q=80"),
+            Pair("Thùy Trang", "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&auto=format&fit=crop&q=80"),
+            Pair("Quang Dũng", "https://images.unsplash.com/photo-1522075469751-3a6694fb2f61?w=150&auto=format&fit=crop&q=80"),
+            Pair("Ngọc Ánh", "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=150&auto=format&fit=crop&q=80"),
+            Pair("Tuấn Kiệt", "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&auto=format&fit=crop&q=80"),
+            Pair("Phương Linh", "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150&auto=format&fit=crop&q=80"),
+            Pair("Thành Nam", "https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=150&auto=format&fit=crop&q=80"),
+            Pair("Lan Hương", "https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=150&auto=format&fit=crop&q=80"),
+            Pair("Đức Trí", "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=150&auto=format&fit=crop&q=80"),
+            Pair("Yến Nhi", "https://images.unsplash.com/photo-1529626455594-4ff0802cfb7e?w=150&auto=format&fit=crop&q=80"),
+            Pair("Hoàng Phúc", "https://images.unsplash.com/photo-1501196354995-cbb51c65aaea?w=150&auto=format&fit=crop&q=80"),
+            Pair("Mỹ Duyên", "https://images.unsplash.com/photo-1488426862026-3ee34a7d66df?w=150&auto=format&fit=crop&q=80"),
+            Pair("Việt Hoàng", "https://images.unsplash.com/photo-1513956589380-bad6acb9b9d4?w=150&auto=format&fit=crop&q=80"),
+            Pair("Kim Ngân", "https://images.unsplash.com/photo-1534751516642-a171edd27150?w=150&auto=format&fit=crop&q=80"),
+            Pair("Nhật Minh", "https://images.unsplash.com/photo-1492562080023-ab3db95bfbce?w=150&auto=format&fit=crop&q=80"),
+            Pair("Thu Hà", "https://images.unsplash.com/photo-1517841905240-472988babdf9?w=150&auto=format&fit=crop&q=80"),
+            Pair("Trọng Hiếu", "https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=150&auto=format&fit=crop&q=80"),
+            Pair("Mai Anh", "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150&auto=format&fit=crop&q=80")
+        )
+
+        val (baseXp, stepXp) = when (tier) {
+            LeagueTier.BRONZE -> 220 to 10
+            LeagueTier.SILVER -> 440 to 18
+            LeagueTier.GOLD -> 780 to 32
+            LeagueTier.PLATINUM -> 1350 to 55
+            LeagueTier.DIAMOND -> 2400 to 95
+        }
+
+        val weekSeed = (weekId.hashCode() and 0x7FFFFFFF) % 100
+
+        var peerIndex = 0
+        while (result.size < 22 && peerIndex < peerBank.size) {
+            val peer = peerBank[peerIndex]
+            if (!existingNames.contains(peer.first)) {
+                val variance = ((peer.first.hashCode() + weekSeed) and 0x7FFFFFFF) % (stepXp + 1)
+                val calculatedScore = maxOf(15, baseXp - (peerIndex * stepXp) + variance)
+                result.add(
+                    RankPlayer(
+                        rank = 0,
+                        name = peer.first,
+                        title = tier.subtitle,
+                        score = calculatedScore,
+                        avatarUrl = peer.second,
+                        isCurrentUser = false,
+                        streak = maxOf(1, (peerIndex * 3 + 2) % 20),
+                        tier = tier,
+                        uid = "peer_$peerIndex"
+                    )
+                )
+            }
+            peerIndex++
+        }
+
+        return result
+    }
+
 
     /**
      * Cập nhật FCM registration token của thiết bị người dùng lên Firestore
