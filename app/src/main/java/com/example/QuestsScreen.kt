@@ -8,6 +8,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -16,6 +17,7 @@ import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.livedata.observeAsState
+import kotlinx.coroutines.launch
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
@@ -70,6 +72,8 @@ fun QuestsScreen(viewModel: StudyViewModel) {
     val currentUserId by viewModel.currentUserId.observeAsState(-1L)
     val dailyTasks by viewModel.dailyTasks.observeAsState(emptyList())
     val chestOpened by viewModel.isDailyChestOpened.observeAsState(false)
+    val listState = rememberLazyListState()
+    val coroutineScope = rememberCoroutineScope()
 
     LaunchedEffect(currentUserId) {
         if (currentUserId != -1L) viewModel.refreshDailyTasks()
@@ -235,17 +239,21 @@ fun QuestsScreen(viewModel: StudyViewModel) {
             }
         } else {
             LazyColumn(
+                state = listState,
                 modifier = Modifier.fillMaxSize(),
                 contentPadding = PaddingValues(start = 20.dp, end = 20.dp, top = 8.dp, bottom = 140.dp),
                 verticalArrangement = Arrangement.spacedBy(14.dp)
             ) {
-                items(sortedQuests, key = { it.taskId }) { quest ->
+                items(sortedQuests) { quest ->
                     QuestItemCard(
                         quest = quest,
                         onClaim = {
                             haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.LongPress)
                             viewModel.soundEffectManager.playCorrect()
                             viewModel.claimDailyTaskWithStars(quest.taskId)
+                            coroutineScope.launch {
+                                listState.scrollToItem(0)
+                            }
                         }
                     )
                 }

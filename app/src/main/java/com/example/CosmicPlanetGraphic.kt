@@ -76,7 +76,7 @@ object CosmicPlanetHelper {
 
     fun getPlanetDiameter(index: Int = 0, totalStages: Int = -1): Dp {
         // Tất cả các hành tinh đều được phóng to đồng đều bằng kích thước của Mặt Trời (134.dp)
-        return 134.dp
+        return 118.dp
     }
 
     fun getPlanetTypeName(type: CosmicPlanetType, isEnglish: Boolean = false): String {
@@ -120,6 +120,8 @@ fun CosmicPlanetView(
     index: Int,
     modifier: Modifier = Modifier,
     totalStages: Int = -1,
+    unlockProgress: Float = 0f,
+    onLongClick: (() -> Unit)? = null,
     onClick: () -> Unit
 ) {
     val planetType = remember(index, totalStages) { CosmicPlanetHelper.getPlanetTypeForStage(index, totalStages) }
@@ -136,17 +138,6 @@ fun CosmicPlanetView(
     val isLocked = stage.state == JourneyStageState.LOCKED
 
     val infiniteTransition = rememberInfiniteTransition(label = "planet_anim")
-
-    // Nhịp thở tinh vân cho TOÀN BỘ hành tinh (Tạo cảm giác không gian vũ trụ sống động chân thực)
-    val pulseScale by infiniteTransition.animateFloat(
-        initialValue = if (isCurrent) 0.96f else 0.985f,
-        targetValue = if (isCurrent) 1.04f else 1.015f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(if (isCurrent) 1400 else 2200, easing = FastOutSlowInEasing),
-            repeatMode = RepeatMode.Reverse
-        ),
-        label = "pulse_scale"
-    )
 
     // Góc quay của mây/khí quyển bề mặt (Dynamic rotation tốc độ mượt mà, thấy rõ chuyển động)
     val cloudRotationPhase by infiniteTransition.animateFloat(
@@ -172,13 +163,8 @@ fun CosmicPlanetView(
         label = "satellite_angle"
     )
 
-    // Hào quang nhật hoa tỏa sáng nhịp nhàng
-    val auraGlow by infiniteTransition.animateFloat(
-        initialValue = 0.35f,
-        targetValue = 0.90f,
-        animationSpec = infiniteRepeatable(tween(1800, easing = LinearEasing), RepeatMode.Reverse),
-        label = "aura_glow"
-    )
+    // Hào quang vũ trụ tĩnh ổn định (Đã loại bỏ hoàn toàn hiệu ứng nhịp thở phập phồng)
+    val auraGlow = 0.55f
 
     // Góc quay lồng khiên năng lượng từ trường 3D (Cosmic Force Field Geodesic Shield)
     val shieldRotationPhase by infiniteTransition.animateFloat(
@@ -207,10 +193,12 @@ fun CosmicPlanetView(
     Box(
         modifier = modifier
             .size(width = containerWidth, height = containerHeight)
-            .graphicsLayer(scaleX = pulseScale, scaleY = pulseScale)
             .semantics { contentDescription = contentDesc }
             .pointerInput(stage.id) {
-                detectTapGestures(onTap = { onClick() })
+                detectTapGestures(
+                    onTap = { onClick() },
+                    onLongPress = { onLongClick?.invoke() }
+                )
             },
         contentAlignment = Alignment.Center
     ) {
@@ -254,6 +242,8 @@ fun CosmicPlanetView(
                 isBackPass = true
             )
 
+            val isEffectivelyLocked = if (unlockProgress > 0f) unlockProgress < 0.78f else isLocked
+
             // Vẽ toàn bộ quả cầu hành tinh (Đảm bảo sắc nét, rõ đặc trưng kể cả khi LOCKED!)
             drawPhotorealisticPlanet(
                 centerX = centerX,
@@ -262,7 +252,7 @@ fun CosmicPlanetView(
                 type = planetType,
                 cloudPhase = cloudRotationPhase,
                 ringPhase = ringRotationPhase,
-                isLocked = isLocked,
+                isLocked = isEffectivelyLocked,
                 isCompleted = isCompleted
             )
 
@@ -273,18 +263,19 @@ fun CosmicPlanetView(
                 planetRadius = radius,
                 type = planetType,
                 angleDeg = satelliteAngle,
-                alphaFactor = if (isLocked) 0.85f else 1.0f,
+                alphaFactor = if (isEffectivelyLocked) 0.85f else 1.0f,
                 isBackPass = false
             )
 
             // ─── Viền Tròn Tiến Độ Quỹ Đạo (Orbital Progress Ring) ───────────────
             // Hiển thị vòng tròn quỹ đạo và cung sáng tiến độ (3/5 bài, 5/5 bài...) theo đúng thiết kế
-            if (!isLocked) {
+            if (!isEffectivelyLocked) {
                 val progressRingRadius = radius + 10.dp.toPx()
+                val ringAlpha = if (unlockProgress > 0f) ((unlockProgress - 0.78f) / 0.22f).coerceIn(0f, 1f) else 1f
 
                 // Đường viền quỹ đạo mỏng làm nền (Background Orbital Track)
                 drawCircle(
-                    color = Color(0x384D8BFA),
+                    color = Color(0x384D8BFA).copy(alpha = 0.22f * ringAlpha),
                     center = Offset(centerX, centerY),
                     radius = progressRingRadius,
                     style = Stroke(width = 2.dp.toPx())
@@ -298,9 +289,9 @@ fun CosmicPlanetView(
                     drawArc(
                         brush = Brush.sweepGradient(
                             colors = if (isCompleted) {
-                                listOf(Color(0x80FFD166), Color(0x80FF9E00), Color(0x80FFD166))
+                                listOf(Color(0x80FFD166).copy(alpha = 0.5f * ringAlpha), Color(0x80FF9E00).copy(alpha = 0.5f * ringAlpha), Color(0x80FFD166).copy(alpha = 0.5f * ringAlpha))
                             } else {
-                                listOf(Color(0x8051FAC1), Color(0x8000E5FF), Color(0x8051FAC1))
+                                listOf(Color(0x8051FAC1).copy(alpha = 0.5f * ringAlpha), Color(0x8000E5FF).copy(alpha = 0.5f * ringAlpha), Color(0x8051FAC1).copy(alpha = 0.5f * ringAlpha))
                             },
                             center = Offset(centerX, centerY)
                         ),
@@ -316,9 +307,9 @@ fun CosmicPlanetView(
                     drawArc(
                         brush = Brush.sweepGradient(
                             colors = if (isCompleted) {
-                                listOf(Color(0xFFFFD166), Color(0xFFFFB703), Color(0xFFFFE169), Color(0xFFFFD166))
+                                listOf(Color(0xFFFFD166).copy(alpha = ringAlpha), Color(0xFFFFB703).copy(alpha = ringAlpha), Color(0xFFFFE169).copy(alpha = ringAlpha), Color(0xFFFFD166).copy(alpha = ringAlpha))
                             } else {
-                                listOf(Color(0xFF51FAC1), Color(0xFF00E5FF), Color(0xFF38BDF8), Color(0xFF51FAC1))
+                                listOf(Color(0xFF51FAC1).copy(alpha = ringAlpha), Color(0xFF00E5FF).copy(alpha = ringAlpha), Color(0xFF38BDF8).copy(alpha = ringAlpha), Color(0xFF51FAC1).copy(alpha = ringAlpha))
                             },
                             center = Offset(centerX, centerY)
                         ),
@@ -332,38 +323,86 @@ fun CosmicPlanetView(
                 }
             }
 
-            // Khiên năng lượng từ trường (Cosmic Force Field / Energy Shield) & Ổ khóa Neon Hologram cho chặng LOCKED
-            if (isLocked) {
+            // Khiên năng lượng từ trường (Cosmic Force Field / Energy Shield) & Ổ khóa Neon Hologram cho chặng LOCKED hoặc đang mở khóa
+            if (isLocked || (unlockProgress in 0.001f..0.999f)) {
                 drawCosmicForceFieldShield(
                     centerX = centerX,
                     centerY = centerY,
                     planetRadius = radius,
                     rotationPhase = shieldRotationPhase,
-                    glowPulse = shieldGlowPulse
+                    glowPulse = shieldGlowPulse,
+                    unlockProgress = unlockProgress
                 )
             }
         }
 
         val progressRingRadiusDp = (planetDiameter / 2f) + 10.dp
+        val showDecorations = if (unlockProgress > 0f) unlockProgress >= 0.78f else !isLocked
+        val decoAlpha = if (unlockProgress > 0f) ((unlockProgress - 0.78f) / 0.22f).coerceIn(0f, 1f) else 1f
+        val decoScale = if (unlockProgress > 0f) 0.5f + 0.5f * decoAlpha else 1f
 
         // ─── Cờ hiệu phi hành gia (flag.png) cắm chuẩn xác vào đỉnh vòng tròn tiến độ ───
-        if (!isLocked) {
-            Image(
-                painter = painterResource(R.drawable.flag),
-                contentDescription = "Mission Flag",
-                modifier = Modifier
-                    .align(Alignment.Center)
-                    .offset(x = 2.5.dp, y = -(progressRingRadiusDp + 18.dp))
-                    .size(40.dp)
-            )
-        }
-
-        // ─── Text box hiển thị số bài (★ 3/5 bài) gắn trực tiếp vào đáy vòng tròn tiến độ ───
-        if (!isLocked) {
+        if (showDecorations) {
+            val flagOffsetY = -(progressRingRadiusDp + 20.dp)
             Box(
                 modifier = Modifier
                     .align(Alignment.Center)
-                    .offset(y = progressRingRadiusDp)
+                    .offset(x = 2.5.dp, y = flagOffsetY)
+                    .graphicsLayer {
+                        alpha = decoAlpha
+                        scaleX = decoScale
+                        scaleY = decoScale
+                    },
+                contentAlignment = Alignment.Center
+            ) {
+                // 1. Quầng sáng hào quang năng lượng vũ trụ (Cosmic Starlight Beacon Halo)
+                Box(
+                    modifier = Modifier
+                        .size(48.dp)
+                        .background(
+                            brush = Brush.radialGradient(
+                                colors = listOf(
+                                    Color(0x9951FAC1), // Neon mint
+                                    Color(0x5500E5FF), // Electric cyan
+                                    Color(0x200284C7), // Space blue
+                                    Color.Transparent
+                                )
+                            ),
+                            shape = CircleShape
+                        )
+                )
+
+                // 2. Tấm khiên bóng tối không gian sâu (Deep Space Obsidian Contrast Backplate)
+                // Ngăn chặn 100% đường nối hoặc tinh vân phía sau làm chìm / xuyên thấu cờ
+                Box(
+                    modifier = Modifier
+                        .size(36.dp)
+                        .background(Color(0xE6080415), shape = CircleShape)
+                )
+
+                // 3. Hình ảnh lá cờ phi hành gia sắc nét, cắm vững chắc
+                Image(
+                    painter = painterResource(R.drawable.flag),
+                    contentDescription = "Mission Flag",
+                    modifier = Modifier.size(44.dp)
+                )
+            }
+        }
+
+        // ─── Text box hiển thị số bài (★ 3/5 bài) nhỏ gọn, không chạm vào hành tinh ───
+        if (showDecorations) {
+            // Đặt tâm textbox cách tâm hành tinh: bán kính hành tinh (planetDiameter/2) + 16dp
+            // Giúp mép trên của textbox cách bề mặt hành tinh ~6-7dp, hoàn toàn không chạm vào hành tinh
+            val textboxOffsetY = (planetDiameter / 2f) + 16.dp
+            Box(
+                modifier = Modifier
+                    .align(Alignment.Center)
+                    .offset(y = textboxOffsetY)
+                    .graphicsLayer {
+                        alpha = decoAlpha
+                        scaleX = decoScale
+                        scaleY = decoScale
+                    }
                     .clip(CircleShape)
                     .background(
                         Brush.horizontalGradient(
@@ -374,7 +413,7 @@ fun CosmicPlanetView(
                         )
                     )
                     .border(
-                        width = 1.4.dp,
+                        width = 1.1.dp,
                         brush = Brush.horizontalGradient(
                             when {
                                 isCompleted -> listOf(Color(0xFFFFD166), Color(0xFFFF9E00))
@@ -383,7 +422,7 @@ fun CosmicPlanetView(
                         ),
                         shape = CircleShape
                     )
-                    .padding(horizontal = 14.dp, vertical = 4.dp)
+                    .padding(horizontal = 9.dp, vertical = 2.5.dp)
             ) {
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
@@ -392,16 +431,75 @@ fun CosmicPlanetView(
                     Icon(
                         imageVector = Icons.Default.Star,
                         contentDescription = null,
-                        tint = if (isCompleted) Color(0xFFFFD166) else Color.White,
-                        modifier = Modifier.size(13.dp)
+                        tint = if (isCompleted) Color(0xFFFFD166) else Color(0xFFFFD166),
+                        modifier = Modifier.size(11.dp)
                     )
-                    Spacer(modifier = Modifier.width(5.dp))
+                    Spacer(modifier = Modifier.width(3.5.dp))
                     Text(
                         text = "${stage.completedLessons}/${stage.totalLessons} bài",
                         color = Color.White,
-                        fontSize = 11.5.sp,
+                        fontSize = 10.5.sp,
+                        fontWeight = FontWeight.Bold,
+                        letterSpacing = 0.2.sp
+                    )
+                }
+            }
+        }
+
+        // ─── Banner thông báo mở khóa hành tinh mới (Celebratory Floating Unlock Banner) ───
+        if (unlockProgress >= 0.75f) {
+            val bannerAlpha = ((unlockProgress - 0.75f) / 0.15f).coerceIn(0f, 1f)
+            val bannerScale = 0.75f + 0.25f * bannerAlpha
+            val bannerOffsetY = -(progressRingRadiusDp + 58.dp)
+            Box(
+                modifier = Modifier
+                    .align(Alignment.Center)
+                    .offset(y = bannerOffsetY)
+                    .graphicsLayer {
+                        alpha = bannerAlpha
+                        scaleX = bannerScale
+                        scaleY = bannerScale
+                    }
+                    .clip(RoundedCornerShape(16.dp))
+                    .background(
+                        Brush.horizontalGradient(
+                            listOf(
+                                Color(0xF00A132C),
+                                Color(0xF0180B38),
+                                Color(0xF00A132C)
+                            )
+                        )
+                    )
+                    .border(
+                        width = 1.4.dp,
+                        brush = Brush.horizontalGradient(
+                            listOf(
+                                Color(0xFF51FAC1),
+                                Color(0xFFFFD166),
+                                Color(0xFF51FAC1)
+                            )
+                        ),
+                        shape = RoundedCornerShape(16.dp)
+                    )
+                    .padding(horizontal = 11.dp, vertical = 4.5.dp)
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Star,
+                        contentDescription = null,
+                        tint = Color(0xFFFFD166),
+                        modifier = Modifier.size(13.dp)
+                    )
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text(
+                        text = "✨ ĐÃ MỞ KHÓA! ✨",
+                        color = Color.White,
+                        fontSize = 11.sp,
                         fontWeight = FontWeight.ExtraBold,
-                        letterSpacing = 0.3.sp
+                        letterSpacing = 0.4.sp
                     )
                 }
             }
@@ -709,36 +807,6 @@ private fun DrawScope.drawMercuryRockyCratered(
     val mercurySway = (sin(Math.toRadians(cloudPhase.toDouble() * 0.70)) * radius * 0.035f).toFloat()
     val mCenterX = centerX + mercurySway
 
-    // 1. Đồng bằng dung nham núi lửa màu vàng cam hổ phách (Smooth Volcanic Plains)
-    val amberPatch1 = Offset(mCenterX - radius * 0.15f, centerY - radius * 0.20f)
-    drawOval(
-        brush = Brush.radialGradient(
-            colors = listOf(
-                Color(0x99FFA726).copy(alpha = 0.85f * alpha),
-                Color(0x66FF7043).copy(alpha = 0.60f * alpha),
-                Color.Transparent
-            ),
-            center = amberPatch1,
-            radius = radius * 0.45f
-        ),
-        topLeft = Offset(amberPatch1.x - radius * 0.35f, amberPatch1.y - radius * 0.25f),
-        size = Size(radius * 0.70f, radius * 0.50f)
-    )
-
-    val amberPatch2 = Offset(mCenterX + radius * 0.25f, centerY - radius * 0.35f)
-    drawOval(
-        brush = Brush.radialGradient(
-            colors = listOf(
-                Color(0x88FFB74D).copy(alpha = 0.75f * alpha),
-                Color.Transparent
-            ),
-            center = amberPatch2,
-            radius = radius * 0.35f
-        ),
-        topLeft = Offset(amberPatch2.x - radius * 0.25f, amberPatch2.y - radius * 0.20f),
-        size = Size(radius * 0.50f, radius * 0.40f)
-    )
-
     // 2. Vùng trũng bazan màu xanh coban sâu thẳm (Low-Reflectance Material Basalt Flows)
     val basaltFlow = Path().apply {
         moveTo(mCenterX - radius * 0.65f, centerY + radius * 0.05f)
@@ -820,14 +888,14 @@ private fun DrawScope.drawMercuryRockyCratered(
         )
     }
 
-    // Tâm siêu hố va chạm Kuiper phát sáng vàng chanh rực rỡ nhịp nhàng
+    // Tâm siêu hố va chạm Kuiper phát sáng điện quang lam trắng rực rỡ nhịp nhàng
     val corePulse = 0.85f + 0.15f * sin(Math.toRadians(cloudPhase.toDouble() * 1.8)).toFloat()
     drawCircle(
         brush = Brush.radialGradient(
             colors = listOf(
                 Color.White.copy(alpha = 0.95f * corePulse * alpha),
-                Color(0xFFFFF59D).copy(alpha = 0.85f * corePulse * alpha),
-                Color(0xFFFFD54F).copy(alpha = 0.60f * alpha),
+                Color(0xFFE0F7FA).copy(alpha = 0.85f * corePulse * alpha),
+                Color(0xFF80DEEA).copy(alpha = 0.60f * alpha),
                 Color(0xFF00E5FF).copy(alpha = 0.30f * alpha),
                 Color.Transparent
             ),
@@ -845,7 +913,7 @@ private fun DrawScope.drawMercuryRockyCratered(
         radius = radius * 0.055f
     )
     drawCircle(
-        color = Color(0xFFFFFF8D).copy(alpha = 0.95f * alpha),
+        color = Color(0xFFE0F7FA).copy(alpha = 0.95f * alpha),
         center = Offset(kuiperX - radius * 0.015f, kuiperY - radius * 0.015f),
         radius = radius * 0.035f
     )
@@ -2359,6 +2427,9 @@ private fun DrawScope.drawPlanetOrbitingMoonsAndSatellites(
     isBackPass: Boolean
 ) {
     when (type) {
+        CosmicPlanetType.MERCURY_ROCK -> {
+            // Sao Thủy không có vệ tinh tự nhiên, không vẽ vệ tinh tránh che khuất hoặc tạo vệt sáng sau lưng
+        }
         CosmicPlanetType.SATURN_MONARCH -> {
             // Sao Thổ đã có vành đai Cassini 3D với 40 hạt tiểu hành tinh xoay riêng biệt
         }
@@ -2509,9 +2580,6 @@ private fun DrawScope.drawPlanetOrbitingMoonsAndSatellites(
                 CosmicPlanetType.MOON_GRAY -> {
                     tiltDeg = 32f; orbitAFrac = 1.48f; orbitBFrac = 0.60f; beaconColor = Color(0xFF80DEEA); speed = 1.2f
                 }
-                CosmicPlanetType.MERCURY_ROCK -> {
-                    tiltDeg = -30f; orbitAFrac = 1.45f; orbitBFrac = 0.58f; beaconColor = Color(0xFFFFD54F); speed = 1.4f
-                }
                 CosmicPlanetType.VENUS_SULFUR -> {
                     tiltDeg = 35f; orbitAFrac = 1.50f; orbitBFrac = 0.62f; beaconColor = Color(0xFFFFAB91); speed = 1.1f
                 }
@@ -2645,42 +2713,109 @@ private fun DrawScope.drawCosmicForceFieldShield(
     centerY: Float,
     planetRadius: Float,
     rotationPhase: Float,
-    glowPulse: Float
+    glowPulse: Float,
+    unlockProgress: Float = 0f
 ) {
-    val shieldRadius = planetRadius * 1.18f
-    val pulseFactor = glowPulse.coerceIn(0.75f, 1.30f)
+    if (unlockProgress >= 1.0f) return
+
+    // ── Phase 4: Sóng xung kích khí quyển sau khi khiên đã vỡ vụn (unlockProgress in 0.78f..1.0f) ──
+    if (unlockProgress >= 0.78f) {
+        val shockNorm = ((unlockProgress - 0.78f) / 0.22f).coerceIn(0f, 1f)
+        val r1 = planetRadius * (1.0f + shockNorm * 1.65f)
+        val a1 = (1.0f - shockNorm).coerceIn(0f, 1f)
+
+        // Vòng 1: Quầng sáng phát xạ từ khí quyển hành tinh thức tỉnh
+        drawCircle(
+            brush = Brush.radialGradient(
+                colors = listOf(
+                    Color.Transparent,
+                    Color(0x3551FAC1).copy(alpha = a1 * 0.35f),
+                    Color(0xFF51FAC1).copy(alpha = a1 * 0.85f),
+                    Color.White.copy(alpha = a1 * 0.95f),
+                    Color.Transparent
+                ),
+                center = Offset(centerX, centerY),
+                radius = r1 + 6.dp.toPx()
+            ),
+            center = Offset(centerX, centerY),
+            radius = r1,
+            style = Stroke(width = (4.5.dp * (1f - shockNorm * 0.5f)).toPx())
+        )
+
+        // Vòng 2: Sóng chấn động thứ cấp (Secondary shockwave ripple)
+        val shockNorm2 = ((shockNorm - 0.12f) / 0.88f).coerceIn(0f, 1f)
+        if (shockNorm2 > 0f) {
+            val r2 = planetRadius * (1.0f + shockNorm2 * 1.30f)
+            val a2 = (1.0f - shockNorm2).coerceIn(0f, 1f)
+            drawCircle(
+                color = Color(0xFF00E5FF).copy(alpha = a2 * 0.75f),
+                center = Offset(centerX, centerY),
+                radius = r2,
+                style = Stroke(width = (2.2.dp * (1f - shockNorm2 * 0.5f)).toPx())
+            )
+        }
+        return
+    }
+
+    val isUnlocking = unlockProgress > 0f
+    val isOverloading = isUnlocking && unlockProgress < 0.45f
+    val isShattering = isUnlocking && unlockProgress in 0.45f..0.78f
+
+    val overloadNorm = if (isOverloading) (unlockProgress / 0.45f).coerceIn(0f, 1f) else if (isShattering) 1f else 0f
+    val shatterNorm = if (isShattering) ((unlockProgress - 0.45f) / 0.33f).coerceIn(0f, 1f) else 0f
+
+    // Hiệu ứng rung chấn điện từ cường độ cao khi bị quá tải năng lượng (Phase 2 Jitter)
+    val jitterMag = if (isOverloading) (4.5.dp.toPx() * overloadNorm) else 0f
+    val jitterX = if (isOverloading) sin(overloadNorm * 85f) * jitterMag else 0f
+    val jitterY = if (isOverloading) cos(overloadNorm * 73f) * jitterMag else 0f
+    val effCenterX = centerX + jitterX
+    val effCenterY = centerY + jitterY
+
+    // Độ phình to và mờ dần khi lồng khiên bị vỡ vụn (Phase 3 Cage Shatter Expansion)
+    val burstScale = if (isShattering) 1.0f + shatterNorm * 0.90f else 1.0f
+    val burstAlpha = if (isShattering) (1.0f - shatterNorm).coerceIn(0f, 1f) else 1.0f
+
+    val shieldRadius = planetRadius * 1.18f * burstScale
+    val pulseFactor = glowPulse.coerceIn(0.75f, 1.30f) * (1.0f + overloadNorm * 1.8f) * burstAlpha
 
     // 1. Vùng trường lực bán trong suốt (Cosmic Force Field Aura)
+    val auraCore = lerp(Color(0x2E9333EA), Color(0x4051FAC1), overloadNorm).copy(alpha = 0.25f * burstAlpha)
+    val auraMid = lerp(Color(0x187C3AED), Color(0x3500E5FF), overloadNorm).copy(alpha = 0.20f * burstAlpha)
+    val auraOuter = lerp(Color(0x35581C87), Color(0x300284C7), overloadNorm).copy(alpha = 0.25f * burstAlpha)
+
     drawCircle(
         brush = Brush.radialGradient(
             colors = listOf(
-                Color(0x2E9333EA),
-                Color(0x187C3AED),
-                Color(0x35581C87),
+                auraCore,
+                auraMid,
+                auraOuter,
                 Color.Transparent
             ),
-            center = Offset(centerX, centerY),
+            center = Offset(effCenterX, effCenterY),
             radius = shieldRadius
         ),
-        center = Offset(centerX, centerY),
+        center = Offset(effCenterX, effCenterY),
         radius = shieldRadius
     )
 
     // Viền phát quang bao bọc hình cầu khiên năng lượng
+    val rimGlowMid = lerp(Color(0x45A855F7), Color(0x5551FAC1), overloadNorm)
+    val rimGlowOuter = lerp(Color(0x80D8B4FE), Color(0xEEFFFFFF), overloadNorm)
+
     drawCircle(
         brush = Brush.radialGradient(
             colors = listOf(
                 Color.Transparent,
-                Color(0x15C084FC),
-                Color(0x45A855F7).copy(alpha = 0.40f * pulseFactor),
-                Color(0x80D8B4FE).copy(alpha = 0.65f * pulseFactor)
+                Color(0x15C084FC).copy(alpha = 0.15f * burstAlpha),
+                rimGlowMid.copy(alpha = 0.40f * pulseFactor),
+                rimGlowOuter.copy(alpha = 0.65f * pulseFactor)
             ),
-            center = Offset(centerX, centerY),
+            center = Offset(effCenterX, effCenterY),
             radius = shieldRadius
         ),
-        center = Offset(centerX, centerY),
+        center = Offset(effCenterX, effCenterY),
         radius = shieldRadius,
-        style = Stroke(width = 1.6.dp.toPx())
+        style = Stroke(width = (1.6.dp * (1f + overloadNorm * 0.5f)).toPx())
     )
 
     // 2. Tọa độ mạng lưới Đa Giác 3D (Geodesic Polyhedral Lattice)
@@ -2702,8 +2837,8 @@ private fun DrawScope.drawCosmicForceFieldShield(
         val yTilted = y0 * cosTilt - z0 * sinTilt
         val zTilted = y0 * sinTilt + z0 * cosTilt
 
-        val px = centerX + x0
-        val py = centerY - yTilted
+        val px = effCenterX + x0
+        val py = effCenterY - yTilted
         val depth = zTilted / shieldRadius
 
         return CosmicShieldVertex(x0, yTilted, zTilted, px, py, depth)
@@ -2767,43 +2902,48 @@ private fun DrawScope.drawCosmicForceFieldShield(
     // Vành 4 nối Cực Nam
     ring4.forEach { v -> edges.add(pBot to v) }
 
+    // Màu sắc laser chuyển dịch sang lục ngọc/trắng điện từ khi quá tải
+    val edgeGlowColor = lerp(Color(0xFFA855F7), Color(0xFF51FAC1), overloadNorm)
+    val edgeCoreColor = lerp(Color(0xFFF3E8FF), Color.White, overloadNorm)
+
     // Vẽ các đường tia năng lượng Laser (Edges)
     edges.forEach { (v1, v2) ->
         val avgDepth = (v1.depth + v2.depth) / 2f
         if (avgDepth >= -0.28f) {
             val edgeAlpha = ((avgDepth + 0.35f) / 1.35f).coerceIn(0.12f, 1.0f) * pulseFactor
-            // Viền phát sáng tím
+            // Viền phát sáng tím / cyan
             drawLine(
-                color = Color(0xFFA855F7).copy(alpha = edgeAlpha * 0.40f),
+                color = edgeGlowColor.copy(alpha = edgeAlpha * 0.40f),
                 start = Offset(v1.px, v1.py),
                 end = Offset(v2.px, v2.py),
-                strokeWidth = 2.4.dp.toPx()
+                strokeWidth = (2.4.dp * (1f + overloadNorm * 0.4f)).toPx()
             )
-            // Tia laser sáng trắng-tím
+            // Tia laser sáng trắng-tím / cyan điện
             drawLine(
-                color = Color(0xFFF3E8FF).copy(alpha = edgeAlpha * 0.85f),
+                color = edgeCoreColor.copy(alpha = edgeAlpha * 0.85f),
                 start = Offset(v1.px, v1.py),
                 end = Offset(v2.px, v2.py),
-                strokeWidth = 1.0.dp.toPx()
+                strokeWidth = (1.0.dp * (1f + overloadNorm * 0.3f)).toPx()
             )
         }
     }
 
     // Vẽ các nút giao tinh thể lượng tử (Vertices Nodes)
+    val nodeGlowColor = lerp(Color(0xFFC084FC), Color(0xFF51FAC1), overloadNorm)
     val allVertices = listOf(pTop) + ring1 + ring2 + ring3 + ring4 + listOf(pBot)
     allVertices.forEach { v ->
         if (v.depth >= -0.20f) {
             val nodeAlpha = ((v.depth + 0.28f) / 1.28f).coerceIn(0.15f, 1.0f) * pulseFactor
             // Quầng sáng nút
             drawCircle(
-                color = Color(0xFFC084FC).copy(alpha = nodeAlpha * 0.50f),
-                radius = 3.4.dp.toPx(),
+                color = nodeGlowColor.copy(alpha = nodeAlpha * 0.50f),
+                radius = 3.4.dp.toPx() * (1f + overloadNorm * 0.5f),
                 center = Offset(v.px, v.py)
             )
             // Điểm sao trắng chói
             drawCircle(
                 color = Color.White.copy(alpha = nodeAlpha * 0.95f),
-                radius = 1.5.dp.toPx(),
+                radius = 1.5.dp.toPx() * (1f + overloadNorm * 0.5f),
                 center = Offset(v.px, v.py)
             )
         }
@@ -2811,207 +2951,258 @@ private fun DrawScope.drawCosmicForceFieldShield(
 
     // 3. Hai vòng quỹ đạo từ trường mỏng xoay quanh khiên (Orbital Resonance Rings)
     // Vòng 1: Nghiêng -22 độ
-    withTransform({ rotate(-22f, pivot = Offset(centerX, centerY)) }) {
+    withTransform({ rotate(-22f, pivot = Offset(effCenterX, effCenterY)) }) {
         val ovalA = shieldRadius * 1.32f
         val ovalB = shieldRadius * 0.38f
         drawOval(
-            color = Color(0xFFC084FC).copy(alpha = 0.50f * pulseFactor),
-            topLeft = Offset(centerX - ovalA, centerY - ovalB),
+            color = nodeGlowColor.copy(alpha = 0.50f * pulseFactor),
+            topLeft = Offset(effCenterX - ovalA, effCenterY - ovalB),
             size = Size(ovalA * 2f, ovalB * 2f),
             style = Stroke(width = 1.1.dp.toPx())
         )
         // Hạt năng lượng chuyển động trên vòng 1
         val sparkAngle1 = Math.toRadians((rotationPhase * 1.6).toDouble()).toFloat()
-        val sx1 = centerX + ovalA * cos(sparkAngle1)
-        val sy1 = centerY + ovalB * sin(sparkAngle1)
+        val sx1 = effCenterX + ovalA * cos(sparkAngle1)
+        val sy1 = effCenterY + ovalB * sin(sparkAngle1)
         drawCircle(
-            color = Color(0xFFE879F9).copy(alpha = 0.55f),
+            color = Color(0xFFE879F9).copy(alpha = 0.55f * burstAlpha),
             radius = 4.0.dp.toPx(),
             center = Offset(sx1, sy1)
         )
         drawCircle(
-            color = Color.White,
+            color = Color.White.copy(alpha = burstAlpha),
             radius = 1.8.dp.toPx(),
             center = Offset(sx1, sy1)
         )
     }
 
     // Vòng 2: Nghiêng +28 độ
-    withTransform({ rotate(28f, pivot = Offset(centerX, centerY)) }) {
+    withTransform({ rotate(28f, pivot = Offset(effCenterX, effCenterY)) }) {
         val ovalA = shieldRadius * 1.24f
         val ovalB = shieldRadius * 0.34f
         drawOval(
-            color = Color(0xFFA855F7).copy(alpha = 0.40f * pulseFactor),
-            topLeft = Offset(centerX - ovalA, centerY - ovalB),
+            color = edgeGlowColor.copy(alpha = 0.40f * pulseFactor),
+            topLeft = Offset(effCenterX - ovalA, effCenterY - ovalB),
             size = Size(ovalA * 2f, ovalB * 2f),
             style = Stroke(width = 0.9.dp.toPx())
         )
         // Hạt năng lượng chuyển động trên vòng 2
         val sparkAngle2 = Math.toRadians((-rotationPhase * 1.3 + 135.0).toDouble()).toFloat()
-        val sx2 = centerX + ovalA * cos(sparkAngle2)
-        val sy2 = centerY + ovalB * sin(sparkAngle2)
+        val sx2 = effCenterX + ovalA * cos(sparkAngle2)
+        val sy2 = effCenterY + ovalB * sin(sparkAngle2)
         drawCircle(
-            color = Color(0xFFC084FC).copy(alpha = 0.50f),
+            color = Color(0xFFC084FC).copy(alpha = 0.50f * burstAlpha),
             radius = 3.6.dp.toPx(),
             center = Offset(sx2, sy2)
         )
         drawCircle(
-            color = Color.White,
+            color = Color.White.copy(alpha = burstAlpha),
             radius = 1.5.dp.toPx(),
             center = Offset(sx2, sy2)
         )
     }
 
     // 4. Ổ Khóa Neon Hologram phát sáng ở chính giữa (Holographic Padlock)
-    val lockScale = (planetRadius / 42.dp.toPx()).coerceIn(0.75f, 1.45f)
-    val lockWidth = 32.dp.toPx() * lockScale
-    val lockHeight = 25.dp.toPx() * lockScale
-    val cornerRadius = 6.dp.toPx() * lockScale
+    val padlockAlpha = if (isShattering) (1f - shatterNorm * 1.4f).coerceAtLeast(0f) else burstAlpha
+    if (padlockAlpha > 0.01f) {
+        val lockScale = (planetRadius / 42.dp.toPx()).coerceIn(0.75f, 1.45f)
+        val lockWidth = 32.dp.toPx() * lockScale
+        val lockHeight = 25.dp.toPx() * lockScale
+        val cornerRadius = 6.dp.toPx() * lockScale
 
-    val lockCenterX = centerX
-    val lockCenterY = centerY + 3.dp.toPx() * lockScale
+        val lockCenterX = effCenterX
+        val lockCenterY = effCenterY + 3.dp.toPx() * lockScale
 
-    val bodyLeft = lockCenterX - lockWidth / 2f
-    val bodyRight = lockCenterX + lockWidth / 2f
-    val bodyTop = lockCenterY - lockHeight / 2f + 4.dp.toPx() * lockScale
-    val bodyBottom = bodyTop + lockHeight
+        val bodyLeft = lockCenterX - lockWidth / 2f
+        val bodyRight = lockCenterX + lockWidth / 2f
+        val bodyTop = lockCenterY - lockHeight / 2f + 4.dp.toPx() * lockScale
+        val bodyBottom = bodyTop + lockHeight
 
-    // ── Quai Khóa (Shackle) ──────────────────────────────────────────────────
-    val shackleRadius = lockWidth * 0.32f
-    val shackleLegHeight = 11.5.dp.toPx() * lockScale
-    val shacklePath = Path().apply {
-        moveTo(lockCenterX - shackleRadius, bodyTop + 2.dp.toPx() * lockScale)
-        lineTo(lockCenterX - shackleRadius, bodyTop - shackleLegHeight + shackleRadius)
-        arcTo(
-            rect = Rect(
-                left = lockCenterX - shackleRadius,
-                top = bodyTop - shackleLegHeight,
-                right = lockCenterX + shackleRadius,
-                bottom = bodyTop - shackleLegHeight + shackleRadius * 2f
+        // ── Quai Khóa (Shackle) ──────────────────────────────────────────────────
+        val shackleRadius = lockWidth * 0.32f
+        val shackleLegHeight = 11.5.dp.toPx() * lockScale
+        val shackleOffsetY = if (isShattering) -22.dp.toPx() * lockScale * shatterNorm else 0f
+        val shackleRotateDeg = if (isShattering) shatterNorm * 26f else 0f
+
+        val shacklePath = Path().apply {
+            moveTo(lockCenterX - shackleRadius, bodyTop + 2.dp.toPx() * lockScale + shackleOffsetY)
+            lineTo(lockCenterX - shackleRadius, bodyTop - shackleLegHeight + shackleRadius + shackleOffsetY)
+            arcTo(
+                rect = Rect(
+                    left = lockCenterX - shackleRadius,
+                    top = bodyTop - shackleLegHeight + shackleOffsetY,
+                    right = lockCenterX + shackleRadius,
+                    bottom = bodyTop - shackleLegHeight + shackleRadius * 2f + shackleOffsetY
+                ),
+                startAngleDegrees = 180f,
+                sweepAngleDegrees = 180f,
+                forceMoveTo = false
+            )
+            lineTo(lockCenterX + shackleRadius, bodyTop + 2.dp.toPx() * lockScale + shackleOffsetY)
+        }
+
+        withTransform({
+            if (shackleRotateDeg != 0f) {
+                rotate(shackleRotateDeg, pivot = Offset(lockCenterX + shackleRadius, bodyTop + shackleOffsetY))
+            }
+        }) {
+            // Quai khóa: Quầng sáng nở ngoài cùng
+            drawPath(
+                shacklePath,
+                color = lerp(Color(0xFF7C3AED), Color(0xFF51FAC1), overloadNorm).copy(alpha = 0.40f * pulseFactor * padlockAlpha),
+                style = Stroke(width = 8.dp.toPx() * lockScale, cap = StrokeCap.Round)
+            )
+            // Quai khóa: Viền neon rực rỡ
+            drawPath(
+                shacklePath,
+                color = lerp(Color(0xFFC084FC), Color(0xFF51FAC1), overloadNorm).copy(alpha = 0.88f * pulseFactor * padlockAlpha),
+                style = Stroke(width = 4.2.dp.toPx() * lockScale, cap = StrokeCap.Round)
+            )
+            // Quai khóa: Ánh lam-tím sáng / cyan
+            drawPath(
+                shacklePath,
+                color = lerp(Color(0xFFE9D5FF), Color.White, overloadNorm).copy(alpha = padlockAlpha),
+                style = Stroke(width = 2.0.dp.toPx() * lockScale, cap = StrokeCap.Round)
+            )
+            // Quai khóa: Lõi laser trắng
+            drawPath(
+                shacklePath,
+                color = Color.White.copy(alpha = padlockAlpha),
+                style = Stroke(width = 0.9.dp.toPx() * lockScale, cap = StrokeCap.Round)
+            )
+        }
+
+        // ── Thân Khóa (Lock Body) ────────────────────────────────────────────────
+        // Nền kính tím không gian bán trong suốt (Translucent Cyberpunk Glass)
+        drawRoundRect(
+            brush = Brush.verticalGradient(
+                colors = listOf(
+                    Color(0xEE2E1065).copy(alpha = 0.93f * padlockAlpha),
+                    Color(0xCC1A0736).copy(alpha = 0.80f * padlockAlpha),
+                    Color(0xEE3B0764).copy(alpha = 0.93f * padlockAlpha)
+                ),
+                startY = bodyTop,
+                endY = bodyBottom
             ),
-            startAngleDegrees = 180f,
-            sweepAngleDegrees = 180f,
-            forceMoveTo = false
+            topLeft = Offset(bodyLeft, bodyTop),
+            size = Size(lockWidth, lockHeight),
+            cornerRadius = CornerRadius(cornerRadius, cornerRadius)
         )
-        lineTo(lockCenterX + shackleRadius, bodyTop + 2.dp.toPx() * lockScale)
-    }
 
-    // Quai khóa: Quầng sáng nở tím ngoài cùng
-    drawPath(
-        shacklePath,
-        color = Color(0xFF7C3AED).copy(alpha = 0.40f * pulseFactor),
-        style = Stroke(width = 8.dp.toPx() * lockScale, cap = StrokeCap.Round)
-    )
-    // Quai khóa: Viền tím neon rực rỡ
-    drawPath(
-        shacklePath,
-        color = Color(0xFFC084FC).copy(alpha = 0.88f * pulseFactor),
-        style = Stroke(width = 4.2.dp.toPx() * lockScale, cap = StrokeCap.Round)
-    )
-    // Quai khóa: Ánh lam-tím sáng
-    drawPath(
-        shacklePath,
-        color = Color(0xFFE9D5FF),
-        style = Stroke(width = 2.0.dp.toPx() * lockScale, cap = StrokeCap.Round)
-    )
-    // Quai khóa: Lõi laser trắng
-    drawPath(
-        shacklePath,
-        color = Color.White,
-        style = Stroke(width = 0.9.dp.toPx() * lockScale, cap = StrokeCap.Round)
-    )
+        // Dải quét scanlines công nghệ cao bên trong thân khóa
+        for (i in 1..2) {
+            val sy = bodyTop + lockHeight * (i.toFloat() / 3f)
+            drawLine(
+                color = lerp(Color(0xFFC084FC), Color(0xFF51FAC1), overloadNorm).copy(alpha = 0.25f * pulseFactor * padlockAlpha),
+                start = Offset(bodyLeft + 4.dp.toPx() * lockScale, sy),
+                end = Offset(bodyRight - 4.dp.toPx() * lockScale, sy),
+                strokeWidth = 0.8.dp.toPx() * lockScale
+            )
+        }
 
-    // ── Thân Khóa (Lock Body) ────────────────────────────────────────────────
-    // Nền kính tím không gian bán trong suốt (Translucent Cyberpunk Glass)
-    drawRoundRect(
-        brush = Brush.verticalGradient(
-            colors = listOf(
-                Color(0xEE2E1065),
-                Color(0xCC1A0736),
-                Color(0xEE3B0764)
-            ),
-            startY = bodyTop,
-            endY = bodyBottom
-        ),
-        topLeft = Offset(bodyLeft, bodyTop),
-        size = Size(lockWidth, lockHeight),
-        cornerRadius = CornerRadius(cornerRadius, cornerRadius)
-    )
+        // Thân khóa: Quầng nở hào quang ngoài
+        drawRoundRect(
+            color = lerp(Color(0xFF7C3AED), Color(0xFF51FAC1), overloadNorm).copy(alpha = 0.45f * pulseFactor * padlockAlpha),
+            topLeft = Offset(bodyLeft, bodyTop),
+            size = Size(lockWidth, lockHeight),
+            cornerRadius = CornerRadius(cornerRadius, cornerRadius),
+            style = Stroke(width = 7.dp.toPx() * lockScale)
+        )
+        // Thân khóa: Viền neon tím điện / cyan
+        drawRoundRect(
+            color = lerp(Color(0xFFC084FC), Color(0xFF51FAC1), overloadNorm).copy(alpha = 0.92f * pulseFactor * padlockAlpha),
+            topLeft = Offset(bodyLeft, bodyTop),
+            size = Size(lockWidth, lockHeight),
+            cornerRadius = CornerRadius(cornerRadius, cornerRadius),
+            style = Stroke(width = 3.2.dp.toPx() * lockScale)
+        )
+        // Thân khóa: Viền sáng phản quang
+        drawRoundRect(
+            color = lerp(Color(0xFFF3E8FF), Color.White, overloadNorm).copy(alpha = padlockAlpha),
+            topLeft = Offset(bodyLeft, bodyTop),
+            size = Size(lockWidth, lockHeight),
+            cornerRadius = CornerRadius(cornerRadius, cornerRadius),
+            style = Stroke(width = 1.6.dp.toPx() * lockScale)
+        )
+        // Thân khóa: Nét laser trắng tinh xảo
+        drawRoundRect(
+            color = Color.White.copy(alpha = 0.95f * padlockAlpha),
+            topLeft = Offset(bodyLeft, bodyTop),
+            size = Size(lockWidth, lockHeight),
+            cornerRadius = CornerRadius(cornerRadius, cornerRadius),
+            style = Stroke(width = 0.7.dp.toPx() * lockScale)
+        )
 
-    // Dải quét scanlines công nghệ cao bên trong thân khóa
-    for (i in 1..2) {
-        val sy = bodyTop + lockHeight * (i.toFloat() / 3f)
-        drawLine(
-            color = Color(0xFFC084FC).copy(alpha = 0.25f * pulseFactor),
-            start = Offset(bodyLeft + 4.dp.toPx() * lockScale, sy),
-            end = Offset(bodyRight - 4.dp.toPx() * lockScale, sy),
-            strokeWidth = 0.8.dp.toPx() * lockScale
+        // ── Lỗ Khóa Phát Sáng (Keyhole) ──────────────────────────────────────────
+        val keyholeCenterY = bodyTop + lockHeight * 0.48f
+        val circleR = 3.2.dp.toPx() * lockScale
+        val slotTopW = 2.2.dp.toPx() * lockScale
+        val slotBottomW = 3.8.dp.toPx() * lockScale
+        val slotHeight = 5.5.dp.toPx() * lockScale
+
+        val keyholePath = Path().apply {
+            addOval(Rect(center = Offset(lockCenterX, keyholeCenterY - circleR * 0.35f), radius = circleR))
+            moveTo(lockCenterX - slotTopW / 2f, keyholeCenterY)
+            lineTo(lockCenterX + slotTopW / 2f, keyholeCenterY)
+            lineTo(lockCenterX + slotBottomW / 2f, keyholeCenterY + slotHeight)
+            lineTo(lockCenterX - slotBottomW / 2f, keyholeCenterY + slotHeight)
+            close()
+        }
+
+        // Lõi hố đen bên trong lỗ khóa
+        drawPath(keyholePath, color = Color(0xFF090214).copy(alpha = padlockAlpha))
+        // Viền phát quang lỗ khóa
+        drawPath(
+            keyholePath,
+            color = lerp(Color(0xFFE879F9), Color(0xFF51FAC1), overloadNorm).copy(alpha = 0.90f * pulseFactor * padlockAlpha),
+            style = Stroke(width = 1.3.dp.toPx() * lockScale)
+        )
+        // Hạt ánh sáng trắng tỏa từ tâm lỗ khóa
+        drawCircle(
+            color = Color.White.copy(alpha = 0.90f * pulseFactor * padlockAlpha),
+            radius = 1.1.dp.toPx() * lockScale,
+            center = Offset(lockCenterX, keyholeCenterY - circleR * 0.35f)
         )
     }
 
-    // Thân khóa: Quầng nở hào quang tím ngoài
-    drawRoundRect(
-        color = Color(0xFF7C3AED).copy(alpha = 0.45f * pulseFactor),
-        topLeft = Offset(bodyLeft, bodyTop),
-        size = Size(lockWidth, lockHeight),
-        cornerRadius = CornerRadius(cornerRadius, cornerRadius),
-        style = Stroke(width = 7.dp.toPx() * lockScale)
-    )
-    // Thân khóa: Viền neon tím điện
-    drawRoundRect(
-        color = Color(0xFFC084FC).copy(alpha = 0.92f * pulseFactor),
-        topLeft = Offset(bodyLeft, bodyTop),
-        size = Size(lockWidth, lockHeight),
-        cornerRadius = CornerRadius(cornerRadius, cornerRadius),
-        style = Stroke(width = 3.2.dp.toPx() * lockScale)
-    )
-    // Thân khóa: Viền sáng phản quang
-    drawRoundRect(
-        color = Color(0xFFF3E8FF),
-        topLeft = Offset(bodyLeft, bodyTop),
-        size = Size(lockWidth, lockHeight),
-        cornerRadius = CornerRadius(cornerRadius, cornerRadius),
-        style = Stroke(width = 1.6.dp.toPx() * lockScale)
-    )
-    // Thân khóa: Nét laser trắng tinh xảo
-    drawRoundRect(
-        color = Color.White.copy(alpha = 0.95f),
-        topLeft = Offset(bodyLeft, bodyTop),
-        size = Size(lockWidth, lockHeight),
-        cornerRadius = CornerRadius(cornerRadius, cornerRadius),
-        style = Stroke(width = 0.7.dp.toPx() * lockScale)
-    )
+    // 5. Vụ nổ 28 mảnh bụi sao lượng tử tỏa ra không gian (Phase 3 Radial Stardust Particles)
+    if (isShattering && shatterNorm > 0f) {
+        for (i in 0 until 28) {
+            val angle = (i * (360f / 28f) + (i * 17f % 23f)) * (PI.toFloat() / 180f)
+            val speedMult = 1.0f + (i % 7) * 0.28f
+            val dist = planetRadius * (1.15f + shatterNorm * 2.1f * speedMult)
+            val px = effCenterX + cos(angle) * dist
+            val py = effCenterY + sin(angle) * dist
+            val pSize = (4.0.dp - 2.2.dp * shatterNorm).toPx().coerceAtLeast(1f)
+            val pAlpha = (1f - shatterNorm).coerceIn(0f, 1f)
+            val pColor = when (i % 5) {
+                0 -> Color.White
+                1 -> Color(0xFF51FAC1) // Electric mint
+                2 -> Color(0xFF00E5FF) // Electric cyan
+                3 -> Color(0xFFFFD166) // Gold
+                else -> Color(0xFFC084FC) // Neon lavender
+            }.copy(alpha = pAlpha)
 
-    // ── Lỗ Khóa Phát Sáng (Keyhole) ──────────────────────────────────────────
-    val keyholeCenterY = bodyTop + lockHeight * 0.48f
-    val circleR = 3.2.dp.toPx() * lockScale
-    val slotTopW = 2.2.dp.toPx() * lockScale
-    val slotBottomW = 3.8.dp.toPx() * lockScale
-    val slotHeight = 5.5.dp.toPx() * lockScale
-
-    val keyholePath = Path().apply {
-        addOval(Rect(center = Offset(lockCenterX, keyholeCenterY - circleR * 0.35f), radius = circleR))
-        moveTo(lockCenterX - slotTopW / 2f, keyholeCenterY)
-        lineTo(lockCenterX + slotTopW / 2f, keyholeCenterY)
-        lineTo(lockCenterX + slotBottomW / 2f, keyholeCenterY + slotHeight)
-        lineTo(lockCenterX - slotBottomW / 2f, keyholeCenterY + slotHeight)
-        close()
+            // Spark halo
+            drawCircle(
+                color = pColor.copy(alpha = pAlpha * 0.5f),
+                radius = pSize * 2.0f,
+                center = Offset(px, py)
+            )
+            // Solid shard
+            drawCircle(
+                color = pColor,
+                radius = pSize,
+                center = Offset(px, py)
+            )
+            // Blazing white center
+            drawCircle(
+                color = Color.White.copy(alpha = pAlpha * 0.95f),
+                radius = pSize * 0.45f,
+                center = Offset(px, py)
+            )
+        }
     }
-
-    // Lõi hố đen bên trong lỗ khóa
-    drawPath(keyholePath, color = Color(0xFF090214))
-    // Viền phát quang lỗ khóa
-    drawPath(
-        keyholePath,
-        color = Color(0xFFE879F9).copy(alpha = 0.90f * pulseFactor),
-        style = Stroke(width = 1.3.dp.toPx() * lockScale)
-    )
-    // Hạt ánh sáng trắng tỏa từ tâm lỗ khóa
-    drawCircle(
-        color = Color.White.copy(alpha = 0.90f * pulseFactor),
-        radius = 1.1.dp.toPx() * lockScale,
-        center = Offset(lockCenterX, keyholeCenterY - circleR * 0.35f)
-    )
 }
 
 // ─── Đỉnh Cao Vũ Trụ: MẶT TRỜI (THE SUN / SOLAR APEX - Level Cuối To Nhất) ────

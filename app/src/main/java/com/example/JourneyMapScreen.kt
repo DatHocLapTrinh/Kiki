@@ -1,6 +1,9 @@
 package com.example
 
+import android.widget.Toast
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
@@ -45,13 +48,14 @@ import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import com.example.ui.BubbleArrowDirection
 import com.example.ui.CosmicSectionBanner
 import com.example.ui.CosmicSectionConfig
 import com.example.ui.CosmicSectionData
-import com.example.ui.CosmicGuidebookDialog
 import com.example.ui.SpeechBubbleShape
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -63,6 +67,7 @@ import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.layout.ContentScale
 import coil.compose.AsyncImage
 import com.example.viewmodel.StudyViewModel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 
@@ -76,6 +81,11 @@ fun JourneyMapScreen(
 ) {
     val strings = LocalAppStrings.current
     val scrollState = rememberScrollState()
+    val density = LocalDensity.current
+    val context = LocalContext.current
+    val haptic = LocalHapticFeedback.current
+    val coroutineScope = rememberCoroutineScope()
+
     val userName by viewModel.userName.observeAsState("Adventurer")
     val avatarUri by viewModel.avatarUri.observeAsState(null)
     val streak by viewModel.streak.observeAsState(0)
@@ -92,7 +102,57 @@ fun JourneyMapScreen(
     }
     val currentStageIndex = stages.indexOfFirst { it.state == JourneyStageState.CURRENT }
     var isNavigating by remember { mutableStateOf(false) }
-    var activeGuidebookSection by remember { mutableStateOf<CosmicSectionData?>(null) }
+
+    val unlockEvent by viewModel.chapterUnlockEvent.observeAsState(null)
+    var animatingUnlockStageIndex by remember { mutableIntStateOf(-1) }
+    val unlockAnim = remember { Animatable(0f) }
+
+    fun triggerPlanetUnlock(targetIdx: Int) {
+        coroutineScope.launch {
+            if (targetIdx > 0 && targetIdx < stages.size && animatingUnlockStageIndex == -1) {
+                animatingUnlockStageIndex = targetIdx
+                val stageStepPx = with(density) { 255.dp.toPx() }
+                val bannerTotalHeightPx = with(density) { (106.dp + 16.dp).toPx() }
+                val targetPlanetY = ((targetIdx / 10) + 1) * bannerTotalHeightPx + targetIdx * stageStepPx + with(density) { 85.dp.toPx() }
+                val viewportHeightPx = scrollState.viewportSize.toFloat()
+                val desiredScroll = (targetPlanetY - (if (viewportHeightPx > 0) viewportHeightPx * 0.45f else 600f)).toInt().coerceAtLeast(0)
+
+                scrollState.animateScrollTo(desiredScroll, tween(800, easing = FastOutSlowInEasing))
+
+                unlockAnim.snapTo(0f)
+                viewModel.soundEffectManager.playCorrect(3)
+                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+
+                val shatterJob = launch {
+                    delay(1750) // Thời điểm khiên nổ tung sau Phase 1 & 2 (~65% của 2700ms)
+                    viewModel.soundEffectManager.playFanfare()
+                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                }
+
+                unlockAnim.animateTo(
+                    targetValue = 1f,
+                    animationSpec = tween(durationMillis = 2700, easing = LinearEasing)
+                )
+
+                shatterJob.cancel()
+                viewModel.clearChapterUnlockEvent()
+                animatingUnlockStageIndex = -1
+            }
+        }
+    }
+
+    LaunchedEffect(unlockEvent) {
+        val event = unlockEvent ?: return@LaunchedEffect
+        var targetIdx = stages.indexOfFirst { it.title.equals(event.nextChapterTitle, ignoreCase = true) }
+        if (targetIdx == -1) {
+            targetIdx = stages.indexOfFirst { it.state == JourneyStageState.LOCKED }
+        }
+        if (targetIdx > 0 && targetIdx < stages.size) {
+            triggerPlanetUnlock(targetIdx)
+        } else {
+            viewModel.clearChapterUnlockEvent()
+        }
+    }
 
     LaunchedEffect(Unit) {
         isNavigating = false
@@ -141,26 +201,29 @@ fun JourneyMapScreen(
                         stages = stages,
                         currentStageIndex = currentStageIndex,
                         strings = strings,
+                        animatingUnlockStageIndex = animatingUnlockStageIndex,
+                        unlockAnimProgress = unlockAnim.value,
                         onStageClick = { stage ->
-                            if (!isNavigating && stage.state != JourneyStageState.LOCKED) {
+                            if (stage.state == JourneyStageState.LOCKED) {
+                                Toast.makeText(
+                                    context,
+                                    "Chặng này đang bị khóa! Hoàn thành chặng trước để mở khóa (hoặc nhấn giữ để xem thử hoạt ảnh).",
+                                    Toast.LENGTH_SHORT
+                                ).show()
+                            } else if (!isNavigating) {
                                 isNavigating = true
                                 viewModel.selectChapterByTitle(stage.title, stage.sequence)
                                 onStartQuest()
                             }
                         },
-                        onOpenGuidebook = { sectionData ->
-                            activeGuidebookSection = sectionData
+                        onStageLongClick = { _, index ->
+                            if (animatingUnlockStageIndex == -1) {
+                                triggerPlanetUnlock(index)
+                            }
                         }
                     )
                 }
             }
-        }
-
-        activeGuidebookSection?.let { sectionData ->
-            CosmicGuidebookDialog(
-                section = sectionData,
-                onDismiss = { activeGuidebookSection = null }
-            )
         }
     }
 }
@@ -295,11 +358,13 @@ private fun JourneyPath(
     stages: List<JourneyStageUiModel>,
     currentStageIndex: Int,
     strings: AppStrings,
+    animatingUnlockStageIndex: Int = -1,
+    unlockAnimProgress: Float = 0f,
     onStageClick: (JourneyStageUiModel) -> Unit,
-    onOpenGuidebook: (CosmicSectionData) -> Unit
+    onStageLongClick: ((JourneyStageUiModel, Int) -> Unit)? = null
 ) {
     val stageStep = 255.dp
-    val bannerHeight = 98.dp
+    val bannerHeight = 106.dp
     val bannerSpacing = 16.dp
     val bannerTotalHeight = bannerHeight + bannerSpacing
 
@@ -334,6 +399,10 @@ private fun JourneyPath(
                     val endColor = getStageColor(s)
 
                     val isActive = s <= activeUpTo
+                    val isUnlockingThisSegment = (s == animatingUnlockStageIndex)
+                    val surgePulse = if (isUnlockingThisSegment && unlockAnimProgress < 0.35f) {
+                        (unlockAnimProgress / 0.35f).coerceIn(0f, 1f)
+                    } else null
 
                     drawCosmicAuroraSegment(
                         startX = startX,
@@ -344,8 +413,9 @@ private fun JourneyPath(
                         endColor = endColor,
                         animPhase = auroraAnim.phase.value,
                         waveOffsetPx = auroraAnim.waveOffset.value.dp.toPx(),
-                        isActive = isActive,
-                        alphaScale = if (isActive) 1f else 0.55f
+                        isActive = isActive || isUnlockingThisSegment,
+                        alphaScale = if (isActive || isUnlockingThisSegment) 1f else 0.55f,
+                        surgePulseProgress = surgePulse
                     )
                 }
             }
@@ -366,11 +436,14 @@ private fun JourneyPath(
                         section = sectionData,
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(bannerHeight),
-                        onOpenGuidebook = onOpenGuidebook
+                            .height(bannerHeight)
                     )
                     Spacer(modifier = Modifier.height(bannerSpacing))
                 }
+
+                val stageUnlockProgress = if (index == animatingUnlockStageIndex && unlockAnimProgress >= 0.35f) {
+                    ((unlockAnimProgress - 0.35f) / 0.65f).coerceIn(0f, 1f)
+                } else 0f
 
                 JourneyStageRow(
                     stage = stage,
@@ -378,8 +451,12 @@ private fun JourneyPath(
                     totalStages = stages.size,
                     stageStep = stageStep,
                     strings = strings,
+                    unlockProgress = stageUnlockProgress,
                     onStageClick = {
                         onStageClick(stage)
+                    },
+                    onStageLongClick = {
+                        onStageLongClick?.invoke(stage, index)
                     }
                 )
             }
@@ -403,7 +480,9 @@ private fun JourneyStageRow(
     totalStages: Int = -1,
     stageStep: Dp,
     strings: AppStrings,
-    onStageClick: () -> Unit
+    unlockProgress: Float = 0f,
+    onStageClick: () -> Unit,
+    onStageLongClick: (() -> Unit)? = null
 ) {
     val isLeft = index % 2 == 0
     val planetType = remember(index, totalStages) { CosmicPlanetHelper.getPlanetTypeForStage(index, totalStages) }
@@ -434,10 +513,10 @@ private fun JourneyStageRow(
             index = index,
             totalStages = totalStages,
             modifier = nodeModifier,
+            unlockProgress = unlockProgress,
+            onLongClick = onStageLongClick,
             onClick = {
-                if (stage.state != JourneyStageState.LOCKED) {
-                    onStageClick()
-                }
+                onStageClick()
             }
         )
     }
