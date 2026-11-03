@@ -1,6 +1,7 @@
 package com.example
 
 import com.example.ui.cleanLessonTitle
+import com.example.ui.formatLessonSubtitle
 import org.junit.Assert.assertEquals
 import org.junit.Test
 
@@ -22,6 +23,24 @@ class CosmicPlanetLessonPopupTest {
 
         val raw5 = "Sử dụng thì hiện tại"
         assertEquals("Sử dụng thì hiện tại", cleanLessonTitle(raw5))
+    }
+
+    @Test
+    fun testFormatLessonSubtitle_updatesAccordingToCompletedLessons() {
+        // Chưa làm bài nào (completed = 0) -> Bài học 1 / 5
+        assertEquals("Bài học 1 / 5", formatLessonSubtitle(completedLessons = 0, totalLessons = 5, isLocked = false, isCompleted = false))
+        
+        // Đã hoàn thành 3 bài học -> Phải hiển thị Bài học 4 / 5 (không bị kẹt ở Bài học 1 / 5)
+        assertEquals("Bài học 4 / 5", formatLessonSubtitle(completedLessons = 3, totalLessons = 5, isLocked = false, isCompleted = false))
+        
+        // Đã hoàn thành toàn bộ chặng -> Đã hoàn thành (5/5)
+        assertEquals("Đã hoàn thành (5/5)", formatLessonSubtitle(completedLessons = 5, totalLessons = 5, isLocked = false, isCompleted = true))
+
+        // Chặng bị khóa -> Chưa mở khóa
+        assertEquals("Chưa mở khóa", formatLessonSubtitle(completedLessons = 0, totalLessons = 5, isLocked = true, isCompleted = false))
+
+        // Tiếng Anh
+        assertEquals("Lesson 4 / 5", formatLessonSubtitle(completedLessons = 3, totalLessons = 5, isLocked = false, isCompleted = false, isEnglish = true))
     }
 }
 

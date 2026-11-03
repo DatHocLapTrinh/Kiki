@@ -254,6 +254,12 @@ fun PlacementQuizView(
 
                     // Trường hợp câu hỏi SPEAKING
                     if (currentItem.skillType == DiagnosticSkillType.SPEAKING) {
+                        val currentTargetSentence = currentItem.speakingSentence
+                        val evalResult = if (spokenRecognizedText.isNotBlank()) {
+                            com.example.util.PronunciationScorer.evaluate(currentTargetSentence, spokenRecognizedText)
+                        } else null
+                        val hasSpoken = spokenRecognizedText.isNotBlank()
+
                         Column(
                             horizontalAlignment = Alignment.CenterHorizontally,
                             modifier = Modifier.fillMaxWidth().padding(vertical = 6.dp)
@@ -267,19 +273,19 @@ fun PlacementQuizView(
                                     .clickable {
                                         ttsManager?.speak(currentItem.speakingSentence, isSlow = false)
                                     }
-                                    .padding(horizontal = 12.dp, vertical = 6.dp)
+                                    .padding(horizontal = 14.dp, vertical = 7.dp)
                             ) {
-                                Icon(Icons.Default.PlayArrow, contentDescription = null, tint = Color.White, modifier = Modifier.size(16.dp))
-                                Spacer(modifier = Modifier.width(4.dp))
-                                Text("Nghe mẫu chuẩn", color = Color.White, fontSize = 12.sp)
+                                Icon(Icons.Default.PlayArrow, contentDescription = null, tint = Color(0xFF00F5D4), modifier = Modifier.size(18.dp))
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text("Nghe câu phát âm mẫu", color = Color.White, fontSize = 12.5.sp, fontWeight = FontWeight.Medium)
                             }
 
-                            Spacer(modifier = Modifier.height(14.dp))
+                            Spacer(modifier = Modifier.height(16.dp))
 
                             // Nút Micro phát âm
                             Box(
                                 modifier = Modifier
-                                    .size(72.dp)
+                                    .size(76.dp)
                                     .clip(CircleShape)
                                     .background(
                                         if (isRecordingSpeaking) Brush.radialGradient(listOf(Color(0xFFFF6B6B), Color(0x33FF6B6B)))
@@ -299,7 +305,12 @@ fun PlacementQuizView(
                                                 onResult = { text ->
                                                     spokenRecognizedText = text
                                                     isRecordingSpeaking = false
-                                                    soundEffectManager?.playCorrect()
+                                                    val res = com.example.util.PronunciationScorer.evaluate(currentTargetSentence, text)
+                                                    if (res.overallScore >= 60) {
+                                                        soundEffectManager?.playCorrect()
+                                                    } else {
+                                                        soundEffectManager?.playIncorrect()
+                                                    }
                                                 },
                                                 onError = { _ ->
                                                     isRecordingSpeaking = false
@@ -313,41 +324,56 @@ fun PlacementQuizView(
                                     imageVector = if (isRecordingSpeaking) Icons.Default.GraphicEq else Icons.Default.Mic,
                                     contentDescription = "Microphone",
                                     tint = Color(0xFF0B0D1B),
-                                    modifier = Modifier.size(36.dp)
+                                    modifier = Modifier.size(38.dp)
                                 )
                             }
 
                             Spacer(modifier = Modifier.height(10.dp))
                             Text(
-                                text = if (isRecordingSpeaking) "Đang lắng nghe giọng bạn... (Hãy nói to rõ)" else "Nhấn micro để luyện nói câu trên",
+                                text = if (isRecordingSpeaking) "Đang lắng nghe... (Hãy nói to, rõ ràng)"
+                                       else if (!hasSpoken) "Chạm micro để phát âm câu trên"
+                                       else "Chạm micro nếu muốn phát âm lại",
                                 color = if (isRecordingSpeaking) Color(0xFFFF9E00) else Color.White.copy(alpha = 0.8f),
-                                fontSize = 12.sp
+                                fontSize = 12.5.sp
                             )
 
-                            if (spokenRecognizedText.isNotBlank()) {
-                                Spacer(modifier = Modifier.height(8.dp))
-                                Text(
-                                    text = "Đã nhận diện: \"$spokenRecognizedText\"",
-                                    color = Color(0xFF00F5D4),
-                                    fontWeight = FontWeight.SemiBold,
-                                    fontSize = 13.sp
-                                )
+                            if (hasSpoken && evalResult != null) {
+                                Spacer(modifier = Modifier.height(10.dp))
+                                val isScorePass = evalResult.overallScore >= 60
+                                Box(
+                                    modifier = Modifier
+                                        .clip(RoundedCornerShape(12.dp))
+                                        .background(if (isScorePass) Color(0x2E00F5D4) else Color(0x2EFF6B6B))
+                                        .border(1.dp, if (isScorePass) Color(0xFF00F5D4) else Color(0xFFFF6B6B), RoundedCornerShape(12.dp))
+                                        .padding(horizontal = 14.dp, vertical = 6.dp)
+                                ) {
+                                    Text(
+                                        text = "Đã nhận diện: \"$spokenRecognizedText\" (${evalResult.overallScore}%)" +
+                                               if (isScorePass) " 🎉" else " • Chưa chuẩn",
+                                        color = if (isScorePass) Color(0xFF00F5D4) else Color(0xFFFF6B6B),
+                                        fontWeight = FontWeight.SemiBold,
+                                        fontSize = 12.5.sp
+                                    )
+                                }
                             }
 
-                            Spacer(modifier = Modifier.height(16.dp))
+                            Spacer(modifier = Modifier.height(18.dp))
 
-                            // Nút xác nhận hoàn tất nói
+                            // Nút xác nhận hoàn tất nói (chỉ mở khi đã nói)
                             Box(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .height(50.dp)
                                     .clip(RoundedCornerShape(14.dp))
-                                    .background(Brush.linearGradient(listOf(Color(0xFF00F5D4), Color(0xFF00B4D8))))
-                                    .clickable(enabled = !isAnswered) {
+                                    .background(
+                                        if (hasSpoken) Brush.linearGradient(listOf(Color(0xFF00F5D4), Color(0xFF00B4D8)))
+                                        else Brush.linearGradient(listOf(Color(0x33FFFFFF), Color(0x1AFFFFFF)))
+                                    )
+                                    .clickable(enabled = hasSpoken && !isAnswered) {
                                         isAnswered = true
                                         val latency = System.currentTimeMillis() - itemStartTime
-                                        val isCorrect = true // Đánh giá hoàn tất luyện phát âm
-                                        soundEffectManager?.playCorrect()
+                                        val finalScore = evalResult?.overallScore ?: 0
+                                        val isCorrect = finalScore >= 60
 
                                         val newTheta = AdaptiveDiagnosticEngine.updateTheta(
                                             currentTheta,
@@ -362,14 +388,13 @@ fun PlacementQuizView(
                                                 selectedIndex = 0,
                                                 isCorrect = isCorrect,
                                                 latencyMs = latency,
-                                                speakingScore = 85
+                                                speakingScore = finalScore
                                             )
                                         )
                                         answeredIds.add(currentItem.id)
 
                                         scope.launch {
                                             delay(400)
-                                            // Hoàn thành cả 4 giai đoạn -> Đánh giá tổng hợp và hiện Radar Card
                                             val profile = AdaptiveDiagnosticEngine.evaluateFinalProfile(
                                                 userId = userId,
                                                 goal = goal,
@@ -387,10 +412,10 @@ fun PlacementQuizView(
                                 contentAlignment = Alignment.Center
                             ) {
                                 Text(
-                                    text = "Hoàn tất phát âm & Tiếp tục ✨",
-                                    color = Color(0xFF0B0D1B),
+                                    text = if (hasSpoken) "Hoàn Tất & Xem Kết Quả ➔" else "Bấm Micro Để Luyện Nói 🎙️",
+                                    color = if (hasSpoken) Color(0xFF0B0D1B) else Color.White.copy(alpha = 0.5f),
                                     fontWeight = FontWeight.Bold,
-                                    fontSize = 15.sp
+                                    fontSize = 14.5.sp
                                 )
                             }
                         }

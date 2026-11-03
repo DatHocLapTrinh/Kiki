@@ -731,10 +731,9 @@ class StudyViewModel @Inject constructor(
                 val data = repository.getChaptersByPreference(_selectedLevel.value, _selectedSubject.value)
                 _availableChapters.value = data
 
-                val userId = _currentUserId.value
+                val userId = _currentUserId.value?.takeIf { it > 0 } ?: 1L
                 val progress = data.map { title ->
-                    if (userId == null || userId == -1L) 1
-                    else repository.getCurrentLessonNode(userId, title)
+                    repository.getCurrentLessonNode(userId, title)
                 }
                 _chapterProgress.value = progress
             } catch (e: Exception) {
@@ -756,8 +755,8 @@ class StudyViewModel @Inject constructor(
             val id = repository.getChapterIdByTitle(title)
             _currentChapterTitle.value = title
             _currentChapterIndex.value = index
-            val userId = _currentUserId.value
-            val savedNode = if (userId == null || userId == -1L) 1 else repository.getCurrentLessonNode(userId, title)
+            val userId = _currentUserId.value?.takeIf { it > 0 } ?: 1L
+            val savedNode = repository.getCurrentLessonNode(userId, title)
             _currentNode.value = savedNode
             if (id != -1L) loadQuestions(id, savedNode)
         }
@@ -866,10 +865,9 @@ class StudyViewModel @Inject constructor(
     val isGeneratingNextChapter: LiveData<Boolean> = _isGeneratingNextChapter
 
     fun completeCurrentLesson() {
-        val userId = _currentUserId.value ?: return
+        val userId = _currentUserId.value?.takeIf { it > 0 } ?: 1L
         val chapterTitle = _currentChapterTitle.value ?: return
-        val node = _currentNode.value ?: return
-        if (userId == -1L) return
+        val node = _currentNode.value ?: 1
 
         val isFreshChapterCompletion = (node < 6 && node + 1 >= 6)
         val nextNode = (node + 1).coerceAtMost(6)

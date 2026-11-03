@@ -153,13 +153,15 @@ fun CosmicPlanetLessonPopup(
 
                 Spacer(modifier = Modifier.height(4.dp))
 
-                // 2. Phụ đề tiến độ bài học (chỉ hiển thị tiến độ, không lặp lại XP)
+                // 2. Phụ đề tiến độ bài học (cập nhật chính xác số bài đã làm)
                 Text(
-                    text = when {
-                        isLocked -> if (isEnglish) "Locked milestone" else "Chưa mở khóa"
-                        isCompleted -> if (isEnglish) "Completed" else "Đã hoàn thành"
-                        else -> if (isEnglish) "Lesson 1 / 5" else "Bài học 1 / 5"
-                    },
+                    text = formatLessonSubtitle(
+                        completedLessons = stage.completedLessons,
+                        totalLessons = stage.totalLessons,
+                        isLocked = isLocked,
+                        isCompleted = isCompleted,
+                        isEnglish = isEnglish
+                    ),
                     color = Color(0xFF94A3B8),
                     fontSize = 13.sp,
                     fontWeight = FontWeight.Normal
@@ -227,5 +229,24 @@ fun CosmicPlanetLessonPopup(
                 }
             }
         }
+    }
+}
+
+/**
+ * Format phụ đề tiến độ bài học gọn gàng, chính xác theo số bài đã hoàn thành
+ */
+fun formatLessonSubtitle(
+    completedLessons: Int,
+    totalLessons: Int,
+    isLocked: Boolean,
+    isCompleted: Boolean,
+    isEnglish: Boolean = false
+): String {
+    val total = totalLessons.coerceAtLeast(1)
+    val currentLessonNum = (completedLessons + 1).coerceAtMost(total)
+    return when {
+        isLocked -> if (isEnglish) "Locked milestone" else "Chưa mở khóa"
+        isCompleted -> if (isEnglish) "Completed ($total/$total)" else "Đã hoàn thành ($total/$total)"
+        else -> if (isEnglish) "Lesson $currentLessonNum / $total" else "Bài học $currentLessonNum / $total"
     }
 }

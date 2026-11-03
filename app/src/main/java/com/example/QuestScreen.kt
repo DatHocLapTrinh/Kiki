@@ -195,6 +195,11 @@ fun QuestScreen(viewModel: StudyViewModel, onFinish: () -> Unit) {
                 )
             )
     ) {
+        // Nền Vũ Trụ Galaxy Siêu Thực Dịu Mắt
+        CosmicPhotorealisticSpaceBackground(
+            modifier = Modifier.fillMaxSize()
+        )
+
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -463,22 +468,13 @@ fun QuestScreen(viewModel: StudyViewModel, onFinish: () -> Unit) {
                                         }
                                     }
                                     QuestionType.SPEAKING_CHALLENGE -> {
-                                        Column {
-                                            Text(
-                                                text = if (isEnglish) "Speak this sentence aloud:" else "Hãy phát âm câu này:",
-                                                color = Color(0xB3FFFFFF),
-                                                fontSize = 11.5.sp,
-                                                fontWeight = FontWeight.Medium
-                                            )
-                                            Spacer(modifier = Modifier.height(4.dp))
-                                            Text(
-                                                text = currentQ.speakingSentence.ifEmpty { currentQ.question },
-                                                color = Color.White,
-                                                fontSize = 17.sp,
-                                                fontWeight = FontWeight.Bold,
-                                                lineHeight = 22.sp
-                                            )
-                                        }
+                                        Text(
+                                            text = if (isEnglish) "Listen to the audio & speak clearly into the microphone 🎙️" else "Lắng nghe câu mẫu và phát âm to, rõ ràng vào micro nhé! 🎙️",
+                                            color = Color.White,
+                                            fontSize = 14.5.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            lineHeight = 20.sp
+                                        )
                                     }
                                     else -> {
                                         // Multiple Choice: Question text + pronunciation button
@@ -889,11 +885,11 @@ fun QuestScreen(viewModel: StudyViewModel, onFinish: () -> Unit) {
                     // Post-check Sheet (Streamlined: zero repetitive text, clean actions)
                     val currentQ = questions[currentQuestion]
                     val bannerBg = if (isCurrentCorrect) Brush.verticalGradient(
-                        listOf(Color(0xF50D3320), Color(0xF5051810))
+                        listOf(Color(0xF00D2D2A), Color(0xF507161F))
                     ) else Brush.verticalGradient(
-                        listOf(Color(0xF53D1219), Color(0xF51E070B))
+                        listOf(Color(0xF03D1226), Color(0xF51A0714))
                     )
-                    val bannerBorder = if (isCurrentCorrect) Color(0xFF22C55E) else Color(0xFFEF4444)
+                    val bannerBorder = if (isCurrentCorrect) Color(0xFF00F5D4) else Color(0xFFFF6B6B)
 
                     val correctText = when (currentQ.type) {
                         QuestionType.SENTENCE_BUILDER -> currentQ.correctSentence
