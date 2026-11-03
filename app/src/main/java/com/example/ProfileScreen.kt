@@ -127,8 +127,13 @@ fun ProfileScreen(
         context.getSharedPreferences(SoundEffectManager.PREFS_NAME, android.content.Context.MODE_PRIVATE)
     }
     val selectedLevel by viewModel.selectedLevel.observeAsState("Beginner")
+    val batterySaver by viewModel.batterySaver.observeAsState(false)
     var soundEnabled by remember(userId) { mutableStateOf(settings.getBoolean("sound_enabled", true)) }
     var notificationsEnabled by remember(userId) { mutableStateOf(settings.getBoolean("notifications_enabled", true)) }
+    var hapticEnabled by remember(userId) { mutableStateOf(settings.getBoolean("haptic_enabled", true)) }
+    var dailyGoalXp by remember(userId) { mutableStateOf(settings.getInt("daily_goal_xp", 20)) }
+    var showDailyGoalDialog by remember { mutableStateOf(false) }
+    var showPrivacyDialog by remember { mutableStateOf(false) }
     var showVideoCall by remember { mutableStateOf(false) }
     var showPronouncePractice by remember { mutableStateOf(false) }
     var showSettingsSheet by remember { mutableStateOf(false) }
@@ -332,17 +337,58 @@ fun ProfileScreen(
                     }
                     KikiExplorerSection.SETTINGS -> {
                         ProfileSettingsSectionView(
+                            isEnglish = isEnglish,
+                            selectedLevel = selectedLevel,
+                            dailyGoalXp = dailyGoalXp,
                             soundEnabled = soundEnabled,
+                            hapticEnabled = hapticEnabled,
+                            batterySaver = batterySaver,
+                            notificationsEnabled = notificationsEnabled,
+                            onLanguageChanged = {
+                                haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.TextHandleMove)
+                                settings.edit().putBoolean("english", it).apply()
+                                viewModel.setEnglish(it)
+                            },
+                            onSelectLevelClick = {
+                                haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.TextHandleMove)
+                                showLevelDialog = true
+                            },
+                            onSelectDailyGoalClick = {
+                                haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.TextHandleMove)
+                                showDailyGoalDialog = true
+                            },
                             onSoundChanged = {
                                 haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.TextHandleMove)
                                 soundEnabled = it
                                 settings.edit().putBoolean("sound_enabled", it).apply()
                             },
+                            onHapticChanged = {
+                                haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.TextHandleMove)
+                                hapticEnabled = it
+                                settings.edit().putBoolean("haptic_enabled", it).apply()
+                            },
+                            onBatterySaverChanged = {
+                                haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.TextHandleMove)
+                                viewModel.setBatterySaver(it)
+                            },
+                            onNotificationsChanged = {
+                                haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.TextHandleMove)
+                                notificationsEnabled = it
+                                settings.edit().putBoolean("notifications_enabled", it).apply()
+                                if (it) {
+                                    KikiDailyReminderScheduler.scheduleDailyReminder(context)
+                                } else {
+                                    KikiDailyReminderScheduler.cancelDailyReminder(context)
+                                }
+                            },
+                            onPrivacyClick = {
+                                haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.TextHandleMove)
+                                showPrivacyDialog = true
+                            },
                             onLogoutClick = {
                                 haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.TextHandleMove)
                                 showLogoutDialog = true
-                            },
-                            isEnglish = isEnglish
+                            }
                         )
                     }
                 }
@@ -365,6 +411,32 @@ fun ProfileScreen(
                 showLevelDialog = false
             },
             onDismiss = { showLevelDialog = false }
+        )
+    }
+
+    if (showDailyGoalDialog) {
+        DailyGoalDialog(
+            currentGoal = dailyGoalXp,
+            isEnglish = isEnglish,
+            onGoalSelected = { newGoal ->
+                haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.LongPress)
+                dailyGoalXp = newGoal
+                settings.edit().putInt("daily_goal_xp", newGoal).apply()
+                android.widget.Toast.makeText(
+                    context,
+                    if (isEnglish) "Daily goal set to $newGoal XP" else "Đã đặt mục tiêu: $newGoal XP / ngày",
+                    android.widget.Toast.LENGTH_SHORT
+                ).show()
+                showDailyGoalDialog = false
+            },
+            onDismiss = { showDailyGoalDialog = false }
+        )
+    }
+
+    if (showPrivacyDialog) {
+        PrivacyAndTermsDialog(
+            isEnglish = isEnglish,
+            onDismiss = { showPrivacyDialog = false }
         )
     }
 
@@ -447,14 +519,54 @@ fun ProfileScreen(
 
     if (showSettingsSheet) {
         ProfileSettingsBottomSheet(
-            strings = strings,
             isEnglish = isEnglish,
+            selectedLevel = selectedLevel,
+            dailyGoalXp = dailyGoalXp,
             soundEnabled = soundEnabled,
+            hapticEnabled = hapticEnabled,
+            batterySaver = batterySaver,
+            notificationsEnabled = notificationsEnabled,
             onDismiss = { showSettingsSheet = false },
+            onLanguageChanged = {
+                haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.TextHandleMove)
+                settings.edit().putBoolean("english", it).apply()
+                viewModel.setEnglish(it)
+            },
+            onSelectLevelClick = {
+                haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.TextHandleMove)
+                showLevelDialog = true
+            },
+            onSelectDailyGoalClick = {
+                haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.TextHandleMove)
+                showDailyGoalDialog = true
+            },
             onSoundChanged = {
                 haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.TextHandleMove)
                 soundEnabled = it
                 settings.edit().putBoolean("sound_enabled", it).apply()
+            },
+            onHapticChanged = {
+                haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.TextHandleMove)
+                hapticEnabled = it
+                settings.edit().putBoolean("haptic_enabled", it).apply()
+            },
+            onBatterySaverChanged = {
+                haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.TextHandleMove)
+                viewModel.setBatterySaver(it)
+            },
+            onNotificationsChanged = {
+                haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.TextHandleMove)
+                notificationsEnabled = it
+                settings.edit().putBoolean("notifications_enabled", it).apply()
+                if (it) {
+                    KikiDailyReminderScheduler.scheduleDailyReminder(context)
+                } else {
+                    KikiDailyReminderScheduler.cancelDailyReminder(context)
+                }
+            },
+            onPrivacyClick = {
+                haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.TextHandleMove)
+                showPrivacyDialog = true
             },
             onLogoutClick = {
                 haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.TextHandleMove)
@@ -555,7 +667,7 @@ private fun ProfileHeader(
     isEnglish: Boolean,
     currentSection: KikiExplorerSection,
     onBackClick: () -> Unit = {},
-    onSettingsClick: () -> Unit
+    onSettingsClick: () -> Unit = {}
 ) {
     Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
         if (currentSection != KikiExplorerSection.PROFILE && currentSection != KikiExplorerSection.HUB) {
@@ -639,35 +751,6 @@ private fun ProfileHeader(
                     Icon(Icons.Default.Star, contentDescription = null, tint = Color(0xFFFFD166), modifier = Modifier.size(17.dp))
                     Text("$earnedStars", color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.ExtraBold)
                     Text(if (isEnglish) "STARS" else "SAO", color = Color(0xCCFFFFFF), fontSize = 7.5.sp)
-                }
-            }
-
-            if (currentSection != KikiExplorerSection.SETTINGS) {
-                // Quick Settings Action Button
-                Box(
-                    modifier = Modifier
-                        .size(54.dp)
-                        .clip(RoundedCornerShape(16.dp))
-                        .background(Color(0x66191438))
-                        .border(1.dp, Color(0x995C3DA0), RoundedCornerShape(16.dp))
-                        .clickable(onClick = onSettingsClick),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Icon(
-                            Icons.Default.Settings,
-                            contentDescription = if (isEnglish) "Settings" else "Cài đặt",
-                            tint = Color(0xFF51FAC1),
-                            modifier = Modifier.size(19.dp)
-                        )
-                        Spacer(modifier = Modifier.height(2.dp))
-                        Text(
-                            if (isEnglish) "SETTINGS" else "CÀI ĐẶT",
-                            color = Color(0xFF51FAC1),
-                            fontSize = 7.5.sp,
-                            fontWeight = FontWeight.Bold
-                        )
-                    }
                 }
             }
         }
@@ -1430,109 +1513,64 @@ private fun AchievementDetailDialog(
 
 @Composable
 private fun ProfileSettingsSectionView(
+    isEnglish: Boolean,
+    selectedLevel: String,
+    dailyGoalXp: Int,
     soundEnabled: Boolean,
+    hapticEnabled: Boolean,
+    batterySaver: Boolean,
+    notificationsEnabled: Boolean,
+    onLanguageChanged: (Boolean) -> Unit,
+    onSelectLevelClick: () -> Unit,
+    onSelectDailyGoalClick: () -> Unit,
     onSoundChanged: (Boolean) -> Unit,
-    onLogoutClick: () -> Unit,
-    isEnglish: Boolean
+    onHapticChanged: (Boolean) -> Unit,
+    onBatterySaverChanged: (Boolean) -> Unit,
+    onNotificationsChanged: (Boolean) -> Unit,
+    onPrivacyClick: () -> Unit,
+    onLogoutClick: () -> Unit
 ) {
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(bottom = 32.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
-    ) {
-        Text(
-            text = if (isEnglish) "PREFERENCES" else "TUỲ CHỌN HỆ THỐNG",
-            color = Color(0xFF51FAC1),
-            fontSize = 11.sp,
-            fontWeight = FontWeight.Bold,
-            letterSpacing = 1.sp
+    Box(modifier = Modifier.fillMaxWidth().padding(bottom = 32.dp)) {
+        ProfileSettingsContent(
+            isEnglish = isEnglish,
+            selectedLevel = selectedLevel,
+            dailyGoalXp = dailyGoalXp,
+            soundEnabled = soundEnabled,
+            hapticEnabled = hapticEnabled,
+            batterySaver = batterySaver,
+            notificationsEnabled = notificationsEnabled,
+            onLanguageChanged = onLanguageChanged,
+            onSelectLevelClick = onSelectLevelClick,
+            onSelectDailyGoalClick = onSelectDailyGoalClick,
+            onSoundChanged = onSoundChanged,
+            onHapticChanged = onHapticChanged,
+            onBatterySaverChanged = onBatterySaverChanged,
+            onNotificationsChanged = onNotificationsChanged,
+            onPrivacyClick = onPrivacyClick,
+            onLogoutClick = onLogoutClick
         )
-
-        // Sound Effects toggle
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .clip(RoundedCornerShape(20.dp))
-                .background(Color(0xFF131722))
-                .border(1.dp, Color(0x3351FAC1), RoundedCornerShape(20.dp))
-                .padding(16.dp)
-        ) {
-            ProfileSettingRow(
-                title = if (isEnglish) "Sound Effects" else "Hiệu Ứng Âm Thanh",
-                icon = Icons.AutoMirrored.Filled.VolumeUp,
-                checked = soundEnabled,
-                onCheckedChange = onSoundChanged
-            )
-        }
-
-        Spacer(modifier = Modifier.height(4.dp))
-
-        Text(
-            text = if (isEnglish) "ACCOUNT" else "TÀI KHOẢN",
-            color = Color(0xFF51FAC1),
-            fontSize = 11.sp,
-            fontWeight = FontWeight.Bold,
-            letterSpacing = 1.sp
-        )
-
-        // Logout button
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .clip(RoundedCornerShape(20.dp))
-                .background(Color(0xFF131722))
-                .border(1.dp, Color(0x33FF5252), RoundedCornerShape(20.dp))
-                .clickable(onClick = onLogoutClick)
-                .padding(16.dp)
-        ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Box(
-                        modifier = Modifier
-                            .size(36.dp)
-                            .clip(CircleShape)
-                            .background(Color(0x22FF5252)),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.Logout,
-                            contentDescription = null,
-                            tint = Color(0xFFFF5252),
-                            modifier = Modifier.size(18.dp)
-                        )
-                    }
-                    Spacer(modifier = Modifier.width(12.dp))
-                    Text(
-                        text = if (isEnglish) "Log Out" else "Đăng Xuất Tài Khoản",
-                        color = Color(0xFFFF5252),
-                        fontSize = 14.sp,
-                        fontWeight = FontWeight.Bold
-                    )
-                }
-                Icon(
-                    imageVector = Icons.AutoMirrored.Filled.ArrowForwardIos,
-                    contentDescription = null,
-                    tint = Color(0x66FF5252),
-                    modifier = Modifier.size(14.dp)
-                )
-            }
-        }
     }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun ProfileSettingsBottomSheet(
-    strings: AppStrings,
     isEnglish: Boolean,
+    selectedLevel: String,
+    dailyGoalXp: Int,
     soundEnabled: Boolean,
+    hapticEnabled: Boolean,
+    batterySaver: Boolean,
+    notificationsEnabled: Boolean,
     onDismiss: () -> Unit,
+    onLanguageChanged: (Boolean) -> Unit,
+    onSelectLevelClick: () -> Unit,
+    onSelectDailyGoalClick: () -> Unit,
     onSoundChanged: (Boolean) -> Unit,
+    onHapticChanged: (Boolean) -> Unit,
+    onBatterySaverChanged: (Boolean) -> Unit,
+    onNotificationsChanged: (Boolean) -> Unit,
+    onPrivacyClick: () -> Unit,
     onLogoutClick: () -> Unit
 ) {
     ModalBottomSheet(
@@ -1554,7 +1592,7 @@ private fun ProfileSettingsBottomSheet(
         ) {
             // Header
             Row(
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
@@ -1577,7 +1615,7 @@ private fun ProfileSettingsBottomSheet(
                             fontWeight = FontWeight.Bold
                         )
                         Text(
-                            text = if (isEnglish) "Sound and account settings" else "Âm thanh & đăng xuất tài khoản",
+                            text = if (isEnglish) "Customize your study experience" else "Tùy chỉnh trải nghiệm học tập của bạn",
                             color = Color(0x88FFFFFF),
                             fontSize = 11.sp
                         )
@@ -1594,105 +1632,399 @@ private fun ProfileSettingsBottomSheet(
                 }
             }
 
-            Spacer(modifier = Modifier.height(18.dp))
-
-            // Sound Effects Box
-            Text(
-                text = if (isEnglish) "PREFERENCES" else "TUỲ CHỌN HỆ THỐNG",
-                color = Color(0xFF51FAC1),
-                fontSize = 11.sp,
-                fontWeight = FontWeight.Bold,
-                letterSpacing = 1.sp
+            ProfileSettingsContent(
+                isEnglish = isEnglish,
+                selectedLevel = selectedLevel,
+                dailyGoalXp = dailyGoalXp,
+                soundEnabled = soundEnabled,
+                hapticEnabled = hapticEnabled,
+                batterySaver = batterySaver,
+                notificationsEnabled = notificationsEnabled,
+                onLanguageChanged = onLanguageChanged,
+                onSelectLevelClick = onSelectLevelClick,
+                onSelectDailyGoalClick = onSelectDailyGoalClick,
+                onSoundChanged = onSoundChanged,
+                onHapticChanged = onHapticChanged,
+                onBatterySaverChanged = onBatterySaverChanged,
+                onNotificationsChanged = onNotificationsChanged,
+                onPrivacyClick = onPrivacyClick,
+                onLogoutClick = onLogoutClick
             )
-            Spacer(modifier = Modifier.height(8.dp))
+        }
+    }
+}
 
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clip(RoundedCornerShape(20.dp))
-                    .background(Color(0x76181434))
-                    .border(1.dp, Color(0x555C3DA0), RoundedCornerShape(20.dp))
-                    .padding(14.dp)
-            ) {
+@Composable
+private fun ProfileSettingsContent(
+    isEnglish: Boolean,
+    selectedLevel: String,
+    dailyGoalXp: Int,
+    soundEnabled: Boolean,
+    hapticEnabled: Boolean,
+    batterySaver: Boolean,
+    notificationsEnabled: Boolean,
+    onLanguageChanged: (Boolean) -> Unit,
+    onSelectLevelClick: () -> Unit,
+    onSelectDailyGoalClick: () -> Unit,
+    onSoundChanged: (Boolean) -> Unit,
+    onHapticChanged: (Boolean) -> Unit,
+    onBatterySaverChanged: (Boolean) -> Unit,
+    onNotificationsChanged: (Boolean) -> Unit,
+    onPrivacyClick: () -> Unit,
+    onLogoutClick: () -> Unit
+) {
+    val context = LocalContext.current
+    Column(
+        modifier = Modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(16.dp)
+    ) {
+        // Section 1: HỌC TẬP & NGÔN NGỮ
+        Text(
+            text = if (isEnglish) "LEARNING & LANGUAGE" else "HỌC TẬP & NGÔN NGỮ",
+            color = Color(0xFF51FAC1),
+            fontSize = 11.5.sp,
+            fontWeight = FontWeight.Black,
+            letterSpacing = 1.2.sp
+        )
+
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(22.dp))
+                .background(Color(0xFF131722))
+                .border(1.dp, Color(0x3351FAC1), RoundedCornerShape(22.dp))
+                .padding(horizontal = 16.dp, vertical = 14.dp)
+        ) {
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                // Song ngữ (Bilingual)
+                ProfileSettingRow(
+                    title = if (isEnglish) "App Language / Song Ngữ" else "Chế Độ Song Ngữ (Bilingual)",
+                    subtitle = if (isEnglish) "English 🇬🇧 language enabled" else "Giao diện song ngữ Việt 🇻🇳 - Anh 🇬🇧",
+                    icon = Icons.Default.Language,
+                    checked = isEnglish,
+                    onCheckedChange = onLanguageChanged
+                )
+
+                HorizontalDivider(color = Color(0x1A51FAC1), thickness = 0.8.dp)
+
+                // Trình độ học
+                ProfileSettingActionRow(
+                    title = if (isEnglish) "Learning Level" else "Trình Độ Học Tập",
+                    subtitle = if (isEnglish) "Adjust curriculum syllabus" else "Điều chỉnh độ khó giáo trình & câu hỏi",
+                    valueBadge = selectedLevel,
+                    icon = Icons.Default.School,
+                    onClick = onSelectLevelClick
+                )
+
+                HorizontalDivider(color = Color(0x1A51FAC1), thickness = 0.8.dp)
+
+                // Mục tiêu hàng ngày
+                ProfileSettingActionRow(
+                    title = if (isEnglish) "Daily XP Goal" else "Mục Tiêu XP Hàng Ngày",
+                    subtitle = if (isEnglish) "Strengthen your cosmic streak" else "Duy trì ngọn lửa Streak mỗi ngày",
+                    valueBadge = "$dailyGoalXp XP",
+                    icon = Icons.Default.EmojiEvents,
+                    onClick = onSelectDailyGoalClick
+                )
+            }
+        }
+
+        // Section 2: ÂM THANH & TRẢI NGHIỆM
+        Text(
+            text = if (isEnglish) "AUDIO & EXPERIENCE" else "ÂM THANH & TRẢI NGHIỆM",
+            color = Color(0xFF51FAC1),
+            fontSize = 11.5.sp,
+            fontWeight = FontWeight.Black,
+            letterSpacing = 1.2.sp
+        )
+
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(22.dp))
+                .background(Color(0xFF131722))
+                .border(1.dp, Color(0x3351FAC1), RoundedCornerShape(22.dp))
+                .padding(horizontal = 16.dp, vertical = 14.dp)
+        ) {
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 ProfileSettingRow(
                     title = if (isEnglish) "Sound Effects" else "Hiệu Ứng Âm Thanh",
+                    subtitle = if (isEnglish) "Sound cues for answers & rewards" else "Âm thanh phản hồi khi làm bài & nhận sao",
                     icon = Icons.AutoMirrored.Filled.VolumeUp,
                     checked = soundEnabled,
                     onCheckedChange = onSoundChanged
                 )
+
+                HorizontalDivider(color = Color(0x1A51FAC1), thickness = 0.8.dp)
+
+                ProfileSettingRow(
+                    title = if (isEnglish) "Haptic Feedback" else "Phản Hồi Xúc Giác (Rung)",
+                    subtitle = if (isEnglish) "Gentle vibration when interacting" else "Rung nhẹ khi chạm và chọn câu trả lời",
+                    icon = Icons.Default.Vibration,
+                    checked = hapticEnabled,
+                    onCheckedChange = onHapticChanged
+                )
+
+                HorizontalDivider(color = Color(0x1A51FAC1), thickness = 0.8.dp)
+
+                ProfileSettingRow(
+                    title = if (isEnglish) "Battery Saver Mode" else "Chế Độ Tiết Kiệm Pin",
+                    subtitle = if (isEnglish) "Reduce cosmic background animation" else "Giảm hoạt ảnh vũ trụ để tối ưu thời lượng pin",
+                    icon = Icons.Default.BatteryChargingFull,
+                    checked = batterySaver,
+                    onCheckedChange = onBatterySaverChanged
+                )
             }
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            // Account / Logout
-            Text(
-                text = if (isEnglish) "ACCOUNT" else "TÀI KHOẢN",
-                color = Color(0xFF51FAC1),
-                fontSize = 11.sp,
-                fontWeight = FontWeight.Bold,
-                letterSpacing = 1.sp
-            )
-            Spacer(modifier = Modifier.height(8.dp))
-
-            OutlinedButton(
-                onClick = onLogoutClick,
-                modifier = Modifier.fillMaxWidth().height(48.dp),
-                shape = RoundedCornerShape(16.dp),
-                colors = ButtonDefaults.outlinedButtonColors(contentColor = Color(0xFFFF6B7A)),
-                border = androidx.compose.foundation.BorderStroke(1.dp, Color(0x666B3047))
-            ) {
-                Icon(Icons.AutoMirrored.Filled.Logout, contentDescription = null, modifier = Modifier.size(18.dp))
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(if (isEnglish) "Log Out" else "Đăng Xuất Tài Khoản", fontWeight = FontWeight.SemiBold, fontSize = 13.sp)
-            }
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            Text(
-                text = "Kiki Smart Learning • v1.0 Cosmic Edition",
-                color = Color(0x44FFFFFF),
-                fontSize = 10.sp,
-                modifier = Modifier.align(Alignment.CenterHorizontally)
-            )
         }
+
+        // Section 3: NHẮC NHỞ & CHẾ ĐỘ TẬP TRUNG
+        Text(
+            text = if (isEnglish) "REMINDERS & FOCUS" else "NHẮC NHỞ & CHẾ ĐỘ TẬP TRUNG",
+            color = Color(0xFF51FAC1),
+            fontSize = 11.5.sp,
+            fontWeight = FontWeight.Black,
+            letterSpacing = 1.2.sp
+        )
+
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(22.dp))
+                .background(Color(0xFF131722))
+                .border(1.dp, Color(0x3351FAC1), RoundedCornerShape(22.dp))
+                .padding(horizontal = 16.dp, vertical = 14.dp)
+        ) {
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                ProfileSettingRow(
+                    title = if (isEnglish) "Daily Streak Reminders (19:15 & 21:15)" else "Nhắc Nhở Cứu Streak Hàng Ngày",
+                    icon = Icons.Default.NotificationsActive,
+                    checked = notificationsEnabled,
+                    onCheckedChange = { checked ->
+                        onNotificationsChanged(checked)
+                        if (checked) {
+                            com.example.notification.KikiDailyReminderScheduler.scheduleAllReminders(context)
+                        } else {
+                            com.example.notification.KikiDailyReminderScheduler.cancelAllReminders(context)
+                        }
+                    }
+                )
+
+                HorizontalDivider(color = Color(0x1A51FAC1), thickness = 0.8.dp)
+
+                var focusModeState by remember {
+                    mutableStateOf(com.example.util.FocusModeManager.isFocusModeEnabled(context))
+                }
+                ProfileSettingRow(
+                    title = if (isEnglish) "Deep Focus Mode (Silence other apps)" else "Chế Độ Tập Trung (Tắt thông báo app khác)",
+                    icon = Icons.Default.NotificationsOff,
+                    checked = focusModeState,
+                    onCheckedChange = { checked ->
+                        focusModeState = checked
+                        com.example.util.FocusModeManager.setFocusModeEnabled(context, checked)
+                        if (checked && !com.example.util.FocusModeManager.hasDndPermission(context)) {
+                            com.example.util.FocusModeManager.openDndSettings(context)
+                        }
+                    }
+                )
+            }
+        }
+
+        // Section 4: THÔNG TIN & BẢO MẬT
+        Text(
+            text = if (isEnglish) "ABOUT & PRIVACY" else "THÔNG TIN & BẢO MẬT",
+            color = Color(0xFF51FAC1),
+            fontSize = 11.5.sp,
+            fontWeight = FontWeight.Black,
+            letterSpacing = 1.2.sp
+        )
+
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(22.dp))
+                .background(Color(0xFF131722))
+                .border(1.dp, Color(0x3351FAC1), RoundedCornerShape(22.dp))
+                .padding(horizontal = 16.dp, vertical = 14.dp)
+        ) {
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                ProfileSettingActionRow(
+                    title = if (isEnglish) "App Edition" else "Phiên Bản Ứng Dụng",
+                    subtitle = "Kiki Smart Learning Cosmic Edition",
+                    valueBadge = "v1.0",
+                    icon = Icons.Default.Info,
+                    onClick = {}
+                )
+
+                HorizontalDivider(color = Color(0x1A51FAC1), thickness = 0.8.dp)
+
+                ProfileSettingActionRow(
+                    title = if (isEnglish) "Privacy & Safety Policy" else "Chính Sách & Quyền Riêng Tư",
+                    subtitle = if (isEnglish) "How your progress data is secured" else "Bảo vệ thông tin cá nhân & tiến độ học",
+                    icon = Icons.Default.Shield,
+                    onClick = onPrivacyClick
+                )
+            }
+        }
+
+        // Section 5: TÀI KHOẢN & ĐĂNG XUẤT
+        Text(
+            text = if (isEnglish) "ACCOUNT" else "TÀI KHOẢN",
+            color = Color(0xFF51FAC1),
+            fontSize = 11.5.sp,
+            fontWeight = FontWeight.Black,
+            letterSpacing = 1.2.sp
+        )
+
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(22.dp))
+                .background(Color(0xFF131722))
+                .border(1.dp, Color(0x44FF5252), RoundedCornerShape(22.dp))
+                .clickable(onClick = onLogoutClick)
+                .padding(horizontal = 16.dp, vertical = 14.dp)
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Box(
+                        modifier = Modifier
+                            .size(38.dp)
+                            .clip(CircleShape)
+                            .background(Color(0x22FF5252)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.Logout,
+                            contentDescription = null,
+                            tint = Color(0xFFFF5252),
+                            modifier = Modifier.size(20.dp)
+                        )
+                    }
+                    Spacer(modifier = Modifier.width(12.dp))
+                    Column {
+                        Text(
+                            text = if (isEnglish) "Log Out" else "Đăng Xuất Tài Khoản",
+                            color = Color(0xFFFF5252),
+                            fontSize = 14.5.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Text(
+                            text = if (isEnglish) "Safely sign out from current session" else "Thoát tài khoản an toàn khỏi thiết bị",
+                            color = Color(0x99FF5252),
+                            fontSize = 11.sp
+                        )
+                    }
+                }
+                Icon(
+                    imageVector = Icons.AutoMirrored.Filled.ArrowForwardIos,
+                    contentDescription = null,
+                    tint = Color(0x66FF5252),
+                    modifier = Modifier.size(14.dp)
+                )
+            }
+        }
+
+        Spacer(modifier = Modifier.height(10.dp))
+        Text(
+            text = "Kiki Smart Learning • Cosmic Duolingo Edition",
+            color = Color(0x44FFFFFF),
+            fontSize = 11.sp,
+            modifier = Modifier.align(Alignment.CenterHorizontally)
+        )
     }
 }
 
 @Composable
-private fun ProfileLevelSelectionRow(title: String, currentLevel: String, onClick: () -> Unit) {
+private fun ProfileSettingActionRow(
+    title: String,
+    subtitle: String? = null,
+    valueBadge: String? = null,
+    icon: ImageVector,
+    iconTint: Color = Color(0xFF51FAC1),
+    onClick: () -> Unit
+) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(14.dp))
-            .background(Color(0x14FFFFFF))
             .clickable(onClick = onClick)
-            .padding(horizontal = 10.dp, vertical = 8.dp),
+            .padding(vertical = 4.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Box(modifier = Modifier.size(34.dp).clip(CircleShape).background(Color(0x2651FAC1)), contentAlignment = Alignment.Center) {
-                Icon(Icons.Default.School, contentDescription = title, tint = Color(0xFF51FAC1), modifier = Modifier.size(18.dp))
+        Row(
+            modifier = Modifier.weight(1f).padding(end = 8.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(36.dp)
+                    .clip(CircleShape)
+                    .background(Color(0x1A51FAC1)),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(icon, contentDescription = title, tint = iconTint, modifier = Modifier.size(18.dp))
             }
-            Spacer(modifier = Modifier.width(10.dp))
+            Spacer(modifier = Modifier.width(12.dp))
             Column {
-                Text(title, color = Color.White, fontSize = 13.sp)
-                Text(currentLevel, color = Color(0xFFFFD166), fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                Text(title, color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
             }
         }
-        Icon(Icons.AutoMirrored.Filled.ArrowForwardIos, contentDescription = null, tint = Color(0x66FFFFFF), modifier = Modifier.size(14.dp))
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            if (valueBadge != null) {
+                Text(
+                    text = valueBadge,
+                    color = Color(0xFFFFD166),
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.padding(end = 6.dp)
+                )
+            }
+            Icon(
+                Icons.AutoMirrored.Filled.ArrowForwardIos,
+                contentDescription = null,
+                tint = Color(0x66FFFFFF),
+                modifier = Modifier.size(13.dp)
+            )
+        }
     }
 }
 
 @Composable
-private fun ProfileSettingRow(title: String, icon: ImageVector, checked: Boolean, onCheckedChange: (Boolean) -> Unit) {
-    Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Box(modifier = Modifier.size(34.dp).clip(CircleShape).background(Color(0x1AFFFFFF)), contentAlignment = Alignment.Center) {
-                Icon(icon, contentDescription = title, tint = Color.White, modifier = Modifier.size(17.dp))
+private fun ProfileSettingRow(
+    title: String,
+    icon: ImageVector,
+    checked: Boolean,
+    subtitle: String? = null,
+    iconTint: Color = Color(0xFF51FAC1),
+    onCheckedChange: (Boolean) -> Unit
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceBetween
+    ) {
+        Row(
+            modifier = Modifier.weight(1f).padding(end = 12.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(36.dp)
+                    .clip(CircleShape)
+                    .background(Color(0x1A51FAC1)),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(icon, contentDescription = title, tint = iconTint, modifier = Modifier.size(18.dp))
             }
-            Spacer(modifier = Modifier.width(10.dp))
-            Text(title, color = Color.White, fontSize = 13.sp)
+            Spacer(modifier = Modifier.width(12.dp))
+            Column {
+                Text(title, color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
+            }
         }
         Switch(
             checked = checked,
@@ -1705,6 +2037,133 @@ private fun ProfileSettingRow(title: String, icon: ImageVector, checked: Boolean
             )
         )
     }
+}
+
+@Composable
+fun DailyGoalDialog(
+    currentGoal: Int,
+    isEnglish: Boolean,
+    onGoalSelected: (Int) -> Unit,
+    onDismiss: () -> Unit
+) {
+    val goals = if (isEnglish) {
+        listOf(
+            10 to ("Casual" to "10 XP per day • Relaxed pace"),
+            20 to ("Regular" to "20 XP per day • Balanced learning"),
+            30 to ("Serious" to "30 XP per day • Dedicated learner"),
+            50 to ("Intense" to "50 XP per day • Maximum progress")
+        )
+    } else {
+        listOf(
+            10 to ("Dễ dàng" to "10 XP / ngày • Tốc độ thư giãn"),
+            20 to ("Vừa sức" to "20 XP / ngày • Tốc độ cân bằng chuẩn"),
+            30 to ("Chăm chỉ" to "30 XP / ngày • Học tập nghiêm túc"),
+            50 to ("Cực gắt" to "50 XP / ngày • Tiến bộ nhanh nhất")
+        )
+    }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        containerColor = Color(0xFF14142B),
+        shape = RoundedCornerShape(24.dp),
+        title = {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(Icons.Default.EmojiEvents, contentDescription = null, tint = Color(0xFFFFD166), modifier = Modifier.size(24.dp))
+                Spacer(modifier = Modifier.width(10.dp))
+                Text(
+                    text = if (isEnglish) "Daily XP Goal" else "Mục Tiêu XP Mỗi Ngày",
+                    color = Color.White,
+                    fontWeight = FontWeight.ExtraBold,
+                    fontSize = 18.sp
+                )
+            }
+        },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text(
+                    text = if (isEnglish) "Set a daily target to maintain your cosmic streak and habits:"
+                    else "Đặt mục tiêu mỗi ngày để duy trì ngọn lửa Streak và thói quen học:",
+                    color = Color(0xB3FFFFFF),
+                    fontSize = 12.5.sp
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+                goals.forEach { (xpAmount, pair) ->
+                    val (label, desc) = pair
+                    val isSelected = currentGoal == xpAmount
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(14.dp))
+                            .background(if (isSelected) Color(0x3351FAC1) else Color(0x14FFFFFF))
+                            .border(1.dp, if (isSelected) Color(0xFF51FAC1) else Color(0x22FFFFFF), RoundedCornerShape(14.dp))
+                            .clickable { onGoalSelected(xpAmount) }
+                            .padding(horizontal = 14.dp, vertical = 10.dp)
+                    ) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(label, color = if (isSelected) Color(0xFF51FAC1) else Color.White, fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                                Text(desc, color = Color(0x99FFFFFF), fontSize = 11.sp)
+                            }
+                            if (isSelected) {
+                                Icon(Icons.Default.CheckCircle, contentDescription = null, tint = Color(0xFF51FAC1), modifier = Modifier.size(20.dp))
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onDismiss) {
+                Text(if (isEnglish) "Done" else "Xong", color = Color(0xFF51FAC1), fontWeight = FontWeight.Bold)
+            }
+        }
+    )
+}
+
+@Composable
+fun PrivacyAndTermsDialog(
+    isEnglish: Boolean,
+    onDismiss: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        containerColor = Color(0xFF14142B),
+        shape = RoundedCornerShape(24.dp),
+        title = {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(Icons.Default.Shield, contentDescription = null, tint = Color(0xFF51FAC1), modifier = Modifier.size(24.dp))
+                Spacer(modifier = Modifier.width(10.dp))
+                Text(
+                    text = if (isEnglish) "Privacy & Safety" else "Quyền Riêng Tư & An Toàn",
+                    color = Color.White,
+                    fontWeight = FontWeight.ExtraBold,
+                    fontSize = 18.sp
+                )
+            }
+        },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                Text(
+                    text = if (isEnglish)
+                        "Kiki Smart Learning is committed to safeguarding your personal progress data.\n\n• Your voice and learning progress are used solely to personalize spaced-repetition lessons.\n• AI Mentor interactions remain private to your session.\n• Zero third-party data tracking or ads."
+                    else
+                        "Kiki Smart Learning cam kết bảo vệ dữ liệu học tập cá nhân của bạn.\n\n• Dữ liệu giọng nói và tiến độ bài học chỉ dùng để tối ưu thuật toán ghi nhớ Spaced Repetition.\n• Các phiên tương tác với Gia sư AI Kiki được bảo mật an toàn cho phiên học của bạn.\n• Ứng dụng hoàn toàn không chứa quảng cáo và không chia sẻ dữ liệu cho bên thứ ba.",
+                    color = Color(0xCCFFFFFF),
+                    fontSize = 12.5.sp,
+                    lineHeight = 18.sp
+                )
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onDismiss) {
+                Text(if (isEnglish) "Understood" else "Đã Hiểu", color = Color(0xFF51FAC1), fontWeight = FontWeight.Bold)
+            }
+        }
+    )
 }
 
 @Composable
@@ -2054,13 +2513,6 @@ private fun KikiNavDrawerItem(
                     fontSize = 13.5.sp,
                     fontWeight = FontWeight.Bold
                 )
-                Text(
-                    text = subtitle,
-                    color = Color(0x99FFFFFF),
-                    fontSize = 10.5.sp,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
             }
             Spacer(modifier = Modifier.width(8.dp))
             Box(
@@ -2180,14 +2632,6 @@ private fun KikiExplorerHubView(
                         Spacer(modifier = Modifier.width(3.dp))
                         Text("$earnedStars", color = Color(0xFFFFD166), fontSize = 11.sp, fontWeight = FontWeight.Bold)
                     }
-                }
-                IconButton(onClick = onSettingsClick, modifier = Modifier.size(36.dp)) {
-                    Icon(
-                        Icons.Default.Settings,
-                        contentDescription = "Settings",
-                        tint = Color(0xFF51FAC1),
-                        modifier = Modifier.size(20.dp)
-                    )
                 }
             }
         }

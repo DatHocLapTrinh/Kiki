@@ -22,9 +22,11 @@ class DailyReminderReceiver : BroadcastReceiver() {
 
     override fun onReceive(context: Context, intent: Intent) {
         val action = intent.action
-        Log.d(TAG, "DailyReminderReceiver nhận broadcast với action: $action")
+        val slot = intent.getStringExtra(KikiDailyReminderScheduler.EXTRA_REMINDER_SLOT)
+            ?: KikiDailyReminderScheduler.SLOT_EVENING
+        Log.d(TAG, "DailyReminderReceiver nhận broadcast [action: $action, slot: $slot]")
 
-        // 1. Nếu đây là yêu cầu bắn thông báo thử nghiệm (Test tức thì / Hẹn giờ 5s)
+        // 1. Yêu cầu bắn thông báo thử nghiệm (Test tức thì / Hẹn giờ 5s)
         if (intent.getBooleanExtra("is_test", false)) {
             Log.d(TAG, "Kích hoạt thông báo thử nghiệm từ người dùng.")
             KikiNotificationManager.showFcmNotification(
@@ -36,29 +38,58 @@ class DailyReminderReceiver : BroadcastReceiver() {
             return
         }
 
-        // 2. Nếu thiết bị vừa khởi động lại (Reboot) hoặc App vừa được cập nhật -> Lên lịch lại
+        // 2. Nếu thiết bị vừa khởi động lại (Reboot) hoặc App vừa cập nhật -> Lên lịch lại toàn bộ
         if (action == Intent.ACTION_BOOT_COMPLETED || action == Intent.ACTION_MY_PACKAGE_REPLACED) {
             val prefs = context.getSharedPreferences(SoundEffectManager.PREFS_NAME, Context.MODE_PRIVATE)
             val enabled = prefs.getBoolean("notifications_enabled", true)
             if (enabled) {
-                Log.d(TAG, "Khởi tạo lại lịch nhắc nhở sau khi thiết bị khởi động lại.")
-                KikiDailyReminderScheduler.scheduleDailyReminder(context)
+                Log.d(TAG, "Khởi tạo lại toàn bộ lịch nhắc nhở sau khi thiết bị khởi động lại.")
+                KikiDailyReminderScheduler.scheduleAllReminders(context)
             }
             return
         }
 
-        // 2. Tự động lên lịch lại cho ngày kế tiếp (Chu kỳ mỗi ngày 20:00)
-        KikiDailyReminderScheduler.scheduleDailyReminder(context)
+        // 3. Tự động lên lịch lại mốc này cho chu kỳ ngày kế tiếp
+        when (slot) {
+            KikiDailyReminderScheduler.SLOT_EVENING -> {
+                KikiDailyReminderScheduler.scheduleSlot(
+                    context,
+                    KikiDailyReminderScheduler.SLOT_EVENING,
+                    KikiDailyReminderScheduler.HOUR_EVENING,
+                    KikiDailyReminderScheduler.MINUTE_EVENING,
+                    KikiDailyReminderScheduler.REQUEST_CODE_EVENING
+                )
+            }
+            KikiDailyReminderScheduler.SLOT_NIGHT -> {
+                KikiDailyReminderScheduler.scheduleSlot(
+                    context,
+                    KikiDailyReminderScheduler.SLOT_NIGHT,
+                    KikiDailyReminderScheduler.HOUR_NIGHT,
+                    KikiDailyReminderScheduler.MINUTE_NIGHT,
+                    KikiDailyReminderScheduler.REQUEST_CODE_NIGHT
+                )
+            }
+            KikiDailyReminderScheduler.SLOT_MORNING_SHIELD -> {
+                KikiDailyReminderScheduler.scheduleSlot(
+                    context,
+                    KikiDailyReminderScheduler.SLOT_MORNING_SHIELD,
+                    KikiDailyReminderScheduler.HOUR_MORNING,
+                    KikiDailyReminderScheduler.MINUTE_MORNING,
+                    KikiDailyReminderScheduler.REQUEST_CODE_MORNING
+                )
+            }
+        }
 
-        // 3. Kiểm tra cài đặt người dùng có cho phép nhận thông báo hay không
+        // 4. Kiểm tra cài đặt người dùng có cho phép nhận thông báo hay không
         val prefs = context.getSharedPreferences(SoundEffectManager.PREFS_NAME, Context.MODE_PRIVATE)
         val notificationsEnabled = prefs.getBoolean("notifications_enabled", true)
+        val isEnglish = prefs.getBoolean("english", false)
         if (!notificationsEnabled) {
-            Log.d(TAG, "Người dùng đã tắt nhận thông báo, bỏ qua chuông nhắc nhở.")
+            Log.d(TAG, "Người dùng đã tắt nhận thông báo, bỏ qua chuông nhắc nhở [$slot].")
             return
         }
 
-        // 4. Kiểm tra thông minh: Nếu hôm nay người dùng ĐÃ HỌC RỒI -> Bỏ qua, không làm phiền!
+        // 5. Kiểm tra thông minh với cơ sở dữ liệu:
         val pendingResult = goAsync()
         CoroutineScope(Dispatchers.IO).launch {
             try {
@@ -71,17 +102,37 @@ class DailyReminderReceiver : BroadcastReceiver() {
                 val profile = db.appDao().getAnyUserProfile()
                 val todayStr = SimpleDateFormat("yyyy-MM-dd", Locale.US).format(Date())
 
-                if (profile != null && profile.lastActiveDate == todayStr) {
-                    Log.d(TAG, "Hôm nay ($todayStr) bạn đã học rồi! Không gửi thông báo để tránh spam.")
-                } else {
-                    val streak = profile?.currentStreak ?: 0
-                    Log.d(TAG, "Người dùng chưa học hôm nay, kích hoạt thông báo cứu Streak ($streak ngày).")
-                    KikiNotificationManager.showStreakReminderNotification(context, streak)
+                when (slot) {
+                    KikiDailyReminderScheduler.SLOT_MORNING_SHIELD -> {
+                        // Sáng hôm sau: nếu có Khiên (> 0) mà Streak bị lỡ hôm qua -> báo cứu Streak bằng khiên
+                        val shields = profile?.streakShields ?: 0
+                        if (shields > 0 && profile != null && profile.lastActiveDate != todayStr) {
+                            Log.d(TAG, "Kích hoạt thông báo dùng Khiên cứu Streak sáng sớm.")
+                            KikiNotificationManager.showShieldRecoveryReminder(context, shields, isEnglish)
+                        }
+                    }
+                    KikiDailyReminderScheduler.SLOT_EVENING -> {
+                        // 19:15 Nhắc nhở nhẹ nhàng: chỉ gửi nếu HÔM NAY CHƯA HỌC
+                        if (profile != null && profile.lastActiveDate == todayStr) {
+                            Log.d(TAG, "Hôm nay ($todayStr) bạn đã học rồi! Bỏ qua mốc 19:15 để không gây phiền.")
+                        } else {
+                            Log.d(TAG, "Người dùng chưa học hôm nay, gửi nhắc nhở nhẹ nhàng 19:15.")
+                            KikiNotificationManager.showGentleDailyReminder(context, isEnglish)
+                        }
+                    }
+                    KikiDailyReminderScheduler.SLOT_NIGHT -> {
+                        // 21:15 Báo động giữ Streak: chỉ gửi nếu HÔM NAY CHƯA HỌC
+                        if (profile != null && profile.lastActiveDate == todayStr) {
+                            Log.d(TAG, "Hôm nay ($todayStr) bạn đã học rồi! Bỏ qua mốc 21:15 để không gây phiền.")
+                        } else {
+                            val streak = profile?.currentStreak ?: 0
+                            Log.d(TAG, "Người dùng chưa học hôm nay, kích hoạt báo động ngọn lửa Streak $streak ngày.")
+                            KikiNotificationManager.showUrgentStreakReminder(context, streak, isEnglish)
+                        }
+                    }
                 }
             } catch (e: Exception) {
                 Log.e(TAG, "Lỗi kiểm tra trạng thái học: ${e.message}", e)
-                // Dự phòng: Vẫn nhắc nhở để người dùng không quên học
-                KikiNotificationManager.showStreakReminderNotification(context, 0)
             } finally {
                 pendingResult.finish()
             }

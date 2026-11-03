@@ -75,26 +75,106 @@ object KikiNotificationManager {
     }
 
     /**
-     * Hiển thị thông báo Cứu Streak / Nhắc học thông minh mỗi tối 20:00
+     * Hiển thị thông báo Nhắc nhở nhẹ nhàng (Mốc 19:15 - Friendly Nudge)
      */
-    fun showStreakReminderNotification(context: Context, currentStreak: Int) {
-        if (!hasNotificationPermission(context)) {
-            Log.d(TAG, "Notification permission not granted, skipping streak reminder.")
-            return
-        }
+    fun showGentleDailyReminder(context: Context, isEnglish: Boolean = false) {
+        if (!hasNotificationPermission(context)) return
 
-        val title = if (currentStreak > 0) {
-            "🔥 Cứu chuỗi Streak $currentStreak ngày của bạn!"
+        val messages = if (isEnglish) {
+            listOf(
+                "🍃 Just 2 minutes with Kiki!" to "Unlock new vocabulary and power up your skills today. Small steps, huge progress!",
+                "🌟 Kiki is waiting in the Cosmos!" to "Take a quick learning break. Fresh challenges are ready for you!",
+                "🎯 1% better every day" to "You haven't practiced yet today! Hop in for a quick 2-minute session."
+            )
         } else {
-            "🌟 Kiki nhớ bạn rồi nè!"
+            listOf(
+                "🍃 Chỉ 2 phút giải lao cùng Kiki!" to "Cùng Kiki tích lũy thêm từ vựng mới cho ngày hôm nay nào. Kiến thức nhỏ, tiến bộ to!",
+                "🌟 Kiki đang đợi bạn trong vũ trụ!" to "Dành chút thời gian giải lao nạp năng lượng nhé. Thử thách thú vị đang chờ bạn!",
+                "🎯 Tiến bộ 1% mỗi ngày cùng Kiki" to "Hôm nay bạn chưa luyện tập đó nha! Vào làm nhanh 1 bài để giữ phong độ nào."
+            )
         }
 
-        val message = if (currentStreak > 0) {
-            "Chỉ còn vài tiếng nữa là kết thúc ngày! Hãy vào làm nhanh 1 bài tập 2 phút để không làm vụt tắt chuỗi ngọn lửa nhé."
+        val (title, body) = messages.random()
+        showNotification(context, title, body)
+    }
+
+    /**
+     * Hiển thị thông báo Cảnh báo giữ Streak khẩn trương (Mốc 21:15 - Urgent Streak Alarm)
+     */
+    fun showUrgentStreakReminder(context: Context, currentStreak: Int, isEnglish: Boolean = false) {
+        if (!hasNotificationPermission(context)) return
+
+        val (title, body) = when {
+            currentStreak <= 3 -> {
+                if (isEnglish) {
+                    val pool = listOf(
+                        "🔥 Keep the flame alive!" to "Complete a quick 2-minute lesson before midnight to lock in your daily streak!",
+                        "🚀 The day is almost over!" to "2 minutes before bed to hit your daily goal and earn bonus cosmic stars!"
+                    )
+                    pool.random()
+                } else {
+                    val pool = listOf(
+                        "🔥 Đừng để ngọn lửa Streak vụt tắt!" to "Vào làm nhanh 1 bài ngắn 2 phút để giữ chuỗi ngày đầu tiên bạn ơi. Bắt đầu thói quen ngay!",
+                        "🚀 Hôm nay sắp khép lại rồi!" to "2 phút cùng Kiki trước giờ ngủ để hoàn thành mục tiêu ngày và nhận ⭐ Sao thưởng nhé!"
+                    )
+                    pool.random()
+                }
+            }
+            currentStreak in 4..14 -> {
+                if (isEnglish) {
+                    val pool = listOf(
+                        "🔥 Alert! Your $currentStreak-day streak is on the line!" to "Midnight is approaching! Don't let your $currentStreak days of dedication slip away.",
+                        "🛡️ Guard your cosmic streak!" to "Kiki alert: Your streak is counting down! Hop in for 2 minutes to keep the fire burning."
+                    )
+                    pool.random()
+                } else {
+                    val pool = listOf(
+                        "🔥 Nguy hiểm! Chuỗi $currentStreak ngày rực lửa sắp tắt!" to "Chỉ còn vài tiếng nữa là qua ngày mới. Công sức $currentStreak ngày không thể uổng phí, vào học ngay!",
+                        "🛡️ Đừng để lửa tắt lúc nửa đêm!" to "Kiki cảnh báo: Chuỗi $currentStreak ngày đang đếm ngược! Chỉ 1 bài học ngắn để bảo vệ chuỗi."
+                    )
+                    pool.random()
+                }
+            }
+            else -> {
+                if (isEnglish) {
+                    val pool = listOf(
+                        "👑 $currentStreak-Day Legend at risk!" to "You've built an incredible record! Don't let tonight break your legendary cosmic streak.",
+                        "⚡ Keep the $currentStreak-day streak blazing!" to "Extend your record run! Rescue the streak before the clock strikes midnight."
+                    )
+                    pool.random()
+                } else {
+                    val pool = listOf(
+                        "👑 Huyền thoại $currentStreak ngày đang gặp nguy hiểm!" to "Bạn là một trong những học viên kiên trì nhất! Đừng để đêm nay cắt đứt chuỗi phong độ đỉnh cao.",
+                        "⚡ Kỷ lục $currentStreak ngày rực rỡ!" to "Nối dài chuỗi ngày vàng nào! Vào giải cứu ngọn lửa Streak trước khi đồng hồ điểm 00:00."
+                    )
+                    pool.random()
+                }
+            }
+        }
+
+        showNotification(context, title, body)
+    }
+
+    /**
+     * Hiển thị thông báo Khôi phục Streak bằng Khiên Vũ Trụ (Mốc 09:00 sáng hôm sau)
+     */
+    fun showShieldRecoveryReminder(context: Context, streakShields: Int, isEnglish: Boolean = false) {
+        if (!hasNotificationPermission(context)) return
+
+        val title = if (isEnglish) "🛡️ Streak Frozen! Restore with Shield" else "🛡️ Chuỗi Streak đã đóng băng! Khôi phục ngay"
+        val body = if (isEnglish) {
+            "You have $streakShields Cosmic Shield(s) available. Open Kiki to thaw and rescue your streak right now!"
         } else {
-            "Hôm nay bạn chưa học bài nào. Dành ra 3 phút luyện tập để tích lũy XP và leo Top bảng xếp hạng cùng Kiki nha!"
+            "Bạn đang có $streakShields Khiên Vũ Trụ. Hãy mở Kiki để dùng Khiên hồi sinh ngọn lửa Streak ngay hôm nay!"
         }
 
+        showNotification(context, title, body)
+    }
+
+    /**
+     * Phương thức hiển thị Notification chung với Icon, âm thanh và chuyển hướng
+     */
+    private fun showNotification(context: Context, title: String, message: String) {
         val intent = Intent(context, MainActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
             putExtra(EXTRA_TARGET_SCREEN, "journey")
@@ -129,10 +209,17 @@ object KikiNotificationManager {
 
         try {
             NotificationManagerCompat.from(context).notify(NOTIFICATION_ID_STREAK, notification)
-            Log.d(TAG, "Streak reminder notification shown.")
+            Log.d(TAG, "Notification shown: $title")
         } catch (e: SecurityException) {
             Log.w(TAG, "SecurityException while showing notification: ${e.message}")
         }
+    }
+
+    /**
+     * Hiển thị thông báo Cứu Streak / Nhắc học thông minh mỗi tối (Hỗ trợ tương thích ngược)
+     */
+    fun showStreakReminderNotification(context: Context, currentStreak: Int) {
+        showUrgentStreakReminder(context, currentStreak, isEnglish = false)
     }
 
     /**

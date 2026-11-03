@@ -94,7 +94,7 @@ fun JourneyMapScreen(
                 .fillMaxSize()
                 .verticalScroll(scrollState)
                 .statusBarsPadding()
-                .padding(top = 12.dp, bottom = 124.dp),
+                .padding(top = 12.dp, bottom = 160.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             JourneyTopBar(
@@ -164,24 +164,12 @@ private fun JourneyTopBar(
     ) {
         Column(modifier = Modifier.weight(1f)) {
             Text(
-                text = strings.mapTitle,
-                color = Color(0xFF51FAC1),
-                fontSize = 11.sp,
-                fontWeight = FontWeight.Bold,
-                letterSpacing = 1.2.sp
-            )
-            Text(
                 text = if (isEnglish) "$userName's Roadmap" else "Lộ trình của $userName",
                 color = Color.White,
                 fontSize = 22.sp,
                 fontWeight = FontWeight.Black,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
-            )
-            Text(
-                text = if (isEnglish) "Master English step-by-step" else "Lộ trình chinh phục tiếng Anh từng bước",
-                color = Color(0xB3FFFFFF),
-                fontSize = 12.sp
             )
         }
         Spacer(modifier = Modifier.width(12.dp))

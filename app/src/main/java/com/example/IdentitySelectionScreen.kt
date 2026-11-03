@@ -60,10 +60,17 @@ fun IdentityContent(
     val context = LocalContext.current
     val strings = LocalAppStrings.current
     val isAuthLoading by viewModel.isAuthLoading.observeAsState(false)
+    var authProviderSelected by remember { mutableStateOf<String?>(null) }
     var showEmailForm by remember { mutableStateOf(false) }
     var isSignUp by remember { mutableStateOf(false) }
     val coroutineScope = rememberCoroutineScope()
     val scrollState = rememberScrollState()
+
+    LaunchedEffect(isAuthLoading) {
+        if (!isAuthLoading) {
+            authProviderSelected = null
+        }
+    }
 
     Box(modifier = Modifier.fillMaxSize()) {
         Column(
@@ -135,8 +142,9 @@ fun IdentityContent(
 
                     // 1. Nút "Tiếp tục với Google"
                     GoogleSignInButton(
-                        isLoading = isAuthLoading,
+                        isLoading = isAuthLoading && authProviderSelected == "google",
                         onClick = {
+                            authProviderSelected = "google"
                             viewModel.signInWithGoogle(
                                 activityContext = context,
                                 onSuccess = onLoginSuccess,
@@ -151,8 +159,9 @@ fun IdentityContent(
 
                     // 2. Nút "Khám phá ngay (Chế độ Khách)"
                     GuestSignInButton(
-                        isLoading = isAuthLoading,
+                        isLoading = isAuthLoading && authProviderSelected == "guest",
                         onClick = {
+                            authProviderSelected = "guest"
                             viewModel.signInAsGuest(
                                 onSuccess = onLoginSuccess,
                                 onError = { message ->
@@ -364,23 +373,43 @@ fun GuestSignInButton(
             .padding(horizontal = 16.dp),
         contentAlignment = Alignment.Center
     ) {
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.Center
-        ) {
-            Icon(
-                imageVector = Icons.Default.Explore,
-                contentDescription = null,
-                tint = Color(0xFF51FAC1),
-                modifier = Modifier.size(20.dp)
-            )
-            Spacer(modifier = Modifier.width(10.dp))
-            Text(
-                text = "Khám phá ngay (Chế độ Khách)",
-                color = Color(0xFF51FAC1),
-                fontWeight = FontWeight.Bold,
-                fontSize = 14.sp
-            )
+        if (isLoading) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.Center
+            ) {
+                CircularProgressIndicator(
+                    modifier = Modifier.size(20.dp),
+                    color = Color(0xFF51FAC1),
+                    strokeWidth = 2.dp
+                )
+                Spacer(modifier = Modifier.width(10.dp))
+                Text(
+                    text = "Đang khởi tạo tài khoản Khách...",
+                    color = Color(0xFF51FAC1),
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 14.sp
+                )
+            }
+        } else {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.Center
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Explore,
+                    contentDescription = null,
+                    tint = Color(0xFF51FAC1),
+                    modifier = Modifier.size(20.dp)
+                )
+                Spacer(modifier = Modifier.width(10.dp))
+                Text(
+                    text = "Khám phá ngay (Chế độ Khách)",
+                    color = Color(0xFF51FAC1),
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 14.sp
+                )
+            }
         }
     }
 }
