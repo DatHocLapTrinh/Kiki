@@ -1,41 +1,29 @@
 package com.example.ui
 
-import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.VolumeUp
-import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.filled.Extension
-import androidx.compose.material.icons.filled.Style
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.scale
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.model.MatchingPair
@@ -72,10 +60,8 @@ fun MatchingPairsView(
     var wrongPair by remember(pairs) { mutableStateOf<Pair<Int, Int>?>(null) }
     var errorCount by remember(pairs) { mutableIntStateOf(0) }
 
-    // Evaluates a candidate match when both sides have a selection
     fun evaluateMatch(engId: Int, vnId: Int) {
         if (engId == vnId) {
-            // Match found!
             val updatedMatched = matchedIds + engId
             matchedIds = updatedMatched
             selectedEnglishId = null
@@ -88,7 +74,6 @@ fun MatchingPairsView(
                 onAllMatched(errorCount)
             }
         } else {
-            // Mismatch
             errorCount++
             wrongPair = Pair(engId, vnId)
             haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
@@ -108,102 +93,30 @@ fun MatchingPairsView(
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 0.dp, vertical = 2.dp),
+            .padding(horizontal = 4.dp, vertical = 2.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        // Tag & Match Progress Header
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Box(
+        // Subtle pair counter badge
+        if (matchedIds.size < pairs.size) {
+            Row(
                 modifier = Modifier
-                    .weight(1f, fill = false)
-                    .clip(RoundedCornerShape(10.dp))
-                    .background(Color(0x3338BDF8))
-                    .border(1.dp, Color(0x6638BDF8), RoundedCornerShape(10.dp))
-                    .padding(horizontal = 10.dp, vertical = 6.dp)
-            ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(
-                        Icons.Default.Style,
-                        contentDescription = null,
-                        tint = Color(0xFF38BDF8),
-                        modifier = Modifier.size(14.dp)
-                    )
-                    Spacer(modifier = Modifier.width(6.dp))
-                    Text(
-                        text = if (isEnglish) "PAIR MATCHING 🃏" else "GHÉP CẶP TỪ VỰNG 🃏",
-                        color = Color(0xFF38BDF8),
-                        fontWeight = FontWeight.ExtraBold,
-                        fontSize = 11.sp,
-                        letterSpacing = 0.5.sp,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                }
-            }
-
-            // Progress text: 3/4
-            Box(
-                modifier = Modifier
-                    .clip(RoundedCornerShape(12.dp))
-                    .background(Color(0x2251FAC1))
-                    .border(1.dp, Color(0x5551FAC1), RoundedCornerShape(12.dp))
-                    .padding(horizontal = 10.dp, vertical = 4.dp)
+                    .fillMaxWidth()
+                    .padding(bottom = 10.dp, end = 2.dp),
+                horizontalArrangement = Arrangement.End
             ) {
                 Text(
-                    text = "${matchedIds.size}/${pairs.size} ${if (isEnglish) "Pairs" else "Cặp"}",
-                    color = Color(0xFF51FAC1),
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 12.sp
+                    text = "${matchedIds.size}/${pairs.size} ${if (isEnglish) "Pairs matched" else "Cặp đã ghép"}",
+                    color = Color(0x9951FAC1),
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Bold
                 )
             }
         }
 
-        Spacer(modifier = Modifier.height(10.dp))
-
-        // Progress bar
-        val progressRatio = if (pairs.isNotEmpty()) matchedIds.size.toFloat() / pairs.size else 0f
-        val animatedProgress by animateFloatAsState(
-            targetValue = progressRatio,
-            animationSpec = spring(stiffness = Spring.StiffnessMediumLow),
-            label = "matching_progress"
-        )
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(6.dp)
-                .clip(CircleShape)
-                .background(Color(0x33FFFFFF))
-        ) {
-            Box(
-                modifier = Modifier
-                    .fillMaxHeight()
-                    .fillMaxWidth(animatedProgress)
-                    .clip(CircleShape)
-                    .background(Brush.horizontalGradient(listOf(Color(0xFF38BDF8), Color(0xFF51FAC1))))
-            )
-        }
-
-        Spacer(modifier = Modifier.height(14.dp))
-
-        // Instruction Subtitle
-        Text(
-            text = if (isEnglish) "Tap an English word and its Vietnamese meaning to form a pair!" else "Chạm vào từ tiếng Anh và nghĩa tiếng Việt tương ứng để ghép cặp!",
-            color = Color(0xCCFFFFFF),
-            fontSize = 13.sp,
-            textAlign = TextAlign.Center,
-            lineHeight = 18.sp
-        )
-
-        Spacer(modifier = Modifier.height(16.dp))
-
         // 2-Column Matching Cards Grid
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
+            horizontalArrangement = Arrangement.spacedBy(10.dp)
         ) {
             // English Column (Left)
             Column(
@@ -304,7 +217,7 @@ private fun MatchingCard(
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .defaultMinSize(minHeight = 56.dp)
+            .defaultMinSize(minHeight = 58.dp)
             .graphicsLayer {
                 scaleX = animatedScale
                 scaleY = animatedScale
