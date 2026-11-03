@@ -83,11 +83,23 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    override fun onResume() {
+        super.onResume()
+        // Kích hoạt Focus Mode (chặn thông báo app khác + giữ màn hình sáng) nếu người dùng đã bật
+        com.example.util.FocusModeManager.enableFocusMode(this, this)
+    }
+
+    override fun onPause() {
+        super.onPause()
+        // Khôi phục lại trạng thái thông báo bình thường khi rời app
+        com.example.util.FocusModeManager.disableFocusMode(this, this)
+    }
+
     private fun initDailyReminder() {
         val prefs = getSharedPreferences(SoundEffectManager.PREFS_NAME, Context.MODE_PRIVATE)
         val notificationsEnabled = prefs.getBoolean("notifications_enabled", true)
         if (notificationsEnabled) {
-            KikiDailyReminderScheduler.scheduleDailyReminder(this)
+            KikiDailyReminderScheduler.scheduleAllReminders(this)
         }
     }
 

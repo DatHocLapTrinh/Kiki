@@ -10,6 +10,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -54,7 +55,7 @@ data class ShopItem(
 // ===================== MAIN SCREEN =====================
 
 @Composable
-fun ShopScreen(viewModel: StudyViewModel) {
+fun ShopScreen(viewModel: StudyViewModel, onBack: (() -> Unit)? = null) {
     val isEnglish by viewModel.isEnglish.observeAsState(false)
     val stars by viewModel.stars.observeAsState(0)
     val hearts by viewModel.hearts.observeAsState(5)
@@ -63,6 +64,7 @@ fun ShopScreen(viewModel: StudyViewModel) {
 
     var showConfirmDialog by remember { mutableStateOf<ShopItem?>(null) }
     var showSuccessToast by remember { mutableStateOf<String?>(null) }
+    var showStreakRestoredEffect by remember { mutableStateOf(false) }
 
     val shopItems = listOf(
         ShopItem(
@@ -125,7 +127,7 @@ fun ShopScreen(viewModel: StudyViewModel) {
         ) {
             // ── Header ──
             item(key = "shop_header") {
-                ShopHeader(isEnglish = isEnglish)
+                ShopHeader(isEnglish = isEnglish, onBack = onBack)
             }
 
             // ── Currency Bar (Làm nổi bật số dư) ──
@@ -137,6 +139,29 @@ fun ShopScreen(viewModel: StudyViewModel) {
                     isEnglish = isEnglish
                 )
             }
+
+            // ── Hub Thử Nghiệm Nhanh (Dành cho việc kiểm tra logic) ──
+            item(key = "test_hub") {
+                ShopTestingHubCard(
+                    stars = stars,
+                    hearts = hearts,
+                    shields = streakShields,
+                    isEnglish = isEnglish,
+                    onAddStars = { viewModel.addStars(100) },
+                    onDeductHeart = { viewModel.deductHeart() },
+                    onRefillHearts = { viewModel.refillHearts(5) },
+                    onAddShield = { viewModel.addShields(1) },
+                    onTriggerRecovery = {
+                        val success = viewModel.restoreStreakWithShield()
+                        if (success) {
+                            showStreakRestoredEffect = true
+                        } else {
+                            viewModel.soundEffectManager.playIncorrect()
+                        }
+                    }
+                )
+            }
+
 
             item(key = "item_heart_1") {
                 ShopItemCard(
@@ -231,13 +256,31 @@ fun ShopScreen(viewModel: StudyViewModel) {
 // ===================== HEADER =====================
 
 @Composable
-fun ShopHeader(isEnglish: Boolean) {
+fun ShopHeader(isEnglish: Boolean, onBack: (() -> Unit)? = null) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .padding(vertical = 4.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
+        if (onBack != null) {
+            IconButton(
+                onClick = onBack,
+                modifier = Modifier
+                    .size(40.dp)
+                    .clip(CircleShape)
+                    .background(Color(0x26FFFFFF))
+            ) {
+                Icon(
+                    Icons.AutoMirrored.Filled.ArrowBack,
+                    contentDescription = "Back",
+                    tint = Color.White,
+                    modifier = Modifier.size(22.dp)
+                )
+            }
+            Spacer(modifier = Modifier.width(10.dp))
+        }
+
         Box(
             modifier = Modifier
                 .size(44.dp)
@@ -276,6 +319,141 @@ fun ShopHeader(isEnglish: Boolean) {
                     color = Color(0xB3FFFFFF),
                     fontSize = 13.sp
                 )
+            }
+        }
+    }
+}
+
+// ===================== TESTING & DEBUG HUB CARD =====================
+
+@Composable
+fun ShopTestingHubCard(
+    stars: Int,
+    hearts: Int,
+    shields: Int,
+    isEnglish: Boolean,
+    onAddStars: () -> Unit,
+    onDeductHeart: () -> Unit,
+    onRefillHearts: () -> Unit,
+    onAddShield: () -> Unit,
+    onTriggerRecovery: () -> Unit
+) {
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(20.dp))
+            .background(
+                Brush.verticalGradient(
+                    listOf(Color(0x3351FAC1), Color(0x1A141A29))
+                )
+            )
+            .border(1.dp, Color(0x6651FAC1), RoundedCornerShape(20.dp))
+            .padding(16.dp)
+    ) {
+        Column {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text("🧪", fontSize = 18.sp)
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = if (isEnglish) "TEST & VERIFY LOGIC HUB" else "BẢNG KIỂM THỬ LOGIC (MẠNG & KHIÊN)",
+                    color = Color(0xFF51FAC1),
+                    fontWeight = FontWeight.Black,
+                    fontSize = 12.5.sp,
+                    letterSpacing = 1.sp
+                )
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            // Row 1: Add Free Stars & Refill Hearts
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Button(
+                    onClick = onAddStars,
+                    modifier = Modifier.weight(1f).height(38.dp),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF22C55E)),
+                    contentPadding = PaddingValues(horizontal = 8.dp)
+                ) {
+                    Text(
+                        if (isEnglish) "+100 ⭐ Free" else "+100 ⭐ Test",
+                        color = Color(0xFF0F172A),
+                        fontWeight = FontWeight.Black,
+                        fontSize = 12.sp
+                    )
+                }
+
+                Button(
+                    onClick = onDeductHeart,
+                    modifier = Modifier.weight(1f).height(38.dp),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0x33EF4444)),
+                    contentPadding = PaddingValues(horizontal = 8.dp)
+                ) {
+                    Text(
+                        if (isEnglish) "-1 ❤️ (Wrong)" else "-1 ❤️ (Test Sai)",
+                        color = Color(0xFFFF5252),
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 12.sp
+                    )
+                }
+
+                Button(
+                    onClick = onRefillHearts,
+                    modifier = Modifier.weight(1f).height(38.dp),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0x3322C55E)),
+                    contentPadding = PaddingValues(horizontal = 8.dp)
+                ) {
+                    Text(
+                        if (isEnglish) "Refill 5 ❤️" else "Hồi 5 ❤️",
+                        color = Color(0xFF51FAC1),
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 12.sp
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            // Row 2: Add shield & Trigger recovery effect
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Button(
+                    onClick = onAddShield,
+                    modifier = Modifier.weight(0.9f).height(38.dp),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0x3300F5D4)),
+                    contentPadding = PaddingValues(horizontal = 8.dp)
+                ) {
+                    Icon(Icons.Default.Shield, contentDescription = null, tint = Color(0xFF00F5D4), modifier = Modifier.size(16.dp))
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text(
+                        if (isEnglish) "+1 Shield" else "+1 Khiên",
+                        color = Color(0xFF00F5D4),
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 12.sp
+                    )
+                }
+
+                Button(
+                    onClick = onTriggerRecovery,
+                    modifier = Modifier.weight(1.5f).height(38.dp),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF00F5D4)),
+                    contentPadding = PaddingValues(horizontal = 8.dp)
+                ) {
+                    Text(
+                        if (isEnglish) "🛡️ Test Shield Effect" else "🛡️ Kích Hoạt Khôi Phục Khiên",
+                        color = Color(0xFF0F172A),
+                        fontWeight = FontWeight.Black,
+                        fontSize = 11.5.sp
+                    )
+                }
             }
         }
     }

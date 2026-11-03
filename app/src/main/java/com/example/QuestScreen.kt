@@ -131,6 +131,22 @@ fun QuestScreen(viewModel: StudyViewModel, onFinish: () -> Unit) {
     val haptic = LocalHapticFeedback.current
     val strings = LocalAppStrings.current
     val isEnglish by viewModel.isEnglish.observeAsState(false)
+
+    // Chế độ tập trung (Focus Mode): Giữ màn hình luôn sáng, không bị tắt màn hình / gây gián đoạn khi đang làm bài
+    val activity = LocalContext.current as? android.app.Activity
+    DisposableEffect(Unit) {
+        activity?.window?.addFlags(android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+        onDispose {
+            activity?.window?.clearFlags(android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+        }
+    }
+
+    val streakShields by viewModel.streakShields.observeAsState(1)
+    val streak by viewModel.streak.observeAsState(0)
+
+    var showMockShopSheet by remember { mutableStateOf(false) }
+    var showStreakRestoredEffect by remember { mutableStateOf(false) }
+
     val questions by viewModel.questions.observeAsState(emptyList())
     val chapterTitle by viewModel.currentChapterTitle.observeAsState("English Fundamentals")
     val currentNode by viewModel.currentNode.observeAsState(1)
@@ -146,6 +162,10 @@ fun QuestScreen(viewModel: StudyViewModel, onFinish: () -> Unit) {
     }
 
     var currentQuestion by remember { mutableIntStateOf(0) }
+    var remainingRetries by remember(currentQuestion) {
+        mutableIntStateOf(questions.getOrNull(currentQuestion)?.maxRetries ?: 1)
+    }
+    var isRetryPhase by remember { mutableStateOf(false) }
     var selectedOption by remember { mutableIntStateOf(-1) }
     var selectedTokenIndices by remember(currentQuestion) { mutableStateOf<List<Int>>(emptyList()) }
     var isMatchingCompleted by remember(currentQuestion) { mutableStateOf(false) }
@@ -274,27 +294,60 @@ fun QuestScreen(viewModel: StudyViewModel, onFinish: () -> Unit) {
 
                 Spacer(modifier = Modifier.width(12.dp))
 
-                // Hearts Pill (consistent with home screen)
+                // Hearts & Shield Indicators
                 Row(
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(14.dp))
-                        .background(Color(0x22FF4D6D))
-                        .border(1.dp, Color(0x44FF4D6D), RoundedCornerShape(14.dp))
-                        .padding(horizontal = 9.dp, vertical = 5.dp),
-                    verticalAlignment = Alignment.CenterVertically
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
-                    Image(
-                        painter = painterResource(id = R.drawable.ic_stat_heart),
-                        contentDescription = "Hearts",
-                        modifier = Modifier.size(16.dp)
-                    )
-                    Spacer(modifier = Modifier.width(4.dp))
-                    Text(
-                        text = "$hearts",
-                        color = Color(0xFFFF5252),
-                        fontSize = 13.sp,
-                        fontWeight = FontWeight.ExtraBold
-                    )
+                    // Hearts Pill
+                    Row(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(14.dp))
+                            .background(Color(0x22FF4D6D))
+                            .border(1.dp, Color(0x44FF4D6D), RoundedCornerShape(14.dp))
+                            .clickable { showMockShopSheet = true }
+                            .padding(horizontal = 9.dp, vertical = 5.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Image(
+                            painter = painterResource(id = R.drawable.ic_stat_heart),
+                            contentDescription = "Hearts",
+                            modifier = Modifier.size(16.dp)
+                        )
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text(
+                            text = "$hearts",
+                            color = Color(0xFFFF5252),
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.ExtraBold
+                        )
+                    }
+
+                    // Shields Pill (if shields available)
+                    if (streakShields > 0) {
+                        Row(
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(14.dp))
+                                .background(Color(0x3351FAC1))
+                                .border(1.dp, Color(0x6651FAC1), RoundedCornerShape(14.dp))
+                                .clickable { showMockShopSheet = true }
+                                .padding(horizontal = 8.dp, vertical = 5.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Image(
+                                painter = painterResource(id = R.drawable.ic_stat_shield),
+                                contentDescription = "Shields",
+                                modifier = Modifier.size(15.dp)
+                            )
+                            Spacer(modifier = Modifier.width(3.dp))
+                            Text(
+                                text = "$streakShields",
+                                color = Color(0xFF51FAC1),
+                                fontWeight = FontWeight.ExtraBold,
+                                fontSize = 12.sp
+                            )
+                        }
+                    }
                 }
             }
 
@@ -844,12 +897,22 @@ fun QuestScreen(viewModel: StudyViewModel, onFinish: () -> Unit) {
                                     }
                                     val checkEmotion = if (consecutiveCorrect >= 3) MascotEmotion.STREAK else MascotEmotion.CHEER
                                     mascotSpeech = MascotQuotes.getQuoteForEmotion(checkEmotion, isEnglish, consecutiveCorrect)
+                                    isRetryPhase = false
                                 } else {
                                     consecutiveCorrect = 0
                                     haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
                                     viewModel.soundEffectManager.playIncorrect()
                                     mascotSpeech = MascotQuotes.getQuoteForEmotion(MascotEmotion.EMPATHY, isEnglish, consecutiveCorrect)
-                                    viewModel.deductHeart(1)
+                                    val newHearts = viewModel.deductHeart()
+                                    if (newHearts <= 0) {
+                                        showOutOfHeartsDialog = true
+                                        isRetryPhase = false
+                                    } else if (remainingRetries > 0) {
+                                        remainingRetries--
+                                        isRetryPhase = true
+                                    } else {
+                                        isRetryPhase = false
+                                    }
                                 }
                             },
                             enabled = isCheckEnabled,
@@ -979,23 +1042,28 @@ fun QuestScreen(viewModel: StudyViewModel, onFinish: () -> Unit) {
                                     horizontalArrangement = Arrangement.SpaceBetween
                                 ) {
                                     Text(
-                                        text = if (isEnglish) "Incorrect" else "Chưa chính xác",
-                                        color = Color(0xFFFF6B6B),
+                                        text = if (isRetryPhase) {
+                                            if (isEnglish) "⚡ NOT QUITE! (Retries: $remainingRetries)" else "⚡ CHƯA ĐÚNG! (Còn $remainingRetries lần thử lại)"
+                                        } else {
+                                            if (isEnglish) "Incorrect" else "Chưa chính xác"
+                                        },
+                                        color = if (isRetryPhase) Color(0xFFFFD166) else Color(0xFFFF6B6B),
                                         fontSize = 19.sp,
                                         fontWeight = FontWeight.ExtraBold
                                     )
 
-                                    Row(
-                                        verticalAlignment = Alignment.CenterVertically,
-                                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                                    ) {
-                                        // Quick Audio pronunciation
-                                        Box(
-                                            modifier = Modifier
-                                                .size(34.dp)
-                                                .clip(CircleShape)
-                                                .background(Color(0x33FFD166))
-                                                .border(1.dp, Color(0x66FFD166), CircleShape)
+                                    if (!isRetryPhase) {
+                                        Row(
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                        ) {
+                                            // Quick Audio pronunciation
+                                            Box(
+                                                modifier = Modifier
+                                                    .size(34.dp)
+                                                    .clip(CircleShape)
+                                                    .background(Color(0x33FFD166))
+                                                    .border(1.dp, Color(0x66FFD166), CircleShape)
                                                 .clickable {
                                                     haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
                                                     val textToSpeak = when (currentQ.type) {
@@ -1004,23 +1072,23 @@ fun QuestScreen(viewModel: StudyViewModel, onFinish: () -> Unit) {
                                                     }
                                                     viewModel.ttsManager.speak(textToSpeak, isSlow = false)
                                                 },
-                                            contentAlignment = Alignment.Center
-                                        ) {
-                                            Icon(
-                                                Icons.AutoMirrored.Filled.VolumeUp,
-                                                contentDescription = "Speak Correct Answer",
-                                                tint = Color(0xFFFFD166),
-                                                modifier = Modifier.size(18.dp)
-                                            )
-                                        }
+                                                contentAlignment = Alignment.Center
+                                            ) {
+                                                Icon(
+                                                    Icons.AutoMirrored.Filled.VolumeUp,
+                                                    contentDescription = "Speak Correct Answer",
+                                                    tint = Color(0xFFFFD166),
+                                                    modifier = Modifier.size(18.dp)
+                                                )
+                                            }
 
-                                        // Quick Save to Vault
-                                        Box(
-                                            modifier = Modifier
-                                                .size(34.dp)
-                                                .clip(CircleShape)
-                                                .background(if (isSavedToVault) Color(0x3351FAC1) else Color(0x22FFFFFF))
-                                                .border(1.dp, if (isSavedToVault) Color(0xFF51FAC1) else Color(0x44FFFFFF), CircleShape)
+                                            // Quick Save to Vault
+                                            Box(
+                                                modifier = Modifier
+                                                    .size(34.dp)
+                                                    .clip(CircleShape)
+                                                    .background(if (isSavedToVault) Color(0x3351FAC1) else Color(0x22FFFFFF))
+                                                    .border(1.dp, if (isSavedToVault) Color(0xFF51FAC1) else Color(0x44FFFFFF), CircleShape)
                                                 .clickable {
                                                     if (!isSavedToVault) {
                                                         isSavedToVault = true
@@ -1037,70 +1105,140 @@ fun QuestScreen(viewModel: StudyViewModel, onFinish: () -> Unit) {
                                                         ).show()
                                                     }
                                                 },
-                                            contentAlignment = Alignment.Center
-                                        ) {
-                                            Icon(
-                                                imageVector = if (isSavedToVault) Icons.Default.BookmarkAdded else Icons.Default.BookmarkBorder,
-                                                contentDescription = "Save to vault",
-                                                tint = if (isSavedToVault) Color(0xFF51FAC1) else Color.White,
-                                                modifier = Modifier.size(18.dp)
-                                            )
+                                                contentAlignment = Alignment.Center
+                                            ) {
+                                                Icon(
+                                                    imageVector = if (isSavedToVault) Icons.Default.BookmarkAdded else Icons.Default.BookmarkBorder,
+                                                    contentDescription = "Save to vault",
+                                                    tint = if (isSavedToVault) Color(0xFF51FAC1) else Color.White,
+                                                    modifier = Modifier.size(18.dp)
+                                                )
+                                            }
                                         }
                                     }
                                 }
 
-                                Spacer(modifier = Modifier.height(6.dp))
+                                if (isRetryPhase) {
+                                    Spacer(modifier = Modifier.height(8.dp))
+                                    Text(
+                                        text = if (isEnglish) "This question allows retries! Review carefully and try again 💪" else "Câu hỏi này cho phép sửa sai! Hãy xem lại và thử lại nhé 💪",
+                                        color = Color(0xFFFFF3BF),
+                                        fontSize = 13.sp,
+                                        fontWeight = FontWeight.Medium
+                                    )
+                                } else {
+                                    Spacer(modifier = Modifier.height(6.dp))
 
-                                // Single Clear Correct Answer Display (No duplicates!)
-                                Text(
-                                    text = if (isEnglish) "Correct answer:" else "Đáp án đúng:",
-                                    color = Color(0xB3FFFFFF),
-                                    fontSize = 12.sp,
-                                    fontWeight = FontWeight.Medium
-                                )
-                                Spacer(modifier = Modifier.height(2.dp))
-                                Text(
-                                    text = correctText,
-                                    color = Color(0xFFFFD166),
-                                    fontSize = 16.sp,
-                                    fontWeight = FontWeight.Bold
-                                )
+                                    // Single Clear Correct Answer Display (No duplicates!)
+                                    Text(
+                                        text = if (isEnglish) "Correct answer:" else "Đáp án đúng:",
+                                        color = Color(0xB3FFFFFF),
+                                        fontSize = 12.sp,
+                                        fontWeight = FontWeight.Medium
+                                    )
+                                    Spacer(modifier = Modifier.height(2.dp))
+                                    Text(
+                                        text = correctText,
+                                        color = Color(0xFFFFD166),
+                                        fontSize = 16.sp,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                }
                             }
 
                             Spacer(modifier = Modifier.height(14.dp))
 
-                            // Continue Button
-                            Button(
-                                onClick = {
-                                    haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                                    val activeQ = questions[currentQuestion]
-                                    when (activeQ.type) {
-                                        QuestionType.SENTENCE_BUILDER, QuestionType.LISTENING_CHALLENGE, QuestionType.MATCHING_PAIRS, QuestionType.SPEAKING_CHALLENGE -> {
-                                            userAnswers[currentQuestion] = if (isCurrentCorrect) 0 else -1
-                                        }
-                                        else -> {
-                                            userAnswers[currentQuestion] = selectedOption
-                                        }
+                            if (isRetryPhase) {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                                ) {
+                                    OutlinedButton(
+                                        onClick = {
+                                            haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                                            isRetryPhase = false
+                                        },
+                                        modifier = Modifier
+                                            .weight(1f)
+                                            .height(50.dp),
+                                        shape = RoundedCornerShape(16.dp),
+                                        border = androidx.compose.foundation.BorderStroke(1.dp, Color(0x66EF4444)),
+                                        colors = ButtonDefaults.outlinedButtonColors(
+                                            contentColor = Color(0xFFFF6B6B)
+                                        )
+                                    ) {
+                                        Text(
+                                            if (isEnglish) "Skip & See" else "Bỏ qua & Xem",
+                                            fontSize = 13.sp,
+                                            fontWeight = FontWeight.Bold
+                                        )
                                     }
 
-                                    // Logic xử lý khi hết tim: Game Over hoặc nạp tim bằng Sao để học tiếp
-                                    val currentHearts = viewModel.hearts.value ?: 5
-                                    if (currentHearts <= 0) {
-                                        showOutOfHeartsDialog = true
-                                        return@Button
+                                    Button(
+                                        onClick = {
+                                            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                            isChecked = false
+                                            isRetryPhase = false
+                                            selectedOption = -1
+                                            selectedTokenIndices = emptyList()
+                                            isMatchingCompleted = false
+                                            matchingErrorCount = 0
+                                            speakingResult = null
+                                            mascotSpeech = null
+                                        },
+                                        modifier = Modifier
+                                            .weight(1.3f)
+                                            .height(50.dp),
+                                        shape = RoundedCornerShape(16.dp),
+                                        colors = ButtonDefaults.buttonColors(
+                                            containerColor = Color(0xFFEF4444)
+                                        )
+                                    ) {
+                                        Icon(Icons.Default.Refresh, contentDescription = null, tint = Color.White, modifier = Modifier.size(18.dp))
+                                        Spacer(modifier = Modifier.width(6.dp))
+                                        Text(
+                                            if (isEnglish) "TRY AGAIN ($remainingRetries)" else "THỬ LẠI ($remainingRetries)",
+                                            fontSize = 14.sp,
+                                            fontWeight = FontWeight.Black,
+                                            color = Color.White
+                                        )
                                     }
+                                }
+                            } else {
+                                // Continue Button
+                                Button(
+                                    onClick = {
+                                        haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                                        val activeQ = questions[currentQuestion]
+                                        when (activeQ.type) {
+                                            QuestionType.SENTENCE_BUILDER, QuestionType.LISTENING_CHALLENGE, QuestionType.MATCHING_PAIRS, QuestionType.SPEAKING_CHALLENGE -> {
+                                                userAnswers[currentQuestion] = if (isCurrentCorrect) 0 else -1
+                                            }
+                                            else -> {
+                                                userAnswers[currentQuestion] = selectedOption
+                                            }
+                                        }
 
-                                    if (currentQuestion < totalQuestions - 1) {
-                                        currentQuestion++
-                                        selectedOption = -1
-                                        selectedTokenIndices = emptyList()
-                                        isMatchingCompleted = false
-                                        matchingErrorCount = 0
-                                        speakingResult = null
-                                        isChecked = false
-                                        isSavedToVault = false
-                                        mascotSpeech = null
-                                    } else {
+                                        // Logic xử lý khi hết tim: Game Over hoặc nạp tim bằng Sao để học tiếp
+                                        val currentHearts = viewModel.hearts.value ?: 5
+                                        if (currentHearts <= 0) {
+                                            showOutOfHeartsDialog = true
+                                            return@Button
+                                        }
+
+                                        if (currentQuestion < totalQuestions - 1) {
+                                            currentQuestion++
+                                            selectedOption = -1
+                                            selectedTokenIndices = emptyList()
+                                            isMatchingCompleted = false
+                                            matchingErrorCount = 0
+                                            speakingResult = null
+                                            isChecked = false
+                                            isSavedToVault = false
+                                            mascotSpeech = null
+                                            remainingRetries = questions.getOrNull(currentQuestion)?.maxRetries ?: 1
+                                            isRetryPhase = false
+                                        } else {
                                         val finalResults = questions.mapIndexed { idx, item ->
                                             val copy = when (item.type) {
                                                 QuestionType.SENTENCE_BUILDER, QuestionType.LISTENING_CHALLENGE -> {
@@ -1203,6 +1341,7 @@ fun QuestScreen(viewModel: StudyViewModel, onFinish: () -> Unit) {
                                     )
                                 }
                             }
+                            }
                         }
                     }
                 }
@@ -1244,6 +1383,8 @@ fun QuestScreen(viewModel: StudyViewModel, onFinish: () -> Unit) {
                 }
             )
         }
+
+        
 
         // Hộp thoại xác nhận thoát bài học
         if (showExitDialog) {

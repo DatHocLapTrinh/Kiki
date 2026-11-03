@@ -214,7 +214,7 @@ fun JourneyMapScreen(
                 modifier = Modifier
                     .fillMaxSize()
                     .verticalScroll(scrollState)
-                    .padding(top = 4.dp, bottom = 124.dp),
+                    .padding(top = 4.dp, bottom = 160.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 if (stages.isEmpty()) {

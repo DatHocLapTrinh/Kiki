@@ -875,6 +875,30 @@ fun OptionButton(text: String, isSelected: Boolean, onClick: () -> Unit) {
 @Composable
 fun MainNavigation(viewModel: StudyViewModel, onLogout: () -> Unit) {
     val navController = rememberNavController()
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val isEnglish by viewModel.isEnglish.observeAsState(false)
+    var showFocusPrompt by remember {
+        mutableStateOf(!com.example.util.FocusModeManager.hasPrompted(context))
+    }
+
+    if (showFocusPrompt) {
+        com.example.ui.FocusModePromptDialog(
+            isEnglish = isEnglish,
+            onEnableFocus = {
+                com.example.util.FocusModeManager.markPrompted(context)
+                com.example.util.FocusModeManager.setFocusModeEnabled(context, true)
+                if (!com.example.util.FocusModeManager.hasDndPermission(context)) {
+                    com.example.util.FocusModeManager.openDndSettings(context)
+                }
+                showFocusPrompt = false
+            },
+            onDismiss = {
+                com.example.util.FocusModeManager.markPrompted(context)
+                com.example.util.FocusModeManager.setFocusModeEnabled(context, false)
+                showFocusPrompt = false
+            }
+        )
+    }
 
     Box(modifier = Modifier.fillMaxSize()) {
         NavHost(
@@ -925,7 +949,7 @@ fun MainNavigation(viewModel: StudyViewModel, onLogout: () -> Unit) {
             composable("quests") { QuestsScreen(viewModel) }
             composable("ask") { AskScreen(viewModel) }
             composable("rank") { RankScreen(viewModel) }
-            composable("shop") { ShopScreen(viewModel) }
+            composable("shop") { ShopScreen(viewModel = viewModel, onBack = { navController.popBackStack() }) }
             composable("profile") { 
                 ProfileScreen(
                     viewModel = viewModel, 
@@ -981,7 +1005,7 @@ fun FloatingNavBar(
 
     Row(
         modifier = modifier
-            .fillMaxWidth(0.92f)
+            .fillMaxWidth(0.95f)
             .height(64.dp)
             .clip(RoundedCornerShape(28.dp))
             .background(
@@ -996,7 +1020,7 @@ fun FloatingNavBar(
                 ),
                 RoundedCornerShape(28.dp)
             )
-            .padding(horizontal = 8.dp, vertical = 4.dp),
+            .padding(horizontal = 6.dp, vertical = 4.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {

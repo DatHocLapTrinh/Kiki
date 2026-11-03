@@ -26,3 +26,4 @@ node_modules/
 *.docx
 .artifacts/
 *.orig
+.idea/appInsightsSettings.xml
