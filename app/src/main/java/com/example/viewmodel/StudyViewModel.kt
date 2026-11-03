@@ -1129,29 +1129,36 @@ class StudyViewModel @Inject constructor(
         _isAuthLoading.value = true
         viewModelScope.launch {
             try {
-                when (val result = authManager.signInAnonymously()) {
-                    is GoogleAuthResult.Success -> {
-                        val userId = repository.getOrCreateSocialUser(
-                            email = result.email,
-                            displayName = result.displayName ?: "Kiki Explorer",
-                            photoUrl = result.photoUrl
-                        )
-                        if (userId != -1L) {
-                            loadUserData(result.email)
-                            _isAuthLoading.value = false
-                            onSuccess()
-                        } else {
-                            _isAuthLoading.value = false
-                            onError("Không thể tạo phiên khám phá khách.")
-                        }
-                    }
-                    is GoogleAuthResult.Cancelled -> {
-                        _isAuthLoading.value = false
-                    }
-                    is GoogleAuthResult.Error -> {
-                        _isAuthLoading.value = false
-                        onError(result.message)
-                    }
+                // 1. Dọn dẹp sạch sẽ toàn bộ trạng thái phiên cũ
+                logout()
+
+                // 2. Đăng nhập ẩn danh qua Firebase
+                authManager.signInAnonymously()
+
+                // 3. Tạo định danh phiên khách mới với timestamp duy nhất
+                // để luôn bắt đầu bài test chẩn đoán AI thay vì nạp lại dữ liệu cũ
+                val guestSessionId = System.currentTimeMillis()
+                val guestEmail = "guest_${guestSessionId}@kiki.app"
+
+                val userId = repository.getOrCreateSocialUser(
+                    email = guestEmail,
+                    displayName = "Kiki Explorer",
+                    photoUrl = null
+                )
+                if (userId != -1L) {
+                    // Đảm bảo cờ onboarding chưa hoàn thành cho tài khoản khách này
+                    prefs.edit()
+                        .putBoolean("onboarding_completed_$userId", false)
+                        .remove("learning_level_$userId")
+                        .remove("ai_microlearning_roadmap_$userId")
+                        .apply()
+
+                    loadUserData(guestEmail)
+                    _isAuthLoading.value = false
+                    onSuccess()
+                } else {
+                    _isAuthLoading.value = false
+                    onError("Không thể tạo phiên khám phá khách.")
                 }
             } catch (e: Exception) {
                 _isAuthLoading.value = false
@@ -1166,16 +1173,16 @@ class StudyViewModel @Inject constructor(
 
     fun isUserOnboardingCompleted(userId: Long): Boolean {
         if (userId <= 0) return false
+        val email = prefs.getString("last_logged_in_email", "") ?: ""
+        // Nếu là tài khoản khách, chỉ coi là hoàn thành nếu cờ onboarding_completed_$userId đã được lưu rõ ràng trong phiên này
+        if (email.startsWith("guest_")) {
+            return prefs.getBoolean("onboarding_completed_$userId", false)
+        }
         // 1. Kiểm tra cờ trong SharedPreferences
         if (prefs.getBoolean("onboarding_completed_$userId", false)) return true
         // 2. Kiểm tra nếu đã có cấp độ học được lưu
         val savedLevel = prefs.getString("learning_level_$userId", null)
         if (!savedLevel.isNullOrBlank()) {
-            prefs.edit().putBoolean("onboarding_completed_$userId", true).apply()
-            return true
-        }
-        // 3. Kiểm tra nếu đã có điểm XP (> 0 tức là đã từng học/làm bài)
-        if ((_xp.value ?: 0) > 0) {
             prefs.edit().putBoolean("onboarding_completed_$userId", true).apply()
             return true
         }
@@ -1217,8 +1224,9 @@ class StudyViewModel @Inject constructor(
             val savedLevel = prefs.getString("learning_level_$userId", _selectedLevel.value ?: "Beginner") ?: "Beginner"
             _selectedLevel.value = savedLevel
 
-            // Nếu user đã có XP hoặc đã lưu level, tự động đánh dấu đã hoàn thành onboarding
-            if ((profile?.totalXp ?: 0) > 0 || !prefs.getString("learning_level_$userId", null).isNullOrBlank()) {
+            // Chỉ tự động đánh dấu hoàn thành nếu KHÔNG PHẢI là tài khoản khách mới
+            val isGuest = email.startsWith("guest_")
+            if (!isGuest && ((profile?.totalXp ?: 0) > 0 || !prefs.getString("learning_level_$userId", null).isNullOrBlank())) {
                 prefs.edit().putBoolean("onboarding_completed_$userId", true).apply()
             }
 
@@ -2730,9 +2738,32 @@ class StudyViewModel @Inject constructor(
         _userName.value = "Adventurer"
         _avatarUri.value = null
         _studyMotto.value = ""
+        _xp.value = 0
+        _level.value = 1
+        _rankTitle.value = "Bronze Novice"
+        _mana.value = 20
+        _streak.value = 0
+        _streakShields.value = 1
+        _stars.value = 0
+        _hearts.value = 5
+        _selectedLevel.value = "Beginner"
+        _learnerPersonaProfile.value = null
         _history.value = emptyList()
         _dailyTasks.value = emptyList()
         _dailyChestOpened.value = false
+        _weakPoints.value = emptyList()
+        _vocabularyList.value = emptyList()
+        _dueVocabularyList.value = emptyList()
+        _unlockedBadgeIds.value = emptySet()
+        _curedWeakPointsCount.value = 0
+        _masteredVocabCount.value = 0
+        _availableChapters.value = emptyList()
+        _chapterProgress.value = emptyList()
+        _currentChapterIndex.value = 1
+        _currentChapterTitle.value = "Chặng 1: Chào Hỏi & Làm Quen Cơ Bản (Hello & Daily Greetings)"
+        _realtimeLeaderboard.value = emptyList()
+        _userTier.value = com.example.model.LeagueTier.BRONZE
+        _weeklyXp.value = 0
     }
 
     private suspend fun fetchAnswerFromAI(

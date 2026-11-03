@@ -189,7 +189,7 @@ fun StudyMentorApp() {
                     AuthStep.LOGGED_IN -> {
                         MainNavigation(viewModel, onLogout = {
                             viewModel.logout()
-                            authStep = AuthStep.SPLASH
+                            authStep = AuthStep.IDENTITY
                         })
                     }
                 }
