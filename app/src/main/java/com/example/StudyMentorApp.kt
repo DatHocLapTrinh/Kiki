@@ -253,7 +253,7 @@ fun OnboardingScreen(viewModel: StudyViewModel, onFinish: () -> Unit) {
                         val strings = LocalAppStrings.current
                         when (currentStep) {
                             0 -> {
-                                // BƯỚC 0: MỤC TIÊU & PHƯƠNG THỨC HỌC (INTAKE PROFILING)
+                                // BƯỚC 0: MỤC TIÊU HỌC TẬP
                                 Box(
                                     modifier = Modifier
                                         .clip(RoundedCornerShape(20.dp))
@@ -262,7 +262,7 @@ fun OnboardingScreen(viewModel: StudyViewModel, onFinish: () -> Unit) {
                                         .padding(horizontal = 14.dp, vertical = 5.dp)
                                 ) {
                                     Text(
-                                        text = "🎯 HỒ SƠ HỌC TẬP (INTAKE PROFILE)",
+                                        text = "MỤC TIÊU HỌC TẬP",
                                         color = Color(0xFF00F5D4),
                                         fontWeight = FontWeight.Bold,
                                         fontSize = 11.sp,
@@ -273,7 +273,7 @@ fun OnboardingScreen(viewModel: StudyViewModel, onFinish: () -> Unit) {
                                 Spacer(modifier = Modifier.height(12.dp))
 
                                 Text(
-                                    text = "Mục Tiêu & Phương Thức Chủ Đạo",
+                                    text = "Mục Tiêu Của Bạn",
                                     style = MaterialTheme.typography.titleLarge,
                                     fontWeight = FontWeight.Black,
                                     color = Color.White,
@@ -283,7 +283,7 @@ fun OnboardingScreen(viewModel: StudyViewModel, onFinish: () -> Unit) {
                                 Spacer(modifier = Modifier.height(4.dp))
 
                                 Text(
-                                    text = "Kiki cá nhân hóa từng bài microlearning theo mục tiêu thực tế của bạn.",
+                                    text = "Chọn mục tiêu để Kiki thiết kế lộ trình phù hợp nhất.",
                                     color = Color.White.copy(alpha = 0.8f),
                                     fontSize = 12.sp,
                                     textAlign = TextAlign.Center
@@ -292,10 +292,10 @@ fun OnboardingScreen(viewModel: StudyViewModel, onFinish: () -> Unit) {
                                 Spacer(modifier = Modifier.height(16.dp))
 
                                 val goalOptions = listOf(
-                                    Triple("Everyday Fluency", "💬 Giao Tiếp Phản Xạ Hàng Ngày", "Tự tin nói trôi chảy, phản xạ tự nhiên."),
-                                    Triple("Grammar & Vocabulary", "📝 Ngữ Pháp & Cấu Trúc Chuẩn Xác", "Nắm vững bản chất cú pháp, xóa lỗi sai."),
-                                    Triple("IELTS & TOEIC", "🎓 Luyện Thi Chứng Chỉ (IELTS/TOEIC)", "Bứt phá band điểm, mở rộng từ học thuật."),
-                                    Triple("Career & Business", "💼 Tiếng Anh Công Việc & Phỏng Vấn", "Giao tiếp công sở & đàm phán tự tin.")
+                                    Triple("Everyday Fluency", "Giao Tiếp Phản Xạ Hàng Ngày", "Tự tin nói trôi chảy, phản xạ tự nhiên."),
+                                    Triple("Grammar & Vocabulary", "Ngữ Pháp & Cấu Trúc Chuẩn Xác", "Nắm vững ngữ pháp, hạn chế lỗi sai."),
+                                    Triple("IELTS & TOEIC", "Luyện Thi Chứng Chỉ (IELTS/TOEIC)", "Bứt phá band điểm, mở rộng từ học thuật."),
+                                    Triple("Career & Business", "Tiếng Anh Công Việc & Phỏng Vấn", "Giao tiếp công sở & đàm phán tự tin.")
                                 )
 
                                 Column(modifier = Modifier.fillMaxWidth()) {
@@ -317,7 +317,7 @@ fun OnboardingScreen(viewModel: StudyViewModel, onFinish: () -> Unit) {
                                                     viewModel.soundEffectManager.playClick()
                                                     selectedGoal = goalKey
                                                 }
-                                                .padding(horizontal = 14.dp, vertical = 10.dp)
+                                                .padding(horizontal = 14.dp, vertical = 11.dp)
                                         ) {
                                             Row(verticalAlignment = Alignment.CenterVertically) {
                                                 Column(modifier = Modifier.weight(1f)) {
@@ -348,41 +348,7 @@ fun OnboardingScreen(viewModel: StudyViewModel, onFinish: () -> Unit) {
                                     }
                                 }
 
-                                Spacer(modifier = Modifier.height(12.dp))
-
-                                // Bộ chọn Phương thức học
-                                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                    val modalities = listOf(
-                                        Pair("AUDIO_DIALOG", "🎙️ Gemini Native Audio"),
-                                        Pair("SYNTAX_READING", "📖 Cú Pháp & Đọc Hiểu")
-                                    )
-                                    modalities.forEach { (modKey, modTitle) ->
-                                        val isSelected = selectedModality == modKey
-                                        Box(
-                                            modifier = Modifier
-                                                .weight(1f)
-                                                .height(42.dp)
-                                                .clip(RoundedCornerShape(12.dp))
-                                                .background(if (isSelected) Color(0x33FF9E00) else Color(0x14FFFFFF))
-                                                .border(1.dp, if (isSelected) Color(0xFFFF9E00) else Color(0x26FFFFFF), RoundedCornerShape(12.dp))
-                                                .clickable {
-                                                    haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                                                    viewModel.soundEffectManager.playClick()
-                                                    selectedModality = modKey
-                                                },
-                                            contentAlignment = Alignment.Center
-                                        ) {
-                                            Text(
-                                                text = modTitle,
-                                                color = if (isSelected) Color(0xFFFF9E00) else Color.White,
-                                                fontWeight = FontWeight.SemiBold,
-                                                fontSize = 11.5.sp
-                                            )
-                                        }
-                                    }
-                                }
-
-                                Spacer(modifier = Modifier.height(18.dp))
+                                Spacer(modifier = Modifier.height(22.dp))
 
                                 Box(
                                     modifier = Modifier
@@ -406,7 +372,7 @@ fun OnboardingScreen(viewModel: StudyViewModel, onFinish: () -> Unit) {
                                 }
                             }
                             1 -> {
-                                // BƯỚC 1: THỜI LƯỢNG MICROLEARNING & ĐIỂM TỰ TIN BAN ĐẦU
+                                // BƯỚC 1: THỜI LƯỢNG HỌC & TRÌNH ĐỘ BAN ĐẦU
                                 Box(
                                     modifier = Modifier
                                         .clip(RoundedCornerShape(20.dp))
@@ -415,7 +381,7 @@ fun OnboardingScreen(viewModel: StudyViewModel, onFinish: () -> Unit) {
                                         .padding(horizontal = 14.dp, vertical = 5.dp)
                                 ) {
                                     Text(
-                                        text = "⏱️ THỜI LƯỢNG & NĂNG LỰC BAN ĐẦU",
+                                        text = "THỜI GIAN & TRÌNH ĐỘ",
                                         color = Color(0xFF00F5D4),
                                         fontWeight = FontWeight.Bold,
                                         fontSize = 11.sp,
@@ -426,7 +392,7 @@ fun OnboardingScreen(viewModel: StudyViewModel, onFinish: () -> Unit) {
                                 Spacer(modifier = Modifier.height(12.dp))
 
                                 Text(
-                                    text = "Nhịp Độ Học & Điểm Tự Tin Ban Đầu",
+                                    text = "Nhịp Độ & Trình Độ Hiện Tại",
                                     style = MaterialTheme.typography.titleLarge,
                                     fontWeight = FontWeight.Black,
                                     color = Color.White,
@@ -436,7 +402,7 @@ fun OnboardingScreen(viewModel: StudyViewModel, onFinish: () -> Unit) {
                                 Spacer(modifier = Modifier.height(4.dp))
 
                                 Text(
-                                    text = "Microlearning 3-5 phút giúp duy trì bền bỉ và tối ưu trí nhớ dài hạn.",
+                                    text = "Học 3 - 5 phút mỗi ngày giúp ghi nhớ bền bỉ và tạo thói quen tốt.",
                                     color = Color.White.copy(alpha = 0.8f),
                                     fontSize = 12.sp,
                                     textAlign = TextAlign.Center
@@ -445,7 +411,7 @@ fun OnboardingScreen(viewModel: StudyViewModel, onFinish: () -> Unit) {
                                 Spacer(modifier = Modifier.height(14.dp))
 
                                 Text(
-                                    text = "THỜI LƯỢNG HỌC MỖI NGÀY",
+                                    text = "THỜI GIAN HỌC MỖI NGÀY",
                                     color = Color(0xFFFF9E00),
                                     fontWeight = FontWeight.Bold,
                                     fontSize = 11.sp,
@@ -454,9 +420,9 @@ fun OnboardingScreen(viewModel: StudyViewModel, onFinish: () -> Unit) {
                                 )
 
                                 val pacingOptions = listOf(
-                                    Triple(3, "⚡ 3 Phút", "Siêu Vi Mô"),
-                                    Triple(5, "🎯 5 Phút", "Khuyến Nghị"),
-                                    Triple(10, "🚀 10 Phút", "Tăng Tốc")
+                                    Triple(3, "3 Phút", "Vừa phải"),
+                                    Triple(5, "5 Phút", "Khuyến nghị"),
+                                    Triple(10, "10 Phút", "Tập trung")
                                 )
 
                                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
@@ -481,12 +447,12 @@ fun OnboardingScreen(viewModel: StudyViewModel, onFinish: () -> Unit) {
                                                     text = label,
                                                     color = if (isSelected) Color(0xFF00F5D4) else Color.White,
                                                     fontWeight = FontWeight.Bold,
-                                                    fontSize = 12.sp
+                                                    fontSize = 12.5.sp
                                                 )
                                                 Text(
                                                     text = sub,
                                                     color = Color.White.copy(alpha = 0.65f),
-                                                    fontSize = 9.5.sp
+                                                    fontSize = 10.sp
                                                 )
                                             }
                                         }
@@ -496,7 +462,7 @@ fun OnboardingScreen(viewModel: StudyViewModel, onFinish: () -> Unit) {
                                 Spacer(modifier = Modifier.height(16.dp))
 
                                 Text(
-                                    text = "ĐIỂM TỰ TIN KHỞI ĐIỂM (SELF-EFFICACY)",
+                                    text = "TRÌNH ĐỘ HIỆN TẠI CỦA BẠN",
                                     color = Color(0xFFFF9E00),
                                     fontWeight = FontWeight.Bold,
                                     fontSize = 11.sp,
@@ -505,10 +471,10 @@ fun OnboardingScreen(viewModel: StudyViewModel, onFinish: () -> Unit) {
                                 )
 
                                 val selfEfficacyOptions = listOf(
-                                    Triple("NEWCOMER", -1.0f, "🌱 Người mới bắt đầu / Mất gốc (A1)"),
-                                    Triple("ELEMENTARY", -0.3f, "🌿 Đã biết từ vựng cơ bản, còn ngại nói (A2)"),
-                                    Triple("INTERMEDIATE", 0.2f, "🌳 Giao tiếp ổn, muốn chuẩn hóa ngữ pháp (B1-B2)"),
-                                    Triple("CONFIDENT", 0.8f, "🌟 Tự tin, hướng đến C1 chuyên nghiệp")
+                                    Triple("NEWCOMER", -1.0f, "Người mới bắt đầu / Mất gốc (A1)"),
+                                    Triple("ELEMENTARY", -0.3f, "Biết từ cơ bản, còn ngại nói (A2)"),
+                                    Triple("INTERMEDIATE", 0.2f, "Giao tiếp khá, muốn chuẩn ngữ pháp (B1 - B2)"),
+                                    Triple("CONFIDENT", 0.8f, "Tự tin, hướng đến nâng cao (C1)")
                                 )
 
                                 Column(modifier = Modifier.fillMaxWidth()) {
@@ -568,7 +534,7 @@ fun OnboardingScreen(viewModel: StudyViewModel, onFinish: () -> Unit) {
                                     contentAlignment = Alignment.Center
                                 ) {
                                     Text(
-                                        text = "Bắt Đầu Test Thích Ứng (CAT) ✨",
+                                        text = "Bắt Đầu Làm Bài Test ✨",
                                         color = Color(0xFF0B0D1B),
                                         fontWeight = FontWeight.Bold,
                                         fontSize = 15.sp
@@ -737,7 +703,7 @@ fun OnboardingScreen(viewModel: StudyViewModel, onFinish: () -> Unit) {
                                         )
                                         Spacer(modifier = Modifier.height(6.dp))
                                         Text(
-                                            text = "🎯 Mục tiêu: $selectedGoal\n⏱️ Nhịp độ: $selectedPacingMinutes phút/ngày • 🎙️ Gemini 2.5 Flash Native Audio",
+                                            text = "🎯 Mục tiêu: $selectedGoal\n⏱️ Nhịp độ: $selectedPacingMinutes phút/ngày • ✨ Lộ trình AI cá nhân hóa",
                                             color = Color.White.copy(alpha = 0.85f),
                                             fontSize = 11.5.sp,
                                             textAlign = TextAlign.Center,
