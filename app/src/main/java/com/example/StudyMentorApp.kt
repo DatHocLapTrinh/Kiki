@@ -949,7 +949,7 @@ fun MainNavigation(viewModel: StudyViewModel, onLogout: () -> Unit) {
             composable("quests") { QuestsScreen(viewModel) }
             composable("ask") { AskScreen(viewModel) }
             composable("rank") { RankScreen(viewModel) }
-            composable("shop") { ShopScreen(viewModel = viewModel, onBack = { navController.popBackStack() }) }
+            composable("shop") { ShopScreen(viewModel = viewModel) }
             composable("profile") { 
                 ProfileScreen(
                     viewModel = viewModel, 
