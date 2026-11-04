@@ -2328,7 +2328,7 @@ private fun KikiExplorerNavigationSheet(
                 // 1. Hồ sơ (gồm danh hiệu và cột mốc bên trong)
                 DuolingoStyleTile(
                     title = if (isEnglish) "Profile & Cosmic Badges" else "Hồ Sơ & Danh Hiệu Cột Mốc",
-                    iconRes = R.drawable.ic_nav_mentor,
+                    iconRes = R.drawable.profile,
                     badgeText = "Lv.$level",
                     onClick = onNavigateProfile
                 )
@@ -2537,7 +2537,7 @@ private fun KikiExplorerHubView(
             // 1. Hồ sơ (gồm danh hiệu và cột mốc bên trong)
             DuolingoStyleTile(
                 title = if (isEnglish) "Profile & Cosmic Badges" else "Hồ Sơ & Danh Hiệu Cột Mốc",
-                iconRes = R.drawable.ic_nav_mentor,
+                iconRes = R.drawable.profile,
                 badgeText = "Lv.$level",
                 onClick = onNavigateProfile
             )

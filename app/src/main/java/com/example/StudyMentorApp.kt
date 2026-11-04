@@ -1258,7 +1258,7 @@ fun DuolingoMoreFloatingMenu(
             // 1. Hồ sơ (gồm danh hiệu và cột mốc bên trong)
             DuolingoMenuItem(
                 title = if (isEnglish) "Profile & Cosmic Badges" else "Hồ Sơ & Danh Hiệu Cột Mốc",
-                iconRes = R.drawable.ic_nav_mentor,
+                iconRes = R.drawable.profile,
                 iconTint = Color(0xFF51FAC1),
                 iconBg = Color(0x2251FAC1),
                 onClick = {
