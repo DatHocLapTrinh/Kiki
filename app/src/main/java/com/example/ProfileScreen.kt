@@ -143,7 +143,7 @@ fun ProfileScreen(
     var showVaultDialog by remember { mutableStateOf(false) }
     var showAddWordDialog by remember { mutableStateOf(false) }
     var showNavDrawer by remember { mutableStateOf(false) }
-    val currentSection by viewModel.kikiExplorerSection.observeAsState(KikiExplorerSection.HUB)
+    val currentSection by viewModel.kikiExplorerSection.observeAsState(KikiExplorerSection.PROFILE)
     val haptic = androidx.compose.ui.platform.LocalHapticFeedback.current
 
     LaunchedEffect(userId) {
@@ -191,23 +191,21 @@ fun ProfileScreen(
                 .padding(bottom = 150.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            if (currentSection != KikiExplorerSection.HUB) {
-                ProfileHeader(
-                    userName = userName,
-                    earnedStars = earnedStars,
-                    isEnglish = isEnglish,
-                    currentSection = currentSection,
-                    onBackClick = {
-                        haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.TextHandleMove)
-                        viewModel.setKikiExplorerSection(KikiExplorerSection.PROFILE)
-                    },
-                    onSettingsClick = {
-                        haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.TextHandleMove)
-                        viewModel.setKikiExplorerSection(KikiExplorerSection.SETTINGS)
-                    }
-                )
-                Spacer(modifier = Modifier.height(14.dp))
-            }
+            ProfileHeader(
+                userName = userName,
+                earnedStars = earnedStars,
+                isEnglish = isEnglish,
+                currentSection = currentSection,
+                onBackClick = {
+                    haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.TextHandleMove)
+                    viewModel.setKikiExplorerSection(KikiExplorerSection.PROFILE)
+                },
+                onSettingsClick = {
+                    haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.TextHandleMove)
+                    viewModel.setKikiExplorerSection(KikiExplorerSection.SETTINGS)
+                }
+            )
+            Spacer(modifier = Modifier.height(14.dp))
 
             // Animated Content for selected section
             AnimatedContent(
@@ -216,34 +214,7 @@ fun ProfileScreen(
                 label = "kiki_explorer_section"
             ) { section ->
                 when (section) {
-                    KikiExplorerSection.HUB -> {
-                        KikiExplorerHubView(
-                            userName = userName,
-                            rankTitle = rankTitle,
-                            level = level,
-                            avatarUri = avatarUri,
-                            earnedStars = earnedStars,
-                            vocabCount = vocabularyList.size,
-                            isEnglish = isEnglish,
-                            onNavigateProfile = {
-                                haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.TextHandleMove)
-                                viewModel.setKikiExplorerSection(KikiExplorerSection.PROFILE)
-                            },
-                            onNavigateVocab = {
-                                haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.TextHandleMove)
-                                viewModel.setKikiExplorerSection(KikiExplorerSection.VOCABULARY)
-                            },
-                            onSettingsClick = {
-                                haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.TextHandleMove)
-                                viewModel.setKikiExplorerSection(KikiExplorerSection.SETTINGS)
-                            },
-                            onNavigateToShop = onNavigateToShop,
-                            onLogoutClick = {
-                                haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.TextHandleMove)
-                                showLogoutDialog = true
-                            }
-                        )
-                    }
+                    KikiExplorerSection.HUB,
                     KikiExplorerSection.PROFILE -> {
                         ProfileSectionView(
                             userName = userName,
@@ -686,49 +657,18 @@ private fun ProfileHeader(
             Spacer(modifier = Modifier.width(8.dp))
         }
         Column(modifier = Modifier.weight(1f)) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Box(
-                    modifier = Modifier
-                        .size(6.dp)
-                        .clip(CircleShape)
-                        .background(Color(0xFF51FAC1))
-                )
-                Spacer(modifier = Modifier.width(6.dp))
-                Text(
-                    text = "KIKI EXPLORER",
-                    color = Color(0xFF51FAC1),
-                    fontSize = 10.5.sp,
-                    fontWeight = FontWeight.ExtraBold,
-                    letterSpacing = 1.4.sp
-                )
-            }
-            Spacer(modifier = Modifier.height(2.dp))
             Text(
                 text = when (currentSection) {
-                    KikiExplorerSection.HUB -> "Kiki Explorer"
-                    KikiExplorerSection.PROFILE -> userName
+                    KikiExplorerSection.HUB,
+                    KikiExplorerSection.PROFILE -> if (isEnglish) "Profile & Cosmic Badges" else "Hồ Sơ & Danh Hiệu Cột Mốc"
                     KikiExplorerSection.VOCABULARY -> if (isEnglish) "Vocabulary & Grammar" else "Từ Vựng & Ngữ Pháp"
                     KikiExplorerSection.ACHIEVEMENTS -> if (isEnglish) "Cosmic Titles & Badges" else "Danh Hiệu & Cột Mốc"
                     KikiExplorerSection.MISTAKES -> if (isEnglish) "Mistake Clinic" else "Phòng Khám Lỗi Sai"
                     KikiExplorerSection.SETTINGS -> if (isEnglish) "Settings & Preferences" else "Cài Đặt & Tuỳ Chọn"
                 },
                 color = Color.White,
-                fontSize = 19.sp,
+                fontSize = 20.sp,
                 fontWeight = FontWeight.Black,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
-            )
-            Text(
-                text = when (currentSection) {
-                    KikiExplorerSection.HUB -> if (isEnglish) "Galactic exploration menu" else "Danh mục khám phá vũ trụ"
-                    KikiExplorerSection.PROFILE -> if (isEnglish) "Cosmic Profile & Milestones" else "Hồ sơ, danh hiệu & cột mốc"
-                    KikiExplorerSection.VOCABULARY -> if (isEnglish) "Saved vocabulary, 3D cards & grammar tips" else "Sổ từ vựng, thẻ 3D & mẹo ngữ pháp"
-                    KikiExplorerSection.ACHIEVEMENTS -> if (isEnglish) "Cosmic glory milestones & unlocked badges" else "Huy hiệu vũ trụ & sao tinh tú tích lũy"
-                    KikiExplorerSection.MISTAKES -> if (isEnglish) "Cure errors & earn bonus XP" else "Củng cố điểm yếu & nhận điểm thưởng"
-                    KikiExplorerSection.SETTINGS -> if (isEnglish) "Sound effects & account logout" else "Âm thanh & đăng xuất tài khoản"
-                },
-                color = Color(0xB3FFFFFF),
-                fontSize = 10.5.sp,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
             )
@@ -812,11 +752,10 @@ private fun ProfileIdentityCard(
                             contentScale = ContentScale.Crop
                         )
                     } else {
-                        AsyncImage(
-                            model = resolveAvatarResource(avatarUri),
+                        Image(
+                            painter = painterResource(resolveAvatarResource(avatarUri)),
                             contentDescription = "Avatar",
-                            modifier = Modifier.fillMaxSize().clip(CircleShape),
-                            contentScale = ContentScale.Fit
+                            modifier = Modifier.fillMaxSize().clip(CircleShape)
                         )
                     }
                 }
@@ -876,11 +815,11 @@ fun EditProfileDialog(
     var selectedAvatar by remember { mutableStateOf(currentAvatar ?: "kiki_icon") }
 
     val avatars = listOf(
+        "kiki_icon" to (if (isEnglish) "Hero" else "Mặc định"),
         "kiki_welcome" to (if (isEnglish) "Welcome" else "Chào đón"),
-        "kiki_happy" to (if (isEnglish) "Victory" else "Ăn mừng"),
-        "kiki_speaker" to (if (isEnglish) "Speaker" else "Diễn thuyết"),
-        "kiki_sad" to (if (isEnglish) "Empathetic" else "Đồng cảm"),
-        "kiki_icon" to (if (isEnglish) "Scholar" else "Học giả")
+        "kiki_happy" to (if (isEnglish) "Happy" else "Vui vẻ"),
+        "kiki_sad" to (if (isEnglish) "Sad" else "Buồn"),
+        "kiki_speaker" to (if (isEnglish) "Speaker" else "Phát âm")
     )
 
     AlertDialog(
@@ -993,10 +932,9 @@ fun EditProfileDialog(
                                     .padding(2.dp),
                                 contentAlignment = Alignment.Center
                             ) {
-                                AsyncImage(
-                                    model = resolveAvatarResource(avatarKey),
+                                Image(
+                                    painter = painterResource(resolveAvatarResource(avatarKey)),
                                     contentDescription = label,
-                                    contentScale = ContentScale.Fit,
                                     modifier = Modifier.fillMaxSize().clip(CircleShape)
                                 )
                                 if (isSelected) {
@@ -1142,8 +1080,7 @@ private fun ProfileCompactActionCard(
     title: String,
     badgeText: String,
     actionText: String,
-    icon: ImageVector? = null,
-    iconRes: Int? = null,
+    icon: ImageVector,
     accentColor: Color,
     gradientColors: List<Color>,
     onClick: () -> Unit
@@ -1174,15 +1111,7 @@ private fun ProfileCompactActionCard(
                             .background(accentColor.copy(alpha = 0.22f)),
                         contentAlignment = Alignment.Center
                     ) {
-                        if (iconRes != null) {
-                            Image(
-                                painter = painterResource(iconRes),
-                                contentDescription = null,
-                                modifier = Modifier.size(16.dp)
-                            )
-                        } else if (icon != null) {
-                            Icon(icon, contentDescription = null, tint = accentColor, modifier = Modifier.size(14.dp))
-                        }
+                        Icon(icon, contentDescription = null, tint = accentColor, modifier = Modifier.size(14.dp))
                     }
                     Spacer(modifier = Modifier.width(6.dp))
                     Text(
@@ -1354,7 +1283,7 @@ private fun ProfileAchievements(
                 horizontalArrangement = Arrangement.spacedBy(14.dp),
                 contentPadding = PaddingValues(horizontal = 2.dp)
             ) {
-                items(allBadges.size, key = { allBadges[it].id }) { index ->
+                items(allBadges.size) { index ->
                     val badge = allBadges[index]
                     val icon = when (badge.iconKey) {
                         "NIGHT_OWL" -> Icons.Default.Bedtime
@@ -1616,7 +1545,7 @@ private fun ProfileSettingsBottomSheet(
                             .background(Color(0x3351FAC1)),
                         contentAlignment = Alignment.Center
                     ) {
-                        Icon(Icons.Default.Settings, contentDescription = null, tint = Color(0xFF51FAC1), modifier = Modifier.size(24.dp))
+                        Icon(Icons.Default.Settings, contentDescription = null, tint = Color(0xFF51FAC1), modifier = Modifier.size(22.dp))
                     }
                     Spacer(modifier = Modifier.width(12.dp))
                     Column {
@@ -1690,9 +1619,9 @@ private fun ProfileSettingsContent(
         modifier = Modifier.fillMaxWidth(),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        // Section 1: HỌC TẬP & NGÔN NGỮ
+        // Section 1: NGÔN NGỮ
         Text(
-            text = if (isEnglish) "LEARNING & LANGUAGE" else "HỌC TẬP & NGÔN NGỮ",
+            text = if (isEnglish) "LANGUAGE PREFERENCE" else "NGÔN NGỮ & GIAO DIỆN",
             color = Color(0xFF51FAC1),
             fontSize = 11.5.sp,
             fontWeight = FontWeight.Black,
@@ -1715,28 +1644,6 @@ private fun ProfileSettingsContent(
                     icon = Icons.Default.Language,
                     checked = isEnglish,
                     onCheckedChange = onLanguageChanged
-                )
-
-                HorizontalDivider(color = Color(0x1A51FAC1), thickness = 0.8.dp)
-
-                // Trình độ học
-                ProfileSettingActionRow(
-                    title = if (isEnglish) "Learning Level" else "Trình Độ Học Tập",
-                    subtitle = if (isEnglish) "Adjust curriculum syllabus" else "Điều chỉnh độ khó giáo trình & câu hỏi",
-                    valueBadge = selectedLevel,
-                    icon = Icons.Default.School,
-                    onClick = onSelectLevelClick
-                )
-
-                HorizontalDivider(color = Color(0x1A51FAC1), thickness = 0.8.dp)
-
-                // Mục tiêu hàng ngày
-                ProfileSettingActionRow(
-                    title = if (isEnglish) "Daily XP Goal" else "Mục Tiêu XP Hàng Ngày",
-                    subtitle = if (isEnglish) "Strengthen your cosmic streak" else "Duy trì ngọn lửa Streak mỗi ngày",
-                    valueBadge = "$dailyGoalXp XP",
-                    icon = Icons.Default.EmojiEvents,
-                    onClick = onSelectDailyGoalClick
                 )
             }
         }
@@ -2255,70 +2162,6 @@ fun LevelSelectionDialog(
     )
 }
 
-@Composable
-private fun ProfileSectionTabBar(
-    currentSection: KikiExplorerSection,
-    onSectionSelect: (KikiExplorerSection) -> Unit,
-    vocabCount: Int,
-    weakPointsCount: Int,
-    badgeCount: Int,
-    isEnglish: Boolean
-) {
-    val items = listOf(
-        Triple(KikiExplorerSection.PROFILE, if (isEnglish) "Profile" else "Hồ Sơ", Icons.Default.Person),
-        Triple(KikiExplorerSection.VOCABULARY, if (isEnglish) "Vocab & Grammar ($vocabCount)" else "Từ Vựng & Ngữ Pháp ($vocabCount)", Icons.Default.CollectionsBookmark),
-        Triple(KikiExplorerSection.ACHIEVEMENTS, if (isEnglish) "Badges ($badgeCount)" else "Danh Hiệu ($badgeCount)", Icons.Default.EmojiEvents),
-        Triple(KikiExplorerSection.MISTAKES, if (isEnglish) "Mistakes ($weakPointsCount)" else "Lỗi Sai ($weakPointsCount)", Icons.Default.Healing)
-    )
-
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(16.dp))
-            .background(Color(0x6615102B))
-            .border(1.dp, Color(0x3351FAC1), RoundedCornerShape(16.dp))
-            .padding(4.dp)
-            .horizontalScroll(rememberScrollState()),
-        horizontalArrangement = Arrangement.spacedBy(4.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        items.forEach { (section, title, icon) ->
-            val isSelected = currentSection == section
-            Box(
-                modifier = Modifier
-                    .clip(RoundedCornerShape(12.dp))
-                    .background(
-                        if (isSelected) Brush.horizontalGradient(listOf(Color(0xFF003830), Color(0xFF005648)))
-                        else Brush.linearGradient(listOf(Color.Transparent, Color.Transparent))
-                    )
-                    .border(
-                        1.dp,
-                        if (isSelected) Color(0xFF51FAC1) else Color.Transparent,
-                        RoundedCornerShape(12.dp)
-                    )
-                    .clickable { onSectionSelect(section) }
-                    .padding(horizontal = 12.dp, vertical = 8.dp),
-                contentAlignment = Alignment.Center
-            ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(
-                        imageVector = icon,
-                        contentDescription = null,
-                        tint = if (isSelected) Color(0xFF51FAC1) else Color(0x88FFFFFF),
-                        modifier = Modifier.size(15.dp)
-                    )
-                    Spacer(modifier = Modifier.width(6.dp))
-                    Text(
-                        text = title,
-                        color = if (isSelected) Color.White else Color(0xAAFFFFFF),
-                        fontSize = 11.5.sp,
-                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium
-                    )
-                }
-            }
-        }
-    }
-}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -2382,7 +2225,7 @@ private fun KikiExplorerNavigationSheet(
                 Spacer(modifier = Modifier.width(12.dp))
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        text = "Kiki Explorer",
+                        text = userName.ifBlank { "Kiki Explorer" },
                         color = Color.White,
                         fontSize = 16.sp,
                         fontWeight = FontWeight.Bold,
@@ -2483,8 +2326,7 @@ private fun KikiNavDrawerItem(
     title: String,
     subtitle: String,
     badgeText: String,
-    icon: ImageVector? = null,
-    iconRes: Int? = null,
+    icon: ImageVector,
     accentColor: Color,
     isSelected: Boolean,
     onClick: () -> Unit
@@ -2516,15 +2358,7 @@ private fun KikiNavDrawerItem(
                     .background(accentColor.copy(alpha = 0.2f)),
                 contentAlignment = Alignment.Center
             ) {
-                if (iconRes != null) {
-                    Image(
-                        painter = painterResource(iconRes),
-                        contentDescription = null,
-                        modifier = Modifier.size(20.dp)
-                    )
-                } else if (icon != null) {
-                    Icon(icon, contentDescription = null, tint = accentColor, modifier = Modifier.size(20.dp))
-                }
+                Icon(icon, contentDescription = null, tint = accentColor, modifier = Modifier.size(20.dp))
             }
             Spacer(modifier = Modifier.width(12.dp))
             Column(modifier = Modifier.weight(1f)) {
@@ -2565,7 +2399,6 @@ private fun KikiExplorerHubView(
     onNavigateProfile: () -> Unit,
     onNavigateVocab: () -> Unit,
     onSettingsClick: () -> Unit,
-    onNavigateToShop: () -> Unit = {},
     onLogoutClick: () -> Unit
 ) {
     val strings = LocalAppStrings.current
@@ -2609,7 +2442,7 @@ private fun KikiExplorerHubView(
             Spacer(modifier = Modifier.width(14.dp))
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = "Kiki Explorer",
+                    text = userName.ifBlank { "Kiki Explorer" },
                     color = Color.White,
                     fontSize = 18.sp,
                     fontWeight = FontWeight.Black,
@@ -2698,19 +2531,7 @@ private fun KikiExplorerHubView(
 
             HorizontalDivider(color = Color(0x1A51FAC1), thickness = 0.8.dp)
 
-            // 3. Cosmic Exchange Shop
-            DuolingoStyleTile(
-                title = if (isEnglish) "Cosmic Exchange Shop" else "Cửa Hàng Quy Đổi Sao & Khiên",
-                icon = Icons.Default.Store,
-                iconBg = Color(0x22FFD166),
-                iconTint = Color(0xFFFFD166),
-                badgeText = "⭐ Shop",
-                onClick = onNavigateToShop
-            )
-
-            HorizontalDivider(color = Color(0x1A51FAC1), thickness = 0.8.dp)
-
-            // 4. Cài đặt & Tuỳ chọn
+            // 3. Cài đặt & Tuỳ chọn
             DuolingoStyleTile(
                 title = if (isEnglish) "Settings & Preferences" else "Cài Đặt & Tuỳ Chọn",
                 icon = Icons.Default.Settings,
@@ -2918,6 +2739,7 @@ private fun ProfileSectionView(
             isEnglish = isEnglish,
             onBadgeClick = onBadgeClick
         )
+
     }
 }
 
