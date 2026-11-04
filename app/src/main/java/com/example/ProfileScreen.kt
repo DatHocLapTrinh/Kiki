@@ -1274,7 +1274,12 @@ private fun ProfileAchievements(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
+                Row(
+                    modifier = Modifier
+                        .weight(1f)
+                        .padding(end = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
                     Box(
                         modifier = Modifier
                             .size(34.dp)
@@ -1290,17 +1295,21 @@ private fun ProfileAchievements(
                         )
                     }
                     Spacer(modifier = Modifier.width(10.dp))
-                    Column {
+                    Column(modifier = Modifier.weight(1f, fill = false)) {
                         Text(
-                            text = if (isEnglish) "Achievement Badges Collection" else "Bộ Sưu Tập Huy Hiệu Thành Tựu",
+                            text = if (isEnglish) "Achievement Badges" else "Bộ Sưu Tập Huy Hiệu",
                             color = Color.White,
-                            fontSize = 16.sp,
-                            fontWeight = FontWeight.Black
+                            fontSize = 15.sp,
+                            fontWeight = FontWeight.Black,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
                         )
                         Text(
-                            text = if (isEnglish) "Tap any badge to view milestones" else "Chạm vào từng huy hiệu để xem chi tiết",
+                            text = if (isEnglish) "Tap any badge to view milestones" else "Chạm vào huy hiệu để xem chi tiết",
                             color = Color(0x99FFFFFF),
-                            fontSize = 10.sp
+                            fontSize = 10.sp,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
                         )
                     }
                 }
@@ -1309,13 +1318,15 @@ private fun ProfileAchievements(
                         .clip(RoundedCornerShape(12.dp))
                         .background(Color(0x3351FAC1))
                         .border(1.2.dp, Color(0xFF51FAC1), RoundedCornerShape(12.dp))
-                        .padding(horizontal = 10.dp, vertical = 4.dp)
+                        .padding(horizontal = 10.dp, vertical = 5.dp)
                 ) {
                     Text(
                         text = "$unlockedCount/${allBadges.size}",
                         color = Color(0xFF51FAC1),
                         fontSize = 12.sp,
-                        fontWeight = FontWeight.Black
+                        fontWeight = FontWeight.Black,
+                        maxLines = 1,
+                        softWrap = false
                     )
                 }
             }
@@ -1387,11 +1398,13 @@ private fun ProfileAchievements(
                         Text(
                             text = if (isEnglish) badge.titleEn else badge.titleVi,
                             color = if (badge.isUnlocked) Color.White else Color(0x77FFFFFF),
-                            fontSize = 11.sp,
+                            fontSize = 10.5.sp,
                             fontWeight = FontWeight.Bold,
-                            maxLines = 1,
+                            minLines = 2,
+                            maxLines = 2,
                             overflow = TextOverflow.Ellipsis,
-                            textAlign = TextAlign.Center
+                            textAlign = TextAlign.Center,
+                            lineHeight = 13.sp
                         )
 
                         Spacer(modifier = Modifier.height(2.dp))
