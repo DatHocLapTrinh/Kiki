@@ -881,6 +881,15 @@ fun OptionButton(text: String, isSelected: Boolean, onClick: () -> Unit) {
 fun MainNavigation(viewModel: StudyViewModel, onLogout: () -> Unit) {
     val navController = rememberNavController()
     val context = androidx.compose.ui.platform.LocalContext.current
+    LaunchedEffect(Unit) {
+        val activity = context as? android.app.Activity
+        val targetScreen = activity?.intent?.getStringExtra(com.example.notification.KikiNotificationManager.EXTRA_TARGET_SCREEN)
+        if (targetScreen == "profile") {
+            activity.intent?.removeExtra(com.example.notification.KikiNotificationManager.EXTRA_TARGET_SCREEN)
+            viewModel.setKikiExplorerSection(KikiExplorerSection.PROFILE)
+            navController.navigate("profile") { launchSingleTop = true }
+        }
+    }
     val isEnglish by viewModel.isEnglish.observeAsState(false)
     var showFocusPrompt by remember {
         mutableStateOf(!com.example.util.FocusModeManager.hasPrompted(context))
@@ -989,6 +998,24 @@ fun MainNavigation(viewModel: StudyViewModel, onLogout: () -> Unit) {
                 onNavigateSettings = {
                     showDuolingoMoreSheet = false
                     viewModel.setKikiExplorerSection(KikiExplorerSection.SETTINGS)
+                    navController.navigate("profile") {
+                        popUpTo(navController.graph.startDestinationId) { saveState = true }
+                        launchSingleTop = true
+                        restoreState = true
+                    }
+                }
+            )
+        }
+
+        val newlyUnlockedBadge by viewModel.newlyUnlockedBadge.observeAsState(null)
+        if (newlyUnlockedBadge != null) {
+            com.example.ui.AchievementUnlockedCelebrationDialog(
+                badge = newlyUnlockedBadge!!,
+                isEnglish = isEnglish,
+                onDismiss = { viewModel.dismissNewlyUnlockedBadge() },
+                onViewProfile = {
+                    viewModel.dismissNewlyUnlockedBadge()
+                    viewModel.setKikiExplorerSection(KikiExplorerSection.PROFILE)
                     navController.navigate("profile") {
                         popUpTo(navController.graph.startDestinationId) { saveState = true }
                         launchSingleTop = true

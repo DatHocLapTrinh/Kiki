@@ -98,4 +98,27 @@ class AchievementBadgeTest {
             assertTrue("Progress fraction should be in 0..1: ${badge.id}", badge.progressFraction in 0f..1f)
         }
     }
+
+    @Test
+    fun testAllBadgesMapToUniqueDrawables() {
+        val allBadges = AchievementRegistry.getAllBadges(unlockedIds = emptySet())
+        val mappedDrawables = allBadges.map { resolveBadgeTrophyResource(it.id, it.iconKey) }
+        assertEquals(7, mappedDrawables.size)
+        // All 7 badges must have distinct non-repeating drawables
+        assertEquals(7, mappedDrawables.toSet().size)
+        for (res in mappedDrawables) {
+            assertTrue("Drawable res should be positive", res > 0)
+        }
+    }
+
+    @Test
+    fun testAllStagesMasteryUnlock() {
+        val locked = AchievementRegistry.getAllBadges(unlockedIds = emptySet(), allStagesCompleted = false)
+            .first { it.id == BadgeId.ALL_STAGES_MASTERY.id }
+        assertFalse(locked.isUnlocked)
+
+        val unlocked = AchievementRegistry.getAllBadges(unlockedIds = emptySet(), allStagesCompleted = true)
+            .first { it.id == BadgeId.ALL_STAGES_MASTERY.id }
+        assertTrue(unlocked.isUnlocked)
+    }
 }

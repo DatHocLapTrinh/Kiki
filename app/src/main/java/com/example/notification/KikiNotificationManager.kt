@@ -21,6 +21,9 @@ object KikiNotificationManager {
 
     const val CHANNEL_STREAK = "kiki_streak_channel"
     const val CHANNEL_NEWS = "kiki_news_channel"
+    const val CHANNEL_ACHIEVEMENT = "kiki_achievement_channel"
+
+    const val NOTIFICATION_ID_ACHIEVEMENT_BASE = 3000
 
     const val NOTIFICATION_ID_STREAK = 1001
     const val NOTIFICATION_ID_FCM_BASE = 2000
@@ -55,7 +58,18 @@ object KikiNotificationManager {
                 description = "Thông báo sự kiện XP, nhiệm vụ mới và cập nhật từ Kiki"
             }
 
-            notificationManager.createNotificationChannels(listOf(streakChannel, newsChannel))
+            // 3. Kênh Vinh danh & Mở khóa Danh hiệu (Độ ưu tiên cao, rung vinh danh)
+            val achievementChannel = NotificationChannel(
+                CHANNEL_ACHIEVEMENT,
+                "Vinh danh & Mở khóa Danh hiệu 🎖️",
+                NotificationManager.IMPORTANCE_HIGH
+            ).apply {
+                description = "Thông báo chúc mừng khi đạt danh hiệu và mốc thành tựu mới"
+                enableVibration(true)
+                vibrationPattern = longArrayOf(0, 150, 100, 150, 100, 250)
+            }
+
+            notificationManager.createNotificationChannels(listOf(streakChannel, newsChannel, achievementChannel))
             Log.d(TAG, "Notification channels created successfully.")
         }
     }
@@ -285,4 +299,64 @@ object KikiNotificationManager {
             Log.w(TAG, "SecurityException while showing FCM notification: ${e.message}")
         }
     }
-}
+
+    /**
+     * Hiển thị thông báo khi người dùng đạt được yêu cầu của danh hiệu (mở khóa danh hiệu mới)
+     */
+    fun showAchievementUnlockedNotification(
+        context: Context,
+        badgeTitle: String,
+        badgeDescription: String,
+        badgeDrawableRes: Int,
+        isEnglish: Boolean = false
+    ) {
+        if (!hasNotificationPermission(context)) {
+            Log.d(TAG, "Permission not granted, skipping achievement notification: $badgeTitle")
+            return
+        }
+
+        val intent = Intent(context, MainActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+            putExtra(EXTRA_TARGET_SCREEN, "profile")
+        }
+
+        val notificationId = (NOTIFICATION_ID_ACHIEVEMENT_BASE + (System.currentTimeMillis() % 1000)).toInt()
+
+        val pendingIntent = PendingIntent.getActivity(
+            context,
+            notificationId,
+            intent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+
+        val largeIcon = try {
+            BitmapFactory.decodeResource(context.resources, badgeDrawableRes)
+        } catch (_: Exception) {
+            null
+        }
+
+        val title = if (isEnglish) "🎉 New Achievement Unlocked: $badgeTitle!" else "🎉 Mở Khóa Danh Hiệu Mới: $badgeTitle!"
+        val body = if (isEnglish) "Congratulations! $badgeDescription. Tap to view your badge collection!" else "Chúc mừng bạn! $badgeDescription. Chạm để xem bộ sưu tập huy hiệu!"
+
+        val notification = NotificationCompat.Builder(context, CHANNEL_ACHIEVEMENT)
+            .setSmallIcon(R.drawable.kiki_icon)
+            .apply {
+                if (largeIcon != null) setLargeIcon(largeIcon)
+            }
+            .setContentTitle(title)
+            .setContentText(body)
+            .setStyle(NotificationCompat.BigTextStyle().bigText(body))
+            .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .setCategory(NotificationCompat.CATEGORY_EVENT)
+            .setContentIntent(pendingIntent)
+            .setAutoCancel(true)
+            .build()
+
+        try {
+            NotificationManagerCompat.from(context).notify(notificationId, notification)
+            Log.d(TAG, "Achievement notification displayed successfully (ID=$notificationId): $badgeTitle")
+        } catch (e: SecurityException) {
+            Log.w(TAG, "SecurityException while showing achievement notification: ${e.message}")
+        }
+        }
+    }
