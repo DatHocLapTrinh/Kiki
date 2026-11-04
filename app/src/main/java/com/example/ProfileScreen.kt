@@ -673,28 +673,6 @@ private fun ProfileHeader(
                 overflow = TextOverflow.Ellipsis
             )
         }
-        Spacer(modifier = Modifier.width(8.dp))
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            // Star Badge Box
-            Box(
-                modifier = Modifier
-                    .height(54.dp)
-                    .clip(RoundedCornerShape(16.dp))
-                    .background(Color(0x66191438))
-                    .border(1.dp, Color(0x995C3DA0), RoundedCornerShape(16.dp))
-                    .padding(horizontal = 10.dp, vertical = 6.dp),
-                contentAlignment = Alignment.Center
-            ) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Icon(Icons.Default.Star, contentDescription = null, tint = Color(0xFFFFD166), modifier = Modifier.size(17.dp))
-                    Text("$earnedStars", color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.ExtraBold)
-                    Text(if (isEnglish) "STARS" else "SAO", color = Color(0xCCFFFFFF), fontSize = 7.5.sp)
-                }
-            }
-        }
     }
 }
 
@@ -752,8 +730,9 @@ private fun ProfileIdentityCard(
                             contentScale = ContentScale.Crop
                         )
                     } else {
-                        Image(
-                            painter = painterResource(resolveAvatarResource(avatarUri)),
+                        AsyncImage(
+                            model = resolveAvatarResource(avatarUri),
+                            contentScale = ContentScale.Fit,
                             contentDescription = "Avatar",
                             modifier = Modifier.fillMaxSize().clip(CircleShape)
                         )
@@ -771,7 +750,6 @@ private fun ProfileIdentityCard(
             }
             Spacer(modifier = Modifier.height(9.dp))
             Text(userName, color = Color.White, fontSize = 22.sp, fontWeight = FontWeight.Black)
-            Text(rankTitle, color = Color(0xFF51FAC1), fontSize = 13.sp, fontWeight = FontWeight.Bold)
 
             Spacer(modifier = Modifier.height(4.dp))
             Text(
@@ -932,8 +910,9 @@ fun EditProfileDialog(
                                     .padding(2.dp),
                                 contentAlignment = Alignment.Center
                             ) {
-                                Image(
-                                    painter = painterResource(resolveAvatarResource(avatarKey)),
+                                AsyncImage(
+                            model = resolveAvatarResource(avatarKey),
+                            contentScale = ContentScale.Fit,
                                     contentDescription = label,
                                     modifier = Modifier.fillMaxSize().clip(CircleShape)
                                 )
@@ -1008,24 +987,47 @@ private fun ProfileClusterHeader(title: String, icon: ImageVector, color: Color)
     }
 }
 
+fun resolveBadgeTrophyResource(badgeId: String, iconKey: String): Int {
+    return when (badgeId) {
+        "first_step" -> R.drawable.trophy_bronze_curious_seeker
+        "persistent_scholar" -> R.drawable.trophy_silver_diligent_learner
+        "night_owl" -> R.drawable.trophy_silver
+        "super_memory" -> R.drawable.trophy_gold_scholarly_achiever
+        "chief_doctor" -> R.drawable.trophy_gold
+        "speaking_ace" -> R.drawable.trophy_platinum_master_graduate
+        "all_stages_mastery" -> R.drawable.trophy_diamond_grand_polymath
+        else -> when (iconKey) {
+            "NIGHT_OWL" -> R.drawable.trophy_silver
+            "CHIEF_DOCTOR" -> R.drawable.trophy_gold
+            "SUPER_MEMORY" -> R.drawable.trophy_gold_scholarly_achiever
+            "PERSISTENT_SCHOLAR" -> R.drawable.trophy_silver_diligent_learner
+            "FIRST_STEP" -> R.drawable.trophy_bronze_curious_seeker
+            "SPEAKING_ACE" -> R.drawable.trophy_platinum_master_graduate
+            "ALL_STAGES_MASTERY" -> R.drawable.trophy_diamond_grand_polymath
+            else -> R.drawable.trophy_gold
+        }
+    }
+}
+
 @Composable
 private fun ProfileCompactMetricTile(
     modifier: Modifier = Modifier,
     title: String,
     value: String,
     subtitle: String,
-    icon: ImageVector,
+    icon: ImageVector? = null,
+    iconRes: Int? = null,
     accentColor: Color,
     onClick: () -> Unit
 ) {
     Box(
         modifier = modifier
-            .height(78.dp)
-            .clip(RoundedCornerShape(18.dp))
-            .background(Brush.verticalGradient(listOf(Color(0x991C142E), Color(0x77120D22))))
-            .border(1.dp, accentColor.copy(alpha = 0.35f), RoundedCornerShape(18.dp))
+            .height(84.dp)
+            .clip(RoundedCornerShape(20.dp))
+            .background(Brush.verticalGradient(listOf(Color(0xFF1E1738), Color(0xFF120D22))))
+            .border(1.2.dp, accentColor.copy(alpha = 0.45f), RoundedCornerShape(20.dp))
             .clickable { onClick() }
-            .padding(horizontal = 10.dp, vertical = 7.dp)
+            .padding(horizontal = 12.dp, vertical = 9.dp)
     ) {
         Column(
             modifier = Modifier.fillMaxSize(),
@@ -1036,20 +1038,29 @@ private fun ProfileCompactMetricTile(
             ) {
                 Box(
                     modifier = Modifier
-                        .size(18.dp)
+                        .size(24.dp)
                         .clip(CircleShape)
-                        .background(accentColor.copy(alpha = 0.20f)),
+                        .background(accentColor.copy(alpha = 0.22f)),
                     contentAlignment = Alignment.Center
                 ) {
-                    Icon(icon, contentDescription = null, tint = accentColor, modifier = Modifier.size(11.dp))
+                    if (iconRes != null) {
+                        AsyncImage(
+                            model = iconRes,
+                            contentDescription = null,
+                            modifier = Modifier.size(16.dp),
+                            contentScale = ContentScale.Fit
+                        )
+                    } else if (icon != null) {
+                        Icon(icon, contentDescription = null, tint = accentColor, modifier = Modifier.size(13.dp))
+                    }
                 }
-                Spacer(modifier = Modifier.width(5.dp))
+                Spacer(modifier = Modifier.width(7.dp))
                 Text(
                     text = title,
-                    color = Color(0xB3FFFFFF),
-                    fontSize = 9.sp,
+                    color = Color(0xCCFFFFFF),
+                    fontSize = 10.sp,
                     fontWeight = FontWeight.Bold,
-                    letterSpacing = 0.3.sp,
+                    letterSpacing = 0.4.sp,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
@@ -1057,16 +1068,16 @@ private fun ProfileCompactMetricTile(
             Text(
                 text = value,
                 color = Color.White,
-                fontSize = 14.sp,
-                fontWeight = FontWeight.ExtraBold,
+                fontSize = 15.sp,
+                fontWeight = FontWeight.Black,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
             )
             Text(
                 text = subtitle,
-                color = accentColor.copy(alpha = 0.9f),
-                fontSize = 9.5.sp,
-                fontWeight = FontWeight.Medium,
+                color = accentColor.copy(alpha = 0.95f),
+                fontSize = 10.sp,
+                fontWeight = FontWeight.SemiBold,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
             )
@@ -1235,10 +1246,27 @@ private fun ProfileAchievements(
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(22.dp))
-            .background(Color(0x7614142B))
-            .border(1.dp, Color(0x665B39A2), RoundedCornerShape(22.dp))
-            .padding(16.dp)
+            .clip(RoundedCornerShape(24.dp))
+            .background(
+                Brush.verticalGradient(
+                    listOf(
+                        Color(0xFF26164A), // Tông màu tím vũ trụ đậm, làm nổi bật bộ sưu tập
+                        Color(0xFF140D28)
+                    )
+                )
+            )
+            .border(
+                1.5.dp,
+                Brush.horizontalGradient(
+                    listOf(
+                        Color(0xFFFFD166),
+                        Color(0xFF9D4EDD),
+                        Color(0xFF51FAC1)
+                    )
+                ),
+                RoundedCornerShape(24.dp)
+            )
+            .padding(18.dp)
     ) {
         Column {
             Row(
@@ -1247,103 +1275,132 @@ private fun ProfileAchievements(
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(
-                        imageVector = Icons.Default.WorkspacePremium,
-                        contentDescription = null,
-                        tint = Color(0xFFFFD166),
-                        modifier = Modifier.size(20.dp)
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(
-                        text = if (isEnglish) "Mastery Badges" else "Bộ Sưu Tập Thành Tựu",
-                        color = Color.White,
-                        fontSize = 15.sp,
-                        fontWeight = FontWeight.Bold
-                    )
+                    Box(
+                        modifier = Modifier
+                            .size(34.dp)
+                            .clip(CircleShape)
+                            .background(Color(0x33FFD166)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        AsyncImage(
+                            model = R.drawable.trophy_gold,
+                            contentDescription = null,
+                            modifier = Modifier.size(24.dp),
+                            contentScale = ContentScale.Fit
+                        )
+                    }
+                    Spacer(modifier = Modifier.width(10.dp))
+                    Column {
+                        Text(
+                            text = if (isEnglish) "Mastery Trophy Hall" else "Bộ Sưu Tập Thành Tựu & Cúp",
+                            color = Color.White,
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.Black
+                        )
+                        Text(
+                            text = if (isEnglish) "Tap any trophy to view milestones" else "Chạm vào từng cúp để xem chi tiết",
+                            color = Color(0x99FFFFFF),
+                            fontSize = 10.sp
+                        )
+                    }
                 }
                 Box(
                     modifier = Modifier
                         .clip(RoundedCornerShape(12.dp))
                         .background(Color(0x33FFD166))
-                        .border(1.dp, Color(0x66FFD166), RoundedCornerShape(12.dp))
-                        .padding(horizontal = 8.dp, vertical = 3.dp)
+                        .border(1.2.dp, Color(0xFFFFD166), RoundedCornerShape(12.dp))
+                        .padding(horizontal = 10.dp, vertical = 4.dp)
                 ) {
                     Text(
                         text = "$unlockedCount/${allBadges.size}",
                         color = Color(0xFFFFD166),
-                        fontSize = 11.sp,
-                        fontWeight = FontWeight.ExtraBold
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Black
                     )
                 }
             }
 
-            Spacer(modifier = Modifier.height(14.dp))
+            Spacer(modifier = Modifier.height(16.dp))
 
             androidx.compose.foundation.lazy.LazyRow(
-                horizontalArrangement = Arrangement.spacedBy(14.dp),
+                horizontalArrangement = Arrangement.spacedBy(16.dp),
                 contentPadding = PaddingValues(horizontal = 2.dp)
             ) {
                 items(allBadges.size) { index ->
                     val badge = allBadges[index]
-                    val icon = when (badge.iconKey) {
-                        "NIGHT_OWL" -> Icons.Default.Bedtime
-                        "CHIEF_DOCTOR" -> Icons.Default.Healing
-                        "SUPER_MEMORY" -> Icons.Default.Psychology
-                        "PERSISTENT_SCHOLAR" -> Icons.Default.LocalFireDepartment
-                        "FIRST_STEP" -> Icons.Default.Flag
-                        "SPEAKING_ACE" -> Icons.Default.RecordVoiceOver
-                        else -> Icons.Default.Diamond
-                    }
+                    val trophyRes = resolveBadgeTrophyResource(badge.id, badge.iconKey)
 
                     Column(
                         horizontalAlignment = Alignment.CenterHorizontally,
                         modifier = Modifier
-                            .width(82.dp)
+                            .width(88.dp)
+                            .clip(RoundedCornerShape(16.dp))
                             .clickable { onBadgeClick(badge) }
+                            .padding(4.dp)
                     ) {
                         Box(
                             modifier = Modifier
-                                .size(56.dp)
+                                .size(64.dp)
                                 .clip(CircleShape)
                                 .background(
                                     if (badge.isUnlocked) Brush.radialGradient(
-                                        listOf(Color(0x44FFD166), Color(0x221F1D2F))
+                                        listOf(Color(0x66FFD166), Color(0x333F2B66), Color(0xFF191032))
                                     ) else Brush.radialGradient(
-                                        listOf(Color(0x221F1D2F), Color(0x111F1D2F))
+                                        listOf(Color(0x222C2444), Color(0xFF120E22))
                                     )
                                 )
                                 .border(
-                                    1.5.dp,
+                                    2.dp,
                                     if (badge.isUnlocked) Color(0xFFFFD166) else Color(0x445E5876),
                                     CircleShape
                                 ),
                             contentAlignment = Alignment.Center
                         ) {
-                            Icon(
-                                imageVector = icon,
+                            AsyncImage(
+                                model = trophyRes,
                                 contentDescription = if (isEnglish) badge.titleEn else badge.titleVi,
-                                tint = if (badge.isUnlocked) Color(0xFFFFD166) else Color(0x667C748D),
-                                modifier = Modifier.size(26.dp)
+                                contentScale = ContentScale.Fit,
+                                modifier = Modifier.size(46.dp),
+                                alpha = if (badge.isUnlocked) 1f else 0.45f
                             )
+                            if (badge.isUnlocked) {
+                                Box(
+                                    modifier = Modifier
+                                        .align(Alignment.BottomEnd)
+                                        .size(16.dp)
+                                        .clip(CircleShape)
+                                        .background(Color(0xFF51FAC1)),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.Check,
+                                        contentDescription = null,
+                                        tint = Color(0xFF0D0A1A),
+                                        modifier = Modifier.size(11.dp)
+                                    )
+                                }
+                            }
                         }
 
-                        Spacer(modifier = Modifier.height(6.dp))
+                        Spacer(modifier = Modifier.height(7.dp))
 
                         Text(
                             text = if (isEnglish) badge.titleEn else badge.titleVi,
-                            color = if (badge.isUnlocked) Color.White else Color(0x667C748D),
-                            fontSize = 10.sp,
-                            fontWeight = FontWeight.SemiBold,
+                            color = if (badge.isUnlocked) Color.White else Color(0x77FFFFFF),
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis,
                             textAlign = TextAlign.Center
                         )
 
+                        Spacer(modifier = Modifier.height(2.dp))
+
                         Text(
-                            text = if (badge.isUnlocked) (if (isEnglish) "Unlocked" else "Đã mở") else "${badge.currentProgress}/${badge.targetCount}",
-                            color = if (badge.isUnlocked) Color(0xFF51FAC1) else Color(0x99FFD166),
-                            fontSize = 9.sp,
-                            fontWeight = FontWeight.Medium,
+                            text = if (badge.isUnlocked) (if (isEnglish) "Unlocked" else "Đã Mở") else "${badge.currentProgress}/${badge.targetCount}",
+                            color = if (badge.isUnlocked) Color(0xFF51FAC1) else Color(0xFFFFD166).copy(alpha = 0.85f),
+                            fontSize = 9.5.sp,
+                            fontWeight = FontWeight.ExtraBold,
                             maxLines = 1
                         )
                     }
@@ -1360,15 +1417,7 @@ private fun AchievementDetailDialog(
     onDismiss: () -> Unit
 ) {
     if (badge == null) return
-    val icon = when (badge.iconKey) {
-        "NIGHT_OWL" -> Icons.Default.Bedtime
-        "CHIEF_DOCTOR" -> Icons.Default.Healing
-        "SUPER_MEMORY" -> Icons.Default.Psychology
-        "PERSISTENT_SCHOLAR" -> Icons.Default.LocalFireDepartment
-        "FIRST_STEP" -> Icons.Default.Flag
-        "SPEAKING_ACE" -> Icons.Default.RecordVoiceOver
-        else -> Icons.Default.Diamond
-    }
+    val trophyRes = resolveBadgeTrophyResource(badge.id, badge.iconKey)
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -1377,17 +1426,18 @@ private fun AchievementDetailDialog(
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Box(
                     modifier = Modifier
-                        .size(44.dp)
+                        .size(54.dp)
                         .clip(CircleShape)
                         .background(if (badge.isUnlocked) Color(0x33FFD166) else Color(0x22444455))
-                        .border(1.dp, if (badge.isUnlocked) Color(0xFFFFD166) else Color(0x44888899), CircleShape),
+                        .border(1.5.dp, if (badge.isUnlocked) Color(0xFFFFD166) else Color(0x44888899), CircleShape),
                     contentAlignment = Alignment.Center
                 ) {
-                    Icon(
-                        imageVector = icon,
+                    AsyncImage(
+                        model = trophyRes,
                         contentDescription = null,
-                        tint = if (badge.isUnlocked) Color(0xFFFFD166) else Color(0x66888899),
-                        modifier = Modifier.size(24.dp)
+                        contentScale = ContentScale.Fit,
+                        modifier = Modifier.size(40.dp),
+                        alpha = if (badge.isUnlocked) 1f else 0.45f
                     )
                 }
                 Spacer(modifier = Modifier.width(12.dp))
@@ -2216,8 +2266,9 @@ private fun KikiExplorerNavigationSheet(
                         .border(1.5.dp, Color(0xFF51FAC1), CircleShape),
                     contentAlignment = Alignment.Center
                 ) {
-                    Image(
-                        painter = painterResource(resolveAvatarResource(avatarUri)),
+                    AsyncImage(
+                            model = resolveAvatarResource(avatarUri),
+                            contentScale = ContentScale.Fit,
                         contentDescription = null,
                         modifier = Modifier.fillMaxSize().clip(CircleShape)
                     )
@@ -2247,13 +2298,6 @@ private fun KikiExplorerNavigationSheet(
                                 fontWeight = FontWeight.ExtraBold
                             )
                         }
-                        Spacer(modifier = Modifier.width(6.dp))
-                        Text(
-                            text = rankTitle,
-                            color = Color(0xFFFFD166),
-                            fontSize = 11.sp,
-                            fontWeight = FontWeight.Medium
-                        )
                     }
                 }
                 IconButton(onClick = onDismiss) {
@@ -2284,7 +2328,7 @@ private fun KikiExplorerNavigationSheet(
                 // 1. Hồ sơ (gồm danh hiệu và cột mốc bên trong)
                 DuolingoStyleTile(
                     title = if (isEnglish) "Profile & Cosmic Badges" else "Hồ Sơ & Danh Hiệu Cột Mốc",
-                    icon = Icons.Default.Person,
+                    iconRes = R.drawable.profile,
                     badgeText = "Lv.$level",
                     onClick = onNavigateProfile
                 )
@@ -2293,7 +2337,7 @@ private fun KikiExplorerNavigationSheet(
                 // 2. Từ vựng & Ngữ pháp
                 DuolingoStyleTile(
                     title = if (isEnglish) "Vocabulary & Grammar" else "Từ Vựng & Ngữ Pháp",
-                    icon = Icons.Default.CollectionsBookmark,
+                    iconRes = R.drawable.ic_open_book,
                     badgeText = "$vocabCount từ",
                     onClick = onNavigateVocab
                 )
@@ -2302,7 +2346,7 @@ private fun KikiExplorerNavigationSheet(
                 // 3. Cài đặt & Tuỳ chọn
                 DuolingoStyleTile(
                     title = if (isEnglish) "Settings & Preferences" else "Cài Đặt & Tuỳ Chọn",
-                    icon = Icons.Default.Settings,
+                    iconRes = R.drawable.ic_action_setting,
                     onClick = onSettingsClick
                 )
                 HorizontalDivider(color = Color(0x1A51FAC1), thickness = 0.8.dp)
@@ -2310,7 +2354,7 @@ private fun KikiExplorerNavigationSheet(
                 // 4. Đăng xuất tài khoản
                 DuolingoStyleTile(
                     title = if (isEnglish) "Log Out Account" else "Đăng Xuất Tài Khoản",
-                    icon = Icons.AutoMirrored.Filled.ExitToApp,
+                    iconRes = R.drawable.ic_logout,
                     iconBg = Color(0x22FF5252),
                     iconTint = Color(0xFFFF5252),
                     onClick = onLogoutClick
@@ -2432,8 +2476,9 @@ private fun KikiExplorerHubView(
                         contentScale = ContentScale.Crop
                     )
                 } else {
-                    Image(
-                        painter = painterResource(resolveAvatarResource(avatarUri)),
+                    AsyncImage(
+                            model = resolveAvatarResource(avatarUri),
+                            contentScale = ContentScale.Fit,
                         contentDescription = "Avatar",
                         modifier = Modifier.fillMaxSize().clip(CircleShape)
                     )
@@ -2465,28 +2510,6 @@ private fun KikiExplorerHubView(
                             fontWeight = FontWeight.ExtraBold
                         )
                     }
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(
-                        text = rankTitle,
-                        color = Color(0xFFFFD166),
-                        fontSize = 11.5.sp,
-                        fontWeight = FontWeight.SemiBold
-                    )
-                }
-            }
-            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                Box(
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(12.dp))
-                        .background(Color(0x33FFD166))
-                        .border(1.dp, Color(0x66FFD166), RoundedCornerShape(12.dp))
-                        .padding(horizontal = 8.dp, vertical = 5.dp)
-                ) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(Icons.Default.Star, contentDescription = null, tint = Color(0xFFFFD166), modifier = Modifier.size(13.dp))
-                        Spacer(modifier = Modifier.width(3.dp))
-                        Text("$earnedStars", color = Color(0xFFFFD166), fontSize = 11.sp, fontWeight = FontWeight.Bold)
-                    }
                 }
             }
         }
@@ -2514,7 +2537,7 @@ private fun KikiExplorerHubView(
             // 1. Hồ sơ (gồm danh hiệu và cột mốc bên trong)
             DuolingoStyleTile(
                 title = if (isEnglish) "Profile & Cosmic Badges" else "Hồ Sơ & Danh Hiệu Cột Mốc",
-                icon = Icons.Default.Person,
+                iconRes = R.drawable.profile,
                 badgeText = "Lv.$level",
                 onClick = onNavigateProfile
             )
@@ -2524,7 +2547,7 @@ private fun KikiExplorerHubView(
             // 2. Từ vựng & Ngữ pháp
             DuolingoStyleTile(
                 title = if (isEnglish) "Vocabulary & Grammar" else "Từ Vựng & Ngữ Pháp",
-                icon = Icons.Default.CollectionsBookmark,
+                iconRes = R.drawable.ic_open_book,
                 badgeText = "$vocabCount từ",
                 onClick = onNavigateVocab
             )
@@ -2534,7 +2557,7 @@ private fun KikiExplorerHubView(
             // 3. Cài đặt & Tuỳ chọn
             DuolingoStyleTile(
                 title = if (isEnglish) "Settings & Preferences" else "Cài Đặt & Tuỳ Chọn",
-                icon = Icons.Default.Settings,
+                iconRes = R.drawable.ic_action_setting,
                 onClick = onSettingsClick
             )
 
@@ -2543,7 +2566,7 @@ private fun KikiExplorerHubView(
             // 4. Đăng xuất tài khoản
             DuolingoStyleTile(
                 title = if (isEnglish) "Log Out Account" else "Đăng Xuất Tài Khoản",
-                icon = Icons.AutoMirrored.Filled.ExitToApp,
+                iconRes = R.drawable.ic_logout,
                 iconBg = Color(0x22FF5252),
                 iconTint = Color(0xFFFF5252),
                 onClick = onLogoutClick
@@ -2555,7 +2578,8 @@ private fun KikiExplorerHubView(
 @Composable
 private fun DuolingoStyleTile(
     title: String,
-    icon: ImageVector,
+    icon: ImageVector? = null,
+    iconRes: Int? = null,
     iconBg: Color = Color(0x2251FAC1),
     iconTint: Color = Color(0xFF51FAC1),
     badgeText: String? = null,
@@ -2577,12 +2601,21 @@ private fun DuolingoStyleTile(
                 .border(1.dp, iconTint.copy(alpha = 0.4f), RoundedCornerShape(13.dp)),
             contentAlignment = Alignment.Center
         ) {
-            Icon(
-                imageVector = icon,
-                contentDescription = title,
-                tint = iconTint,
-                modifier = Modifier.size(24.dp)
-            )
+            if (iconRes != null) {
+                AsyncImage(
+                    model = iconRes,
+                    contentDescription = title,
+                    modifier = Modifier.size(24.dp),
+                    contentScale = ContentScale.Fit
+                )
+            } else if (icon != null) {
+                Icon(
+                    imageVector = icon,
+                    contentDescription = title,
+                    tint = iconTint,
+                    modifier = Modifier.size(24.dp)
+                )
+            }
         }
 
         Spacer(modifier = Modifier.width(16.dp))
@@ -2672,60 +2705,32 @@ private fun ProfileSectionView(
             icon = Icons.Default.Insights,
             color = Color(0xFF51FAC1)
         )
-        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                ProfileCompactMetricTile(
-                    modifier = Modifier.weight(1f),
-                    title = if (isEnglish) "STREAK" else "CHUỖI NGÀY",
-                    value = if (isEnglish) "$streak Days 🔥" else "$streak Ngày 🔥",
-                    subtitle = if (isEnglish) "🛡️ $streakShields Shield" else "🛡️ $streakShields Khiên giữ",
-                    icon = Icons.Default.LocalFireDepartment,
-                    accentColor = Color(0xFFFF9E00),
-                    onClick = {
-                        haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.TextHandleMove)
-                        Toast.makeText(context, if (isEnglish) "Streak: $streak days" else "Chuỗi chuyên cần: $streak ngày liên tục!", Toast.LENGTH_SHORT).show()
-                    }
-                )
-                ProfileCompactMetricTile(
-                    modifier = Modifier.weight(1f),
-                    title = if (isEnglish) "TOTAL XP" else "NĂNG LƯỢNG XP",
-                    value = "$xp XP",
-                    subtitle = "⚡ $rankTitle",
-                    icon = Icons.Default.AutoAwesome,
-                    accentColor = Color(0xFFFFD166),
-                    onClick = {
-                        haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.TextHandleMove)
-                        Toast.makeText(context, if (isEnglish) "XP: $xp - Rank: $rankTitle" else "Điểm XP: $xp - Hạng: $rankTitle", Toast.LENGTH_SHORT).show()
-                    }
-                )
-            }
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                val percent = if (totalLessons > 0) (completedLessons * 100 / totalLessons) else 0
-                ProfileCompactMetricTile(
-                    modifier = Modifier.weight(1f),
-                    title = if (isEnglish) "LESSONS" else "BÀI HỌC",
-                    value = "$completedLessons/$totalLessons",
-                    subtitle = if (isEnglish) "$percent% Mastered" else "$percent% Hoàn thành",
-                    icon = Icons.AutoMirrored.Filled.MenuBook,
-                    accentColor = Color(0xFF51FAC1),
-                    onClick = {
-                        haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.TextHandleMove)
-                        onNavigateToRoadmap()
-                    }
-                )
-                ProfileCompactMetricTile(
-                    modifier = Modifier.weight(1f),
-                    title = if (isEnglish) "COSMIC STARS" else "SAO TINH TÚ",
-                    value = "$earnedStars ⭐",
-                    subtitle = if (isEnglish) "Milestone Vault" else "Kho báu tri thức",
-                    icon = Icons.Default.Star,
-                    accentColor = Color(0xFFC68CFF),
-                    onClick = {
-                        haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.TextHandleMove)
-                        Toast.makeText(context, if (isEnglish) "Cosmic Stars: $earnedStars ⭐" else "Kho báu sao: $earnedStars sao tinh tú!", Toast.LENGTH_SHORT).show()
-                    }
-                )
-            }
+        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            ProfileCompactMetricTile(
+                modifier = Modifier.weight(1f),
+                title = if (isEnglish) "STREAK" else "CHUỖI NGÀY",
+                value = if (isEnglish) "$streak Days" else "$streak Ngày",
+                subtitle = if (isEnglish) "🛡️ $streakShields Shields saved" else "🛡️ $streakShields Khiên bảo vệ",
+                iconRes = R.drawable.ic_stat_streak,
+                accentColor = Color(0xFFFF9E00),
+                onClick = {
+                    haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.TextHandleMove)
+                    Toast.makeText(context, if (isEnglish) "Streak: $streak days" else "Chuỗi chuyên cần: $streak ngày liên tục!", Toast.LENGTH_SHORT).show()
+                }
+            )
+            val percent = if (totalLessons > 0) (completedLessons * 100 / totalLessons) else 0
+            ProfileCompactMetricTile(
+                modifier = Modifier.weight(1f),
+                title = if (isEnglish) "LESSONS" else "BÀI HỌC",
+                value = "$completedLessons/$totalLessons",
+                subtitle = if (isEnglish) "$percent% Mastered" else "$percent% Hoàn thành",
+                iconRes = R.drawable.ic_open_book,
+                accentColor = Color(0xFF51FAC1),
+                onClick = {
+                    haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.TextHandleMove)
+                    onNavigateToRoadmap()
+                }
+            )
         }
 
         // 2.5 Danh Hiệu & Cột Mốc (Thiết kế nhúng ngay trong Hồ Sơ)
