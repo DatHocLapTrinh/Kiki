@@ -415,12 +415,14 @@ class DataRepository @Inject constructor(
     suspend fun resetWithAiMicrolearningRoadmap(
         level: String,
         stages: List<Pair<String, String>>,
-        firstChapterUnits: ChapterGeneratedResponse?
+        firstChapterUnits: ChapterGeneratedResponse?,
+        questionsPerLesson: Int = 5
     ): Long = withContext(Dispatchers.IO) {
         dao.clearQuestions()
         dao.clearChapters()
 
         var firstChapterId = -1L
+        val totalRequired = 5 * questionsPerLesson
         stages.forEachIndexed { index, (title, description) ->
             val cleanTitle = title.trim()
             val chapter = ChapterEntity(
@@ -436,17 +438,17 @@ class DataRepository @Inject constructor(
                 firstChapterId = chapterId
             }
 
-            // Đảm bảo MỌI CHẶNG trong lộ trình đều có đủ 25 câu hỏi tuần tự (5 bài học x 5 câu) theo đúng chủ đề riêng của chặng đó
-            val stageQuestions = if (index == 0 && firstChapterUnits != null && firstChapterUnits.questions.size >= 25) {
+            // Đảm bảo MỌI CHẶNG trong lộ trình đều có đủ số câu hỏi tuần tự (5 bài học x questionsPerLesson) theo đúng chủ đề riêng
+            val stageQuestions = if (index == 0 && firstChapterUnits != null && firstChapterUnits.questions.size >= totalRequired) {
                 firstChapterUnits.questions
             } else if (index == 0 && firstChapterUnits != null && firstChapterUnits.questions.isNotEmpty()) {
                 val blueprintQuestions = com.example.model.SpiralCurriculumBlueprint
-                    .generateTopicAwareChapter(level = level, topic = cleanTitle)
+                    .generateTopicAwareChapter(level = level, topic = cleanTitle, questionsPerLesson = questionsPerLesson)
                     .questions
-                (firstChapterUnits.questions + blueprintQuestions.drop(firstChapterUnits.questions.size)).take(25)
+                (firstChapterUnits.questions + blueprintQuestions.drop(firstChapterUnits.questions.size)).take(totalRequired)
             } else {
                 com.example.model.SpiralCurriculumBlueprint
-                    .generateTopicAwareChapter(level = level, topic = cleanTitle)
+                    .generateTopicAwareChapter(level = level, topic = cleanTitle, questionsPerLesson = questionsPerLesson)
                     .questions
             }
 

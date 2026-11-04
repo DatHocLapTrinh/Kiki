@@ -885,16 +885,19 @@ class StudyViewModel @Inject constructor(
     fun loadQuestions(chapterId: Long, lessonIndex: Int = 1) {
         viewModelScope.launch {
             allChapterQuestions = repository.getQuestionsByChapter(chapterId)
+            val pageSize = getLessonPageSize()
+            val requiredTotal = 5 * pageSize
 
-            // Thanh trừng triệt để bất kỳ câu hỏi mẫu cũ nào còn sót lại HOẶC nếu chapter chưa đủ 25 câu (kẹt 5 câu cũ)
+            // Kiểm tra: Nếu chưa có câu hỏi HOẶC số câu hỏi trong DB không đủ cho pacing hiện tại (ví dụ DB chỉ có 25 câu cũ mà user chọn 10 câu/bài cần 50 câu)
+            // HOẶC có câu mẫu cũ gạch chân ______ -> Dọn dẹp và tái sinh đủ 100% không trùng lặp
             if (allChapterQuestions.any { it.question.contains("______") || it.question.contains("in her crib", ignoreCase = true) || it.question.contains("by bus every morning", ignoreCase = true) }
-                || (allChapterQuestions.isNotEmpty() && allChapterQuestions.size < 25)) {
+                || (allChapterQuestions.size < requiredTotal)) {
                 repository.clearQuestionsByChapter(chapterId)
                 allChapterQuestions = emptyList()
             }
 
             // JIT (Just-In-Time) AI Microlearning Question Generation:
-            // Sinh trọn vẹn 25 câu hỏi (5 bài học x 5 câu) phân tầng từ từ vựng đơn đến hội thoại
+            // Sinh trọn vẹn đủ requiredTotal câu hỏi (5 bài học x pageSize câu) độc lập, không trùng lặp
             if (allChapterQuestions.isEmpty()) {
                 val currentTitle = repository.getChapterTitleById(chapterId)
                     ?: _currentChapterTitle.value
@@ -904,9 +907,9 @@ class StudyViewModel @Inject constructor(
                 val weakPointsList = if (userId > 0) repository.getWeakPoints(userId) else emptyList()
                 val weakWords = extractWeakKeywords(weakPointsList)
 
-                val generated = generate3CMicrolearningWithGemini(currentTitle, level, weakWords)
-                    ?.takeIf { it.questions.size >= 25 }
-                    ?: generatePersonalizedChapter(level, currentTitle, weakWords)
+                val generated = generate3CMicrolearningWithGemini(currentTitle, level, weakWords, pageSize)
+                    ?.takeIf { it.questions.size >= requiredTotal }
+                    ?: generatePersonalizedChapter(level, currentTitle, weakWords, pageSize)
 
                 generated.questions.forEach { qDto ->
                     val question = com.example.sqlite.room.QuestionEntity(
@@ -932,7 +935,11 @@ class StudyViewModel @Inject constructor(
         val safeLesson = lessonIndex.coerceIn(1, 5)
         val pageSize = getLessonPageSize()
         val rawStartIndex = (safeLesson - 1) * pageSize
-        if (allChapterQuestions.isNotEmpty()) {
+
+        if (allChapterQuestions.size >= safeLesson * pageSize) {
+            // Lấy lát cắt độc lập chính xác cho bài học: 100% không trùng lặp câu hỏi giữa các bài
+            _questions.value = allChapterQuestions.drop(rawStartIndex).take(pageSize)
+        } else if (allChapterQuestions.isNotEmpty()) {
             val lessonList = mutableListOf<QuestItem>()
             for (i in 0 until pageSize) {
                 val idx = (rawStartIndex + i) % allChapterQuestions.size
@@ -948,25 +955,16 @@ class StudyViewModel @Inject constructor(
                 } else -1L
 
                 if (chapterId != -1L) {
-                    allChapterQuestions = repository.getQuestionsByChapter(chapterId)
+                    loadQuestions(chapterId, safeLesson)
                 } else {
                     val defaultChapters = repository.getChaptersByPreference(_selectedLevel.value ?: "Beginner", "English")
                     val defaultTitle = defaultChapters.firstOrNull() ?: "Atomic Microlearning"
                     val defId = repository.getChapterIdByTitle(defaultTitle)
                     if (defId != -1L) {
-                        allChapterQuestions = repository.getQuestionsByChapter(defId)
+                        loadQuestions(defId, safeLesson)
+                    } else {
+                        _questions.value = emptyList()
                     }
-                }
-
-                if (allChapterQuestions.isNotEmpty()) {
-                    val lessonList = mutableListOf<QuestItem>()
-                    for (i in 0 until pageSize) {
-                        val idx = (rawStartIndex + i) % allChapterQuestions.size
-                        lessonList.add(allChapterQuestions[idx].copy())
-                    }
-                    _questions.value = lessonList
-                } else {
-                    _questions.value = emptyList()
                 }
             }
         }
@@ -1877,14 +1875,16 @@ class StudyViewModel @Inject constructor(
     fun generatePersonalizedChapter(
         level: String,
         topic: String,
-        weakWords: List<String> = emptyList()
+        weakWords: List<String> = emptyList(),
+        pageSize: Int = getLessonPageSize()
     ): ChapterGeneratedResponse {
         val isEng = _isEnglish.value ?: false
         return com.example.model.SpiralCurriculumBlueprint.generateTopicAwareChapter(
             level = level,
             topic = topic,
             weakWords = weakWords,
-            isEng = isEng
+            isEng = isEng,
+            questionsPerLesson = pageSize
         )
     }
 
@@ -1943,8 +1943,10 @@ class StudyViewModel @Inject constructor(
     suspend fun generate3CMicrolearningWithGemini(
         topic: String,
         level: String,
-        weakWords: List<String>
+        weakWords: List<String>,
+        pageSize: Int = getLessonPageSize()
     ): ChapterGeneratedResponse? = withContext(Dispatchers.IO) {
+        val totalQuestionsNeeded = 5 * pageSize
         try {
             val apiKey = getEffectiveGeminiApiKey()
             if (apiKey.isBlank() || apiKey.startsWith("sk-")) return@withContext null
@@ -1999,7 +2001,7 @@ class StudyViewModel @Inject constructor(
 
             val prompt = """
                 You are Kiki AI, an expert Microlearning Pedagogical Designer modeled after Duolingo's Spiral Curriculum.
-                Create a complete 5-Lesson Chapter Curriculum with exactly 25 progressive questions (5 lessons x 5 questions per lesson) for the topic: "$topic" at level "$level".
+                Create a complete 5-Lesson Chapter Curriculum with exactly $totalQuestionsNeeded progressive questions (5 lessons x $pageSize questions per lesson) for the topic: "$topic" at level "$level".
                 $weakPrompt
                 $levelQuestionConstraints
                 $topicSpecificGuidance
@@ -2365,20 +2367,28 @@ class StudyViewModel @Inject constructor(
                 // 1. Sinh 5 chặng lộ trình bằng Gemini 2.5 Flash
                 val stages = generate5StageMicrolearningRoadmapWithGemini(profile)
 
-                // 2. Sinh đơn vị bài học 3C đầu tiên cho Chặng 1 bằng Gemini 2.5 Flash
+                // 2. Xác định dung lượng câu hỏi theo mục tiêu thời gian đã chọn
+                val pacingPageSize = when {
+                    profile.dailyTargetMinutes <= 3 -> 5
+                    profile.dailyTargetMinutes <= 7 -> 10
+                    else -> 15
+                }
+
                 val firstStageTitle = stages.firstOrNull()?.first ?: profile.goal
                 val chapter1Units = generate3CMicrolearningWithGemini(
                     topic = firstStageTitle,
                     level = profile.evaluatedCefr,
-                    weakWords = profile.baselineWeakPoints
-                ) ?: generatePersonalizedChapter(profile.evaluatedCefr, firstStageTitle, profile.baselineWeakPoints)
+                    weakWords = profile.baselineWeakPoints,
+                    pageSize = pacingPageSize
+                ) ?: generatePersonalizedChapter(profile.evaluatedCefr, firstStageTitle, profile.baselineWeakPoints, pageSize = pacingPageSize)
 
-                // 3. Xóa các chapter tĩnh cũ và nạp lộ trình 100% AI vào Room SQLite
+                // 3. Xóa các chapter tĩnh cũ và nạp lộ trình 100% AI vào Room SQLite với đầy đủ số lượng câu hỏi không lặp
                 val targetUserId = if (userId > 0) userId else _currentUserId.value ?: 0L
                 repository.resetWithAiMicrolearningRoadmap(
                     level = profile.evaluatedCefr,
                     stages = stages,
-                    firstChapterUnits = chapter1Units
+                    firstChapterUnits = chapter1Units,
+                    questionsPerLesson = pacingPageSize
                 )
 
                 // 4. Lưu hồ sơ cá nhân hóa

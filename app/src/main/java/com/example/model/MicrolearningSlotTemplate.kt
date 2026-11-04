@@ -155,24 +155,188 @@ data class InjectedAtomicLessonUnit(
     @param:Json(name = "slot4Matching") val slot4Matching: MatchingPairsSlot,
     @param:Json(name = "slot5Speaking") val slot5Speaking: SpeakingChallengeSlot
 ) {
-    fun toQuestionsList(): List<QuestionItemDto> {
-        return listOf(
+    fun toQuestionsList(targetCount: Int = 5): List<QuestionItemDto> {
+        val base = listOf(
             slot1Cloze.toQuestionItemDto(),
             slot2SentenceBuilder.toQuestionItemDto(),
             slot3Listening.toQuestionItemDto(),
             slot4Matching.toQuestionItemDto(),
             slot5Speaking.toQuestionItemDto()
         )
+        if (targetCount <= 5) return base
+
+        val result = base.toMutableList()
+        val pairs = slot4Matching.pairs
+        val p1 = pairs.getOrNull(0) ?: PairSlotItem("Hello", "Xin chào")
+        val p2 = pairs.getOrNull(1) ?: PairSlotItem("Thank you", "Cảm ơn")
+        val p3 = pairs.getOrNull(2) ?: PairSlotItem("Goodbye", "Tạm biệt")
+        val p4 = pairs.getOrNull(3) ?: PairSlotItem("Yes", "Vâng / Đúng")
+
+        // === EXPANSION SET (Câu 6 - 10): 5 câu hoàn toàn mới, không lặp lại ===
+        // 6. Câu trắc nghiệm mở rộng từ Cặp từ #2
+        val opt2Distractors = listOf(p1.english, p3.english, p4.english).distinct()
+        val opt2 = (listOf(p2.english) + opt2Distractors).take(4)
+        result.add(
+            QuestionItemDto(
+                questionText = "Từ tiếng Anh nào có nghĩa là '${p2.vietnamese}'?",
+                questionType = MicrolearningSlotArchetypes.CLOZE_CHOICE,
+                optionsJson = listToJsonArray(opt2),
+                correctAnswer = "0",
+                explanation = "'${p2.english}' có nghĩa là ${p2.vietnamese}.",
+                points = 10,
+                difficulty = "MEDIUM"
+            )
+        )
+
+        // 7. Câu ghép từ mở rộng
+        val extTokens = if (slot2SentenceBuilder.wordTokens.size >= 2) {
+            slot2SentenceBuilder.wordTokens
+        } else {
+            listOf(p1.english, p2.english)
+        }
+        val extDistractors = if (slot2SentenceBuilder.distractorTokens.isNotEmpty()) slot2SentenceBuilder.distractorTokens else listOf("not", "is")
+        val allExtTokens = (extTokens + extDistractors).shuffled()
+        result.add(
+            QuestionItemDto(
+                questionText = "Sắp xếp các từ thành câu đúng ngữ cảnh: '${slot2SentenceBuilder.targetSentence}' 🧩",
+                questionType = MicrolearningSlotArchetypes.SENTENCE_BUILDER,
+                optionsJson = listToJsonArray(allExtTokens),
+                correctAnswer = slot2SentenceBuilder.targetSentence,
+                explanation = slot2SentenceBuilder.explanation,
+                points = 15,
+                difficulty = "MEDIUM"
+            )
+        )
+
+        // 8. Luyện nghe âm thanh từ vựng #3
+        val audioWord = p3.english
+        result.add(
+            QuestionItemDto(
+                questionText = "Lắng nghe phát âm và nhận diện nghĩa của '${p3.vietnamese}' 🎧",
+                questionType = MicrolearningSlotArchetypes.LISTENING_CHALLENGE,
+                optionsJson = listToJsonArray(listOf(audioWord)),
+                correctAnswer = audioWord,
+                explanation = "'$audioWord' được phát âm chuẩn bản xứ, có nghĩa là ${p3.vietnamese}.",
+                points = 10,
+                difficulty = "MEDIUM"
+            )
+        )
+
+        // 9. Thử thách nối cặp từ vựng đảo ngược / bổ trợ
+        val revPairs = listOf(p2, p3, p4, p1)
+        val formattedRevPairs = revPairs.map { "${it.english}=${it.vietnamese}" }
+        result.add(
+            QuestionItemDto(
+                questionText = "Ghép cặp từ vựng củng cố phản xạ: ${p1.english}, ${p2.english}, ${p3.english}, ${p4.english} 🧩",
+                questionType = MicrolearningSlotArchetypes.MATCHING_PAIRS,
+                optionsJson = listToJsonArray(formattedRevPairs),
+                correctAnswer = "0",
+                explanation = "Củng cố vững chắc 4 từ vựng trọng tâm của bài học.",
+                points = 15,
+                difficulty = "MEDIUM"
+            )
+        )
+
+        // 10. Luyện phát âm từ vựng #2
+        result.add(
+            QuestionItemDto(
+                questionText = "Luyện phát âm rõ ràng từ: '${p2.english}' 🎙️",
+                questionType = MicrolearningSlotArchetypes.SPEAKING_CHALLENGE,
+                optionsJson = listToJsonArray(listOf(p2.english)),
+                correctAnswer = p2.english,
+                explanation = "Luyện phản xạ phát âm chuẩn từ '${p2.english}'.",
+                points = 15,
+                difficulty = "MEDIUM"
+            )
+        )
+
+        if (targetCount <= 10) return result
+
+        // === MASTERY SET (Câu 11 - 15): Chuyên sâu, nâng cao phản xạ ===
+        // 11. Trắc nghiệm tình huống từ Cặp từ #4
+        val opt4Distractors = listOf(p2.english, p1.english, p3.english).distinct()
+        val opt4 = (listOf(p4.english) + opt4Distractors).take(4)
+        result.add(
+            QuestionItemDto(
+                questionText = "Trong giao tiếp, khi muốn nói '${p4.vietnamese}', bạn chọn từ nào?",
+                questionType = MicrolearningSlotArchetypes.CLOZE_CHOICE,
+                optionsJson = listToJsonArray(opt4),
+                correctAnswer = "0",
+                explanation = "'${p4.english}' diễn đạt chính xác nghĩa ${p4.vietnamese}.",
+                points = 10,
+                difficulty = "HARD"
+            )
+        )
+
+        // 12. Ghép câu hội thoại giao tiếp hoàn chỉnh
+        val convSentence = slot3Listening.audioSentence.ifBlank { "${p1.english} ${p2.english}" }
+        val convTokens = convSentence.split(Regex("\\s+")).filter { it.isNotBlank() }
+        val allConvTokens = (convTokens + listOf("are", "hello")).shuffled()
+        result.add(
+            QuestionItemDto(
+                questionText = "Hoàn thành câu giao tiếp phản xạ: '$convSentence' 🧩",
+                questionType = MicrolearningSlotArchetypes.SENTENCE_BUILDER,
+                optionsJson = listToJsonArray(allConvTokens),
+                correctAnswer = convSentence,
+                explanation = "Luyện ghép câu tự nhiên theo tốc độ phản xạ.",
+                points = 15,
+                difficulty = "HARD"
+            )
+        )
+
+        // 13. Nghe câu hội thoại tự nhiên
+        val listeningSentence = slot5Speaking.targetSentence.ifBlank { convSentence }
+        result.add(
+            QuestionItemDto(
+                questionText = "Luyện nghe câu hội thoại tự nhiên: '$listeningSentence' 🎧",
+                questionType = MicrolearningSlotArchetypes.LISTENING_CHALLENGE,
+                optionsJson = listToJsonArray(listOf(listeningSentence)),
+                correctAnswer = listeningSentence,
+                explanation = "Nghe hiểu câu tự nhiên ở nhịp điệu giao tiếp.",
+                points = 15,
+                difficulty = "HARD"
+            )
+        )
+
+        // 14. Thử thách phản xạ nối từ tổng hợp
+        val mixedPairs = listOf(p3, p1, p4, p2)
+        val formattedMixedPairs = mixedPairs.map { "${it.english}=${it.vietnamese}" }
+        result.add(
+            QuestionItemDto(
+                questionText = "Thử thách phản xạ tốc độ cao: Nối 4 cặp từ (${p3.english}, ${p1.english}, ${p4.english}, ${p2.english}) 🧩",
+                questionType = MicrolearningSlotArchetypes.MATCHING_PAIRS,
+                optionsJson = listToJsonArray(formattedMixedPairs),
+                correctAnswer = "0",
+                explanation = "Ôn tập tổng thể toàn bộ từ vựng then chốt của bài học.",
+                points = 15,
+                difficulty = "HARD"
+            )
+        )
+
+        // 15. Thử thách phát âm câu hoàn chỉnh (Capstone Speaking)
+        result.add(
+            QuestionItemDto(
+                questionText = "Chinh phục câu hoàn chỉnh: '${slot5Speaking.targetSentence}' 🎙️",
+                questionType = MicrolearningSlotArchetypes.SPEAKING_CHALLENGE,
+                optionsJson = listToJsonArray(listOf(slot5Speaking.targetSentence)),
+                correctAnswer = slot5Speaking.targetSentence,
+                explanation = "Phát âm trọn vẹn cả câu với ngữ điệu tự nhiên chuẩn bản xứ.",
+                points = 20,
+                difficulty = "HARD"
+            )
+        )
+
+        return result
     }
 
-    fun toChapterGeneratedResponse(orderNo: Int = 1): ChapterGeneratedResponse {
+    fun toChapterGeneratedResponse(orderNo: Int = 1, targetCount: Int = 5): ChapterGeneratedResponse {
         return ChapterGeneratedResponse(
             title = title,
             description = description,
             level = level,
             subject = subject,
             orderNo = orderNo,
-            questions = toQuestionsList()
+            questions = toQuestionsList(targetCount)
         )
     }
 }
@@ -388,7 +552,8 @@ object SpiralCurriculumBlueprint {
         level: String,
         topic: String,
         weakWords: List<String> = emptyList(),
-        isEng: Boolean = false
+        isEng: Boolean = false,
+        questionsPerLesson: Int = 5
     ): ChapterGeneratedResponse {
         val displayLevel = if (level.isBlank()) "Beginner" else level
         val cleanTopic = if (topic.isBlank()) "Daily Conversations" else topic.trim()
@@ -496,7 +661,7 @@ object SpiralCurriculumBlueprint {
         } else ""
 
         val finalDesc = (if (isEng) descEn else descVi) + weakSuffix
-        val allQuestions = units.flatMap { it.toQuestionsList() }.toMutableList()
+        val allQuestions = units.flatMap { it.toQuestionsList(targetCount = questionsPerLesson) }.toMutableList()
 
         // Nếu người học có từ yếu (weakWords), đan cài ghi chú ôn tập thông minh vào bài tổng hợp cuối chương
         if (weakWords.isNotEmpty() && allQuestions.isNotEmpty()) {

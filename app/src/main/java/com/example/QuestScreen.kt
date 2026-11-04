@@ -68,8 +68,8 @@ import java.util.Locale
 // --- Duolingo-style Speech Bubble Shape with Left Tail pointing to Kiki ---
 class SpeechBubbleLeftTailShape(
     private val cornerRadius: Dp = 18.dp,
-    private val tailWidth: Dp = 8.dp,
-    private val tailHeight: Dp = 14.dp
+    private val tailWidth: Dp = 10.dp,
+    private val tailHeight: Dp = 16.dp
 ) : Shape {
     override fun createOutline(
         size: Size,
@@ -103,7 +103,7 @@ class SpeechBubbleLeftTailShape(
                 sweepAngleDegrees = 90f,
                 forceMoveTo = false
             )
-            val tailCenterY = size.height * 0.45f
+            val tailCenterY = (size.height * 0.38f).coerceIn(r + th / 2, size.height - r - th / 2)
             val tailTopY = (tailCenterY - th / 2).coerceAtLeast(r)
             val tailBottomY = (tailCenterY + th / 2).coerceAtMost(size.height - r)
             lineTo(tw, tailBottomY)
@@ -463,28 +463,42 @@ fun QuestScreen(viewModel: StudyViewModel, onFinish: () -> Unit) {
 
                             Spacer(modifier = Modifier.width(8.dp))
 
-                            // 2. Speech Bubble pointing left to Kiki
+                            // 2. Speech Bubble pointing left to Kiki: Cân đối, thẩm mỹ, không bị sát lề
                             Box(
                                 modifier = Modifier
                                     .weight(1f)
-                                    .clip(SpeechBubbleLeftTailShape(cornerRadius = 18.dp, tailWidth = 8.dp, tailHeight = 14.dp))
-                                    .background(Color(0xD91F1A3A))
+                                    .clip(SpeechBubbleLeftTailShape(cornerRadius = 18.dp, tailWidth = 10.dp, tailHeight = 16.dp))
+                                    .background(
+                                        Brush.verticalGradient(
+                                            listOf(
+                                                Color(0xF21C1638),
+                                                Color(0xF2130F28)
+                                            )
+                                        )
+                                    )
                                     .border(
                                         1.5.dp,
-                                        Brush.linearGradient(listOf(Color(0xFF51FAC1), Color(0xFF818CF8))),
-                                        SpeechBubbleLeftTailShape(cornerRadius = 18.dp, tailWidth = 8.dp, tailHeight = 14.dp)
+                                        Brush.linearGradient(
+                                            listOf(
+                                                Color(0xFF51FAC1),
+                                                Color(0xFF818CF8),
+                                                Color(0xFFC084FC)
+                                            )
+                                        ),
+                                        SpeechBubbleLeftTailShape(cornerRadius = 18.dp, tailWidth = 10.dp, tailHeight = 16.dp)
                                     )
-                                    .padding(start = 14.dp, end = 14.dp, top = 12.dp, bottom = 12.dp)
+                                    .padding(start = 22.dp, end = 16.dp, top = 14.dp, bottom = 14.dp)
                             ) {
                                 when (currentQ.type) {
                                     QuestionType.LISTENING_CHALLENGE -> {
                                         // Speech Bubble IS the Audio Player!
-                                        Column {
+                                        Column(modifier = Modifier.fillMaxWidth()) {
                                             Text(
-                                                text = if (isEnglish) "Listen to Kiki and assemble the sentence:" else "Lắng nghe Kiki đọc câu mẫu:",
-                                                color = Color(0xB3FFFFFF),
-                                                fontSize = 12.sp,
-                                                fontWeight = FontWeight.Medium
+                                                text = if (isEnglish) "Listen to Kiki:" else "Lắng nghe Kiki đọc câu mẫu:",
+                                                color = Color(0xCC51FAC1),
+                                                fontSize = 11.5.sp,
+                                                fontWeight = FontWeight.SemiBold,
+                                                letterSpacing = 0.4.sp
                                             )
                                             Spacer(modifier = Modifier.height(8.dp))
                                             Row(
@@ -494,9 +508,9 @@ fun QuestScreen(viewModel: StudyViewModel, onFinish: () -> Unit) {
                                                 // Normal Audio button
                                                 Box(
                                                     modifier = Modifier
-                                                        .size(44.dp)
+                                                        .size(42.dp)
                                                         .clip(CircleShape)
-                                                        .background(Brush.radialGradient(listOf(Color(0xFF00B0FF), Color(0xFF0284C7))))
+                                                        .background(Brush.radialGradient(listOf(Color(0xFF00F5D4), Color(0xFF0077B6))))
                                                         .clickable {
                                                             haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
                                                             val sentence = currentQ.speakingSentence.ifEmpty { currentQ.correctSentence }
@@ -507,18 +521,18 @@ fun QuestScreen(viewModel: StudyViewModel, onFinish: () -> Unit) {
                                                     Icon(
                                                         imageVector = if (isSpeaking) Icons.Default.GraphicEq else Icons.AutoMirrored.Filled.VolumeUp,
                                                         contentDescription = "Play Audio",
-                                                        tint = Color.White,
-                                                        modifier = Modifier.size(22.dp)
+                                                        tint = Color(0xFF0B0D1B),
+                                                        modifier = Modifier.size(20.dp)
                                                     )
                                                 }
 
                                                 // Turtle Slow Audio button
                                                 Box(
                                                     modifier = Modifier
-                                                        .size(36.dp)
+                                                        .size(34.dp)
                                                         .clip(CircleShape)
                                                         .background(Color(0x33FFB703))
-                                                        .border(1.dp, Color(0x66FFB703), CircleShape)
+                                                        .border(1.dp, Color(0x88FFB703), CircleShape)
                                                         .clickable {
                                                             haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
                                                             val sentence = currentQ.speakingSentence.ifEmpty { currentQ.correctSentence }
@@ -526,102 +540,143 @@ fun QuestScreen(viewModel: StudyViewModel, onFinish: () -> Unit) {
                                                         },
                                                     contentAlignment = Alignment.Center
                                                 ) {
-                                                    Text("🐢", fontSize = 16.sp)
+                                                    Text("🐢", fontSize = 15.sp)
                                                 }
 
                                                 Text(
                                                     text = if (isSpeaking) (if (isEnglish) "Playing..." else "Đang phát...") else (if (isEnglish) "Tap to listen" else "Chạm để nghe"),
                                                     color = Color(0xFF51FAC1),
-                                                    fontSize = 13.sp,
+                                                    fontSize = 12.5.sp,
                                                     fontWeight = FontWeight.SemiBold
                                                 )
                                             }
                                         }
                                     }
                                     QuestionType.MATCHING_PAIRS -> {
-                                        Text(
-                                            text = if (isEnglish) "Match the corresponding English and Vietnamese word pairs!" else "Chạm chọn các cặp từ tiếng Anh và nghĩa tiếng Việt tương ứng nhé!",
-                                            color = Color.White,
-                                            fontSize = 15.sp,
-                                            fontWeight = FontWeight.Bold,
-                                            lineHeight = 20.sp
-                                        )
+                                        Column(modifier = Modifier.fillMaxWidth()) {
+                                            Text(
+                                                text = if (isEnglish) "MATCHING CHALLENGE 🧩" else "THỬ THÁCH GHÉP CẶP TỪ 🧩",
+                                                color = Color(0xCC51FAC1),
+                                                fontSize = 11.5.sp,
+                                                fontWeight = FontWeight.SemiBold,
+                                                letterSpacing = 0.5.sp
+                                            )
+                                            Spacer(modifier = Modifier.height(4.dp))
+                                            Text(
+                                                text = if (isEnglish) "Match the corresponding English and Vietnamese word pairs!" else "Chạm chọn các cặp từ tiếng Anh và nghĩa tiếng Việt tương ứng!",
+                                                color = Color(0xFFF8FAFC),
+                                                fontSize = 15.sp,
+                                                fontWeight = FontWeight.Bold,
+                                                lineHeight = 22.sp,
+                                                modifier = Modifier.fillMaxWidth()
+                                            )
+                                        }
                                     }
                                     QuestionType.SENTENCE_BUILDER -> {
-                                        Column {
+                                        Column(modifier = Modifier.fillMaxWidth()) {
                                             Text(
-                                                text = if (isEnglish) "Translate this sentence:" else "Dịch câu này sang tiếng Anh:",
-                                                color = Color(0xB3FFFFFF),
+                                                text = if (isEnglish) "TRANSLATE SENTENCE:" else "DỊCH CÂU NÀY SANG TIẾNG ANH:",
+                                                color = Color(0xCC51FAC1),
                                                 fontSize = 11.5.sp,
-                                                fontWeight = FontWeight.Medium
+                                                fontWeight = FontWeight.SemiBold,
+                                                letterSpacing = 0.5.sp
                                             )
                                             Spacer(modifier = Modifier.height(4.dp))
                                             Text(
                                                 text = currentQ.question,
-                                                color = Color.White,
+                                                color = Color(0xFFF8FAFC),
                                                 fontSize = 16.sp,
                                                 fontWeight = FontWeight.Bold,
-                                                lineHeight = 22.sp
+                                                lineHeight = 23.sp,
+                                                modifier = Modifier.fillMaxWidth()
                                             )
                                         }
                                     }
                                     QuestionType.SPEAKING_CHALLENGE -> {
-                                        Text(
-                                            text = if (isEnglish) "Listen to the audio & speak clearly into the microphone 🎙️" else "Lắng nghe câu mẫu và phát âm to, rõ ràng vào micro nhé! 🎙️",
-                                            color = Color.White,
-                                            fontSize = 14.5.sp,
-                                            fontWeight = FontWeight.Bold,
-                                            lineHeight = 20.sp
-                                        )
+                                        Column(modifier = Modifier.fillMaxWidth()) {
+                                            Text(
+                                                text = if (isEnglish) "SPEAKING CHALLENGE 🎙️" else "THỬ THÁCH PHÁT ÂM 🎙️",
+                                                color = Color(0xCC51FAC1),
+                                                fontSize = 11.5.sp,
+                                                fontWeight = FontWeight.SemiBold,
+                                                letterSpacing = 0.5.sp
+                                            )
+                                            Spacer(modifier = Modifier.height(4.dp))
+                                            Text(
+                                                text = currentQ.speakingSentence.ifEmpty { currentQ.question },
+                                                color = Color(0xFFF8FAFC),
+                                                fontSize = 15.5.sp,
+                                                fontWeight = FontWeight.Bold,
+                                                lineHeight = 22.sp,
+                                                modifier = Modifier.fillMaxWidth()
+                                            )
+                                        }
                                     }
                                     else -> {
-                                        // Multiple Choice: Question text + pronunciation button
-                                        Column {
+                                        // Multiple Choice: Question text + balanced sound action pills
+                                        Column(modifier = Modifier.fillMaxWidth()) {
                                             Text(
                                                 text = currentQ.question,
-                                                color = Color.White,
-                                                fontSize = 16.sp,
+                                                color = Color(0xFFF8FAFC),
+                                                fontSize = 15.5.sp,
                                                 fontWeight = FontWeight.Bold,
-                                                lineHeight = 22.sp
+                                                lineHeight = 23.sp,
+                                                modifier = Modifier.fillMaxWidth()
                                             )
-                                            Spacer(modifier = Modifier.height(8.dp))
+                                            Spacer(modifier = Modifier.height(10.dp))
                                             Row(
                                                 horizontalArrangement = Arrangement.spacedBy(8.dp),
                                                 verticalAlignment = Alignment.CenterVertically
                                             ) {
-                                                Box(
+                                                // Audio pill: Normal
+                                                Row(
                                                     modifier = Modifier
-                                                        .size(30.dp)
-                                                        .clip(CircleShape)
-                                                        .background(Color(0x3351FAC1))
-                                                        .border(1.dp, Color(0x6651FAC1), CircleShape)
+                                                        .clip(RoundedCornerShape(10.dp))
+                                                        .background(Color(0x2651FAC1))
+                                                        .border(1.dp, Color(0x6651FAC1), RoundedCornerShape(10.dp))
                                                         .clickable {
                                                             haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
                                                             viewModel.ttsManager.speak(currentQ.question, isSlow = false)
-                                                        },
-                                                    contentAlignment = Alignment.Center
+                                                        }
+                                                        .padding(horizontal = 10.dp, vertical = 5.dp),
+                                                    verticalAlignment = Alignment.CenterVertically
                                                 ) {
                                                     Icon(
                                                         imageVector = if (isSpeaking) Icons.Default.GraphicEq else Icons.AutoMirrored.Filled.VolumeUp,
                                                         contentDescription = "Speak Question",
-                                                        tint = if (isSpeaking) Color(0xFF51FAC1) else Color(0xFFFFD166),
+                                                        tint = Color(0xFF51FAC1),
                                                         modifier = Modifier.size(15.dp)
+                                                    )
+                                                    Spacer(modifier = Modifier.width(5.dp))
+                                                    Text(
+                                                        text = if (isSpeaking) (if (isEnglish) "Playing" else "Đang đọc") else (if (isEnglish) "Listen" else "Nghe"),
+                                                        color = Color(0xFF51FAC1),
+                                                        fontSize = 11.5.sp,
+                                                        fontWeight = FontWeight.SemiBold
                                                     )
                                                 }
 
-                                                Box(
+                                                // Audio pill: Turtle
+                                                Row(
                                                     modifier = Modifier
-                                                        .size(30.dp)
-                                                        .clip(CircleShape)
-                                                        .background(Color(0x33FFB703))
-                                                        .border(1.dp, Color(0x66FFB703), CircleShape)
+                                                        .clip(RoundedCornerShape(10.dp))
+                                                        .background(Color(0x26FFD166))
+                                                        .border(1.dp, Color(0x66FFD166), RoundedCornerShape(10.dp))
                                                         .clickable {
                                                             haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
                                                             viewModel.ttsManager.speak(currentQ.question, isSlow = true)
-                                                        },
-                                                    contentAlignment = Alignment.Center
+                                                        }
+                                                        .padding(horizontal = 8.dp, vertical = 5.dp),
+                                                    verticalAlignment = Alignment.CenterVertically
                                                 ) {
                                                     Text("🐢", fontSize = 13.sp)
+                                                    Spacer(modifier = Modifier.width(4.dp))
+                                                    Text(
+                                                        text = if (isEnglish) "Slow" else "Chậm",
+                                                        color = Color(0xFFFFD166),
+                                                        fontSize = 11.5.sp,
+                                                        fontWeight = FontWeight.Medium
+                                                    )
                                                 }
                                             }
                                         }
