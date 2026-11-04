@@ -58,6 +58,8 @@ import com.example.ui.CosmicSectionConfig
 import com.example.ui.CosmicSectionData
 import com.example.ui.SpeechBubbleShape
 import com.example.ui.CosmicPlanetLessonPopup
+import com.example.ui.CosmicMilestoneDivider
+import com.example.ui.OutOfHeartsDialog
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -93,7 +95,9 @@ fun JourneyMapScreen(
     val streak by viewModel.streak.observeAsState(0)
     val hearts by viewModel.hearts.observeAsState(5)
     val streakShields by viewModel.streakShields.observeAsState(0)
+    val stars by viewModel.stars.observeAsState(0)
     val isEnglish by viewModel.isEnglish.observeAsState(false)
+    var showOutOfHeartsPrompt by remember { mutableStateOf(false) }
     val availableChapters by viewModel.availableChapters.observeAsState(emptyList())
     val chapterProgress by viewModel.chapterProgress.observeAsState(emptyList())
     val chaptersLoading by viewModel.chaptersLoading.observeAsState(false)
@@ -114,8 +118,8 @@ fun JourneyMapScreen(
             if (targetIdx > 0 && targetIdx < stages.size && animatingUnlockStageIndex == -1) {
                 animatingUnlockStageIndex = targetIdx
                 val stageStepPx = with(density) { 255.dp.toPx() }
-                val bannerTotalHeightPx = with(density) { (106.dp + 16.dp).toPx() }
-                val targetPlanetY = ((targetIdx / 10) + 1) * bannerTotalHeightPx + targetIdx * stageStepPx + with(density) { 85.dp.toPx() }
+                val sectionBreakPx = with(density) { 56.dp.toPx() }
+                val targetPlanetY = (targetIdx / 10) * sectionBreakPx + targetIdx * stageStepPx + with(density) { 85.dp.toPx() }
                 val viewportHeightPx = scrollState.viewportSize.toFloat()
                 val desiredScroll = (targetPlanetY - (if (viewportHeightPx > 0) viewportHeightPx * 0.45f else 600f)).toInt().coerceAtLeast(0)
 
@@ -180,11 +184,39 @@ fun JourneyMapScreen(
                 streakShields = streakShields
             )
 
+            // ─── STICKY COSMIC SECTION BANNER (Ghim cố định ở đầu màn hình) ───
+            // Không bị cuộn trôi mất khi vuốt lên hay vuốt xuống, tự động đổi màu khi qua chặng khác
+            if (stages.isNotEmpty()) {
+                val stageStepPx = with(density) { 255.dp.toPx() }
+                val currentSectionData by remember(stages) {
+                    derivedStateOf {
+                        val scrollY = scrollState.value.toFloat()
+                        val approxStageIndex = ((scrollY + 220f) / stageStepPx).toInt().coerceIn(0, stages.lastIndex)
+                        val sectionNum = (approxStageIndex / 10) + 1
+                        val startIdx = (sectionNum - 1) * 10
+                        val sectionStages = stages.drop(startIdx).take(10)
+                        val completed = sectionStages.count { it.state == JourneyStageState.COMPLETED }
+                        CosmicSectionConfig.getSectionData(
+                            sectionNumber = sectionNum,
+                            completedPlanets = completed,
+                            totalInThisSection = if (sectionStages.isNotEmpty()) sectionStages.size else 10
+                        )
+                    }
+                }
+
+                CosmicSectionBanner(
+                    section = currentSectionData,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(98.dp)
+                )
+            }
+
             Column(
                 modifier = Modifier
                     .fillMaxSize()
                     .verticalScroll(scrollState)
-                    .padding(top = 8.dp, bottom = 124.dp),
+                    .padding(top = 4.dp, bottom = 160.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 if (stages.isEmpty()) {
@@ -207,7 +239,9 @@ fun JourneyMapScreen(
                         animatingUnlockStageIndex = animatingUnlockStageIndex,
                         unlockAnimProgress = unlockAnim.value,
                         onStageStartQuest = { stage ->
-                            if (!isNavigating) {
+                            if (hearts <= 0) {
+                                showOutOfHeartsPrompt = true
+                            } else if (!isNavigating) {
                                 isNavigating = true
                                 viewModel.selectChapterByTitle(stage.title, stage.sequence)
                                 onStartQuest()
@@ -238,6 +272,27 @@ fun JourneyMapScreen(
                     )
                 }
             }
+        }
+        if (showOutOfHeartsPrompt) {
+            OutOfHeartsDialog(
+                currentStars = stars,
+                isEnglish = isEnglish,
+                starCost = 20,
+                onRefillWithStars = {
+                    val success = viewModel.purchaseShopItem(
+                        itemId = "refill_hearts_map",
+                        type = com.example.ShopItemType.HEART,
+                        starCost = 20,
+                        quantity = 5
+                    )
+                    if (success) {
+                        showOutOfHeartsPrompt = false
+                    }
+                },
+                onQuitLesson = {
+                    showOutOfHeartsPrompt = false
+                }
+            )
         }
     }
 }
@@ -380,13 +435,11 @@ private fun JourneyPath(
     onEnsureVisible: ((Float, Float) -> Unit)? = null
 ) {
     val stageStep = 255.dp
-    val bannerHeight = 106.dp
-    val bannerSpacing = 16.dp
-    val bannerTotalHeight = bannerHeight + bannerSpacing
+    val sectionBreakHeight = 56.dp
 
-    val totalBanners = if (stages.isEmpty()) 0 else (stages.lastIndex / 10) + 1
-    val totalPathHeight = (stages.size * stageStep.value + totalBanners * bannerTotalHeight.value + 190).dp
-    val rewardTop = (stages.size * stageStep.value + totalBanners * bannerTotalHeight.value + 10).dp
+    val totalSectionBreaks = if (stages.isEmpty()) 0 else (stages.lastIndex / 10)
+    val totalPathHeight = (stages.size * stageStep.value + totalSectionBreaks * sectionBreakHeight.value + 190).dp
+    val rewardTop = (stages.size * stageStep.value + totalSectionBreaks * sectionBreakHeight.value + 10).dp
 
     val auroraAnim = rememberCosmicAuroraAnimation()
     val density = LocalDensity.current
@@ -424,7 +477,7 @@ private fun JourneyPath(
         // 2. Dải cực quang ngân hà nối các hành tinh (Cosmic Aurora Segments)
         Canvas(modifier = Modifier.matchParentSize()) {
             val nodeX = { index: Int -> if (index % 2 == 0) 90.dp.toPx() else size.width - 90.dp.toPx() }
-            val nodeY = { index: Int -> ((index / 10) + 1) * bannerTotalHeight.toPx() + index * stageStep.toPx() + 85.dp.toPx() }
+            val nodeY = { index: Int -> ((index / 10) * sectionBreakHeight.toPx()) + index * stageStep.toPx() + 85.dp.toPx() }
 
             if (stages.size > 1) {
                 for (s in 1..stages.lastIndex) {
@@ -458,25 +511,17 @@ private fun JourneyPath(
             }
         }
 
-        // 3. Cột chứa Banner chương và các hành tinh (Column)
+        // 3. Cột chứa các hành tinh và mốc chuyển tiếp ngân hà (Column)
         Column(modifier = Modifier.fillMaxWidth()) {
             stages.forEachIndexed { index, stage ->
-                if (index % 10 == 0) {
-                    val sectionNum = index / 10 + 1
-                    val sectionStages = stages.drop(index).take(10)
-                    val completedInSection = sectionStages.count { it.state == JourneyStageState.COMPLETED }
-                    val sectionData = CosmicSectionConfig.getSectionData(
-                        sectionNumber = sectionNum,
-                        completedPlanets = completedInSection,
-                        totalInThisSection = sectionStages.size
-                    )
-                    CosmicSectionBanner(
-                        section = sectionData,
+                if (index > 0 && index % 10 == 0) {
+                    val nextSectionNum = (index / 10) + 1
+                    CosmicMilestoneDivider(
+                        sectionNum = nextSectionNum,
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(bannerHeight)
+                            .height(sectionBreakHeight)
                     )
-                    Spacer(modifier = Modifier.height(bannerSpacing))
                 }
 
                 val stageUnlockProgress = if (index == animatingUnlockStageIndex && unlockAnimProgress >= 0.35f) {
@@ -495,10 +540,10 @@ private fun JourneyPath(
                         val newIdx = if (selectedStageIndex == index) null else index
                         selectedStageIndex = newIdx
                         if (newIdx != null) {
-                            val bannerTotalHeightPx = with(density) { bannerTotalHeight.toPx() }
+                            val sectionBreakPx = with(density) { sectionBreakHeight.toPx() }
                             val stageStepPx = with(density) { stageStep.toPx() }
-                            val nodeYPx = ((index / 10) + 1) * bannerTotalHeightPx + index * stageStepPx + with(density) { 85.dp.toPx() }
-                            val popupBottomPx = nodeYPx + with(density) { 68.dp.toPx() } + with(density) { 190.dp.toPx() }
+                            val nodeYPx = (index / 10) * sectionBreakPx + index * stageStepPx + with(density) { 85.dp.toPx() }
+                            val popupBottomPx = nodeYPx + with(density) { 84.dp.toPx() } + with(density) { 180.dp.toPx() }
                             onEnsureVisible?.invoke(popupBottomPx, nodeYPx)
                         }
                     },
@@ -518,13 +563,14 @@ private fun JourneyPath(
         )
 
         // 5. Duolingo-style Cosmic Planet Lesson Pop-up với mũi tên trỏ vào hành tinh
+        // Đặt popupY = planetNodeY + 84.dp (ở dưới vành quỹ đạo, KHÔNG BỊ ĐÈ LÊN HÀNH TINH)
         val currentSelectedIdx = selectedStageIndex
         if (currentSelectedIdx != null && currentSelectedIdx in stages.indices) {
             val selectedStage = stages[currentSelectedIdx]
             val isLeft = currentSelectedIdx % 2 == 0
-            val planetNodeY = bannerTotalHeight * ((currentSelectedIdx / 10) + 1) + stageStep * currentSelectedIdx + 85.dp
-            val popupY = planetNodeY + 58.dp
-            val cardWidth = 270.dp.coerceAtMost(boxWidth - 40.dp)
+            val planetNodeY = sectionBreakHeight * (currentSelectedIdx / 10) + stageStep * currentSelectedIdx + 85.dp
+            val popupY = planetNodeY + 84.dp
+            val cardWidth = 260.dp.coerceAtMost(boxWidth - 40.dp)
             val arrowX = if (isLeft) (90.dp - 20.dp) else (cardWidth - (90.dp - 20.dp))
 
             key(currentSelectedIdx) {
@@ -606,146 +652,3 @@ private fun JourneyStageRow(
         )
     }
 }
-
-// ─── Info card ───────────────────────────────────────────────────────────────
-
-@Composable
-private fun JourneyStageInformationCard(
-    stage: JourneyStageUiModel,
-    index: Int = 0,
-    strings: AppStrings,
-    arrowDirection: BubbleArrowDirection = BubbleArrowDirection.LEFT,
-    onClick: () -> Unit
-) {
-    val planetType = remember(index) { CosmicPlanetHelper.getPlanetTypeForStage(index) }
-    val planetName = remember(planetType) { CosmicPlanetHelper.getPlanetTypeName(planetType) }
-    val planetColor = remember(planetType) { CosmicPlanetHelper.getPlanetPrimaryColor(planetType) }
-
-    val locked = stage.state == JourneyStageState.LOCKED
-    val accent = when (stage.state) {
-        JourneyStageState.COMPLETED -> Color(0xFFFFD166)
-        JourneyStageState.CURRENT   -> Color(0xFF51FAC1)
-        JourneyStageState.AVAILABLE -> Color(0xFF9EDBFF)
-        JourneyStageState.LOCKED    -> Color(0xFF776A91)
-    }
-    val stateLabel = when (stage.state) {
-        JourneyStageState.COMPLETED                              -> strings.chapterCompleted
-        JourneyStageState.CURRENT, JourneyStageState.AVAILABLE -> strings.chapterCurrent
-        JourneyStageState.LOCKED                                 -> strings.chapterLocked
-    }
-
-    val bubbleShape = remember(arrowDirection) {
-        SpeechBubbleShape(
-            direction = arrowDirection,
-            cornerRadius = 18.dp,
-            arrowWidth = 12.dp,
-            arrowHeight = 18.dp,
-            arrowCenterY = 48.dp
-        )
-    }
-
-    Box(
-        modifier = Modifier
-            .height(174.dp)
-            .clip(bubbleShape)
-            .background(Color(0xF2100E24))
-            .border(
-                1.5.dp,
-                Brush.linearGradient(listOf(accent.copy(alpha = 0.95f), accent.copy(alpha = 0.35f))),
-                bubbleShape
-            )
-            .clickable(enabled = !locked, onClick = onClick)
-            .padding(
-                start = if (arrowDirection == BubbleArrowDirection.LEFT) 20.dp else 14.dp,
-                end = if (arrowDirection == BubbleArrowDirection.RIGHT) 20.dp else 14.dp,
-                top = 11.dp,
-                bottom = 11.dp
-            )
-    ) {
-        Column {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Box(
-                    modifier = Modifier.size(24.dp).clip(CircleShape).background(accent.copy(alpha = 0.9f)),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text("${stage.sequence}", color = Color(0xFF11101B), fontSize = 11.sp, fontWeight = FontWeight.ExtraBold)
-                }
-                Spacer(modifier = Modifier.width(8.dp))
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        stage.title,
-                        color = Color.White,
-                        fontSize = 13.sp,
-                        fontWeight = FontWeight.ExtraBold,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                    Text(
-                        text = "🪐 Cấp ${index + 1} • $planetName",
-                        color = planetColor,
-                        fontSize = 9.5.sp,
-                        fontWeight = FontWeight.Bold,
-                        maxLines = 1
-                    )
-                }
-            }
-            Spacer(modifier = Modifier.height(4.dp))
-            Text(
-                stage.description,
-                color = Color(0xCCFFFFFF),
-                fontSize = 10.5.sp,
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis
-            )
-            Spacer(modifier = Modifier.height(6.dp))
-
-            // Thống kê bài học trong chương
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    "📚 ${stage.completedLessons}/${stage.totalLessons} bài học",
-                    color = accent,
-                    fontSize = 11.5.sp,
-                    fontWeight = FontWeight.Bold
-                )
-                Text(
-                    "${(stage.progress * 100).toInt()}% hoàn thành",
-                    color = Color.White.copy(alpha = 0.75f),
-                    fontSize = 10.5.sp,
-                    fontWeight = FontWeight.SemiBold
-                )
-            }
-            Spacer(modifier = Modifier.height(4.dp))
-            Box(modifier = Modifier.fillMaxWidth().height(5.dp).clip(CircleShape).background(Color(0x44302A4A))) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth(stage.progress).fillMaxHeight()
-                        .background(Brush.horizontalGradient(listOf(accent, accent.copy(alpha = 0.5f))))
-                )
-            }
-            Spacer(modifier = Modifier.weight(1f))
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = if (locked) "🔒 Cần mở khóa" else "👉 Xem ${stage.totalLessons} bài học trong chương",
-                    color = if (locked) Color(0x99FFFFFF) else Color(0xFF00F5D4),
-                    fontSize = 10.5.sp,
-                    fontWeight = FontWeight.Bold
-                )
-                Icon(
-                    imageVector = if (locked) Icons.Default.Lock else Icons.Default.ChevronRight,
-                    contentDescription = if (locked) stage.description else null,
-                    tint = if (locked) Color(0x88FFFFFF) else Color(0xFF00F5D4),
-                    modifier = Modifier.size(17.dp)
-                )
-            }
-        }
-    }
-}
-

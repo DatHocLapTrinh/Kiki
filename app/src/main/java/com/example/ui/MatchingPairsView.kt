@@ -200,10 +200,10 @@ private fun MatchingCard(
     onClick: () -> Unit
 ) {
     val (bgColor, borderColor, textColor, targetAlpha) = when (status) {
-        CardStatus.MATCHED -> Quadruple(Color(0x1522C55E), Color(0x4422C55E), Color(0x7751FAC1), 0.45f)
-        CardStatus.SELECTED -> Quadruple(Color(0x3351FAC1), Color(0xFF51FAC1), Color.White, 1f)
-        CardStatus.WRONG -> Quadruple(Color(0x33EF4444), Color(0xFFEF4444), Color(0xFFFF7A7A), 1f)
-        CardStatus.DEFAULT -> Quadruple(Color(0x1F1A1B36), Color(0x33FFFFFF), Color.White, 1f)
+        CardStatus.MATCHED -> Quadruple(Color(0xF0102E20), Color(0x6622C55E), Color(0xFF51FAC1), 0.45f)
+        CardStatus.SELECTED -> Quadruple(Color(0xF0132838), Color(0xFF51FAC1), Color(0xFF51FAC1), 1f)
+        CardStatus.WRONG -> Quadruple(Color(0xF038121E), Color(0xFFEF4444), Color(0xFFFF8A8A), 1f)
+        CardStatus.DEFAULT -> Quadruple(Color(0xF0191530), Color(0x55818CF8), Color.White, 1f)
     }
 
     val animatedBg by animateColorAsState(targetValue = bgColor, animationSpec = tween(200), label = "card_bg")
@@ -226,7 +226,7 @@ private fun MatchingCard(
             .clip(RoundedCornerShape(16.dp))
             .background(animatedBg)
             .border(
-                width = if (status == CardStatus.SELECTED || status == CardStatus.WRONG) 2.dp else 1.dp,
+                width = if (status == CardStatus.SELECTED || status == CardStatus.WRONG) 2.dp else 1.5.dp,
                 color = animatedBorder,
                 shape = RoundedCornerShape(16.dp)
             )
@@ -242,8 +242,8 @@ private fun MatchingCard(
             Text(
                 text = text,
                 color = textColor,
-                fontSize = 14.sp,
-                fontWeight = if (status == CardStatus.SELECTED) FontWeight.ExtraBold else FontWeight.SemiBold,
+                fontSize = 15.sp,
+                fontWeight = if (status == CardStatus.SELECTED) FontWeight.ExtraBold else FontWeight.Bold,
                 textAlign = TextAlign.Center,
                 lineHeight = 18.sp,
                 modifier = Modifier.weight(1f, fill = false)

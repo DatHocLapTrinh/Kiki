@@ -59,9 +59,9 @@ fun SentenceBuilderView(
         )
 
         val assemblyBgColor = when {
-            isChecked && isCorrect -> Color(0x2222C55E)
-            isChecked && !isCorrect -> Color(0x22EF4444)
-            else -> Color(0x1F14142B)
+            isChecked && isCorrect -> Color(0xF0102E20)
+            isChecked && !isCorrect -> Color(0xF038121E)
+            else -> Color(0xF018152E)
         }
 
         Box(
@@ -77,7 +77,7 @@ fun SentenceBuilderView(
             if (selectedTokenIndices.isEmpty()) {
                 Text(
                     text = if (isEnglish) "Tap words below to assemble the sentence 👇" else "Chạm vào các từ bên dưới để ghép thành câu 👇",
-                    color = Color(0x66FFFFFF),
+                    color = Color(0x99FFFFFF),
                     fontSize = 13.sp,
                     fontStyle = FontStyle.Italic,
                     textAlign = TextAlign.Center,
@@ -123,13 +123,13 @@ fun SentenceBuilderView(
                     Box(
                         modifier = Modifier
                             .clip(RoundedCornerShape(14.dp))
-                            .background(Color(0x0AFFFFFF))
-                            .border(1.dp, Color(0x1AFFFFFF), RoundedCornerShape(14.dp))
+                            .background(Color(0x15FFFFFF))
+                            .border(1.dp, Color(0x22FFFFFF), RoundedCornerShape(14.dp))
                             .padding(horizontal = 14.dp, vertical = 10.dp)
                     ) {
                         Text(
                             text = word,
-                            color = Color(0x22FFFFFF),
+                            color = Color(0x44FFFFFF),
                             fontSize = 15.sp,
                             fontWeight = FontWeight.SemiBold
                         )
@@ -166,7 +166,7 @@ private fun WordTokenChip(
         isSelectedInAssembly && isChecked && isCorrect -> Triple(Color(0xFF22C55E), Color(0xFF22C55E), Color(0xFF0D0A1A))
         isSelectedInAssembly && isChecked && !isCorrect -> Triple(Color(0xFFEF4444), Color(0xFFEF4444), Color.White)
         isSelectedInAssembly -> Triple(Color(0xFF51FAC1), Color(0xFF51FAC1), Color(0xFF0D0A1A))
-        else -> Triple(Color(0x261E1E38), Color(0x6651FAC1), Color.White)
+        else -> Triple(Color(0xF21C1836), Color(0x66818CF8), Color.White)
     }
 
     Box(

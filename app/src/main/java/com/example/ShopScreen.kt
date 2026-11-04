@@ -63,6 +63,7 @@ fun ShopScreen(viewModel: StudyViewModel) {
 
     var showConfirmDialog by remember { mutableStateOf<ShopItem?>(null) }
     var showSuccessToast by remember { mutableStateOf<String?>(null) }
+    var showStreakRestoredEffect by remember { mutableStateOf(false) }
 
     val shopItems = listOf(
         ShopItem(

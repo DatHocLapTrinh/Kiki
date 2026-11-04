@@ -413,7 +413,7 @@ class StudyViewModel @Inject constructor(
     val streakShields: LiveData<Int> = _streakShields
 
     // --- Stars & Hearts (Reward Currency) ---
-    private val _stars = MutableLiveData(0)
+    private val _stars = MutableLiveData(200)
     val stars: LiveData<Int> = _stars
 
     private val _hearts = MutableLiveData(5)
@@ -432,6 +432,81 @@ class StudyViewModel @Inject constructor(
     private val _shieldUsedNotice = MutableLiveData(false)
     val shieldUsedNotice: LiveData<Boolean> = _shieldUsedNotice
     fun dismissShieldNotice() { _shieldUsedNotice.value = false }
+
+    fun deductHeart(): Int {
+        val current = _hearts.value ?: 5
+        val updated = (current - 1).coerceAtLeast(0)
+        _hearts.value = updated
+        val userId = _currentUserId.value ?: return updated
+        viewModelScope.launch {
+            repository.spendHearts(userId, 1)
+        }
+        return updated
+    }
+
+    fun refillHearts(quantity: Int = 5) {
+        val current = _hearts.value ?: 0
+        val updated = (current + quantity).coerceIn(0, 5)
+        _hearts.value = updated
+        val userId = _currentUserId.value ?: return
+        viewModelScope.launch {
+            repository.addHearts(userId, quantity)
+        }
+    }
+
+    fun setHearts(count: Int) {
+        val updated = count.coerceIn(0, 5)
+        _hearts.value = updated
+    }
+
+    fun addShields(quantity: Int) {
+        val current = _streakShields.value ?: 0
+        val updated = (current + quantity).coerceAtLeast(0)
+        _streakShields.value = updated
+        val userId = _currentUserId.value ?: return
+        viewModelScope.launch {
+            repository.updateStreakShields(userId, updated)
+        }
+    }
+
+    fun useShieldToRestoreHearts(): Boolean {
+        val currentShields = _streakShields.value ?: 0
+        if (currentShields <= 0) return false
+        _streakShields.value = currentShields - 1
+        _hearts.value = 5
+        val userId = _currentUserId.value ?: return true
+        viewModelScope.launch {
+            repository.updateStreakShields(userId, currentShields - 1)
+            repository.addHearts(userId, 5)
+        }
+        return true
+    }
+
+    fun restoreStreakWithShield(): Boolean {
+        val currentShields = _streakShields.value ?: 0
+        if (currentShields <= 0) return false
+        _streakShields.value = currentShields - 1
+        val currentStreak = _streak.value ?: 0
+        val newStreak = if (currentStreak <= 0) 1 else currentStreak + 1
+        _streak.value = newStreak
+        val userId = _currentUserId.value ?: return true
+        val todayStr = java.time.LocalDate.now().toString()
+        viewModelScope.launch {
+            repository.updateStreakShields(userId, currentShields - 1)
+            repository.updateStreak(userId, newStreak, todayStr)
+        }
+        return true
+    }
+
+    fun setMockStreak(value: Int) {
+        val updated = value.coerceAtLeast(0)
+        _streak.value = updated
+        val userId = _currentUserId.value ?: return
+        val todayStr = java.time.LocalDate.now().toString()
+        viewModelScope.launch {
+            repository.updateStreak(userId, updated, todayStr)
+        }
+    }
 
     private val _weakPoints = MutableLiveData<List<WeakPointEntity>>(emptyList())
     val weakPoints: LiveData<List<WeakPointEntity>> = _weakPoints
@@ -555,13 +630,14 @@ class StudyViewModel @Inject constructor(
     }
 
     fun initializeLeagueData() {
-        val currentSettlement = leagueManager.checkAndSettleWeeklyLeague()
+        val userId = _currentUserId.value ?: -1L
+        val currentSettlement = leagueManager.checkAndSettleWeeklyLeague(userId)
         if (currentSettlement != null) {
             _leagueSettlementEvent.value = currentSettlement
         }
-        val currentTier = leagueManager.getCurrentTier()
+        val currentTier = leagueManager.getCurrentTier(userId)
         _userTier.value = currentTier
-        _weeklyXp.value = leagueManager.getWeeklyXp()
+        _weeklyXp.value = leagueManager.getWeeklyXp(userId)
         _millisUntilMonday.value = leagueManager.getMillisUntilNextMonday()
 
         if (_selectedTierTab.value == null || (_selectedTierTab.value == LeagueTier.BRONZE && currentTier != LeagueTier.BRONZE)) {
@@ -570,12 +646,12 @@ class StudyViewModel @Inject constructor(
         fetchTierLeaderboard(_selectedTierTab.value ?: currentTier)
     }
 
-    fun fetchTierLeaderboard(tier: LeagueTier = _selectedTierTab.value ?: leagueManager.getCurrentTier()) {
+    fun fetchTierLeaderboard(tier: LeagueTier = _selectedTierTab.value ?: leagueManager.getCurrentTier(_currentUserId.value ?: -1L)) {
         val userId = _currentUserId.value ?: -1L
         viewModelScope.launch {
             _isLeaderboardLoading.value = true
-            _userTier.value = leagueManager.getCurrentTier()
-            _weeklyXp.value = leagueManager.getWeeklyXp()
+            _userTier.value = leagueManager.getCurrentTier(userId)
+            _weeklyXp.value = leagueManager.getWeeklyXp(userId)
             _millisUntilMonday.value = leagueManager.getMillisUntilNextMonday()
 
             val players = firestoreSyncManager.fetchRealtimeTierLeaderboard(tier, userId)
@@ -1216,7 +1292,15 @@ class StudyViewModel @Inject constructor(
                 _streakShields.value = profile.streakShields
                 _avatarUri.value = profile.avatarUri
                 _studyMotto.value = profile.studyMotto ?: ""
-                _stars.value = profile.stars
+                val currentStars = profile.stars
+                val finalStars = if (currentStars < 200) {
+                    val bonus = 200 - currentStars
+                    repository.addStars(userId, bonus)
+                    200
+                } else {
+                    currentStars
+                }
+                _stars.value = finalStars
                 _hearts.value = profile.hearts
             }
             val savedLevel = prefs.getString("learning_level_$userId", _selectedLevel.value ?: "Beginner") ?: "Beginner"
@@ -1343,6 +1427,17 @@ class StudyViewModel @Inject constructor(
      * Mua vật phẩm trong cửa hàng bằng Sao.
      * @return true nếu mua thành công, false nếu không đủ Sao
      */
+    fun addStars(amount: Int) {
+        val userId = _currentUserId.value
+        _stars.value = ((_stars.value ?: 0) + amount).coerceAtLeast(0)
+        soundEffectManager.playFanfare()
+        if (userId != null && userId != -1L) {
+            viewModelScope.launch {
+                repository.addStars(userId, amount)
+            }
+        }
+    }
+
     fun purchaseShopItem(itemId: String, type: com.example.ShopItemType, starCost: Int, quantity: Int): Boolean {
         val userId = _currentUserId.value ?: return false
         val currentStars = _stars.value ?: 0
@@ -1492,8 +1587,8 @@ class StudyViewModel @Inject constructor(
                     }
                     _history.value = data
                     repository.updateXP(userId, 20)
-                    leagueManager.addWeeklyXp(20)
-                    _weeklyXp.value = leagueManager.getWeeklyXp()
+                    leagueManager.addWeeklyXp(20, userId)
+                    _weeklyXp.value = leagueManager.getWeeklyXp(userId)
                     val newXp = (_xp.value ?: 0) + 20
                     _xp.value = newXp
                     _level.value = (newXp / 100) + 1
@@ -2555,8 +2650,8 @@ class StudyViewModel @Inject constructor(
         if (userId != null && userId != -1L) {
             viewModelScope.launch {
                 repository.updateXP(userId, amount)
-                leagueManager.addWeeklyXp(amount)
-                _weeklyXp.value = leagueManager.getWeeklyXp()
+                leagueManager.addWeeklyXp(amount, userId)
+                _weeklyXp.value = leagueManager.getWeeklyXp(userId)
                 fetchLeaderboard()
                 fetchTierLeaderboard(_selectedTierTab.value ?: leagueManager.getCurrentTier())
                 firestoreSyncManager.syncUserProfile(userId)

@@ -124,26 +124,9 @@ class DataRepository @Inject constructor(
                 }
             }
 
-            val lb = dao.getLeaderboard()
-            if (lb.size < 10) {
-                val names = arrayOf("Alex", "Jordan", "Taylor", "Morgan", "Casey", "Riley", "Jamie", "Skyler", "Cameron", "Quinn")
-                val xps = intArrayOf(15200, 14500, 13100, 12500, 11000, 9500, 8000, 7500, 6000, 5000)
-                for (i in names.indices) {
-                    val dummy = UserEntity(
-                        email = "dummy$i@test.com",
-                        passwordHash = PasswordHasher.hash("kikiDummyPass123!")
-                    )
-                    val id = dao.insertUser(dummy)
-                    if (id != -1L) {
-                        val profile = UserProfileEntity(
-                            userId = id,
-                            displayName = names[i],
-                            totalXp = xps[i]
-                        )
-                        dao.insertUserProfile(profile)
-                    }
-                }
-            }
+            // Dọn dẹp triệt để bất kỳ tài khoản mẫu dummy nào còn sót lại
+            dao.deleteDummyUserProfiles()
+            dao.deleteDummyUsers()
         } catch (e: Exception) {
             e.printStackTrace()
         }
@@ -720,6 +703,10 @@ class DataRepository @Inject constructor(
 
     suspend fun getLeaderboard(): List<UserProfileEntity> = withContext(Dispatchers.IO) {
         dao.getLeaderboard()
+    }
+
+    suspend fun getRealUserProfiles(): List<UserProfileEntity> = withContext(Dispatchers.IO) {
+        dao.getRealUserProfiles()
     }
 
     suspend fun updateStreak(userId: Long, streak: Int, lastActiveDate: String): Boolean = withContext(Dispatchers.IO) {

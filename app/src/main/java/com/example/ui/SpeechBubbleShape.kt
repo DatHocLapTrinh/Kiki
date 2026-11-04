@@ -76,7 +76,7 @@ class SpeechBubbleShape(
                 lineTo(size.width, arrowTipY)
                 lineTo(bodyRight, arrowBottom)
             }
-            lineTo(bodyRight - cr, bodyBottom)
+            lineTo(bodyRight, bodyBottom - cr)
 
             // Bottom-right corner
             arcTo(

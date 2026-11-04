@@ -46,6 +46,9 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
 
+        // Tối ưu hóa tần số quét màn hình (120Hz / 90Hz) cho cuộn vuốt mượt mà
+        optimizeHighRefreshRate()
+
         // 1. Khởi tạo Notification Channels (Android 8.0+)
         KikiNotificationManager.createNotificationChannels(this)
 
@@ -83,11 +86,23 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    override fun onResume() {
+        super.onResume()
+        // Kích hoạt Focus Mode (chặn thông báo app khác + giữ màn hình sáng) nếu người dùng đã bật
+        com.example.util.FocusModeManager.enableFocusMode(this, this)
+    }
+
+    override fun onPause() {
+        super.onPause()
+        // Khôi phục lại trạng thái thông báo bình thường khi rời app
+        com.example.util.FocusModeManager.disableFocusMode(this, this)
+    }
+
     private fun initDailyReminder() {
         val prefs = getSharedPreferences(SoundEffectManager.PREFS_NAME, Context.MODE_PRIVATE)
         val notificationsEnabled = prefs.getBoolean("notifications_enabled", true)
         if (notificationsEnabled) {
-            KikiDailyReminderScheduler.scheduleDailyReminder(this)
+            KikiDailyReminderScheduler.scheduleAllReminders(this)
         }
     }
 
@@ -109,4 +124,38 @@ class MainActivity : ComponentActivity() {
             Log.w("MainActivity", "Lỗi khởi tạo FCM: ${e.message}")
         }
     }
+
+    /**
+     * Kích hoạt chế độ tần số quét cao nhất (90Hz / 120Hz / 144Hz) trên các thiết bị hỗ trợ
+     * để đảm bảo trải nghiệm cuộn vuốt và hiệu ứng đồ họa ngân hà đạt độ mượt mà tối đa 120fps.
+     */
+    private fun optimizeHighRefreshRate() {
+        try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                val currentDisplay = display
+                val modes = currentDisplay?.supportedModes ?: emptyArray()
+                val highestMode = modes.maxByOrNull { it.refreshRate }
+                if (highestMode != null && highestMode.refreshRate >= 80f) {
+                    val lp = window.attributes
+                    lp.preferredDisplayModeId = highestMode.modeId
+                    window.attributes = lp
+                    Log.d("MainActivity", "Đã kích hoạt tần số quét tối ưu: ${highestMode.refreshRate}Hz")
+                }
+            } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                @Suppress("DEPRECATION")
+                val currentDisplay = windowManager.defaultDisplay
+                val modes = currentDisplay?.supportedModes ?: emptyArray()
+                val highestMode = modes.maxByOrNull { it.refreshRate }
+                if (highestMode != null && highestMode.refreshRate >= 80f) {
+                    val lp = window.attributes
+                    lp.preferredDisplayModeId = highestMode.modeId
+                    window.attributes = lp
+                    Log.d("MainActivity", "Đã kích hoạt tần số quét tối ưu: ${highestMode.refreshRate}Hz")
+                }
+            }
+        } catch (e: Exception) {
+            Log.w("MainActivity", "Không thể cấu hình tần số quét 120Hz: ${e.message}")
+        }
+    }
+
 }
