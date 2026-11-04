@@ -167,7 +167,9 @@ fun QuestScreen(viewModel: StudyViewModel, onFinish: () -> Unit) {
 
     val activeQuestions = remember(questions) { mutableStateListOf<QuestItem>().apply { addAll(questions) } }
     val originalTotal = remember(questions) { questions.size }
-    val missedQuestionsQueue = remember { mutableListOf<QuestItem>() }
+    val missedQuestionsQueue = remember { mutableListOf<Pair<Int, QuestItem>>() }
+    val reviewToOriginalMap = remember { mutableStateMapOf<Int, Int>() }
+    val reviewAttemptResults = remember { mutableStateMapOf<Int, Boolean>() }
     val firstAttemptResults = remember { mutableStateMapOf<Int, Boolean>() }
     val firstAttemptUserAnswers = remember { mutableStateMapOf<Int, Int>() }
     var isReviewPhase by remember { mutableStateOf(false) }
@@ -1183,12 +1185,15 @@ fun QuestScreen(viewModel: StudyViewModel, onFinish: () -> Unit) {
                                         firstAttemptResults[currentQuestion] = isCurrentCorrect
                                         firstAttemptUserAnswers[currentQuestion] = answerIndex
                                         if (!isCurrentCorrect) {
-                                            missedQuestionsQueue.add(copyForReview(activeQ))
+                                            missedQuestionsQueue.add(Pair(currentQuestion, copyForReview(activeQ)))
                                         }
                                     } else {
-                                        if (!isCurrentCorrect) {
-                                            activeQuestions.add(copyForReview(activeQ))
+                                        // Vòng ôn tập sửa lỗi: Mỗi câu sai chỉ được sửa ĐÚNG 1 LẦN DUY NHẤT
+                                        val origIdx = reviewToOriginalMap[currentQuestion]
+                                        if (origIdx != null) {
+                                            reviewAttemptResults[origIdx] = isCurrentCorrect
                                         }
+                                        // Tuyệt đối không thêm lại vào activeQuestions để tránh lặp vô tận
                                     }
 
                                     // Logic xử lý khi hết tim: Game Over hoặc nạp tim bằng Sao để học tiếp
@@ -1200,7 +1205,11 @@ fun QuestScreen(viewModel: StudyViewModel, onFinish: () -> Unit) {
 
                                     // Nếu vừa hết câu hỏi vòng đầu và có câu sai: Kích hoạt Intro sửa lỗi sai!
                                     if (currentQuestion == originalTotal - 1 && !isReviewPhase && missedQuestionsQueue.isNotEmpty()) {
-                                        activeQuestions.addAll(missedQuestionsQueue)
+                                        missedQuestionsQueue.forEach { (origIdx, qItem) ->
+                                            val reviewIdx = activeQuestions.size
+                                            reviewToOriginalMap[reviewIdx] = origIdx
+                                            activeQuestions.add(qItem)
+                                        }
                                         reviewTotalCount = missedQuestionsQueue.size
                                         isReviewPhase = true
                                         showReviewIntro = true
@@ -1221,7 +1230,7 @@ fun QuestScreen(viewModel: StudyViewModel, onFinish: () -> Unit) {
                                     } else {
                                         val finalResults = (0 until originalTotal).map { idx ->
                                             val item = activeQuestions[idx]
-                                            val isItemCorrect = firstAttemptResults[idx] ?: (userAnswers[idx] == item.correctIndex)
+                                            val isItemCorrect = firstAttemptResults[idx] == true || reviewAttemptResults[idx] == true
                                             val copy = when (item.type) {
                                                 QuestionType.SENTENCE_BUILDER, QuestionType.LISTENING_CHALLENGE -> {
                                                     val assembled = item.userSentenceTokens.joinToString(" ")
