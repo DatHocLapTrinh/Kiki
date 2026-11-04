@@ -1037,8 +1037,10 @@ fun QuestScreen(viewModel: StudyViewModel, onFinish: () -> Unit) {
                                     Text(
                                         text = feedbackTitle,
                                         color = Color(0xFF51FAC1),
-                                        fontSize = 20.sp,
-                                        fontWeight = FontWeight.ExtraBold
+                                        fontSize = if (feedbackTitle.length > 20) 17.sp else 20.sp,
+                                        fontWeight = FontWeight.ExtraBold,
+                                        modifier = Modifier.weight(1f, fill = false),
+                                        maxLines = 2
                                     )
 
                                     if (consecutiveCorrect >= 2) {
@@ -1048,6 +1050,7 @@ fun QuestScreen(viewModel: StudyViewModel, onFinish: () -> Unit) {
                                             4 -> "+40 XP"
                                             else -> "+60 XP"
                                         }
+                                        Spacer(modifier = Modifier.width(8.dp))
                                         Box(
                                             modifier = Modifier
                                                 .clip(RoundedCornerShape(12.dp))
@@ -1059,7 +1062,9 @@ fun QuestScreen(viewModel: StudyViewModel, onFinish: () -> Unit) {
                                                 text = "🔥 ${consecutiveCorrect}x ($bonus)",
                                                 color = Color(0xFFFFD166),
                                                 fontSize = 12.sp,
-                                                fontWeight = FontWeight.ExtraBold
+                                                fontWeight = FontWeight.ExtraBold,
+                                                maxLines = 1,
+                                                softWrap = false
                                             )
                                         }
                                     }
@@ -1079,7 +1084,9 @@ fun QuestScreen(viewModel: StudyViewModel, onFinish: () -> Unit) {
                                         },
                                         color = Color(0xFFFF6B6B),
                                         fontSize = 19.sp,
-                                        fontWeight = FontWeight.ExtraBold
+                                        fontWeight = FontWeight.ExtraBold,
+                                        modifier = Modifier.weight(1f, fill = false),
+                                        maxLines = 2
                                     )
 
                                     if (true) {

@@ -961,9 +961,55 @@ fun MainNavigation(viewModel: StudyViewModel, onLogout: () -> Unit) {
             }
         }
 
+        val strings = LocalAppStrings.current
+        var showDuolingoMoreSheet by remember { mutableStateOf(false) }
+
+        val navBackStackEntry by navController.currentBackStackEntryAsState()
+        val currentNavRoute = navBackStackEntry?.destination?.route
+        LaunchedEffect(currentNavRoute) {
+            showDuolingoMoreSheet = false
+        }
+
+        if (showDuolingoMoreSheet) {
+            DuolingoMoreFloatingMenu(
+                strings = strings,
+                onDismiss = { showDuolingoMoreSheet = false },
+                onNavigateProfile = {
+                    showDuolingoMoreSheet = false
+                    viewModel.setKikiExplorerSection(KikiExplorerSection.PROFILE)
+                    navController.navigate("profile") {
+                        popUpTo(navController.graph.startDestinationId) { saveState = true }
+                        launchSingleTop = true
+                        restoreState = true
+                    }
+                },
+                onNavigateVocab = {
+                    showDuolingoMoreSheet = false
+                    viewModel.setKikiExplorerSection(KikiExplorerSection.VOCABULARY)
+                    navController.navigate("profile") {
+                        popUpTo(navController.graph.startDestinationId) { saveState = true }
+                        launchSingleTop = true
+                        restoreState = true
+                    }
+                },
+                onNavigateSettings = {
+                    showDuolingoMoreSheet = false
+                    viewModel.setKikiExplorerSection(KikiExplorerSection.SETTINGS)
+                    navController.navigate("profile") {
+                        popUpTo(navController.graph.startDestinationId) { saveState = true }
+                        launchSingleTop = true
+                        restoreState = true
+                    }
+                }
+            )
+        }
+
         FloatingNavBar(
             navController = navController,
             viewModel = viewModel,
+            isMoreOpen = showDuolingoMoreSheet,
+            onOpenMoreSheet = { showDuolingoMoreSheet = !showDuolingoMoreSheet },
+            onDismissMoreSheet = { showDuolingoMoreSheet = false },
             modifier = Modifier
                 .align(Alignment.BottomCenter)
                 .navigationBarsPadding()
@@ -977,6 +1023,9 @@ fun MainNavigation(viewModel: StudyViewModel, onLogout: () -> Unit) {
 fun FloatingNavBar(
     navController: androidx.navigation.NavHostController,
     viewModel: StudyViewModel? = null,
+    isMoreOpen: Boolean = false,
+    onOpenMoreSheet: () -> Unit = {},
+    onDismissMoreSheet: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val navBackStackEntry by navController.currentBackStackEntryAsState()
@@ -1025,26 +1074,29 @@ fun FloatingNavBar(
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
-        NavItem("map", R.drawable.ic_nav_roadmap, strings.navMap, currentRoute, navController)
+        NavItem("map", R.drawable.ic_nav_roadmap, strings.navMap, currentRoute, navController, onDismissMoreSheet = onDismissMoreSheet)
         NavItem(
             route = "quests",
             drawableRes = R.drawable.ic_nav_task,
             label = strings.navLearn,
             currentRoute = currentRoute,
             navController = navController,
-            badgeCount = completedQuestsCount
+            badgeCount = completedQuestsCount,
+            onDismissMoreSheet = onDismissMoreSheet
         )
-        NavItem("shop", R.drawable.ic_nav_shop, strings.navShop, currentRoute, navController)
-        NavItem("ask", R.drawable.ic_mentor_qa, strings.navTutor, currentRoute, navController)
-        NavItem("rank", R.drawable.trophy_gold, strings.navRank, currentRoute, navController)
+        NavItem("shop", R.drawable.ic_nav_shop, strings.navShop, currentRoute, navController, onDismissMoreSheet = onDismissMoreSheet)
+        NavItem("ask", R.drawable.ic_mentor_qa, strings.navTutor, currentRoute, navController, onDismissMoreSheet = onDismissMoreSheet)
+        NavItem("rank", R.drawable.trophy_gold, strings.navRank, currentRoute, navController, onDismissMoreSheet = onDismissMoreSheet)
+        
+        val moreSelected = isMoreOpen || currentRoute == "profile"
         NavItem(
             route = "profile",
             drawableRes = R.drawable.ic_nav_menu,
             label = strings.navMenu,
-            currentRoute = currentRoute,
+            currentRoute = if (moreSelected) "profile" else currentRoute,
             navController = navController,
-            onClickExtra = {
-                viewModel?.setKikiExplorerSection(KikiExplorerSection.HUB)
+            customOnClick = {
+                onOpenMoreSheet()
             }
         )
     }
@@ -1059,7 +1111,8 @@ fun NavItem(
     currentRoute: String?,
     navController: androidx.navigation.NavHostController,
     badgeCount: Int = 0,
-    onClickExtra: (() -> Unit)? = null
+    onDismissMoreSheet: (() -> Unit)? = null,
+    customOnClick: (() -> Unit)? = null
 ) {
     val isSelected = currentRoute == route
     val haptic = LocalHapticFeedback.current
@@ -1076,11 +1129,15 @@ fun NavItem(
             .background(if (isSelected) Color(0x264EF3C5) else Color.Transparent)
             .clickable {
                 haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                onClickExtra?.invoke()
-                navController.navigate(route) {
-                    popUpTo(navController.graph.startDestinationId) { saveState = true }
-                    launchSingleTop = true
-                    restoreState = true
+                if (customOnClick != null) {
+                    customOnClick()
+                } else {
+                    onDismissMoreSheet?.invoke()
+                    navController.navigate(route) {
+                        popUpTo(navController.graph.startDestinationId) { saveState = true }
+                        launchSingleTop = true
+                        restoreState = true
+                    }
                 }
             }
             .padding(horizontal = 12.dp, vertical = 8.dp),
@@ -1112,6 +1169,167 @@ fun NavItem(
                     }
             )
         }
+    }
+}
+
+@Composable
+fun DuolingoMoreFloatingMenu(
+    strings: AppStrings,
+    onDismiss: () -> Unit,
+    onNavigateProfile: () -> Unit,
+    onNavigateVocab: () -> Unit,
+    onNavigateSettings: () -> Unit
+) {
+    val haptic = LocalHapticFeedback.current
+    val isEnglish = strings.settingsTitle == "Settings"
+
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .clickable(
+                interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() },
+                indication = null
+            ) { onDismiss() }
+    ) {
+        // Nền mờ nhẹ
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(Color.Black.copy(alpha = 0.55f))
+        )
+
+        // Mini tab NẰM TRÊN THANH BOTTOM BAR (không đè lên thanh điều hướng!)
+        Column(
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .navigationBarsPadding()
+                .padding(bottom = 88.dp)
+                .fillMaxWidth(0.92f)
+                .clip(RoundedCornerShape(24.dp))
+                .background(Color(0xFF131722))
+                .border(1.5.dp, Color(0x4451FAC1), RoundedCornerShape(24.dp))
+                .clickable(
+                    interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() },
+                    indication = null
+                ) { /* absorb clicks */ }
+                .padding(horizontal = 14.dp, vertical = 10.dp),
+            verticalArrangement = Arrangement.spacedBy(2.dp)
+        ) {
+            // Tiêu đề mini tab
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 8.dp, vertical = 6.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Text(
+                    text = if (isEnglish) "EXPLORER HUB" else "DANH MỤC THAO TÁC",
+                    color = Color(0xFF51FAC1),
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.Black,
+                    letterSpacing = 1.2.sp
+                )
+                Icon(
+                    imageVector = Icons.Default.Close,
+                    contentDescription = "Close",
+                    tint = Color(0x88FFFFFF),
+                    modifier = Modifier
+                        .size(20.dp)
+                        .clickable { onDismiss() }
+                )
+            }
+
+            HorizontalDivider(color = Color(0x1A51FAC1), thickness = 0.8.dp)
+
+            // 1. Hồ sơ (gồm danh hiệu và cột mốc bên trong)
+            DuolingoMenuItem(
+                title = if (isEnglish) "Profile & Cosmic Badges" else "Hồ Sơ & Danh Hiệu Cột Mốc",
+                icon = Icons.Default.Person,
+                iconTint = Color(0xFF51FAC1),
+                iconBg = Color(0x2251FAC1),
+                onClick = {
+                    haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                    onNavigateProfile()
+                }
+            )
+
+            HorizontalDivider(color = Color(0x1A51FAC1), thickness = 0.8.dp)
+
+            // 2. Từ vựng & Ngữ pháp
+            DuolingoMenuItem(
+                title = if (isEnglish) "Vocabulary & Grammar" else "Từ Vựng & Ngữ Pháp",
+                icon = Icons.Default.CollectionsBookmark,
+                iconTint = Color(0xFF51FAC1),
+                iconBg = Color(0x2251FAC1),
+                onClick = {
+                    haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                    onNavigateVocab()
+                }
+            )
+
+            HorizontalDivider(color = Color(0x1A51FAC1), thickness = 0.8.dp)
+
+            // 3. Cài đặt & Tuỳ chọn
+            DuolingoMenuItem(
+                title = if (isEnglish) "Settings & Preferences" else "Cài Đặt & Tuỳ Chọn",
+                icon = Icons.Default.Settings,
+                iconTint = Color(0xFF51FAC1),
+                iconBg = Color(0x2251FAC1),
+                onClick = {
+                    haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                    onNavigateSettings()
+                }
+            )
+        }
+    }
+}
+
+@Composable
+private fun DuolingoMenuItem(
+    title: String,
+    icon: ImageVector,
+    iconTint: Color = Color(0xFF51FAC1),
+    iconBg: Color = Color(0x2251FAC1),
+    onClick: () -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(16.dp))
+            .clickable(onClick = onClick)
+            .padding(horizontal = 14.dp, vertical = 13.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Box(
+            modifier = Modifier
+                .size(44.dp)
+                .clip(RoundedCornerShape(13.dp))
+                .background(iconBg)
+                .border(1.dp, iconTint.copy(alpha = 0.4f), RoundedCornerShape(13.dp)),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(
+                imageVector = icon,
+                contentDescription = title,
+                tint = iconTint,
+                modifier = Modifier.size(24.dp)
+            )
+        }
+        Spacer(modifier = Modifier.width(16.dp))
+        Text(
+            text = title,
+            color = Color.White,
+            fontSize = 16.sp,
+            fontWeight = FontWeight.Bold,
+            modifier = Modifier.weight(1f)
+        )
+        Icon(
+            imageVector = Icons.AutoMirrored.Filled.ArrowForwardIos,
+            contentDescription = null,
+            tint = Color(0x44FFFFFF),
+            modifier = Modifier.size(13.dp)
+        )
     }
 }
 
