@@ -1004,7 +1004,7 @@ fun resolveBadgeTrophyResource(badgeId: String, iconKey: String): Int {
             "FIRST_STEP" -> R.drawable.badge_first_step
             "SPEAKING_ACE" -> R.drawable.badge_speaking_ace
             "ALL_STAGES_MASTERY" -> R.drawable.badge_all_stages_mastery
-            else -> R.drawable.trophy_gold
+            else -> R.drawable.badge_first_step
         }
     }
 }
@@ -1279,26 +1279,26 @@ private fun ProfileAchievements(
                         modifier = Modifier
                             .size(34.dp)
                             .clip(CircleShape)
-                            .background(Color(0x33FFD166)),
+                            .background(Color(0x3351FAC1)),
                         contentAlignment = Alignment.Center
                     ) {
                         AsyncImage(
-                            model = R.drawable.trophy_gold,
+                            model = R.drawable.badge_all_stages_mastery,
                             contentDescription = null,
-                            modifier = Modifier.size(24.dp),
+                            modifier = Modifier.size(26.dp),
                             contentScale = ContentScale.Fit
                         )
                     }
                     Spacer(modifier = Modifier.width(10.dp))
                     Column {
                         Text(
-                            text = if (isEnglish) "Mastery Trophy Hall" else "Bộ Sưu Tập Thành Tựu & Cúp",
+                            text = if (isEnglish) "Achievement Badges Collection" else "Bộ Sưu Tập Huy Hiệu Thành Tựu",
                             color = Color.White,
                             fontSize = 16.sp,
                             fontWeight = FontWeight.Black
                         )
                         Text(
-                            text = if (isEnglish) "Tap any trophy to view milestones" else "Chạm vào từng cúp để xem chi tiết",
+                            text = if (isEnglish) "Tap any badge to view milestones" else "Chạm vào từng huy hiệu để xem chi tiết",
                             color = Color(0x99FFFFFF),
                             fontSize = 10.sp
                         )
@@ -1307,13 +1307,13 @@ private fun ProfileAchievements(
                 Box(
                     modifier = Modifier
                         .clip(RoundedCornerShape(12.dp))
-                        .background(Color(0x33FFD166))
-                        .border(1.2.dp, Color(0xFFFFD166), RoundedCornerShape(12.dp))
+                        .background(Color(0x3351FAC1))
+                        .border(1.2.dp, Color(0xFF51FAC1), RoundedCornerShape(12.dp))
                         .padding(horizontal = 10.dp, vertical = 4.dp)
                 ) {
                     Text(
                         text = "$unlockedCount/${allBadges.size}",
-                        color = Color(0xFFFFD166),
+                        color = Color(0xFF51FAC1),
                         fontSize = 12.sp,
                         fontWeight = FontWeight.Black
                     )
@@ -1328,7 +1328,7 @@ private fun ProfileAchievements(
             ) {
                 items(allBadges.size) { index ->
                     val badge = allBadges[index]
-                    val trophyRes = resolveBadgeTrophyResource(badge.id, badge.iconKey)
+                    val badgeRes = resolveBadgeTrophyResource(badge.id, badge.iconKey)
 
                     Column(
                         horizontalAlignment = Alignment.CenterHorizontally,
@@ -1344,20 +1344,20 @@ private fun ProfileAchievements(
                                 .clip(CircleShape)
                                 .background(
                                     if (badge.isUnlocked) Brush.radialGradient(
-                                        listOf(Color(0x66FFD166), Color(0x333F2B66), Color(0xFF191032))
+                                        listOf(Color(0x6651FAC1), Color(0x331F3A3A), Color(0xFF102220))
                                     ) else Brush.radialGradient(
                                         listOf(Color(0x222C2444), Color(0xFF120E22))
                                     )
                                 )
                                 .border(
                                     2.dp,
-                                    if (badge.isUnlocked) Color(0xFFFFD166) else Color(0x445E5876),
+                                    if (badge.isUnlocked) Color(0xFF51FAC1) else Color(0x445E5876),
                                     CircleShape
                                 ),
                             contentAlignment = Alignment.Center
                         ) {
                             AsyncImage(
-                                model = trophyRes,
+                                model = badgeRes,
                                 contentDescription = if (isEnglish) badge.titleEn else badge.titleVi,
                                 contentScale = ContentScale.Fit,
                                 modifier = Modifier.size(46.dp),
@@ -1417,7 +1417,7 @@ private fun AchievementDetailDialog(
     onDismiss: () -> Unit
 ) {
     if (badge == null) return
-    val trophyRes = resolveBadgeTrophyResource(badge.id, badge.iconKey)
+    val badgeRes = resolveBadgeTrophyResource(badge.id, badge.iconKey)
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -1428,12 +1428,12 @@ private fun AchievementDetailDialog(
                     modifier = Modifier
                         .size(54.dp)
                         .clip(CircleShape)
-                        .background(if (badge.isUnlocked) Color(0x33FFD166) else Color(0x22444455))
-                        .border(1.5.dp, if (badge.isUnlocked) Color(0xFFFFD166) else Color(0x44888899), CircleShape),
+                        .background(if (badge.isUnlocked) Color(0x3351FAC1) else Color(0x22444455))
+                        .border(1.5.dp, if (badge.isUnlocked) Color(0xFF51FAC1) else Color(0x44888899), CircleShape),
                     contentAlignment = Alignment.Center
                 ) {
                     AsyncImage(
-                        model = trophyRes,
+                        model = badgeRes,
                         contentDescription = null,
                         contentScale = ContentScale.Fit,
                         modifier = Modifier.size(40.dp),
