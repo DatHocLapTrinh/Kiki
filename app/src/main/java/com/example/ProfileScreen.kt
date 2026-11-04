@@ -752,8 +752,9 @@ private fun ProfileIdentityCard(
                             contentScale = ContentScale.Crop
                         )
                     } else {
-                        Image(
-                            painter = painterResource(resolveAvatarResource(avatarUri)),
+                        AsyncImage(
+                            model = resolveAvatarResource(avatarUri),
+                            contentScale = ContentScale.Fit,
                             contentDescription = "Avatar",
                             modifier = Modifier.fillMaxSize().clip(CircleShape)
                         )
@@ -932,8 +933,9 @@ fun EditProfileDialog(
                                     .padding(2.dp),
                                 contentAlignment = Alignment.Center
                             ) {
-                                Image(
-                                    painter = painterResource(resolveAvatarResource(avatarKey)),
+                                AsyncImage(
+                            model = resolveAvatarResource(avatarKey),
+                            contentScale = ContentScale.Fit,
                                     contentDescription = label,
                                     modifier = Modifier.fillMaxSize().clip(CircleShape)
                                 )
@@ -2216,8 +2218,9 @@ private fun KikiExplorerNavigationSheet(
                         .border(1.5.dp, Color(0xFF51FAC1), CircleShape),
                     contentAlignment = Alignment.Center
                 ) {
-                    Image(
-                        painter = painterResource(resolveAvatarResource(avatarUri)),
+                    AsyncImage(
+                            model = resolveAvatarResource(avatarUri),
+                            contentScale = ContentScale.Fit,
                         contentDescription = null,
                         modifier = Modifier.fillMaxSize().clip(CircleShape)
                     )
@@ -2432,8 +2435,9 @@ private fun KikiExplorerHubView(
                         contentScale = ContentScale.Crop
                     )
                 } else {
-                    Image(
-                        painter = painterResource(resolveAvatarResource(avatarUri)),
+                    AsyncImage(
+                            model = resolveAvatarResource(avatarUri),
+                            contentScale = ContentScale.Fit,
                         contentDescription = "Avatar",
                         modifier = Modifier.fillMaxSize().clip(CircleShape)
                     )
