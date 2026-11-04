@@ -323,12 +323,12 @@ class DataRepository @Inject constructor(
                     }
 
                     QuestionType.SENTENCE_BUILDER -> {
-                        val promptText = when {
-                            hasBlanks -> "Sắp xếp các từ sau thành câu hoàn chỉnh 🧩"
-                            q.questionText.startsWith("Sắp xếp", ignoreCase = true) -> q.questionText
-                            q.questionText.startsWith("Dịch", ignoreCase = true) -> q.questionText
-                            else -> "Sắp xếp các từ sau thành câu hoàn chỉnh 🧩"
-                        }
+                        val promptText = resolveSentenceBuilderPrompt(
+                            questionText = q.questionText,
+                            completeSentence = completeSentence,
+                            explanation = q.explanation,
+                            vocabularyPairsBank = vocabularyPairsBank
+                        )
 
                         val rawTokens = completeSentence.split(Regex("\\s+"))
                             .map { it.trim().trim('.', ',', '!', '?', ';', ':', '"') }
@@ -911,5 +911,104 @@ class DataRepository @Inject constructor(
 
     suspend fun clearTelemetry(userId: Long): Boolean = withContext(Dispatchers.IO) {
         dao.clearTelemetry(userId) > 0
+    }
+
+    private fun resolveSentenceBuilderPrompt(
+        questionText: String,
+        completeSentence: String,
+        explanation: String?,
+        vocabularyPairsBank: List<com.example.model.MatchingPair>
+    ): String {
+        val safeExplanation = explanation ?: ""
+        val viChars = "àáảãạăắằẳẵặâấầẩẫậèéẻẽẹêếềểễệìíỉĩịòóỏõọôốồổỗộơớờởỡợùúủũụưứừửữựỳýỷỹỵđÀÁẢÃẠĂẮẰẲẴẶÂẤẦẨẪẬÈÉẺẼẸÊẾỀỂỄỆÌÍỈĨỊÒÓỎÕỌÔỐỒỔỖỘƠỚỜỞỠỢÙÚỦŨỤƯỨỪỬỮỰỲÝỶỸỴĐ"
+        // 1. Kiểm tra xem trong questionText đã có câu tiếng Việt đối chiếu đặt trong ngoặc nháy đơn/kép chưa
+        val quotedMatch = Regex("['\"]([^'\"]+)['\"]").find(questionText)
+        val quoted = quotedMatch?.groupValues?.getOrNull(1)?.trim()
+        val isVietnameseQuoted = !quoted.isNullOrBlank() && (
+            quoted.any { it in viChars } || !quoted.equals(completeSentence, ignoreCase = true)
+        )
+        if (isVietnameseQuoted && quoted != null) {
+            return "Dịch sang tiếng Anh: '$quoted' 🧩"
+        }
+
+        // 2. Tìm câu dịch tiếng Việt từ explanation
+        val expQuoted = Regex("['\"]([^'\"]+)['\"]").findAll(safeExplanation).mapNotNull { it.groupValues.getOrNull(1)?.trim() }
+            .firstOrNull { it.any { c -> c in viChars } }
+        if (expQuoted != null) {
+            return "Dịch sang tiếng Anh: '$expQuoted' 🧩"
+        }
+
+        // 3. Tra cứu từ điển câu chuẩn thông dụng của Kiki
+        val cleanKey = completeSentence.trim().lowercase().trim('.', ',', '!', '?', ';', ':')
+        val commonPhraseMap = mapOf(
+            "hello anna" to "Xin chào Anna",
+            "hi anna" to "Chào Anna",
+            "goodbye anna" to "Tạm biệt Anna",
+            "thank you anna" to "Cảm ơn Anna",
+            "my name is anna" to "Tên của tôi là Anna",
+            "my name is alex" to "Tên của tôi là Alex",
+            "i am alex" to "Tôi là Alex",
+            "i am anna" to "Tôi là Anna",
+            "you are my friend" to "Bạn là bạn của tôi",
+            "he is my friend" to "Anh ấy là bạn của tôi",
+            "how are you" to "Bạn có khỏe không",
+            "i am fine thank you" to "Tôi khỏe, cảm ơn bạn",
+            "nice to meet you" to "Rất vui được gặp bạn",
+            "see you later" to "Hẹn gặp lại sau",
+            "good morning" to "Chào buổi sáng",
+            "good afternoon" to "Chào buổi chiều",
+            "good evening" to "Chào buổi tối",
+            "good night" to "Chúc ngủ ngon",
+            "yes please" to "Vâng, làm ơn",
+            "no sorry" to "Không, xin lỗi",
+            "thank you" to "Cảm ơn bạn",
+            "thank you very much" to "Cảm ơn bạn rất nhiều",
+            "where are you from" to "Bạn đến từ đâu",
+            "i am from vietnam" to "Tôi đến từ Việt Nam",
+            "i am a student" to "Tôi là một học sinh",
+            "she is a teacher" to "Cô ấy là một giáo viên",
+            "he is a doctor" to "Anh ấy là một bác sĩ",
+            "coffee please" to "Làm ơn cho cà phê",
+            "water please" to "Làm ơn cho nước lọc",
+            "i want water please" to "Tôi muốn uống nước, làm ơn",
+            "i like hot tea" to "Tôi thích trà nóng",
+            "we eat bread" to "Chúng tôi ăn bánh mì",
+            "she drinks milk" to "Cô ấy uống sữa",
+            "one two three" to "Một hai ba",
+            "two dollars" to "Hai đô la",
+            "five dollars" to "Năm đô la",
+            "what time is it" to "Mấy giờ rồi",
+            "how much is this" to "Cái này giá bao nhiêu",
+            "eight o'clock" to "Tám giờ đúng",
+            "my family" to "Gia đình của tôi",
+            "my mother" to "Mẹ của tôi",
+            "my father" to "Bố của tôi",
+            "a happy family" to "Một gia đình hạnh phúc",
+            "i love my family" to "Tôi yêu gia đình mình",
+            "this is my mother" to "Đây là mẹ của tôi",
+            "do you like music" to "Bạn có thích âm nhạc không",
+            "yes i love music" to "Vâng, tôi yêu âm nhạc",
+            "go to work" to "Đi làm việc",
+            "at the airport" to "Ở sân bay",
+            "go straight and turn left" to "Đi thẳng rồi rẽ trái",
+            "excuse me where is it" to "Xin lỗi, cho tôi hỏi nó ở đâu"
+        )
+        val matchedPhrase = commonPhraseMap[cleanKey]
+        if (matchedPhrase != null) {
+            return "Dịch sang tiếng Anh: '$matchedPhrase' 🧩"
+        }
+
+        // 4. Tra cứu từ ngân hàng từ vựng
+        val matchedPair = vocabularyPairsBank.firstOrNull { it.english.trim().equals(cleanKey, ignoreCase = true) }
+        if (matchedPair != null) {
+            return "Dịch sang tiếng Anh: '${matchedPair.vietnamese}' 🧩"
+        }
+
+        // 5. Fallback an toàn
+        return if (questionText.startsWith("Dịch", ignoreCase = true) && questionText.contains("'")) {
+            questionText
+        } else {
+            "Dịch sang tiếng Anh: '$completeSentence' 🧩"
+        }
     }
 }

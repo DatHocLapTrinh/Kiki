@@ -416,4 +416,50 @@ class ScaffoldingCurriculumProgressiveRoadmapTest {
         assertTrue(chapter.description?.contains("mitigate") == true)
         assertTrue(chapter.questions.last().explanation?.contains("mitigate") == true)
     }
+
+    @Test
+    fun test10And15QuestionPacingHasZeroRepetition() {
+        val chapter10 = com.example.model.SpiralCurriculumBlueprint.generateTopicAwareChapter(
+            level = "Beginner",
+            topic = "Chặng 1: Chào Hỏi & Làm Quen Cơ Bản",
+            questionsPerLesson = 10
+        )
+        assertEquals(50, chapter10.questions.size)
+        val lessons10 = chapter10.questions.chunked(10)
+        lessons10.forEachIndexed { idx, lessonQs ->
+            assertEquals(10, lessonQs.size)
+            val prompts = lessonQs.map { it.questionText }.toSet()
+            assertEquals("Lesson ${idx+1} in 10-Q mode must have 10 distinct question prompts", 10, prompts.size)
+        }
+
+        val chapter15 = com.example.model.SpiralCurriculumBlueprint.generateTopicAwareChapter(
+            level = "Beginner",
+            topic = "Chặng 1: Chào Hỏi & Làm Quen Cơ Bản",
+            questionsPerLesson = 15
+        )
+        assertEquals(75, chapter15.questions.size)
+        val lessons15 = chapter15.questions.chunked(15)
+        lessons15.forEachIndexed { idx, lessonQs ->
+            assertEquals(15, lessonQs.size)
+            val prompts = lessonQs.map { it.questionText }.toSet()
+            assertEquals("Lesson ${idx+1} in 15-Q mode must have 15 distinct question prompts", 15, prompts.size)
+        }
+    }
+
+    @Test
+    fun testSentenceBuilderQuestionsHaveExplicitVietnamesePrompt() {
+        val chapter = com.example.model.SpiralCurriculumBlueprint.generateTopicAwareChapter(
+            level = "Beginner",
+            topic = "Chặng 1: Chào Hỏi & Làm Quen Cơ Bản",
+            questionsPerLesson = 15
+        )
+        val sentenceBuilders = chapter.questions.filter { it.questionType == MicrolearningSlotArchetypes.SENTENCE_BUILDER }
+        assertTrue("Must contain sentence builder questions", sentenceBuilders.isNotEmpty())
+        sentenceBuilders.forEach { sb ->
+            assertTrue(
+                "Sentence Builder question '${sb.questionText}' must contain Vietnamese translation in quotes",
+                sb.questionText.contains("'") || sb.questionText.contains("\"")
+            )
+        }
+    }
 }

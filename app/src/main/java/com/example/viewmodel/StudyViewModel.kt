@@ -889,9 +889,23 @@ class StudyViewModel @Inject constructor(
             val requiredTotal = 5 * pageSize
 
             // Kiểm tra: Nếu chưa có câu hỏi HOẶC số câu hỏi trong DB không đủ cho pacing hiện tại (ví dụ DB chỉ có 25 câu cũ mà user chọn 10 câu/bài cần 50 câu)
-            // HOẶC có câu mẫu cũ gạch chân ______ -> Dọn dẹp và tái sinh đủ 100% không trùng lặp
+            // HOẶC có câu mẫu cũ gạch chân ______ HOẶC câu ghép câu thiếu bản dịch đối chiếu HOẶC trùng lặp câu đích trong cùng bài -> Dọn dẹp và tái sinh đủ 100% không trùng lặp
+            val hasVagueSentenceBuilder = allChapterQuestions.any {
+                it.type == QuestionType.SENTENCE_BUILDER &&
+                (it.question.contains("Sắp xếp các từ sau thành câu hoàn chỉnh") && !it.question.contains("'") && !it.question.contains("\""))
+            }
+            val hasDuplicateTargetSentence = allChapterQuestions.chunked(pageSize).any { lessonQs ->
+                val sentences = lessonQs.mapNotNull {
+                    if (it.type == QuestionType.SENTENCE_BUILDER || it.type == QuestionType.SPEAKING_CHALLENGE || it.type == QuestionType.LISTENING_CHALLENGE) {
+                        (it.correctSentence.ifEmpty { it.speakingSentence }).trim().lowercase()
+                    } else null
+                }.filter { it.isNotBlank() }
+                sentences.size != sentences.toSet().size
+            }
             if (allChapterQuestions.any { it.question.contains("______") || it.question.contains("in her crib", ignoreCase = true) || it.question.contains("by bus every morning", ignoreCase = true) }
-                || (allChapterQuestions.size < requiredTotal)) {
+                || (allChapterQuestions.size < requiredTotal)
+                || hasVagueSentenceBuilder
+                || hasDuplicateTargetSentence) {
                 repository.clearQuestionsByChapter(chapterId)
                 allChapterQuestions = emptyList()
             }

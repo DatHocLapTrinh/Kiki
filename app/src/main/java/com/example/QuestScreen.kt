@@ -587,22 +587,55 @@ fun QuestScreen(viewModel: StudyViewModel, onFinish: () -> Unit) {
                                         }
                                     }
                                     QuestionType.SENTENCE_BUILDER -> {
+                                        val rawQuestion = currentQ.question
+                                        val quotedMatch = Regex("['\"]([^'\"]+)['\"]").find(rawQuestion)
+                                        val promptPhrase = quotedMatch?.groupValues?.getOrNull(1)?.trim()
+                                            ?: rawQuestion
+                                                .replace("🧩", "")
+                                                .replace("DỊCH CÂU NÀY SANG TIẾNG ANH:", "", ignoreCase = true)
+                                                .replace("Dịch câu này sang tiếng Anh:", "", ignoreCase = true)
+                                                .replace("Dịch sang tiếng Anh:", "", ignoreCase = true)
+                                                .replace("Sắp xếp các từ sau thành câu hoàn chỉnh", "", ignoreCase = true)
+                                                .replace("Sắp xếp các từ thành câu đàm thoại:", "", ignoreCase = true)
+                                                .replace("Luyện phản xạ ghép câu:", "", ignoreCase = true)
+                                                .replace(":", "")
+                                                .trim()
+
                                         Column(modifier = Modifier.fillMaxWidth()) {
+                                            Row(
+                                                verticalAlignment = Alignment.CenterVertically,
+                                                horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                            ) {
+                                                Box(
+                                                    modifier = Modifier
+                                                        .clip(RoundedCornerShape(6.dp))
+                                                        .background(Color(0x3351FAC1))
+                                                        .padding(horizontal = 8.dp, vertical = 3.dp)
+                                                ) {
+                                                    Text(
+                                                        text = if (isEnglish) "TRANSLATE THIS SENTENCE" else "DỊCH CÂU NÀY SANG TIẾNG ANH",
+                                                        color = Color(0xFF51FAC1),
+                                                        fontSize = 11.sp,
+                                                        fontWeight = FontWeight.Bold,
+                                                        letterSpacing = 0.5.sp
+                                                    )
+                                                }
+                                            }
+                                            Spacer(modifier = Modifier.height(6.dp))
                                             Text(
-                                                text = if (isEnglish) "TRANSLATE SENTENCE:" else "DỊCH CÂU NÀY SANG TIẾNG ANH:",
-                                                color = Color(0xCC51FAC1),
-                                                fontSize = 11.5.sp,
-                                                fontWeight = FontWeight.SemiBold,
-                                                letterSpacing = 0.5.sp
-                                            )
-                                            Spacer(modifier = Modifier.height(4.dp))
-                                            Text(
-                                                text = currentQ.question,
+                                                text = if (promptPhrase.isNotBlank()) "\"$promptPhrase\"" else (if (isEnglish) "Form the correct sentence below" else "Sắp xếp thành câu đúng bên dưới"),
                                                 color = Color(0xFFF8FAFC),
-                                                fontSize = 16.sp,
+                                                fontSize = 18.sp,
                                                 fontWeight = FontWeight.Bold,
-                                                lineHeight = 23.sp,
+                                                lineHeight = 25.sp,
                                                 modifier = Modifier.fillMaxWidth()
+                                            )
+                                            Spacer(modifier = Modifier.height(3.dp))
+                                            Text(
+                                                text = if (isEnglish) "Tap words below in the correct order" else "Chạm vào các từ bên dưới theo đúng thứ tự",
+                                                color = Color(0x99F8FAFC),
+                                                fontSize = 12.sp,
+                                                fontWeight = FontWeight.Normal
                                             )
                                         }
                                     }
