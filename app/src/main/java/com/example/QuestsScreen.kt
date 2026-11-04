@@ -165,6 +165,19 @@ fun QuestsScreen(viewModel: StudyViewModel) {
             Spacer(modifier = Modifier.width(12.dp))
             Column {
                 Text(strings.dailyQuests, color = Color.White, fontSize = 22.sp, fontWeight = FontWeight.ExtraBold)
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        text = if (isEnglish) "Complete 6 quests to earn 100 " else "Hoàn thành 6 nhiệm vụ nhận 100 ",
+                        color = Color(0xFFFFD166),
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                    Image(
+                        painter = painterResource(R.drawable.ic_action_star),
+                        contentDescription = null,
+                        modifier = Modifier.size(13.dp)
+                    )
+                }
             }
         }
 
@@ -231,7 +244,7 @@ fun QuestsScreen(viewModel: StudyViewModel) {
                 contentPadding = PaddingValues(start = 20.dp, end = 20.dp, top = 8.dp, bottom = 140.dp),
                 verticalArrangement = Arrangement.spacedBy(14.dp)
             ) {
-                items(sortedQuests, key = { it.taskId }) { quest ->
+                items(sortedQuests) { quest ->
                     QuestItemCard(
                         quest = quest,
                         onClaim = {
@@ -335,6 +348,12 @@ fun DailyChestHeader(progress: Float, chestOpened: Boolean, onOpenChest: () -> U
                     fontWeight = FontWeight.Bold, 
                     fontSize = 18.sp
                 )
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = if (chestOpened) strings.rewardClaimed else if (isFull) strings.tapChest else strings.completeAllToOpen, 
+                    color = if (chestOpened) Color(0xFF51FAC1) else if (isFull) Color(0xFFFFD166) else Color(0xB3FFFFFF), 
+                    fontSize = 14.sp
+                )
             }
         }
     }
@@ -399,6 +418,8 @@ fun DailyChestHeader(progress: Float, chestOpened: Boolean, onOpenChest: () -> U
                 // Texts
                 Column(modifier = Modifier.weight(1f)) {
                     Text(quest.title, color = Color.White, fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(quest.desc, color = Color(0xB3FFFFFF), fontSize = 12.5.sp, lineHeight = 17.sp)
                 }
                 
                 // Reward Badge

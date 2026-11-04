@@ -113,10 +113,21 @@ fun JourneyMapScreen(
     var animatingUnlockStageIndex by remember { mutableIntStateOf(-1) }
     val unlockAnim = remember { Animatable(0f) }
 
+    val pendingUnlockIndex = remember(unlockEvent, stages) {
+        val event = unlockEvent ?: return@remember -1
+        var idx = stages.indexOfFirst { it.title.equals(event.nextChapterTitle, ignoreCase = true) }
+        if (idx == -1) {
+            idx = stages.indexOfFirst { it.state == JourneyStageState.LOCKED }
+        }
+        idx
+    }
+
     fun triggerPlanetUnlock(targetIdx: Int) {
         coroutineScope.launch {
             if (targetIdx > 0 && targetIdx < stages.size && animatingUnlockStageIndex == -1) {
                 animatingUnlockStageIndex = targetIdx
+                unlockAnim.snapTo(0f)
+
                 val stageStepPx = with(density) { 255.dp.toPx() }
                 val sectionBreakPx = with(density) { 56.dp.toPx() }
                 val targetPlanetY = (targetIdx / 10) * sectionBreakPx + targetIdx * stageStepPx + with(density) { 85.dp.toPx() }
@@ -125,7 +136,6 @@ fun JourneyMapScreen(
 
                 scrollState.animateScrollTo(desiredScroll, tween(800, easing = FastOutSlowInEasing))
 
-                unlockAnim.snapTo(0f)
                 viewModel.soundEffectManager.playCorrect(3)
                 haptic.performHapticFeedback(HapticFeedbackType.LongPress)
 
@@ -149,12 +159,9 @@ fun JourneyMapScreen(
 
     LaunchedEffect(unlockEvent) {
         val event = unlockEvent ?: return@LaunchedEffect
-        var targetIdx = stages.indexOfFirst { it.title.equals(event.nextChapterTitle, ignoreCase = true) }
-        if (targetIdx == -1) {
-            targetIdx = stages.indexOfFirst { it.state == JourneyStageState.LOCKED }
-        }
-        if (targetIdx > 0 && targetIdx < stages.size) {
-            triggerPlanetUnlock(targetIdx)
+        if (pendingUnlockIndex > 0 && pendingUnlockIndex < stages.size) {
+            delay(350)
+            triggerPlanetUnlock(pendingUnlockIndex)
         } else {
             viewModel.clearChapterUnlockEvent()
         }
@@ -237,6 +244,7 @@ fun JourneyMapScreen(
                         strings = strings,
                         isEnglish = isEnglish,
                         animatingUnlockStageIndex = animatingUnlockStageIndex,
+                        pendingUnlockIndex = pendingUnlockIndex,
                         unlockAnimProgress = unlockAnim.value,
                         onStageStartQuest = { stage ->
                             if (hearts <= 0) {
@@ -429,6 +437,7 @@ private fun JourneyPath(
     strings: AppStrings,
     isEnglish: Boolean = false,
     animatingUnlockStageIndex: Int = -1,
+    pendingUnlockIndex: Int = -1,
     unlockAnimProgress: Float = 0f,
     onStageStartQuest: (JourneyStageUiModel) -> Unit,
     onStageLongClick: ((JourneyStageUiModel, Int) -> Unit)? = null,
@@ -452,7 +461,13 @@ private fun JourneyPath(
     }
 
     val activeUpTo = if (currentStageIndex < 0) stages.lastIndex
-        else (currentStageIndex + 1).coerceAtMost(stages.lastIndex)
+        else if (animatingUnlockStageIndex != -1 && unlockAnimProgress < 0.78f) {
+            (animatingUnlockStageIndex - 1).coerceAtLeast(0)
+        } else if (pendingUnlockIndex != -1 && unlockAnimProgress < 0.78f) {
+            (pendingUnlockIndex - 1).coerceAtLeast(0)
+        } else {
+            (currentStageIndex + 1).coerceAtMost(stages.lastIndex)
+        }
 
     BoxWithConstraints(
         modifier = Modifier.fillMaxWidth().height(totalPathHeight)
@@ -524,18 +539,28 @@ private fun JourneyPath(
                     )
                 }
 
+                val isTargetUnlockingPlanet = (index == animatingUnlockStageIndex) ||
+                    (animatingUnlockStageIndex == -1 && pendingUnlockIndex != -1 && index == pendingUnlockIndex)
+
+                val effectiveStage = if (isTargetUnlockingPlanet && unlockAnimProgress < 0.78f) {
+                    stage.copy(state = JourneyStageState.LOCKED)
+                } else {
+                    stage
+                }
+
                 val stageUnlockProgress = if (index == animatingUnlockStageIndex && unlockAnimProgress >= 0.35f) {
                     ((unlockAnimProgress - 0.35f) / 0.65f).coerceIn(0f, 1f)
                 } else 0f
 
                 JourneyStageRow(
-                    stage = stage,
+                    stage = effectiveStage,
                     index = index,
                     totalStages = stages.size,
                     stageStep = stageStep,
                     strings = strings,
                     unlockProgress = stageUnlockProgress,
                     onStageClick = {
+                        if (animatingUnlockStageIndex != -1) return@JourneyStageRow
                         haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
                         val newIdx = if (selectedStageIndex == index) null else index
                         selectedStageIndex = newIdx

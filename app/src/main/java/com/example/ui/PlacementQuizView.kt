@@ -1,10 +1,16 @@
 package com.example.ui
 
+import android.Manifest
+import android.content.pm.PackageManager
+import android.widget.Toast
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.*
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
@@ -29,11 +35,14 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.content.ContextCompat
 import com.example.LocalAppStrings
 import com.example.audio.SoundEffectManager
 import com.example.audio.SpeechRecognitionManager
@@ -68,6 +77,23 @@ fun PlacementQuizView(
     val strings = LocalAppStrings.current
     val haptic = LocalHapticFeedback.current
     val scope = rememberCoroutineScope()
+
+    val context = LocalContext.current
+    var hasAudioPermission by remember {
+        mutableStateOf(
+            ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED
+        )
+    }
+    val permissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission()
+    ) { isGranted ->
+        hasAudioPermission = isGranted
+        if (isGranted) {
+            Toast.makeText(context, "Đã cấp quyền Micro! Hãy nhấn Micro để phát âm.", Toast.LENGTH_SHORT).show()
+        } else {
+            Toast.makeText(context, "Cần cấp quyền Micro để nhận diện giọng nói", Toast.LENGTH_LONG).show()
+        }
+    }
 
     var stage by remember { mutableIntStateOf(1) } // 1: Grammar, 2: Vocab, 3: Listening, 4: Speaking
     var currentTheta by remember { mutableFloatStateOf(initialTheta) }
@@ -260,6 +286,43 @@ fun PlacementQuizView(
                         } else null
                         val hasSpoken = spokenRecognizedText.isNotBlank()
 
+                        val toggleSpeakingMic: () -> Unit = {
+                            haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                            if (!hasAudioPermission) {
+                                permissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
+                            } else if (isRecordingSpeaking) {
+                                isRecordingSpeaking = false
+                                speechRecognitionManager?.stopListening()
+                            } else {
+                                if (speechRecognitionManager != null && !speechRecognitionManager.isRecognitionAvailable()) {
+                                    Toast.makeText(
+                                        context,
+                                        "Máy ảo chưa có dịch vụ giọng nói Google. Bạn có thể nhấn giữ nút bên dưới để giả lập phát âm trên máy ảo.",
+                                        Toast.LENGTH_LONG
+                                    ).show()
+                                }
+                                isRecordingSpeaking = true
+                                spokenRecognizedText = ""
+                                speechRecognitionManager?.startListening(
+                                    language = "en-US",
+                                    onResult = { text ->
+                                        spokenRecognizedText = text
+                                        isRecordingSpeaking = false
+                                        val res = com.example.util.PronunciationScorer.evaluate(currentTargetSentence, text)
+                                        if (res.overallScore >= 60) {
+                                            soundEffectManager?.playCorrect()
+                                        } else {
+                                            soundEffectManager?.playIncorrect()
+                                        }
+                                    },
+                                    onError = { err ->
+                                        isRecordingSpeaking = false
+                                        Toast.makeText(context, "Lỗi mic: $err", Toast.LENGTH_SHORT).show()
+                                    }
+                                )
+                            }
+                        }
+
                         Column(
                             horizontalAlignment = Alignment.CenterHorizontally,
                             modifier = Modifier.fillMaxWidth().padding(vertical = 6.dp)
@@ -293,30 +356,7 @@ fun PlacementQuizView(
                                     )
                                     .border(2.dp, if (isRecordingSpeaking) Color(0xFFFF6B6B) else Color(0xFF00F5D4), CircleShape)
                                     .clickable {
-                                        haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                                        if (isRecordingSpeaking) {
-                                            isRecordingSpeaking = false
-                                            speechRecognitionManager?.stopListening()
-                                        } else {
-                                            isRecordingSpeaking = true
-                                            spokenRecognizedText = ""
-                                            speechRecognitionManager?.startListening(
-                                                language = "en-US",
-                                                onResult = { text ->
-                                                    spokenRecognizedText = text
-                                                    isRecordingSpeaking = false
-                                                    val res = com.example.util.PronunciationScorer.evaluate(currentTargetSentence, text)
-                                                    if (res.overallScore >= 60) {
-                                                        soundEffectManager?.playCorrect()
-                                                    } else {
-                                                        soundEffectManager?.playIncorrect()
-                                                    }
-                                                },
-                                                onError = { _ ->
-                                                    isRecordingSpeaking = false
-                                                }
-                                            )
-                                        }
+                                        toggleSpeakingMic()
                                     },
                                 contentAlignment = Alignment.Center
                             ) {
@@ -359,7 +399,7 @@ fun PlacementQuizView(
 
                             Spacer(modifier = Modifier.height(18.dp))
 
-                            // Nút xác nhận hoàn tất nói (chỉ mở khi đã nói)
+                            // Nút xác nhận hoàn tất nói hoặc kích hoạt Micro
                             Box(
                                 modifier = Modifier
                                     .fillMaxWidth()
@@ -367,55 +407,75 @@ fun PlacementQuizView(
                                     .clip(RoundedCornerShape(14.dp))
                                     .background(
                                         if (hasSpoken) Brush.linearGradient(listOf(Color(0xFF00F5D4), Color(0xFF00B4D8)))
-                                        else Brush.linearGradient(listOf(Color(0x33FFFFFF), Color(0x1AFFFFFF)))
+                                        else Brush.linearGradient(listOf(Color(0x3300F5D4), Color(0x1A00F5D4)))
                                     )
-                                    .clickable(enabled = hasSpoken && !isAnswered) {
-                                        isAnswered = true
-                                        val latency = System.currentTimeMillis() - itemStartTime
-                                        val finalScore = evalResult?.overallScore ?: 0
-                                        val isCorrect = finalScore >= 60
+                                    .border(
+                                        width = 1.dp,
+                                        color = if (hasSpoken) Color(0xFF00F5D4) else Color(0x3300F5D4),
+                                        shape = RoundedCornerShape(14.dp)
+                                    )
+                                    .pointerInput(hasSpoken, isAnswered) {
+                                        detectTapGestures(
+                                            onTap = {
+                                                if (hasSpoken && !isAnswered) {
+                                                    isAnswered = true
+                                                    val latency = System.currentTimeMillis() - itemStartTime
+                                                    val finalScore = evalResult?.overallScore ?: 0
+                                                    val isCorrect = finalScore >= 60
 
-                                        val newTheta = AdaptiveDiagnosticEngine.updateTheta(
-                                            currentTheta,
-                                            currentItem.difficultyB,
-                                            isCorrect,
-                                            latency
-                                        )
-                                        currentTheta = newTheta
-                                        answerRecords.add(
-                                            DiagnosticAnswerRecord(
-                                                item = currentItem,
-                                                selectedIndex = 0,
-                                                isCorrect = isCorrect,
-                                                latencyMs = latency,
-                                                speakingScore = finalScore
-                                            )
-                                        )
-                                        answeredIds.add(currentItem.id)
+                                                    val newTheta = AdaptiveDiagnosticEngine.updateTheta(
+                                                        currentTheta,
+                                                        currentItem.difficultyB,
+                                                        isCorrect,
+                                                        latency
+                                                    )
+                                                    currentTheta = newTheta
+                                                    answerRecords.add(
+                                                        DiagnosticAnswerRecord(
+                                                            item = currentItem,
+                                                            selectedIndex = 0,
+                                                            isCorrect = isCorrect,
+                                                            latencyMs = latency,
+                                                            speakingScore = finalScore
+                                                        )
+                                                    )
+                                                    answeredIds.add(currentItem.id)
 
-                                        scope.launch {
-                                            delay(400)
-                                            val profile = AdaptiveDiagnosticEngine.evaluateFinalProfile(
-                                                userId = userId,
-                                                goal = goal,
-                                                dailyTargetMinutes = dailyTargetMinutes,
-                                                selfEfficacy = selfEfficacy,
-                                                priorityModality = priorityModality,
-                                                finalTheta = currentTheta,
-                                                answers = answerRecords.toList()
-                                            )
-                                            finalProfile = profile
-                                            isShowingRadarCard = true
-                                            soundEffectManager?.playFanfare()
-                                        }
+                                                    scope.launch {
+                                                        delay(400)
+                                                        val profile = AdaptiveDiagnosticEngine.evaluateFinalProfile(
+                                                            userId = userId,
+                                                            goal = goal,
+                                                            dailyTargetMinutes = dailyTargetMinutes,
+                                                            selfEfficacy = selfEfficacy,
+                                                            priorityModality = priorityModality,
+                                                            finalTheta = currentTheta,
+                                                            answers = answerRecords.toList()
+                                                        )
+                                                        finalProfile = profile
+                                                        isShowingRadarCard = true
+                                                        soundEffectManager?.playFanfare()
+                                                    }
+                                                } else if (!hasSpoken) {
+                                                    toggleSpeakingMic()
+                                                }
+                                            },
+                                            onLongPress = {
+                                                if (!hasSpoken && !isAnswered) {
+                                                    spokenRecognizedText = currentTargetSentence
+                                                    soundEffectManager?.playCorrect()
+                                                    Toast.makeText(context, "Đã kích hoạt giả lập phát âm chuẩn (Chế độ test máy ảo)", Toast.LENGTH_SHORT).show()
+                                                }
+                                            }
+                                        )
                                     },
                                 contentAlignment = Alignment.Center
                             ) {
                                 Text(
-                                    text = if (hasSpoken) "Hoàn Tất & Xem Kết Quả ➔" else "Bấm Micro Để Luyện Nói 🎙️",
-                                    color = if (hasSpoken) Color(0xFF0B0D1B) else Color.White.copy(alpha = 0.5f),
+                                    text = if (hasSpoken) "Hoàn Tất & Xem Kết Quả ➔" else "Bấm Micro Để Luyện Nói (Nhấn giữ để test)",
+                                    color = if (hasSpoken) Color(0xFF0B0D1B) else Color(0xFF00F5D4),
                                     fontWeight = FontWeight.Bold,
-                                    fontSize = 14.5.sp
+                                    fontSize = 14.sp
                                 )
                             }
                         }

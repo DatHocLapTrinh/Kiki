@@ -73,6 +73,7 @@ fun VocabularyVaultDialog(
         DisposableEffect(view) {
             val window = (view.parent as? DialogWindowProvider)?.window
             window?.let { w ->
+                androidx.core.view.WindowCompat.setDecorFitsSystemWindows(w, false)
                 w.setLayout(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT)
                 w.setDimAmount(0f)
                 w.setBackgroundDrawableResource(android.R.color.transparent)
@@ -88,6 +89,7 @@ fun VocabularyVaultDialog(
                 modifier = Modifier
                     .fillMaxSize()
                     .statusBarsPadding()
+                    .navigationBarsPadding()
             ) {
                 // Header & Tab Switcher (Horizontal padding)
                 Column(
@@ -910,7 +912,8 @@ private fun FlashcardDeckView(
                         // Mặt trước: Từ vựng + phiên âm + phát âm
                         Column(
                             horizontalAlignment = Alignment.CenterHorizontally,
-                            verticalArrangement = Arrangement.Center
+                            verticalArrangement = Arrangement.Center,
+                            modifier = Modifier.verticalScroll(rememberScrollState())
                         ) {
                             Text(
                                 text = if (isEnglish) "FLASHCARD" else "THẺ TỪ VỰNG",
@@ -1179,9 +1182,6 @@ private fun FlashcardDeckView(
             )
         }
 
-        val navBarBottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
-        val safeBottomPadding = if (navBarBottom > 0.dp) navBarBottom + 12.dp else 24.dp
-
         // Dedicated Elevated Bottom Dock: [Chưa nhớ] [Quay lại] [Đã học]
         Surface(
             color = Color(0xFF140F24),
@@ -1195,7 +1195,7 @@ private fun FlashcardDeckView(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(start = 20.dp, end = 20.dp, top = 14.dp, bottom = safeBottomPadding),
+                    .padding(start = 16.dp, end = 16.dp, top = 10.dp, bottom = 12.dp),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
@@ -1204,8 +1204,8 @@ private fun FlashcardDeckView(
                     onClick = triggerSwipeLeft,
                     modifier = Modifier
                         .weight(1f)
-                        .height(52.dp),
-                    shape = RoundedCornerShape(16.dp),
+                        .height(48.dp),
+                    shape = RoundedCornerShape(14.dp),
                     border = BorderStroke(1.5.dp, Color(0xFFEF4444)),
                     colors = ButtonDefaults.outlinedButtonColors(
                         containerColor = Color(0x24EF4444),
@@ -1216,17 +1216,17 @@ private fun FlashcardDeckView(
                         Icons.Default.Close,
                         contentDescription = "Chưa nhớ",
                         tint = Color(0xFFFF6B6B),
-                        modifier = Modifier.size(20.dp)
+                        modifier = Modifier.size(18.dp)
                     )
                     Spacer(modifier = Modifier.width(6.dp))
                     Text(
                         text = if (isEnglish) "Need Review" else "Chưa nhớ",
                         fontWeight = FontWeight.Bold,
-                        fontSize = 14.sp
+                        fontSize = 13.5.sp
                     )
                 }
 
-                Spacer(modifier = Modifier.width(12.dp))
+                Spacer(modifier = Modifier.width(10.dp))
 
                 // Button 2: QUAY LẠI THẺ TRƯỚC ĐÓ (Undo thẻ từ hướng tương ứng)
                 val canUndo = historyStack.isNotEmpty() || currentIndex > 0
@@ -1234,7 +1234,7 @@ private fun FlashcardDeckView(
                     onClick = handleUndo,
                     enabled = canUndo,
                     modifier = Modifier
-                        .size(52.dp)
+                        .size(48.dp)
                         .clip(CircleShape)
                         .background(if (canUndo) Color(0x2651FAC1) else Color(0x0FFFFFFF))
                         .border(1.5.dp, if (canUndo) Color(0x8051FAC1) else Color(0x22FFFFFF), CircleShape)
@@ -1243,19 +1243,19 @@ private fun FlashcardDeckView(
                         Icons.AutoMirrored.Filled.Undo,
                         contentDescription = "Quay lại thẻ trước",
                         tint = if (canUndo) Color(0xFF51FAC1) else Color(0x44FFFFFF),
-                        modifier = Modifier.size(22.dp)
+                        modifier = Modifier.size(20.dp)
                     )
                 }
 
-                Spacer(modifier = Modifier.width(12.dp))
+                Spacer(modifier = Modifier.width(10.dp))
 
                 // Button 3: ĐÃ NHỚ (Lướt thẻ sang phải)
                 Button(
                     onClick = triggerSwipeRight,
                     modifier = Modifier
                         .weight(1f)
-                        .height(52.dp),
-                    shape = RoundedCornerShape(16.dp),
+                        .height(48.dp),
+                    shape = RoundedCornerShape(14.dp),
                     colors = ButtonDefaults.buttonColors(
                         containerColor = Color(0xFF22C55E),
                         contentColor = Color(0xFF0D0A1A)
@@ -1265,13 +1265,13 @@ private fun FlashcardDeckView(
                         Icons.Default.Check,
                         contentDescription = "Đã nhớ",
                         tint = Color(0xFF0D0A1A),
-                        modifier = Modifier.size(20.dp)
+                        modifier = Modifier.size(18.dp)
                     )
                     Spacer(modifier = Modifier.width(6.dp))
                     Text(
                         text = if (isEnglish) "Remembered" else "Đã nhớ",
                         fontWeight = FontWeight.ExtraBold,
-                        fontSize = 14.sp
+                        fontSize = 13.5.sp
                     )
                 }
             }
@@ -1286,13 +1286,11 @@ private fun VocabularyListView(
     isEnglish: Boolean
 ) {
     val haptic = LocalHapticFeedback.current
-    val navBarBottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
-    val safeBottomPadding = if (navBarBottom > 0.dp) navBarBottom + 24.dp else 60.dp
 
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
         verticalArrangement = Arrangement.spacedBy(12.dp),
-        contentPadding = PaddingValues(start = 20.dp, end = 20.dp, top = 8.dp, bottom = safeBottomPadding)
+        contentPadding = PaddingValues(start = 20.dp, end = 20.dp, top = 8.dp, bottom = 24.dp)
     ) {
         items(items, key = { it.vocabId }) { item ->
             Box(
