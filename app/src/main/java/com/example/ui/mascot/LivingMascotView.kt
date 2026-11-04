@@ -60,6 +60,7 @@ fun LivingMascotView(
     size: Dp = 48.dp,
     isFullBody: Boolean = false,
     avatarRes: Int? = null,
+    showBadge: Boolean = true,
     onClick: () -> Unit = {}
 ) {
     val resolvedAvatarRes = avatarRes ?: resolveMascotDrawableForEmotion(emotion)
@@ -296,21 +297,23 @@ fun LivingMascotView(
                 )
 
                 // Emote Badge nổi bật ở góc phải trên (Floating Emote Badge)
-                Box(
-                    modifier = Modifier
-                        .align(Alignment.TopEnd)
-                        .offset(x = 4.dp, y = (-2).dp)
-                        .size(20.dp)
-                        .clip(CircleShape)
-                        .background(emoteBadgeBg)
-                        .border(1.5.dp, Color(0xFF0A0A12), CircleShape),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = emoteBadge,
-                        fontSize = 11.sp,
-                        lineHeight = 11.sp
-                    )
+                if (showBadge) {
+                    Box(
+                        modifier = Modifier
+                            .align(Alignment.TopEnd)
+                            .offset(x = 4.dp, y = (-2).dp)
+                            .size(20.dp)
+                            .clip(CircleShape)
+                            .background(emoteBadgeBg)
+                            .border(1.5.dp, Color(0xFF0A0A12), CircleShape),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = emoteBadge,
+                            fontSize = 11.sp,
+                            lineHeight = 11.sp
+                        )
+                    }
                 }
             }
         }

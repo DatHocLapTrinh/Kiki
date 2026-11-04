@@ -6,6 +6,7 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -26,8 +27,12 @@ import androidx.compose.ui.draw.scale
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Shadow
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -50,6 +55,8 @@ fun RankRevealScreen(
 ) {
     val coroutineScope = rememberCoroutineScope()
     val strings = LocalAppStrings.current
+    val haptic = LocalHapticFeedback.current
+
     val lastResults by viewModel.lastQuestResults.observeAsState(emptyList())
     val unlockEvent by viewModel.chapterUnlockEvent.observeAsState(null)
     val isGeneratingNextChapter by viewModel.isGeneratingNextChapter.observeAsState(false)
@@ -69,29 +76,44 @@ fun RankRevealScreen(
         LessonPerformanceEvaluator.isPassed(tier)
     }
 
-    var isWarping by remember { mutableStateOf(false) }
-    var warpSpeed by remember { mutableFloatStateOf(0f) }
-    var whiteoutAlpha by remember { mutableFloatStateOf(0f) }
-    var zoomOutScale by remember { mutableFloatStateOf(1f) }
-    var rotation by remember { mutableFloatStateOf(0f) }
+    // Smooth continuing transition state (Đẳng cấp, không xoay vặn, không nháy trắng)
+    var isContinuing by remember { mutableStateOf(false) }
+
+    val exitAlpha by animateFloatAsState(
+        targetValue = if (isContinuing) 0f else 1f,
+        animationSpec = tween(durationMillis = 360, easing = FastOutSlowInEasing),
+        label = "exitAlpha"
+    )
+
+    val exitScale by animateFloatAsState(
+        targetValue = if (isContinuing) 1.05f else 1f,
+        animationSpec = tween(durationMillis = 360, easing = FastOutSlowInEasing),
+        label = "exitScale"
+    )
+
+    val shockwaveScale by animateFloatAsState(
+        targetValue = if (isContinuing) 2.4f else 0.8f,
+        animationSpec = tween(durationMillis = 360, easing = LinearOutSlowInEasing),
+        label = "shockwaveScale"
+    )
+
+    val shockwaveAlpha by animateFloatAsState(
+        targetValue = if (isContinuing) 0f else 0.7f,
+        animationSpec = tween(durationMillis = 360, easing = FastOutSlowInEasing),
+        label = "shockwaveAlpha"
+    )
 
     val infiniteTransition = rememberInfiniteTransition(label = "rank_anim")
     
     val floatAnimSlow by infiniteTransition.animateFloat(
-        initialValue = -10f, targetValue = 10f,
-        animationSpec = infiniteRepeatable(tween(4000, easing = LinearEasing), RepeatMode.Reverse),
+        initialValue = -6f, targetValue = 6f,
+        animationSpec = infiniteRepeatable(tween(3500, easing = FastOutSlowInEasing), RepeatMode.Reverse),
         label = "float_slow"
-    )
-    
-    val floatAnimFast by infiniteTransition.animateFloat(
-        initialValue = -15f, targetValue = 15f,
-        animationSpec = infiniteRepeatable(tween(2500, easing = LinearEasing), RepeatMode.Reverse),
-        label = "float_fast"
     )
 
     val pulseGlow by infiniteTransition.animateFloat(
-        initialValue = 0.85f, targetValue = 1.15f,
-        animationSpec = infiniteRepeatable(tween(1600, easing = LinearEasing), RepeatMode.Reverse),
+        initialValue = 0.90f, targetValue = 1.10f,
+        animationSpec = infiniteRepeatable(tween(2200, easing = FastOutSlowInEasing), RepeatMode.Reverse),
         label = "pulse_glow"
     )
 
@@ -120,8 +142,8 @@ fun RankRevealScreen(
     }
 
     val mascotEmotion = when (tier) {
-        LessonPerformanceTier.EXCELLENT -> MascotEmotion.STREAK
-        LessonPerformanceTier.GOOD -> MascotEmotion.CHEER
+        LessonPerformanceTier.EXCELLENT -> MascotEmotion.CHEER
+        LessonPerformanceTier.GOOD -> MascotEmotion.STREAK
         LessonPerformanceTier.NEEDS_WORK -> MascotEmotion.EMPATHY
     }
 
@@ -129,43 +151,29 @@ fun RankRevealScreen(
         modifier = Modifier
             .fillMaxSize()
             .graphicsLayer {
-                scaleX = zoomOutScale
-                scaleY = zoomOutScale
-                rotationZ = rotation
+                alpha = exitAlpha
+                scaleX = exitScale
+                scaleY = exitScale
             }
     ) {
-        // Background Floating Icons
-        Icon(
-            imageVector = if (isPassed) Icons.Default.Stars else Icons.Default.Favorite,
-            contentDescription = null,
-            tint = glowColor.copy(alpha = 0.25f),
+        // Subtle ambient spotlight centered behind mascot and victory title
+        Box(
             modifier = Modifier
-                .align(Alignment.TopStart)
-                .offset(x = 48.dp, y = (90 + floatAnimSlow).dp)
-                .size(60.dp)
-                .blur(4.dp)
-        )
-        
-        Icon(
-            imageVector = if (isPassed) Icons.Default.Diamond else Icons.Default.Psychology,
-            contentDescription = null,
-            tint = Color(0xFF51FAC1).copy(alpha = 0.25f),
-            modifier = Modifier
-                .align(Alignment.CenterEnd)
-                .offset(x = (-24).dp, y = (30 + floatAnimSlow).dp)
-                .size(72.dp)
-                .blur(6.dp)
-        )
-        
-        Icon(
-            imageVector = Icons.Default.WorkspacePremium,
-            contentDescription = null,
-            tint = Color(0xFFFFCCB3).copy(alpha = 0.3f),
-            modifier = Modifier
-                .align(Alignment.BottomEnd)
-                .offset(x = (-70).dp, y = (-220 + floatAnimFast).dp)
-                .size(44.dp)
-                .blur(4.dp)
+                .align(Alignment.TopCenter)
+                .padding(top = 80.dp)
+                .size(340.dp)
+                .scale(pulseGlow)
+                .background(
+                    Brush.radialGradient(
+                        colors = listOf(
+                            glowColor.copy(alpha = 0.22f),
+                            glowColor.copy(alpha = 0.06f),
+                            Color.Transparent
+                        )
+                    ),
+                    CircleShape
+                )
+                .blur(36.dp)
         )
 
         // Main UI
@@ -174,187 +182,210 @@ fun RankRevealScreen(
                 .fillMaxSize()
                 .statusBarsPadding()
                 .navigationBarsPadding()
-                .padding(horizontal = 24.dp, vertical = 12.dp),
+                .padding(horizontal = 24.dp, vertical = 14.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(16.dp))
 
-            // Avatar Section với LivingMascotView
+            // Avatar Section: LivingMascotView in a sleek celestial glass portal
             Box(
                 modifier = Modifier
-                    .size(200.dp)
+                    .size(190.dp)
                     .offset(y = floatAnimSlow.dp),
                 contentAlignment = Alignment.Center
             ) {
-                // Outer Glow
+                // Outer celestial breathing glow
                 Box(
                     modifier = Modifier
-                        .matchParentSize()
+                        .size(180.dp)
                         .scale(pulseGlow)
-                        .blur(26.dp)
-                        .background(glowColor.copy(alpha = 0.35f), CircleShape)
+                        .background(
+                            Brush.radialGradient(
+                                listOf(glowColor.copy(alpha = 0.32f), Color.Transparent)
+                            ),
+                            CircleShape
+                        )
+                        .blur(20.dp)
                 )
 
-                // Glass Pane Background
+                // Sleek obsidian glass disk
                 Box(
                     modifier = Modifier
-                        .matchParentSize()
+                        .size(164.dp)
                         .clip(CircleShape)
-                        .background(Color(0x1AFFFFFF))
-                        .border(1.5.dp, glowColor.copy(alpha = 0.7f), CircleShape)
-                )
+                        .background(
+                            Brush.verticalGradient(
+                                listOf(Color(0x331C1635), Color(0x660E0B1C))
+                            )
+                        )
+                        .border(
+                            width = 1.5.dp,
+                            brush = Brush.sweepGradient(
+                                listOf(
+                                    glowColor.copy(alpha = 0.85f),
+                                    Color(0x33FFFFFF),
+                                    glowColor.copy(alpha = 0.85f)
+                                )
+                            ),
+                            shape = CircleShape
+                        ),
+                    contentAlignment = Alignment.Center
+                ) {
+                    LivingMascotView(
+                        emotion = mascotEmotion,
+                        size = 126.dp,
+                        showBadge = false
+                    )
+                }
+            }
 
-                // Medal / Shield Icon at top
-                Icon(
-                    imageVector = when (tier) {
-                        LessonPerformanceTier.EXCELLENT -> Icons.Default.WorkspacePremium
-                        LessonPerformanceTier.GOOD -> Icons.Default.Verified
-                        LessonPerformanceTier.NEEDS_WORK -> Icons.Default.Shield
-                    },
-                    contentDescription = null,
-                    tint = glowColor,
-                    modifier = Modifier
-                        .align(Alignment.TopCenter)
-                        .offset(y = 12.dp)
-                        .size(34.dp)
-                )
+            Spacer(modifier = Modifier.height(20.dp))
 
-                // Living Kiki Mascot (tự động đổi trạng thái Vui / Buồn theo kết quả bài học)
-                LivingMascotView(
-                    emotion = mascotEmotion,
-                    size = 124.dp,
-                    modifier = Modifier.padding(top = 18.dp)
+            // Subtitle Tag / Badge (Sleek minimalist capsule)
+            Box(
+                modifier = Modifier
+                    .clip(RoundedCornerShape(14.dp))
+                    .background(glowColor.copy(alpha = 0.12f))
+                    .border(1.dp, glowColor.copy(alpha = 0.35f), RoundedCornerShape(14.dp))
+                    .padding(horizontal = 14.dp, vertical = 5.dp)
+            ) {
+                Text(
+                    text = subtitleText,
+                    color = glowColor,
+                    fontSize = 11.5.sp,
+                    fontWeight = FontWeight.ExtraBold,
+                    letterSpacing = 2.sp
                 )
             }
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(10.dp))
 
-            // Performance Header Subtitle
-            Text(
-                text = subtitleText,
-                color = glowColor,
-                fontSize = 13.sp,
-                fontWeight = FontWeight.ExtraBold,
-                letterSpacing = 2.5.sp,
-                modifier = Modifier.padding(bottom = 6.dp)
-            )
-
-            // Main Title
+            // Main Title: Pure typography with soft celestial shadow (KHÔNG VIỀN VUÔNG, KHÔNG SHADOW ELEVATION)
             Text(
                 text = titleText,
                 color = Color.White,
-                fontSize = 38.sp,
-                fontWeight = FontWeight.ExtraBold,
-                lineHeight = 42.sp,
+                fontSize = 35.sp,
+                fontWeight = FontWeight.Black,
+                lineHeight = 41.sp,
                 textAlign = TextAlign.Center,
-                modifier = Modifier.graphicsLayer {
-                    shadowElevation = 18f
-                    ambientShadowColor = glowColor
-                    spotShadowColor = glowColor
-                }
+                style = TextStyle(
+                    shadow = Shadow(
+                        color = glowColor.copy(alpha = 0.40f),
+                        blurRadius = 28f,
+                        offset = Offset(0f, 3f)
+                    )
+                )
             )
 
             // Description
             Text(
                 text = descText,
-                color = Color(0xFFD6D0C5),
-                fontSize = 14.5.sp,
+                color = Color(0xFFD5CEE4),
+                fontSize = 14.sp,
                 textAlign = TextAlign.Center,
-                lineHeight = 20.sp,
+                lineHeight = 21.sp,
                 modifier = Modifier
-                    .padding(top = 10.dp, bottom = 18.dp)
-                    .width(300.dp)
+                    .padding(top = 10.dp, bottom = 20.dp)
+                    .widthIn(max = 310.dp)
             )
 
-            // Adaptive Stats Cards (3 Columns: Accuracy, Correct, XP)
+            // Adaptive Stats Cards: Dark Obsidian Glassmorphism (Không để lọt thiên thạch/hạt phía sau gây bẩn số liệu)
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clip(RoundedCornerShape(20.dp))
-                    .background(Color(0x2E141426))
-                    .border(1.dp, glowColor.copy(alpha = 0.45f), RoundedCornerShape(20.dp))
-                    .padding(horizontal = 14.dp, vertical = 12.dp),
+                    .clip(RoundedCornerShape(22.dp))
+                    .background(
+                        Brush.verticalGradient(
+                            listOf(Color(0xF518142A), Color(0xF5100D1E))
+                        )
+                    )
+                    .border(
+                        width = 1.2.dp,
+                        brush = Brush.linearGradient(
+                            listOf(
+                                glowColor.copy(alpha = 0.55f),
+                                Color(0x33FFFFFF),
+                                glowColor.copy(alpha = 0.20f)
+                            )
+                        ),
+                        shape = RoundedCornerShape(22.dp)
+                    )
+                    .padding(horizontal = 14.dp, vertical = 16.dp),
                 horizontalArrangement = Arrangement.SpaceAround,
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 // 1. Accuracy
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     Text(
-                        text = strings.accuracyLabel,
-                        color = Color(0x99FFFFFF),
-                        fontSize = 11.5.sp,
-                        fontWeight = FontWeight.Medium
+                        text = strings.accuracyLabel.uppercase(),
+                        color = Color(0x8AFFFFFF),
+                        fontSize = 10.5.sp,
+                        fontWeight = FontWeight.Bold,
+                        letterSpacing = 1.sp
                     )
-                    Spacer(modifier = Modifier.height(4.dp))
+                    Spacer(modifier = Modifier.height(5.dp))
                     Text(
                         text = "$accuracy%",
                         color = glowColor,
-                        fontSize = 18.sp,
-                        fontWeight = FontWeight.ExtraBold
+                        fontSize = 21.sp,
+                        fontWeight = FontWeight.Black
                     )
                 }
 
                 Box(
                     modifier = Modifier
                         .width(1.dp)
-                        .height(30.dp)
-                        .background(Color(0x33FFFFFF))
+                        .height(34.dp)
+                        .background(Color(0x29FFFFFF))
                 )
 
                 // 2. Correct Count
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     Text(
-                        text = strings.correctLabel,
-                        color = Color(0x99FFFFFF),
-                        fontSize = 11.5.sp,
-                        fontWeight = FontWeight.Medium
+                        text = strings.correctLabel.uppercase(),
+                        color = Color(0x8AFFFFFF),
+                        fontSize = 10.5.sp,
+                        fontWeight = FontWeight.Bold,
+                        letterSpacing = 1.sp
                     )
-                    Spacer(modifier = Modifier.height(4.dp))
+                    Spacer(modifier = Modifier.height(5.dp))
                     Text(
                         text = "$correctCount / $totalCount",
                         color = Color.White,
-                        fontSize = 18.sp,
-                        fontWeight = FontWeight.ExtraBold
+                        fontSize = 21.sp,
+                        fontWeight = FontWeight.Black
                     )
                 }
 
                 Box(
                     modifier = Modifier
                         .width(1.dp)
-                        .height(30.dp)
-                        .background(Color(0x33FFFFFF))
+                        .height(34.dp)
+                        .background(Color(0x29FFFFFF))
                 )
 
                 // 3. XP Reward
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     Text(
-                        text = strings.xpEarnedLabel,
-                        color = Color(0x99FFFFFF),
-                        fontSize = 11.5.sp,
-                        fontWeight = FontWeight.Medium
+                        text = strings.xpEarnedLabel.uppercase(),
+                        color = Color(0x8AFFFFFF),
+                        fontSize = 10.5.sp,
+                        fontWeight = FontWeight.Bold,
+                        letterSpacing = 1.sp
                     )
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(
-                            imageVector = Icons.Default.Stars,
-                            contentDescription = null,
-                            tint = Color(0xFFFFD166),
-                            modifier = Modifier.size(16.dp)
-                        )
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Text(
-                            text = "+$xpReward XP",
-                            color = Color(0xFFFFD166),
-                            fontSize = 17.sp,
-                            fontWeight = FontWeight.ExtraBold
-                        )
-                    }
+                    Spacer(modifier = Modifier.height(5.dp))
+                    Text(
+                        text = "+$xpReward XP",
+                        color = Color(0xFFFFD166),
+                        fontSize = 21.sp,
+                        fontWeight = FontWeight.Black
+                    )
                 }
             }
 
             Spacer(modifier = Modifier.weight(1f))
 
-            // Chapter Completion & Next Chapter Unlock Banner (Giai đoạn 3)
+            // Chapter Completion & Next Chapter Unlock Banner
             if (isPassed && (unlockEvent != null || isGeneratingNextChapter)) {
                 Box(
                     modifier = Modifier
@@ -366,7 +397,7 @@ fun RankRevealScreen(
                             )
                         )
                         .border(
-                            width = 1.5.dp,
+                            width = 1.2.dp,
                             brush = Brush.linearGradient(
                                 if (isGeneratingNextChapter)
                                     listOf(Color(0xFF00F5D4), Color(0xFF8A2BE2), Color(0xFF00F5D4))
@@ -375,7 +406,7 @@ fun RankRevealScreen(
                             ),
                             shape = RoundedCornerShape(20.dp)
                         )
-                        .padding(16.dp)
+                        .padding(15.dp)
                 ) {
                     Column(
                         modifier = Modifier.fillMaxWidth(),
@@ -387,56 +418,44 @@ fun RankRevealScreen(
                                 horizontalArrangement = Arrangement.Center
                             ) {
                                 CircularProgressIndicator(
-                                    modifier = Modifier.size(20.dp),
+                                    modifier = Modifier.size(18.dp),
                                     color = Color(0xFF00F5D4),
-                                    strokeWidth = 2.5.dp
+                                    strokeWidth = 2.dp
                                 )
                                 Spacer(modifier = Modifier.width(10.dp))
                                 Text(
                                     text = strings.aiGeneratingNextChapter,
                                     color = Color(0xFF00F5D4),
-                                    fontSize = 13.5.sp,
+                                    fontSize = 13.sp,
                                     fontWeight = FontWeight.Bold,
                                     textAlign = TextAlign.Center
                                 )
                             }
                         } else if (unlockEvent != null) {
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.Center
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.EmojiEvents,
-                                    contentDescription = null,
-                                    tint = Color(0xFFFFD166),
-                                    modifier = Modifier.size(22.dp)
-                                )
-                                Spacer(modifier = Modifier.width(8.dp))
-                                Text(
-                                    text = strings.chapterClearedTitle,
-                                    color = Color(0xFFFFD166),
-                                    fontSize = 15.sp,
-                                    fontWeight = FontWeight.ExtraBold,
-                                    letterSpacing = 1.sp
-                                )
-                            }
-                            Spacer(modifier = Modifier.height(6.dp))
+                            Text(
+                                text = strings.chapterClearedTitle,
+                                color = Color(0xFFFFD166),
+                                fontSize = 14.sp,
+                                fontWeight = FontWeight.ExtraBold,
+                                letterSpacing = 1.sp
+                            )
+                            Spacer(modifier = Modifier.height(4.dp))
                             Text(
                                 text = "${strings.nextChapterUnlockedTitle}: ${unlockEvent!!.nextChapterTitle}",
                                 color = Color.White,
-                                fontSize = 14.sp,
+                                fontSize = 13.5.sp,
                                 fontWeight = FontWeight.Bold,
                                 textAlign = TextAlign.Center
                             )
                             if (unlockEvent!!.isAiGenerated) {
-                                Spacer(modifier = Modifier.height(4.dp))
+                                Spacer(modifier = Modifier.height(3.dp))
                                 Text(
                                     text = if (unlockEvent!!.weakPointsAddressedCount > 0)
                                         strings.aiReinforceWeakPointsDesc.replace("{count}", unlockEvent!!.weakPointsAddressedCount.toString())
                                     else
                                         strings.aiGeneratedNextChapterSuccess,
                                     color = Color(0xFF51FAC1),
-                                    fontSize = 12.sp,
+                                    fontSize = 11.5.sp,
                                     fontWeight = FontWeight.Medium,
                                     textAlign = TextAlign.Center
                                 )
@@ -454,18 +473,21 @@ fun RankRevealScreen(
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 if (tier == LessonPerformanceTier.NEEDS_WORK) {
-                    // NEEDS_WORK: Nút chính là LUYỆN TẬP LẠI (Thử lại bài học ngay)
+                    // NEEDS_WORK: Nút chính là LUYỆN TẬP LẠI
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(58.dp)
+                            .height(56.dp)
                             .clip(CircleShape)
                             .background(
-                                Brush.linearGradient(
+                                Brush.horizontalGradient(
                                     listOf(Color(0xFFFF5722), Color(0xFFFF9800), Color(0xFFFF5722))
                                 )
                             )
-                            .clickable { onRetryLesson() },
+                            .clickable {
+                                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                onRetryLesson()
+                            },
                         contentAlignment = Alignment.Center
                     ) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -473,28 +495,31 @@ fun RankRevealScreen(
                                 Icons.Default.Refresh,
                                 contentDescription = null,
                                 tint = Color.White,
-                                modifier = Modifier.size(22.dp)
+                                modifier = Modifier.size(20.dp)
                             )
                             Spacer(modifier = Modifier.width(8.dp))
                             Text(
                                 text = strings.retryLesson,
                                 color = Color.White,
                                 fontWeight = FontWeight.ExtraBold,
-                                fontSize = 17.sp,
+                                fontSize = 16.sp,
                                 letterSpacing = 1.sp
                             )
                         }
                     }
 
-                    // Nút phụ: Xem phân tích AI để khắc phục lỗi sai
+                    // Nút phụ: Xem phân tích AI
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(50.dp)
                             .clip(CircleShape)
-                            .background(Color(0x2651FAC1))
-                            .border(1.dp, Color(0xFF51FAC1), CircleShape)
-                            .clickable { onViewAnalysis() },
+                            .background(Color(0x2251FAC1))
+                            .border(1.2.dp, Color(0xFF51FAC1), CircleShape)
+                            .clickable {
+                                haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                                onViewAnalysis()
+                            },
                         contentAlignment = Alignment.Center
                     ) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -502,82 +527,84 @@ fun RankRevealScreen(
                                 Icons.Default.AutoAwesome,
                                 contentDescription = null,
                                 tint = Color(0xFF51FAC1),
-                                modifier = Modifier.size(18.dp)
+                                modifier = Modifier.size(17.dp)
                             )
                             Spacer(modifier = Modifier.width(8.dp))
                             Text(
                                 text = strings.checkAIAnalysis,
                                 color = Color(0xFF51FAC1),
                                 fontWeight = FontWeight.Bold,
-                                fontSize = 15.sp,
+                                fontSize = 14.5.sp,
                                 letterSpacing = 1.sp
                             )
                         }
                     }
 
                     // Link phụ: Về bản đồ học
-                    TextButton(onClick = onEnterRealm) {
+                    TextButton(onClick = {
+                        haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                        onEnterRealm()
+                    }) {
                         Text(
                             text = strings.backToMap,
                             color = Color(0x99FFFFFF),
-                            fontSize = 14.sp
+                            fontSize = 13.5.sp
                         )
                     }
                 } else {
-                    // PASSED / EXCELLENT: Nút Xem phân tích AI
+                    // PASSED / EXCELLENT: Nút Xem phân tích AI (Glassmorphism tinh tế)
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(52.dp)
                             .clip(CircleShape)
-                            .background(Color(0x2E51FAC1))
-                            .border(1.dp, Color(0xFF51FAC1), CircleShape)
-                            .clickable { onViewAnalysis() },
+                            .background(Color(0x1F00F5D4))
+                            .border(1.2.dp, Color(0x6600F5D4), CircleShape)
+                            .clickable {
+                                haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                                onViewAnalysis()
+                            },
                         contentAlignment = Alignment.Center
                     ) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Icon(
                                 Icons.Default.AutoAwesome,
                                 contentDescription = null,
-                                tint = Color(0xFF51FAC1),
-                                modifier = Modifier.size(18.dp)
+                                tint = Color(0xFF00F5D4),
+                                modifier = Modifier.size(17.dp)
                             )
                             Spacer(modifier = Modifier.width(8.dp))
                             Text(
                                 text = strings.checkAIAnalysis,
-                                color = Color(0xFF51FAC1),
+                                color = Color(0xFF00F5D4),
                                 fontWeight = FontWeight.Bold,
-                                fontSize = 15.sp,
+                                fontSize = 14.5.sp,
                                 letterSpacing = 1.sp
                             )
                         }
                     }
 
-                    // Nút chính: TIẾP TỤC HÀNH TRÌNH (Warp speed animation)
+                    // Nút chính: TIẾP TỤC (Đẳng cấp, hiệu ứng nhấn mượt mà, chuyển cảnh êm ái)
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(60.dp)
+                            .height(58.dp)
                             .clip(CircleShape)
                             .background(
-                                Brush.linearGradient(
-                                    listOf(Color(0xFFFF9E00), Color(0xFFFFD166), Color(0xFFFF9E00))
+                                Brush.horizontalGradient(
+                                    listOf(Color(0xFFFFBF38), Color(0xFFFF9500), Color(0xFFFFBF38))
                                 )
                             )
-                            .clickable {
-                                if (!isWarping) {
+                            .clickable(
+                                interactionSource = remember { MutableInteractionSource() },
+                                indication = null
+                            ) {
+                                if (!isContinuing) {
+                                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                    viewModel.soundEffectManager.playCorrect()
+                                    isContinuing = true
                                     coroutineScope.launch {
-                                        isWarping = true
-                                        val startTime = System.currentTimeMillis()
-                                        while (System.currentTimeMillis() - startTime < 1000) {
-                                            val progress = (System.currentTimeMillis() - startTime) / 1000f
-                                            warpSpeed = (warpSpeed + 1.8f).coerceAtMost(120f)
-                                            zoomOutScale = 1f - (progress * 0.95f)
-                                            rotation = progress * 45f
-                                            delay(16)
-                                        }
-                                        whiteoutAlpha = 1f
-                                        delay(350)
+                                        delay(360)
                                         onEnterRealm()
                                     }
                                 }
@@ -587,16 +614,17 @@ fun RankRevealScreen(
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Text(
                                 text = strings.continueJourney,
-                                color = Color(0xFF4E4636),
-                                fontWeight = FontWeight.ExtraBold,
-                                fontSize = 17.sp,
-                                letterSpacing = 2.sp
+                                color = Color(0xFF2B1B00),
+                                fontWeight = FontWeight.Black,
+                                fontSize = 16.5.sp,
+                                letterSpacing = 1.5.sp
                             )
                             Spacer(modifier = Modifier.width(8.dp))
                             Icon(
                                 Icons.AutoMirrored.Filled.ArrowForward,
                                 contentDescription = null,
-                                tint = Color(0xFF4E4636)
+                                tint = Color(0xFF2B1B00),
+                                modifier = Modifier.size(20.dp)
                             )
                         }
                     }
@@ -606,74 +634,25 @@ fun RankRevealScreen(
             Spacer(modifier = Modifier.height(10.dp))
         }
 
-        // Warp Canvas Overlay
-        if (isWarping) {
-            val stars = remember {
-                List(300) {
-                    RankWarpStar(
-                        x = Random.nextFloat() * 2000 - 1000,
-                        y = Random.nextFloat() * 2000 - 1000,
-                        z = Random.nextFloat() * 1000 + 100,
-                        color = listOf(Color(0xFFFFD166), Color(0xFF00F5D4), Color(0xFF8A2BE2), Color.White).random(),
-                        vel = Random.nextFloat() * 2 + 1
-                    )
-                }
-            }
-
-            Canvas(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(Color(0x2605000A))
-            ) {
-                val cx = size.width / 2
-                val cy = size.height / 2
-                
-                for (star in stars) {
-                    star.prevZ = star.z
-                    star.z -= (star.vel + warpSpeed * 80)
-                    if (star.z <= 0) {
-                        star.x = Random.nextFloat() * size.width * 2 - size.width
-                        star.y = Random.nextFloat() * size.height * 2 - size.height
-                        star.z = size.width
-                        star.prevZ = star.z
-                    }
-                    
-                    val px = (star.x / star.prevZ) * cx + cx
-                    val py = (star.y / star.prevZ) * cy + cy
-                    val x = (star.x / star.z) * cx + cx
-                    val y = (star.y / star.z) * cy + cy
-                    
-                    val alpha = (warpSpeed / 50f).coerceIn(0f, 1f)
-                    val strokeW = 1f + (1f - star.z / size.width) * (10f + warpSpeed * 15f)
-                    
-                    drawLine(
-                        color = star.color.copy(alpha = alpha.coerceAtLeast(0.1f)),
-                        start = Offset(px, py),
-                        end = Offset(x, y),
-                        strokeWidth = strokeW.coerceAtMost(20f),
-                        cap = StrokeCap.Round
-                    )
-                }
-            }
-        }
-
-        // Whiteout Overlay
-        if (whiteoutAlpha > 0f) {
+        // Elegant expanding cosmic shockwave ring on continue (không nhấp nháy, không chói mắt)
+        if (isContinuing) {
             Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .background(Color.White.copy(alpha = whiteoutAlpha))
-            )
+                    .graphicsLayer {
+                        scaleX = shockwaveScale
+                        scaleY = shockwaveScale
+                        alpha = shockwaveAlpha
+                    },
+                contentAlignment = Alignment.Center
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(260.dp)
+                        .clip(CircleShape)
+                        .border(2.dp, glowColor.copy(alpha = 0.8f), CircleShape)
+                )
+            }
         }
     }
-}
-
-class RankWarpStar(
-    var x: Float,
-    var y: Float,
-    var z: Float,
-    var color: Color,
-    var vel: Float
-) {
-    var prevZ: Float = z
 }
