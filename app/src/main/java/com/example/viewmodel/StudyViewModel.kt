@@ -669,10 +669,46 @@ class StudyViewModel @Inject constructor(
     private val _learnerPersonaProfile = MutableLiveData<LearnerPersonaProfile?>(null)
     val learnerPersonaProfile: LiveData<LearnerPersonaProfile?> = _learnerPersonaProfile
 
+    fun getLessonPageSize(): Int {
+        val userId = _currentUserId.value?.takeIf { it > 0 }
+        val profile = _learnerPersonaProfile.value ?: (if (userId != null) loadLearnerPersonaProfile(userId) else null)
+        val minutes = profile?.dailyTargetMinutes
+            ?: (if (userId != null) prefs.getInt("daily_target_minutes_$userId", -1).takeIf { it > 0 } else null)
+            ?: prefs.getInt("daily_target_minutes", 5)
+        return when {
+            minutes <= 3 -> 5
+            minutes <= 7 -> 10
+            else -> 15
+        }
+    }
+
+    fun setDailyTargetMinutes(minutes: Int) {
+        val safeMinutes = when {
+            minutes <= 3 -> 3
+            minutes <= 7 -> 5
+            else -> 10
+        }
+        val userId = _currentUserId.value?.takeIf { it > 0 } ?: 1L
+        prefs.edit()
+            .putInt("daily_target_minutes", safeMinutes)
+            .putInt("daily_target_minutes_$userId", safeMinutes)
+            .apply()
+        val current = _learnerPersonaProfile.value ?: loadLearnerPersonaProfile()
+        if (current != null) {
+            saveLearnerPersonaProfile(current.copy(dailyTargetMinutes = safeMinutes))
+        }
+    }
+
     fun saveLearnerPersonaProfile(profile: LearnerPersonaProfile) {
         val userId = _currentUserId.value?.takeIf { it > 0 } ?: profile.userId
         val updatedProfile = profile.copy(userId = userId)
         _learnerPersonaProfile.postValue(updatedProfile)
+
+        // SharedPreferences persistence for daily target minutes
+        prefs.edit()
+            .putInt("daily_target_minutes", updatedProfile.dailyTargetMinutes)
+            .putInt("daily_target_minutes_$userId", updatedProfile.dailyTargetMinutes)
+            .apply()
 
         // 1. SharedPreferences persistence (Moshi)
         try {
@@ -894,12 +930,15 @@ class StudyViewModel @Inject constructor(
 
     fun startLesson(lessonIndex: Int) {
         val safeLesson = lessonIndex.coerceIn(1, 5)
-        val pageSize = 5 // Tiêu chuẩn 3C Microlearning: 5 câu hỏi nguyên tử / bài học
+        val pageSize = getLessonPageSize()
         val rawStartIndex = (safeLesson - 1) * pageSize
         if (allChapterQuestions.isNotEmpty()) {
-            val safeStart = if (rawStartIndex in 0 until allChapterQuestions.size) rawStartIndex else (rawStartIndex % allChapterQuestions.size)
-            val endIndex = (safeStart + pageSize).coerceAtMost(allChapterQuestions.size)
-            _questions.value = allChapterQuestions.subList(safeStart, if (endIndex > safeStart) endIndex else allChapterQuestions.size)
+            val lessonList = mutableListOf<QuestItem>()
+            for (i in 0 until pageSize) {
+                val idx = (rawStartIndex + i) % allChapterQuestions.size
+                lessonList.add(allChapterQuestions[idx].copy())
+            }
+            _questions.value = lessonList
         } else {
             // Asynchronous fallback: đảm bảo nạp câu hỏi an toàn không bị kẹt spinner
             viewModelScope.launch {
@@ -920,9 +959,12 @@ class StudyViewModel @Inject constructor(
                 }
 
                 if (allChapterQuestions.isNotEmpty()) {
-                    val safeStart = if (rawStartIndex in 0 until allChapterQuestions.size) rawStartIndex else (rawStartIndex % allChapterQuestions.size)
-                    val endIndex = (safeStart + pageSize).coerceAtMost(allChapterQuestions.size)
-                    _questions.value = allChapterQuestions.subList(safeStart, if (endIndex > safeStart) endIndex else allChapterQuestions.size)
+                    val lessonList = mutableListOf<QuestItem>()
+                    for (i in 0 until pageSize) {
+                        val idx = (rawStartIndex + i) % allChapterQuestions.size
+                        lessonList.add(allChapterQuestions[idx].copy())
+                    }
+                    _questions.value = lessonList
                 } else {
                     _questions.value = emptyList()
                 }

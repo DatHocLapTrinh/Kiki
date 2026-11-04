@@ -625,6 +625,61 @@ fun PlacementQuizView(
 
                     Spacer(modifier = Modifier.height(14.dp))
 
+                    // Khung Mục Tiêu Học Tập & Phân Phối Số Câu Hỏi Mỗi Bài Học
+                    val pacingGoalTitle = when {
+                        profile.dailyTargetMinutes <= 3 -> "Mục tiêu 3 phút/ngày • 5 câu hỏi/bài"
+                        profile.dailyTargetMinutes <= 7 -> "Mục tiêu 5 phút/ngày • 10 câu hỏi/bài (Khuyến nghị)"
+                        else -> "Mục tiêu 10 phút/ngày • 15 câu hỏi/bài (Chuyên sâu)"
+                    }
+                    val pacingGoalSub = when {
+                        profile.dailyTargetMinutes <= 3 -> "Nhịp độ học nhẹ nhàng, ghi nhớ bền vững từng ngày"
+                        profile.dailyTargetMinutes <= 7 -> "Cân bằng hoàn hảo giữa ngữ pháp, từ vựng và phản xạ"
+                        else -> "Cường độ cao, bứt phá năng lực giao tiếp toàn diện"
+                    }
+
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(16.dp))
+                            .background(Brush.linearGradient(listOf(Color(0x2600F5D4), Color(0x1F7209B7))))
+                            .border(1.dp, Color(0x5500F5D4), RoundedCornerShape(16.dp))
+                            .padding(horizontal = 14.dp, vertical = 12.dp)
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Box(
+                                modifier = Modifier
+                                    .size(38.dp)
+                                    .clip(CircleShape)
+                                    .background(Color(0x3300F5D4)),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.AutoAwesome,
+                                    contentDescription = null,
+                                    tint = Color(0xFF00F5D4),
+                                    modifier = Modifier.size(20.dp)
+                                )
+                            }
+                            Spacer(modifier = Modifier.width(12.dp))
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    text = pacingGoalTitle,
+                                    color = Color(0xFF00F5D4),
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 13.sp
+                                )
+                                Spacer(modifier = Modifier.height(2.dp))
+                                Text(
+                                    text = pacingGoalSub,
+                                    color = Color.White.copy(alpha = 0.8f),
+                                    fontSize = 11.5.sp
+                                )
+                            }
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(14.dp))
+
                     // 4 Thanh kỹ năng Radar
                     Column(
                         modifier = Modifier

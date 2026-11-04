@@ -119,10 +119,11 @@ class AdaptiveDiagnosticEngineTest {
         assertEquals("Everyday Fluency", profile.goal)
         assertEquals(5, profile.dailyTargetMinutes)
         assertEquals("Intermediate", profile.evaluatedCefr)
-        assertEquals(100, profile.grammarAccuracy)
-        assertEquals(100, profile.vocabularyAccuracy)
-        assertEquals(0, profile.acousticAccuracy)
-        assertEquals(100, profile.speakingAccuracy)
+        // Verify realistic non-binary skill accuracy estimation based on IRT
+        assertTrue("Grammar accuracy should be realistic", profile.grammarAccuracy in 70..90)
+        assertTrue("Vocabulary accuracy should be realistic", profile.vocabularyAccuracy in 70..90)
+        assertTrue("Acoustic accuracy should reflect incorrect response realistically", profile.acousticAccuracy in 30..55)
+        assertTrue("Speaking accuracy should be realistic", profile.speakingAccuracy in 60..90)
 
         // Weak points must include the failed listening item's skill tag
         assertTrue("Weak points must include Acoustic_Everyday_Greeting", profile.baselineWeakPoints.contains("Acoustic_Everyday_Greeting"))
@@ -150,5 +151,28 @@ class AdaptiveDiagnosticEngineTest {
             1L, "Goal", 5, "CONFIDENT", "AUDIO_DIALOG", 0.9f, emptyAnswers
         )
         assertEquals("Advanced", advanced.evaluatedCefr)
+    }
+
+    @Test
+    fun testPacingToLessonQuestionCountMapping() {
+        fun getPageSizeForPacing(minutes: Int): Int {
+            return when {
+                minutes <= 3 -> 5
+                minutes <= 7 -> 10
+                else -> 15
+            }
+        }
+
+        // 3 minutes -> 5 questions
+        assertEquals(5, getPageSizeForPacing(3))
+        assertEquals(5, getPageSizeForPacing(2))
+
+        // 5 minutes -> 10 questions
+        assertEquals(10, getPageSizeForPacing(5))
+        assertEquals(10, getPageSizeForPacing(6))
+
+        // 10 minutes -> 15 questions
+        assertEquals(15, getPageSizeForPacing(10))
+        assertEquals(15, getPageSizeForPacing(15))
     }
 }

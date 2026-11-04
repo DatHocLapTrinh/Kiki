@@ -420,9 +420,9 @@ fun OnboardingScreen(viewModel: StudyViewModel, onFinish: () -> Unit) {
                                 )
 
                                 val pacingOptions = listOf(
-                                    Triple(3, "3 Phút", "Vừa phải"),
-                                    Triple(5, "5 Phút", "Khuyến nghị"),
-                                    Triple(10, "10 Phút", "Tập trung")
+                                    Triple(3, "3 Phút", "5 câu/bài"),
+                                    Triple(5, "5 Phút", "10 câu/bài"),
+                                    Triple(10, "10 Phút", "15 câu/bài")
                                 )
 
                                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
@@ -703,8 +703,13 @@ fun OnboardingScreen(viewModel: StudyViewModel, onFinish: () -> Unit) {
                                             fontSize = 18.sp
                                         )
                                         Spacer(modifier = Modifier.height(6.dp))
+                                        val questionsPerLesson = when {
+                                            selectedPacingMinutes <= 3 -> 5
+                                            selectedPacingMinutes <= 7 -> 10
+                                            else -> 15
+                                        }
                                         Text(
-                                            text = "$displayGoal • $selectedPacingMinutes phút/ngày\n10 hành tinh tri thức",
+                                            text = "$displayGoal • $selectedPacingMinutes phút/ngày ($questionsPerLesson câu/bài)\n10 hành tinh tri thức",
                                             color = Color.White.copy(alpha = 0.85f),
                                             fontSize = 12.sp,
                                             textAlign = TextAlign.Center,

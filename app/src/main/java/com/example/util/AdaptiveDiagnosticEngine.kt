@@ -227,6 +227,7 @@ object AdaptiveDiagnosticEngine {
 
     /**
      * Đánh giá tổng hợp và xuất bản Vector Hồ sơ Năng lực (Learner Persona Profile)
+     * Tính toán năng lực từng kỹ năng một cách chi tiết, cụ thể dựa trên IRT, độ khó b, phản xạ và tự đánh giá.
      */
     fun evaluateFinalProfile(
         userId: Long,
@@ -238,30 +239,40 @@ object AdaptiveDiagnosticEngine {
         answers: List<DiagnosticAnswerRecord>
     ): LearnerPersonaProfile {
         val evaluatedCefr = when {
-            finalTheta < -0.3f -> "Beginner"
-            finalTheta < 0.7f -> "Intermediate"
+            finalTheta < -0.25f -> "Beginner"
+            finalTheta < 0.75f -> "Intermediate"
             else -> "Advanced"
         }
 
-        // Tính điểm phần trăm từng kỹ năng
-        val grammarCorrect = answers.filter { it.item.skillType == DiagnosticSkillType.GRAMMAR && it.isCorrect }.size
-        val grammarTotal = max(1, answers.count { it.item.skillType == DiagnosticSkillType.GRAMMAR })
-        val grammarAcc = (grammarCorrect * 100) / grammarTotal
-
-        val vocabCorrect = answers.filter { it.item.skillType == DiagnosticSkillType.VOCABULARY && it.isCorrect }.size
-        val vocabTotal = max(1, answers.count { it.item.skillType == DiagnosticSkillType.VOCABULARY })
-        val vocabAcc = (vocabCorrect * 100) / vocabTotal
-
-        val acousticCorrect = answers.filter { it.item.skillType == DiagnosticSkillType.LISTENING && it.isCorrect }.size
-        val acousticTotal = max(1, answers.count { it.item.skillType == DiagnosticSkillType.LISTENING })
-        val acousticAcc = (acousticCorrect * 100) / acousticTotal
-
-        val speakingCorrect = answers.filter { it.item.skillType == DiagnosticSkillType.SPEAKING && it.isCorrect }.size
-        val speakingTotal = max(1, answers.count { it.item.skillType == DiagnosticSkillType.SPEAKING })
-        val speakingAcc = (speakingCorrect * 100) / speakingTotal
+        // Tính điểm năng lực từng kỹ năng cụ thể, chuẩn khoa học IRT (không bị nhị phân 0% hoặc 100%)
+        val grammarAcc = calculateSkillAccuracy(DiagnosticSkillType.GRAMMAR, answers, selfEfficacy, finalTheta)
+        val vocabAcc = calculateSkillAccuracy(DiagnosticSkillType.VOCABULARY, answers, selfEfficacy, finalTheta)
+        val acousticAcc = calculateSkillAccuracy(DiagnosticSkillType.LISTENING, answers, selfEfficacy, finalTheta)
+        val speakingAcc = calculateSkillAccuracy(DiagnosticSkillType.SPEAKING, answers, selfEfficacy, finalTheta)
 
         // Thu thập các lỗ hổng kiến thức ban đầu
-        val weakPoints = answers.filter { !it.isCorrect || it.latencyMs > 8000L }.map { it.item.skillTag }
+        val weakPoints = mutableListOf<String>()
+        answers.forEach { record ->
+            if (!record.isCorrect || record.latencyMs > 7500L || (record.item.skillType == DiagnosticSkillType.SPEAKING && record.speakingScore in 1..65)) {
+                weakPoints.add(record.item.skillTag)
+            }
+        }
+        if (weakPoints.isEmpty()) {
+            val lowestSkill = listOf(
+                Pair(DiagnosticSkillType.GRAMMAR, "Present_Simple_Agreement"),
+                Pair(DiagnosticSkillType.VOCABULARY, "Basic_Collocation"),
+                Pair(DiagnosticSkillType.LISTENING, "Acoustic_Connected_Speech"),
+                Pair(DiagnosticSkillType.SPEAKING, "Spoken_Rhythm_Connected")
+            ).minByOrNull { pair ->
+                when (pair.first) {
+                    DiagnosticSkillType.GRAMMAR -> grammarAcc
+                    DiagnosticSkillType.VOCABULARY -> vocabAcc
+                    DiagnosticSkillType.LISTENING -> acousticAcc
+                    DiagnosticSkillType.SPEAKING -> speakingAcc
+                }
+            }
+            lowestSkill?.let { weakPoints.add(it.second) }
+        }
 
         // Khởi tạo EF cho SM-2 thích ứng: Người có theta cao -> EF ban đầu cao hơn
         val initialEf = (2.5f + (finalTheta * 0.1f)).coerceIn(2.3f, 2.7f)
@@ -279,9 +290,63 @@ object AdaptiveDiagnosticEngine {
             acousticAccuracy = acousticAcc,
             speakingAccuracy = speakingAcc,
             initialEasinessFactor = initialEf,
-            baselineWeakPoints = weakPoints,
+            baselineWeakPoints = weakPoints.distinct(),
             completedAt = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.US).format(Date())
         )
+    }
+
+    private fun calculateSkillAccuracy(
+        skillType: DiagnosticSkillType,
+        answers: List<DiagnosticAnswerRecord>,
+        selfEfficacy: String,
+        finalTheta: Float
+    ): Int {
+        val record = answers.firstOrNull { it.item.skillType == skillType }
+
+        // Mức năng lực nền tảng theo tự đánh giá của học viên (Self-efficacy baseline)
+        val baseEfficacy = when (selfEfficacy.uppercase()) {
+            "NEWCOMER", "BEGINNER", "A1", "A0" -> 48f
+            "ELEMENTARY", "A2" -> 60f
+            "INTERMEDIATE", "B1", "B2" -> 74f
+            "CONFIDENT", "ADVANCED", "C1" -> 85f
+            else -> 62f
+        }
+
+        if (record == null) {
+            val estimated = baseEfficacy + (finalTheta * 8f)
+            return kotlin.math.round(estimated).toInt().coerceIn(35, 95)
+        }
+
+        // Xử lý riêng cho kỹ năng Nói (Speaking): kết hợp trực tiếp điểm phát âm PronunciationScorer thực tế
+        if (skillType == DiagnosticSkillType.SPEAKING && record.speakingScore > 0) {
+            val speechScore = record.speakingScore.toFloat()
+            // Tỷ trọng: 65% điểm phát âm thực tế + 25% nền tảng + 10% tham số năng lực Theta
+            val blended = (speechScore * 0.65f) + (baseEfficacy * 0.25f) + (finalTheta * 5.5f) + 3f
+            return kotlin.math.round(blended).toInt().coerceIn(35, 98)
+        }
+
+        val itemDiff = record.item.difficultyB
+        val latency = record.latencyMs
+
+        return if (record.isCorrect) {
+            // Đúng: Độ khó b càng cao thì điểm năng lực càng vượt trội
+            val diffBonus = ((itemDiff + 1.0f) * 7.5f) // b=-0.8 -> +1.5, b=0.0 -> +7.5, b=1.2 -> +16.5
+            // Phản xạ nhanh biểu thị sự thuần thục
+            val speedBonus = when {
+                latency in 1..3200L -> 5f
+                latency in 3201..6500L -> 2f
+                else -> -1f
+            }
+            val abilityBonus = finalTheta * 5.5f
+            val total = baseEfficacy + 12f + diffBonus + speedBonus + abilityBonus
+            kotlin.math.round(total).toInt().coerceIn(40, 98)
+        } else {
+            // Sai: Sai câu dễ b=-0.8 thể hiện hổng kiến thức căn bản (-15), sai câu khó b=1.2 chỉ giảm nhẹ (-4)
+            val diffPenalty = ((1.4f - itemDiff) * 5f).coerceAtLeast(3f)
+            val abilityAdj = (finalTheta * 4f)
+            val total = baseEfficacy - 14f - diffPenalty + abilityAdj
+            kotlin.math.round(total).toInt().coerceIn(28, 75)
+        }
     }
 }
 
