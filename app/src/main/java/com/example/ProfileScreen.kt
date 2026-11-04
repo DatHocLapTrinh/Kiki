@@ -989,21 +989,21 @@ private fun ProfileClusterHeader(title: String, icon: ImageVector, color: Color)
 
 fun resolveBadgeTrophyResource(badgeId: String, iconKey: String): Int {
     return when (badgeId) {
-        "first_step" -> R.drawable.trophy_bronze_curious_seeker
-        "persistent_scholar" -> R.drawable.trophy_silver_diligent_learner
-        "night_owl" -> R.drawable.trophy_silver
-        "super_memory" -> R.drawable.trophy_gold_scholarly_achiever
-        "chief_doctor" -> R.drawable.trophy_gold
-        "speaking_ace" -> R.drawable.trophy_platinum_master_graduate
-        "all_stages_mastery" -> R.drawable.trophy_diamond_grand_polymath
+        "first_step" -> R.drawable.badge_first_step
+        "persistent_scholar" -> R.drawable.badge_persistent_scholar
+        "night_owl" -> R.drawable.badge_night_owl
+        "super_memory" -> R.drawable.badge_super_memory
+        "chief_doctor" -> R.drawable.badge_chief_doctor
+        "speaking_ace" -> R.drawable.badge_speaking_ace
+        "all_stages_mastery" -> R.drawable.badge_all_stages_mastery
         else -> when (iconKey) {
-            "NIGHT_OWL" -> R.drawable.trophy_silver
-            "CHIEF_DOCTOR" -> R.drawable.trophy_gold
-            "SUPER_MEMORY" -> R.drawable.trophy_gold_scholarly_achiever
-            "PERSISTENT_SCHOLAR" -> R.drawable.trophy_silver_diligent_learner
-            "FIRST_STEP" -> R.drawable.trophy_bronze_curious_seeker
-            "SPEAKING_ACE" -> R.drawable.trophy_platinum_master_graduate
-            "ALL_STAGES_MASTERY" -> R.drawable.trophy_diamond_grand_polymath
+            "NIGHT_OWL" -> R.drawable.badge_night_owl
+            "CHIEF_DOCTOR" -> R.drawable.badge_chief_doctor
+            "SUPER_MEMORY" -> R.drawable.badge_super_memory
+            "PERSISTENT_SCHOLAR" -> R.drawable.badge_persistent_scholar
+            "FIRST_STEP" -> R.drawable.badge_first_step
+            "SPEAKING_ACE" -> R.drawable.badge_speaking_ace
+            "ALL_STAGES_MASTERY" -> R.drawable.badge_all_stages_mastery
             else -> R.drawable.trophy_gold
         }
     }
