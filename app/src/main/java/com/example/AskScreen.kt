@@ -1269,7 +1269,7 @@ fun AskInputBar(
                 contentPadding = PaddingValues(horizontal = 16.dp),
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                items(quickPrompts) { prompt ->
+                items(quickPrompts, key = { it }) { prompt ->
                     val promptIconRes = when {
                         prompt.contains("Tra từ") || prompt.contains("Tra thành ngữ") || prompt.contains("Look up") -> R.drawable.ic_action_search
                         prompt.contains("ngữ pháp") || prompt.contains("grammar") || prompt.contains("Hiện tại hoàn thành") || prompt.contains("Present Perfect") -> R.drawable.ic_action_thinking

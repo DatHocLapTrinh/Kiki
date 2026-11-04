@@ -1354,7 +1354,7 @@ private fun ProfileAchievements(
                 horizontalArrangement = Arrangement.spacedBy(14.dp),
                 contentPadding = PaddingValues(horizontal = 2.dp)
             ) {
-                items(allBadges.size) { index ->
+                items(allBadges.size, key = { allBadges[it].id }) { index ->
                     val badge = allBadges[index]
                     val icon = when (badge.iconKey) {
                         "NIGHT_OWL" -> Icons.Default.Bedtime

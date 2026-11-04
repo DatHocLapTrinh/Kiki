@@ -188,18 +188,20 @@ fun JourneyMapScreen(
             // Không bị cuộn trôi mất khi vuốt lên hay vuốt xuống, tự động đổi màu khi qua chặng khác
             if (stages.isNotEmpty()) {
                 val stageStepPx = with(density) { 255.dp.toPx() }
-                val currentSectionData = remember(stages, scrollState.value) {
-                    val scrollY = scrollState.value.toFloat()
-                    val approxStageIndex = ((scrollY + 220f) / stageStepPx).toInt().coerceIn(0, stages.lastIndex)
-                    val sectionNum = (approxStageIndex / 10) + 1
-                    val startIdx = (sectionNum - 1) * 10
-                    val sectionStages = stages.drop(startIdx).take(10)
-                    val completed = sectionStages.count { it.state == JourneyStageState.COMPLETED }
-                    CosmicSectionConfig.getSectionData(
-                        sectionNumber = sectionNum,
-                        completedPlanets = completed,
-                        totalInThisSection = if (sectionStages.isNotEmpty()) sectionStages.size else 10
-                    )
+                val currentSectionData by remember(stages) {
+                    derivedStateOf {
+                        val scrollY = scrollState.value.toFloat()
+                        val approxStageIndex = ((scrollY + 220f) / stageStepPx).toInt().coerceIn(0, stages.lastIndex)
+                        val sectionNum = (approxStageIndex / 10) + 1
+                        val startIdx = (sectionNum - 1) * 10
+                        val sectionStages = stages.drop(startIdx).take(10)
+                        val completed = sectionStages.count { it.state == JourneyStageState.COMPLETED }
+                        CosmicSectionConfig.getSectionData(
+                            sectionNumber = sectionNum,
+                            completedPlanets = completed,
+                            totalInThisSection = if (sectionStages.isNotEmpty()) sectionStages.size else 10
+                        )
+                    }
                 }
 
                 CosmicSectionBanner(
@@ -650,146 +652,3 @@ private fun JourneyStageRow(
         )
     }
 }
-
-// ─── Info card ───────────────────────────────────────────────────────────────
-
-@Composable
-private fun JourneyStageInformationCard(
-    stage: JourneyStageUiModel,
-    index: Int = 0,
-    strings: AppStrings,
-    arrowDirection: BubbleArrowDirection = BubbleArrowDirection.LEFT,
-    onClick: () -> Unit
-) {
-    val planetType = remember(index) { CosmicPlanetHelper.getPlanetTypeForStage(index) }
-    val planetName = remember(planetType) { CosmicPlanetHelper.getPlanetTypeName(planetType) }
-    val planetColor = remember(planetType) { CosmicPlanetHelper.getPlanetPrimaryColor(planetType) }
-
-    val locked = stage.state == JourneyStageState.LOCKED
-    val accent = when (stage.state) {
-        JourneyStageState.COMPLETED -> Color(0xFFFFD166)
-        JourneyStageState.CURRENT   -> Color(0xFF51FAC1)
-        JourneyStageState.AVAILABLE -> Color(0xFF9EDBFF)
-        JourneyStageState.LOCKED    -> Color(0xFF776A91)
-    }
-    val stateLabel = when (stage.state) {
-        JourneyStageState.COMPLETED                              -> strings.chapterCompleted
-        JourneyStageState.CURRENT, JourneyStageState.AVAILABLE -> strings.chapterCurrent
-        JourneyStageState.LOCKED                                 -> strings.chapterLocked
-    }
-
-    val bubbleShape = remember(arrowDirection) {
-        SpeechBubbleShape(
-            direction = arrowDirection,
-            cornerRadius = 18.dp,
-            arrowWidth = 12.dp,
-            arrowHeight = 18.dp,
-            arrowCenterY = 48.dp
-        )
-    }
-
-    Box(
-        modifier = Modifier
-            .height(174.dp)
-            .clip(bubbleShape)
-            .background(Color(0xF2100E24))
-            .border(
-                1.5.dp,
-                Brush.linearGradient(listOf(accent.copy(alpha = 0.95f), accent.copy(alpha = 0.35f))),
-                bubbleShape
-            )
-            .clickable(enabled = !locked, onClick = onClick)
-            .padding(
-                start = if (arrowDirection == BubbleArrowDirection.LEFT) 20.dp else 14.dp,
-                end = if (arrowDirection == BubbleArrowDirection.RIGHT) 20.dp else 14.dp,
-                top = 11.dp,
-                bottom = 11.dp
-            )
-    ) {
-        Column {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Box(
-                    modifier = Modifier.size(24.dp).clip(CircleShape).background(accent.copy(alpha = 0.9f)),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text("${stage.sequence}", color = Color(0xFF11101B), fontSize = 11.sp, fontWeight = FontWeight.ExtraBold)
-                }
-                Spacer(modifier = Modifier.width(8.dp))
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        stage.title,
-                        color = Color.White,
-                        fontSize = 13.sp,
-                        fontWeight = FontWeight.ExtraBold,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                    Text(
-                        text = "🪐 Cấp ${index + 1} • $planetName",
-                        color = planetColor,
-                        fontSize = 9.5.sp,
-                        fontWeight = FontWeight.Bold,
-                        maxLines = 1
-                    )
-                }
-            }
-            Spacer(modifier = Modifier.height(4.dp))
-            Text(
-                stage.description,
-                color = Color(0xCCFFFFFF),
-                fontSize = 10.5.sp,
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis
-            )
-            Spacer(modifier = Modifier.height(6.dp))
-
-            // Thống kê bài học trong chương
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    "📚 ${stage.completedLessons}/${stage.totalLessons} bài học",
-                    color = accent,
-                    fontSize = 11.5.sp,
-                    fontWeight = FontWeight.Bold
-                )
-                Text(
-                    "${(stage.progress * 100).toInt()}% hoàn thành",
-                    color = Color.White.copy(alpha = 0.75f),
-                    fontSize = 10.5.sp,
-                    fontWeight = FontWeight.SemiBold
-                )
-            }
-            Spacer(modifier = Modifier.height(4.dp))
-            Box(modifier = Modifier.fillMaxWidth().height(5.dp).clip(CircleShape).background(Color(0x44302A4A))) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth(stage.progress).fillMaxHeight()
-                        .background(Brush.horizontalGradient(listOf(accent, accent.copy(alpha = 0.5f))))
-                )
-            }
-            Spacer(modifier = Modifier.weight(1f))
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = if (locked) "🔒 Cần mở khóa" else "👉 Xem ${stage.totalLessons} bài học trong chương",
-                    color = if (locked) Color(0x99FFFFFF) else Color(0xFF00F5D4),
-                    fontSize = 10.5.sp,
-                    fontWeight = FontWeight.Bold
-                )
-                Icon(
-                    imageVector = if (locked) Icons.Default.Lock else Icons.Default.ChevronRight,
-                    contentDescription = if (locked) stage.description else null,
-                    tint = if (locked) Color(0x88FFFFFF) else Color(0xFF00F5D4),
-                    modifier = Modifier.size(17.dp)
-                )
-            }
-        }
-    }
-}
-

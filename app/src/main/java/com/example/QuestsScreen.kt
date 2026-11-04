@@ -231,7 +231,7 @@ fun QuestsScreen(viewModel: StudyViewModel) {
                 contentPadding = PaddingValues(start = 20.dp, end = 20.dp, top = 8.dp, bottom = 140.dp),
                 verticalArrangement = Arrangement.spacedBy(14.dp)
             ) {
-                items(sortedQuests) { quest ->
+                items(sortedQuests, key = { it.taskId }) { quest ->
                     QuestItemCard(
                         quest = quest,
                         onClaim = {

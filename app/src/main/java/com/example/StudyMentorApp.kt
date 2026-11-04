@@ -56,10 +56,10 @@ enum class AuthStep { SPLASH, IDENTITY, ONBOARDING, LOGGED_IN }
 data class ParallaxController(
     val setTarget: (x: Float?, y: Float?) -> Unit,
     val fireBurst: (x: Float, y: Float) -> Unit,
-    val currentX: Float,
-    val currentY: Float
+    val currentX: Float = 0f,
+    val currentY: Float = 0f
 )
-val LocalParallax = staticCompositionLocalOf<ParallaxController> { error("No Parallax provided") }
+val LocalParallax = compositionLocalOf<ParallaxController> { error("No Parallax provided") }
 
 @Composable
 fun StudyMentorApp() {
@@ -85,12 +85,12 @@ fun StudyMentorApp() {
         warpSpeedMultiplier = warpSpeedMultiplier,
         batterySaver = batterySaver
     ) { currentX, currentY, onBurst ->
-        val parallaxController = remember(currentX, currentY) {
+        val parallaxController = remember(onBurst) {
             ParallaxController(
                 setTarget = { x, y -> targetX = x; targetY = y },
                 fireBurst = onBurst,
-                currentX = currentX,
-                currentY = currentY
+                currentX = 0f,
+                currentY = 0f
             )
         }
 
@@ -919,10 +919,6 @@ fun MainNavigation(viewModel: StudyViewModel, onLogout: () -> Unit) {
                     onViewStats = { navController.navigate("profile") { launchSingleTop = true } }
                 )
             }
-            composable("progression_map") { ChapterJourneyMapScreen(viewModel, onBack = { navController.popBackStack() }, onStartQuest = { lessonIndex ->
-                viewModel.startLesson(lessonIndex)
-                navController.navigate("quest_active")
-            }) }
             composable("quest_active") { QuestScreen(viewModel, onFinish = { navController.navigate("rank_reveal") }) }
             composable("rank_reveal") {
                 RankRevealScreen(
@@ -1001,7 +997,7 @@ fun FloatingNavBar(
         claimableTasks + (if (canOpenChest) 1 else 0)
     }
 
-    if (isImeVisible || currentRoute == "quest_active" || currentRoute == "rank_reveal" || currentRoute == "progression_map" || currentRoute == "quest_review") return
+    if (isImeVisible || currentRoute == "quest_active" || currentRoute == "rank_reveal" || currentRoute == "quest_review") return
 
     Row(
         modifier = modifier
