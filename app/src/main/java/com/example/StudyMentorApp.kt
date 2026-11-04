@@ -1258,7 +1258,7 @@ fun DuolingoMoreFloatingMenu(
             // 1. Hồ sơ (gồm danh hiệu và cột mốc bên trong)
             DuolingoMenuItem(
                 title = if (isEnglish) "Profile & Cosmic Badges" else "Hồ Sơ & Danh Hiệu Cột Mốc",
-                icon = Icons.Default.Person,
+                iconRes = R.drawable.ic_nav_mentor,
                 iconTint = Color(0xFF51FAC1),
                 iconBg = Color(0x2251FAC1),
                 onClick = {
@@ -1272,7 +1272,7 @@ fun DuolingoMoreFloatingMenu(
             // 2. Từ vựng & Ngữ pháp
             DuolingoMenuItem(
                 title = if (isEnglish) "Vocabulary & Grammar" else "Từ Vựng & Ngữ Pháp",
-                icon = Icons.Default.CollectionsBookmark,
+                iconRes = R.drawable.ic_open_book,
                 iconTint = Color(0xFF51FAC1),
                 iconBg = Color(0x2251FAC1),
                 onClick = {
@@ -1286,7 +1286,7 @@ fun DuolingoMoreFloatingMenu(
             // 3. Cài đặt & Tuỳ chọn
             DuolingoMenuItem(
                 title = if (isEnglish) "Settings & Preferences" else "Cài Đặt & Tuỳ Chọn",
-                icon = Icons.Default.Settings,
+                iconRes = R.drawable.ic_action_setting,
                 iconTint = Color(0xFF51FAC1),
                 iconBg = Color(0x2251FAC1),
                 onClick = {
@@ -1301,7 +1301,8 @@ fun DuolingoMoreFloatingMenu(
 @Composable
 private fun DuolingoMenuItem(
     title: String,
-    icon: ImageVector,
+    icon: ImageVector? = null,
+    iconRes: Int? = null,
     iconTint: Color = Color(0xFF51FAC1),
     iconBg: Color = Color(0x2251FAC1),
     onClick: () -> Unit
@@ -1322,12 +1323,20 @@ private fun DuolingoMenuItem(
                 .border(1.dp, iconTint.copy(alpha = 0.4f), RoundedCornerShape(13.dp)),
             contentAlignment = Alignment.Center
         ) {
-            Icon(
-                imageVector = icon,
-                contentDescription = title,
-                tint = iconTint,
-                modifier = Modifier.size(24.dp)
-            )
+            if (iconRes != null) {
+                Image(
+                    painter = painterResource(id = iconRes),
+                    contentDescription = title,
+                    modifier = Modifier.size(26.dp)
+                )
+            } else if (icon != null) {
+                Icon(
+                    imageVector = icon,
+                    contentDescription = title,
+                    tint = iconTint,
+                    modifier = Modifier.size(24.dp)
+                )
+            }
         }
         Spacer(modifier = Modifier.width(16.dp))
         Text(

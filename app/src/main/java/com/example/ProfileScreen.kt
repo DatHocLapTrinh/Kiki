@@ -2328,7 +2328,7 @@ private fun KikiExplorerNavigationSheet(
                 // 1. Hồ sơ (gồm danh hiệu và cột mốc bên trong)
                 DuolingoStyleTile(
                     title = if (isEnglish) "Profile & Cosmic Badges" else "Hồ Sơ & Danh Hiệu Cột Mốc",
-                    icon = Icons.Default.Person,
+                    iconRes = R.drawable.ic_nav_mentor,
                     badgeText = "Lv.$level",
                     onClick = onNavigateProfile
                 )
@@ -2337,7 +2337,7 @@ private fun KikiExplorerNavigationSheet(
                 // 2. Từ vựng & Ngữ pháp
                 DuolingoStyleTile(
                     title = if (isEnglish) "Vocabulary & Grammar" else "Từ Vựng & Ngữ Pháp",
-                    icon = Icons.Default.CollectionsBookmark,
+                    iconRes = R.drawable.ic_open_book,
                     badgeText = "$vocabCount từ",
                     onClick = onNavigateVocab
                 )
@@ -2346,7 +2346,7 @@ private fun KikiExplorerNavigationSheet(
                 // 3. Cài đặt & Tuỳ chọn
                 DuolingoStyleTile(
                     title = if (isEnglish) "Settings & Preferences" else "Cài Đặt & Tuỳ Chọn",
-                    icon = Icons.Default.Settings,
+                    iconRes = R.drawable.ic_action_setting,
                     onClick = onSettingsClick
                 )
                 HorizontalDivider(color = Color(0x1A51FAC1), thickness = 0.8.dp)
@@ -2354,7 +2354,7 @@ private fun KikiExplorerNavigationSheet(
                 // 4. Đăng xuất tài khoản
                 DuolingoStyleTile(
                     title = if (isEnglish) "Log Out Account" else "Đăng Xuất Tài Khoản",
-                    icon = Icons.AutoMirrored.Filled.ExitToApp,
+                    iconRes = R.drawable.ic_logout,
                     iconBg = Color(0x22FF5252),
                     iconTint = Color(0xFFFF5252),
                     onClick = onLogoutClick
@@ -2537,7 +2537,7 @@ private fun KikiExplorerHubView(
             // 1. Hồ sơ (gồm danh hiệu và cột mốc bên trong)
             DuolingoStyleTile(
                 title = if (isEnglish) "Profile & Cosmic Badges" else "Hồ Sơ & Danh Hiệu Cột Mốc",
-                icon = Icons.Default.Person,
+                iconRes = R.drawable.ic_nav_mentor,
                 badgeText = "Lv.$level",
                 onClick = onNavigateProfile
             )
@@ -2547,7 +2547,7 @@ private fun KikiExplorerHubView(
             // 2. Từ vựng & Ngữ pháp
             DuolingoStyleTile(
                 title = if (isEnglish) "Vocabulary & Grammar" else "Từ Vựng & Ngữ Pháp",
-                icon = Icons.Default.CollectionsBookmark,
+                iconRes = R.drawable.ic_open_book,
                 badgeText = "$vocabCount từ",
                 onClick = onNavigateVocab
             )
@@ -2557,7 +2557,7 @@ private fun KikiExplorerHubView(
             // 3. Cài đặt & Tuỳ chọn
             DuolingoStyleTile(
                 title = if (isEnglish) "Settings & Preferences" else "Cài Đặt & Tuỳ Chọn",
-                icon = Icons.Default.Settings,
+                iconRes = R.drawable.ic_action_setting,
                 onClick = onSettingsClick
             )
 
@@ -2566,7 +2566,7 @@ private fun KikiExplorerHubView(
             // 4. Đăng xuất tài khoản
             DuolingoStyleTile(
                 title = if (isEnglish) "Log Out Account" else "Đăng Xuất Tài Khoản",
-                icon = Icons.AutoMirrored.Filled.ExitToApp,
+                iconRes = R.drawable.ic_logout,
                 iconBg = Color(0x22FF5252),
                 iconTint = Color(0xFFFF5252),
                 onClick = onLogoutClick
@@ -2578,7 +2578,8 @@ private fun KikiExplorerHubView(
 @Composable
 private fun DuolingoStyleTile(
     title: String,
-    icon: ImageVector,
+    icon: ImageVector? = null,
+    iconRes: Int? = null,
     iconBg: Color = Color(0x2251FAC1),
     iconTint: Color = Color(0xFF51FAC1),
     badgeText: String? = null,
@@ -2600,12 +2601,21 @@ private fun DuolingoStyleTile(
                 .border(1.dp, iconTint.copy(alpha = 0.4f), RoundedCornerShape(13.dp)),
             contentAlignment = Alignment.Center
         ) {
-            Icon(
-                imageVector = icon,
-                contentDescription = title,
-                tint = iconTint,
-                modifier = Modifier.size(24.dp)
-            )
+            if (iconRes != null) {
+                AsyncImage(
+                    model = iconRes,
+                    contentDescription = title,
+                    modifier = Modifier.size(24.dp),
+                    contentScale = ContentScale.Fit
+                )
+            } else if (icon != null) {
+                Icon(
+                    imageVector = icon,
+                    contentDescription = title,
+                    tint = iconTint,
+                    modifier = Modifier.size(24.dp)
+                )
+            }
         }
 
         Spacer(modifier = Modifier.width(16.dp))
