@@ -94,10 +94,67 @@ fun SpeakingChallengeView(
                 .clip(RoundedCornerShape(20.dp))
                 .background(Color(0xF0191530))
                 .border(1.5.dp, Color(0x55818CF8), RoundedCornerShape(20.dp))
-                .padding(horizontal = 16.dp, vertical = 12.dp),
+                .padding(horizontal = 16.dp, vertical = 14.dp),
             contentAlignment = Alignment.Center
         ) {
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                // Prominent Native Pronunciation Audio Bar
+                Row(
+                    modifier = Modifier.padding(bottom = 12.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    // Normal speed listen button
+                    Row(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(12.dp))
+                            .background(Brush.horizontalGradient(listOf(Color(0xFF00F5D4), Color(0xFF00BBF9))))
+                            .clickable {
+                                haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                                onSpeakSentence(false)
+                            }
+                            .padding(horizontal = 14.dp, vertical = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.VolumeUp,
+                            contentDescription = "Listen to native speaker",
+                            tint = Color(0xFF0B0D1B),
+                            modifier = Modifier.size(18.dp)
+                        )
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text(
+                            text = if (isEnglish) "Listen Sample" else "Nghe đọc mẫu",
+                            color = Color(0xFF0B0D1B),
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+
+                    // Slow speed turtle button
+                    Row(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(12.dp))
+                            .background(Color(0x33FFB703))
+                            .border(1.dp, Color(0x99FFB703), RoundedCornerShape(12.dp))
+                            .clickable {
+                                haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                                onSpeakSentence(true)
+                            }
+                            .padding(horizontal = 12.dp, vertical = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text("🐢", fontSize = 15.sp)
+                        Spacer(modifier = Modifier.width(5.dp))
+                        Text(
+                            text = if (isEnglish) "Slow" else "Đọc chậm",
+                            color = Color(0xFFFFD166),
+                            fontSize = 12.5.sp,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                    }
+                }
+
                 val words = remember(targetSentence) { targetSentence.split("\\s+".toRegex()).filter { it.isNotBlank() } }
                 FlowRow(
                     modifier = Modifier.fillMaxWidth(),
@@ -109,27 +166,29 @@ fun SpeakingChallengeView(
                         Box(
                             modifier = Modifier
                                 .clip(RoundedCornerShape(8.dp))
+                                .background(Color(0x1A818CF8))
                                 .clickable {
                                     haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
                                     onSpeakWord(cleanWord)
                                 }
-                                .padding(horizontal = 4.dp, vertical = 2.dp)
+                                .padding(horizontal = 8.dp, vertical = 4.dp)
                         ) {
                             Text(
                                 text = word,
                                 color = Color.White,
-                                fontSize = 20.sp,
+                                fontSize = 22.sp,
                                 fontWeight = FontWeight.Bold,
                                 textAlign = TextAlign.Center
                             )
                         }
                     }
                 }
-                Spacer(modifier = Modifier.height(4.dp))
+                Spacer(modifier = Modifier.height(8.dp))
                 Text(
-                    text = if (isEnglish) "Tap words to hear • Tap mic to speak" else "Chạm vào từ để nghe mẫu • Chạm micro để nói",
-                    color = Color(0x99FFFFFF),
-                    fontSize = 11.sp,
+                    text = if (isEnglish) "Tap speaker to hear full sample • Tap words for micro-phonetics" else "Bấm loa nghe đọc mẫu câu • Chạm từng từ để nghe lẻ",
+                    color = Color(0xCC51FAC1),
+                    fontSize = 11.5.sp,
+                    fontWeight = FontWeight.Medium,
                     textAlign = TextAlign.Center
                 )
             }

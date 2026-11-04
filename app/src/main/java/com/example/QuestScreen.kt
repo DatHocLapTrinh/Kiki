@@ -155,6 +155,12 @@ fun QuestScreen(viewModel: StudyViewModel, onFinish: () -> Unit) {
     val chapterTitle by viewModel.currentChapterTitle.observeAsState("English Fundamentals")
     val currentNode by viewModel.currentNode.observeAsState(1)
     val isSpeaking by viewModel.ttsManager.isSpeaking
+    var activeTtsSpeed by remember { mutableStateOf<String?>(null) }
+    LaunchedEffect(isSpeaking) {
+        if (!isSpeaking) {
+            activeTtsSpeed = null
+        }
+    }
     val hearts by viewModel.hearts.observeAsState(5)
     val stars by viewModel.stars.observeAsState(0)
 
@@ -505,6 +511,9 @@ fun QuestScreen(viewModel: StudyViewModel, onFinish: () -> Unit) {
                                                 verticalAlignment = Alignment.CenterVertically,
                                                 horizontalArrangement = Arrangement.spacedBy(10.dp)
                                             ) {
+                                                val isListeningNormalPlaying = isSpeaking && activeTtsSpeed == "NORMAL"
+                                                val isListeningSlowPlaying = isSpeaking && activeTtsSpeed == "SLOW"
+
                                                 // Normal Audio button
                                                 Box(
                                                     modifier = Modifier
@@ -513,13 +522,14 @@ fun QuestScreen(viewModel: StudyViewModel, onFinish: () -> Unit) {
                                                         .background(Brush.radialGradient(listOf(Color(0xFF00F5D4), Color(0xFF0077B6))))
                                                         .clickable {
                                                             haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                                                            activeTtsSpeed = "NORMAL"
                                                             val sentence = currentQ.speakingSentence.ifEmpty { currentQ.correctSentence }
                                                             viewModel.ttsManager.speak(sentence, isSlow = false)
                                                         },
                                                     contentAlignment = Alignment.Center
                                                 ) {
                                                     Icon(
-                                                        imageVector = if (isSpeaking) Icons.Default.GraphicEq else Icons.AutoMirrored.Filled.VolumeUp,
+                                                        imageVector = if (isListeningNormalPlaying) Icons.Default.GraphicEq else Icons.AutoMirrored.Filled.VolumeUp,
                                                         contentDescription = "Play Audio",
                                                         tint = Color(0xFF0B0D1B),
                                                         modifier = Modifier.size(20.dp)
@@ -531,20 +541,24 @@ fun QuestScreen(viewModel: StudyViewModel, onFinish: () -> Unit) {
                                                     modifier = Modifier
                                                         .size(34.dp)
                                                         .clip(CircleShape)
-                                                        .background(Color(0x33FFB703))
-                                                        .border(1.dp, Color(0x88FFB703), CircleShape)
+                                                        .background(if (isListeningSlowPlaying) Color(0x66FFB703) else Color(0x33FFB703))
+                                                        .border(1.dp, if (isListeningSlowPlaying) Color(0xFFFFB703) else Color(0x88FFB703), CircleShape)
                                                         .clickable {
                                                             haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                                                            activeTtsSpeed = "SLOW"
                                                             val sentence = currentQ.speakingSentence.ifEmpty { currentQ.correctSentence }
                                                             viewModel.ttsManager.speak(sentence, isSlow = true)
                                                         },
                                                     contentAlignment = Alignment.Center
                                                 ) {
-                                                    Text("🐢", fontSize = 15.sp)
+                                                    Text(if (isListeningSlowPlaying) "⏳" else "🐢", fontSize = 15.sp)
                                                 }
 
                                                 Text(
-                                                    text = if (isSpeaking) (if (isEnglish) "Playing..." else "Đang phát...") else (if (isEnglish) "Tap to listen" else "Chạm để nghe"),
+                                                    text = if (isSpeaking) {
+                                                        if (activeTtsSpeed == "SLOW") (if (isEnglish) "Reading Slow..." else "Đang đọc chậm...")
+                                                        else (if (isEnglish) "Playing..." else "Đang phát...")
+                                                    } else (if (isEnglish) "Tap to listen" else "Chạm để nghe"),
                                                     color = Color(0xFF51FAC1),
                                                     fontSize = 12.5.sp,
                                                     fontWeight = FontWeight.SemiBold
@@ -603,9 +617,9 @@ fun QuestScreen(viewModel: StudyViewModel, onFinish: () -> Unit) {
                                             )
                                             Spacer(modifier = Modifier.height(4.dp))
                                             Text(
-                                                text = currentQ.speakingSentence.ifEmpty { currentQ.question },
+                                                text = if (isEnglish) "Listen to the native sample and practice speaking clearly!" else "Lắng nghe câu mẫu và bấm mic để luyện phát âm chuẩn nhé! 🎙️",
                                                 color = Color(0xFFF8FAFC),
-                                                fontSize = 15.5.sp,
+                                                fontSize = 15.sp,
                                                 fontWeight = FontWeight.Bold,
                                                 lineHeight = 22.sp,
                                                 modifier = Modifier.fillMaxWidth()
@@ -628,28 +642,35 @@ fun QuestScreen(viewModel: StudyViewModel, onFinish: () -> Unit) {
                                                 horizontalArrangement = Arrangement.spacedBy(8.dp),
                                                 verticalAlignment = Alignment.CenterVertically
                                             ) {
+                                                val isNormalPlaying = isSpeaking && activeTtsSpeed == "NORMAL"
+                                                val isSlowPlaying = isSpeaking && activeTtsSpeed == "SLOW"
+                                                val textToSpeak = currentQ.speakingSentence.ifEmpty {
+                                                    if (currentQ.options.isNotEmpty()) currentQ.options.getOrNull(currentQ.correctIndex) ?: currentQ.question else currentQ.question
+                                                }
+
                                                 // Audio pill: Normal
                                                 Row(
                                                     modifier = Modifier
                                                         .clip(RoundedCornerShape(10.dp))
-                                                        .background(Color(0x2651FAC1))
-                                                        .border(1.dp, Color(0x6651FAC1), RoundedCornerShape(10.dp))
+                                                        .background(if (isNormalPlaying) Color(0x4D51FAC1) else Color(0x2651FAC1))
+                                                        .border(1.dp, if (isNormalPlaying) Color(0xFF51FAC1) else Color(0x6651FAC1), RoundedCornerShape(10.dp))
                                                         .clickable {
                                                             haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                                                            viewModel.ttsManager.speak(currentQ.question, isSlow = false)
+                                                            activeTtsSpeed = "NORMAL"
+                                                            viewModel.ttsManager.speak(textToSpeak, isSlow = false)
                                                         }
                                                         .padding(horizontal = 10.dp, vertical = 5.dp),
                                                     verticalAlignment = Alignment.CenterVertically
                                                 ) {
                                                     Icon(
-                                                        imageVector = if (isSpeaking) Icons.Default.GraphicEq else Icons.AutoMirrored.Filled.VolumeUp,
+                                                        imageVector = if (isNormalPlaying) Icons.Default.GraphicEq else Icons.AutoMirrored.Filled.VolumeUp,
                                                         contentDescription = "Speak Question",
                                                         tint = Color(0xFF51FAC1),
                                                         modifier = Modifier.size(15.dp)
                                                     )
                                                     Spacer(modifier = Modifier.width(5.dp))
                                                     Text(
-                                                        text = if (isSpeaking) (if (isEnglish) "Playing" else "Đang đọc") else (if (isEnglish) "Listen" else "Nghe"),
+                                                        text = if (isNormalPlaying) (if (isEnglish) "Playing..." else "Đang đọc") else (if (isEnglish) "Listen" else "Nghe"),
                                                         color = Color(0xFF51FAC1),
                                                         fontSize = 11.5.sp,
                                                         fontWeight = FontWeight.SemiBold
@@ -660,19 +681,20 @@ fun QuestScreen(viewModel: StudyViewModel, onFinish: () -> Unit) {
                                                 Row(
                                                     modifier = Modifier
                                                         .clip(RoundedCornerShape(10.dp))
-                                                        .background(Color(0x26FFD166))
-                                                        .border(1.dp, Color(0x66FFD166), RoundedCornerShape(10.dp))
+                                                        .background(if (isSlowPlaying) Color(0x4DFFD166) else Color(0x26FFD166))
+                                                        .border(1.dp, if (isSlowPlaying) Color(0xFFFFD166) else Color(0x66FFD166), RoundedCornerShape(10.dp))
                                                         .clickable {
                                                             haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                                                            viewModel.ttsManager.speak(currentQ.question, isSlow = true)
+                                                            activeTtsSpeed = "SLOW"
+                                                            viewModel.ttsManager.speak(textToSpeak, isSlow = true)
                                                         }
                                                         .padding(horizontal = 8.dp, vertical = 5.dp),
                                                     verticalAlignment = Alignment.CenterVertically
                                                 ) {
-                                                    Text("🐢", fontSize = 13.sp)
+                                                    Text(if (isSlowPlaying) "⏳" else "🐢", fontSize = 13.sp)
                                                     Spacer(modifier = Modifier.width(4.dp))
                                                     Text(
-                                                        text = if (isEnglish) "Slow" else "Chậm",
+                                                        text = if (isSlowPlaying) (if (isEnglish) "Reading Slow..." else "Đang đọc chậm") else (if (isEnglish) "Slow" else "Chậm"),
                                                         color = Color(0xFFFFD166),
                                                         fontSize = 11.5.sp,
                                                         fontWeight = FontWeight.Medium

@@ -243,9 +243,18 @@ class DataRepository @Inject constructor(
                                 speakingSentence = targetSpeakSentence
                             )
                         } else {
+                            val safeOptions = options.toMutableList()
+                            if (safeOptions.size < 4) {
+                                val needed = 4 - safeOptions.size
+                                val fillers = vocabularyPairsBank.map { it.english }
+                                    .filter { f -> !safeOptions.any { it.equals(f, ignoreCase = true) } }
+                                    .shuffled()
+                                    .take(needed)
+                                safeOptions.addAll(fillers)
+                            }
                             QuestItem(
                                 question = q.questionText,
-                                options = options,
+                                options = safeOptions,
                                 correctIndex = correctIdx,
                                 type = QuestionType.MULTIPLE_CHOICE
                             )
@@ -295,9 +304,18 @@ class DataRepository @Inject constructor(
                                 speakingSentence = sentenceToListen
                             )
                         } else {
+                            val safeOptions = options.toMutableList()
+                            if (safeOptions.size < 4) {
+                                val needed = 4 - safeOptions.size
+                                val fillers = vocabularyPairsBank.map { it.english }
+                                    .filter { f -> !safeOptions.any { it.equals(f, ignoreCase = true) } }
+                                    .shuffled()
+                                    .take(needed)
+                                safeOptions.addAll(fillers)
+                            }
                             QuestItem(
                                 question = q.questionText,
-                                options = options,
+                                options = safeOptions,
                                 correctIndex = correctIdx,
                                 type = QuestionType.MULTIPLE_CHOICE
                             )
@@ -347,9 +365,18 @@ class DataRepository @Inject constructor(
                                 correctSentence = completeSentence
                             )
                         } else {
+                            val safeOptions = options.toMutableList()
+                            if (safeOptions.size < 4) {
+                                val needed = 4 - safeOptions.size
+                                val fillers = vocabularyPairsBank.map { it.english }
+                                    .filter { f -> !safeOptions.any { it.equals(f, ignoreCase = true) } }
+                                    .shuffled()
+                                    .take(needed)
+                                safeOptions.addAll(fillers)
+                            }
                             QuestItem(
                                 question = q.questionText,
-                                options = options,
+                                options = safeOptions,
                                 correctIndex = correctIdx,
                                 type = QuestionType.MULTIPLE_CHOICE
                             )
@@ -358,9 +385,18 @@ class DataRepository @Inject constructor(
 
                     else -> {
                         // QuestionType.MULTIPLE_CHOICE (Câu khởi động: Điền khuyết / Trắc nghiệm)
+                        val safeOptions = options.toMutableList()
+                        if (safeOptions.size < 4) {
+                            val needed = 4 - safeOptions.size
+                            val fillers = vocabularyPairsBank.map { it.english }
+                                .filter { f -> !safeOptions.any { it.equals(f, ignoreCase = true) } }
+                                .shuffled()
+                                .take(needed)
+                            safeOptions.addAll(fillers)
+                        }
                         QuestItem(
                             question = q.questionText,
-                            options = options,
+                            options = safeOptions,
                             correctIndex = correctIdx,
                             type = QuestionType.MULTIPLE_CHOICE
                         )

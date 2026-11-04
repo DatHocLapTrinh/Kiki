@@ -2007,12 +2007,12 @@ class StudyViewModel @Inject constructor(
                 $topicSpecificGuidance
                 CRITICAL INSTRUCTION: NEVER use raw blanks or underscores like '______'. All sentences and questions must be complete, natural, and engaging.
 
-                SCAFFOLDING LESSON STRUCTURE (EXACTLY 25 QUESTIONS SPECIFIC TO "$topic"):
-                - Lesson 1 (Questions 1-5): Step 1 Foundation - Core single words/concepts of "$topic". 1 MULTIPLE_CHOICE, 1 SENTENCE_BUILDER, 1 LISTENING_CHALLENGE, 1 MATCHING_PAIRS (4 pairs), 1 SPEAKING_CHALLENGE.
-                - Lesson 2 (Questions 6-10): Step 2 Expansion - Action verbs, modifiers, or reactions of "$topic". 1 MULTIPLE_CHOICE, 1 SENTENCE_BUILDER, 1 LISTENING_CHALLENGE, 1 MATCHING_PAIRS, 1 SPEAKING_CHALLENGE.
-                - Lesson 3 (Questions 11-15): Step 3 Phrase & Chunk Assembly - 2-3 word collocations/phrases of "$topic". 1 MULTIPLE_CHOICE, 1 SENTENCE_BUILDER, 1 LISTENING_CHALLENGE, 1 MATCHING_PAIRS, 1 SPEAKING_CHALLENGE.
-                - Lesson 4 (Questions 16-20): Step 4 Sentence Construction - Complete sentences applying "$topic". 1 MULTIPLE_CHOICE, 1 SENTENCE_BUILDER, 1 LISTENING_CHALLENGE, 1 MATCHING_PAIRS, 1 SPEAKING_CHALLENGE.
-                - Lesson 5 (Questions 21-25): Step 5 Reflex Dialogue & Mastery - Real-world Q&A dialogue mastering "$topic". 1 MULTIPLE_CHOICE, 1 SENTENCE_BUILDER, 1 LISTENING_CHALLENGE, 1 MATCHING_PAIRS, 1 SPEAKING_CHALLENGE.
+                SCAFFOLDING LESSON STRUCTURE (EXACTLY $totalQuestionsNeeded PROGRESSIVE QUESTIONS, 5 LESSONS x $pageSize QUESTIONS PER LESSON):
+                - All 5 lessons MUST strictly follow progressive microlearning for "$topic".
+                - Every lesson contains exactly $pageSize questions with balanced distribution of: MULTIPLE_CHOICE (visual/semantic recognition), SENTENCE_BUILDER (syntax assembly), LISTENING_CHALLENGE (auditory decoding), MATCHING_PAIRS (speed association), and SPEAKING_CHALLENGE (oral pronunciation).
+                - CRITICAL RULE 1: For MULTIPLE_CHOICE, optionsJson MUST ALWAYS contain exactly 4 distinct choices.
+                - CRITICAL RULE 2: For SENTENCE_BUILDER, questionText MUST be in Vietnamese prompt format (e.g. "Dịch sang tiếng Anh: '...' 🧩"). NEVER reveal or print the target English sentence in the prompt!
+                - CRITICAL RULE 3: For LISTENING_CHALLENGE, provide a complete sentence with distinct tokens to assemble.
 
                 You MUST return ONLY a raw JSON object (no markdown, no backticks) with this exact schema:
                 {
@@ -2037,7 +2037,7 @@ class StudyViewModel @Inject constructor(
 
             val contents = listOf(GeminiModels.Content(role = "user", parts = listOf(GeminiModels.Part(text = prompt))))
             val systemInstruction = GeminiModels.createSystemInstruction(
-                "You are Kiki AI, an expert Microlearning Pedagogical Designer. Always output strict JSON only, without markdown fences or outside explanations. NEVER generate raw underscores or blanks. Strictly teach the vocabulary and grammar of the requested topic '$topic' at CEFR level '$level' across all 25 progressive questions (5 lessons x 5 questions)."
+                "You are Kiki AI, an expert Microlearning Pedagogical Designer. Always output strict JSON only, without markdown fences or outside explanations. NEVER generate raw underscores or blanks. Strictly teach the vocabulary and grammar of the requested topic '$topic' at CEFR level '$level' across all $totalQuestionsNeeded progressive questions (5 lessons x $pageSize questions)."
             )
             val request = GeminiModels.GenerateContentRequest(
                 contents = contents,
