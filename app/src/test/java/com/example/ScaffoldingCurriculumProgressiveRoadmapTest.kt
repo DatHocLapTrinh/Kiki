@@ -9,7 +9,6 @@ import com.example.model.PairSlotItem
 import com.example.model.SentenceBuilderSlot
 import com.example.model.SpeakingChallengeSlot
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
