@@ -283,12 +283,18 @@ fun CosmicPlanetView(
 
                 // Cung tròn tiến độ phát sáng quét từ góc 12h (-90 độ) theo chiều kim đồng hồ
                 if (animatedProgress > 0f) {
-                    val sweepAngle = animatedProgress * 360f
+                    val sweepAngle = if (isCompleted && stage.needsReview) {
+                        (stage.energyLevel * 360f).coerceIn(40f, 360f)
+                    } else {
+                        animatedProgress * 360f
+                    }
 
                     // Lớp phát quang mờ ảo neon (Aura Glow Stroke)
                     drawArc(
                         brush = Brush.sweepGradient(
-                            colors = if (isCompleted) {
+                            colors = if (isCompleted && stage.needsReview) {
+                                listOf(Color(0x80FFB74D).copy(alpha = 0.5f * ringAlpha), Color(0x80FF9800).copy(alpha = 0.5f * ringAlpha), Color(0x80FFB74D).copy(alpha = 0.5f * ringAlpha))
+                            } else if (isCompleted) {
                                 listOf(Color(0x80FFD166).copy(alpha = 0.5f * ringAlpha), Color(0x80FF9E00).copy(alpha = 0.5f * ringAlpha), Color(0x80FFD166).copy(alpha = 0.5f * ringAlpha))
                             } else {
                                 listOf(Color(0x8051FAC1).copy(alpha = 0.5f * ringAlpha), Color(0x8000E5FF).copy(alpha = 0.5f * ringAlpha), Color(0x8051FAC1).copy(alpha = 0.5f * ringAlpha))
@@ -306,7 +312,9 @@ fun CosmicPlanetView(
                     // Lớp viền neon sắc nét chính (Crisp Neon Core)
                     drawArc(
                         brush = Brush.sweepGradient(
-                            colors = if (isCompleted) {
+                            colors = if (isCompleted && stage.needsReview) {
+                                listOf(Color(0xFFFFB74D).copy(alpha = ringAlpha), Color(0xFFFF9800).copy(alpha = ringAlpha), Color(0xFFFFE082).copy(alpha = ringAlpha), Color(0xFFFFB74D).copy(alpha = ringAlpha))
+                            } else if (isCompleted) {
                                 listOf(Color(0xFFFFD166).copy(alpha = ringAlpha), Color(0xFFFFB703).copy(alpha = ringAlpha), Color(0xFFFFE169).copy(alpha = ringAlpha), Color(0xFFFFD166).copy(alpha = ringAlpha))
                             } else {
                                 listOf(Color(0xFF51FAC1).copy(alpha = ringAlpha), Color(0xFF00E5FF).copy(alpha = ringAlpha), Color(0xFF38BDF8).copy(alpha = ringAlpha), Color(0xFF51FAC1).copy(alpha = ringAlpha))
@@ -416,6 +424,7 @@ fun CosmicPlanetView(
                         width = 1.1.dp,
                         brush = Brush.horizontalGradient(
                             when {
+                                isCompleted && stage.needsReview -> listOf(Color(0xFFFFB74D), Color(0xFFFF9800))
                                 isCompleted -> listOf(Color(0xFFFFD166), Color(0xFFFF9E00))
                                 else        -> listOf(Color(0xFF38BDF8), Color(0xFF00F5D4))
                             }
@@ -428,20 +437,37 @@ fun CosmicPlanetView(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.Center
                 ) {
-                    Icon(
-                        imageVector = Icons.Default.Star,
-                        contentDescription = null,
-                        tint = if (isCompleted) Color(0xFFFFD166) else Color(0xFFFFD166),
-                        modifier = Modifier.size(11.dp)
-                    )
-                    Spacer(modifier = Modifier.width(3.5.dp))
-                    Text(
-                        text = "${stage.completedLessons}/${stage.totalLessons} bài",
-                        color = Color.White,
-                        fontSize = 10.5.sp,
-                        fontWeight = FontWeight.Bold,
-                        letterSpacing = 0.2.sp
-                    )
+                    if (isCompleted && stage.needsReview) {
+                        Icon(
+                            imageVector = Icons.Default.Bolt,
+                            contentDescription = "Energy Decay",
+                            tint = Color(0xFFFFB74D),
+                            modifier = Modifier.size(11.dp)
+                        )
+                        Spacer(modifier = Modifier.width(3.5.dp))
+                        Text(
+                            text = "${(stage.energyLevel * 100).toInt()}% ⚡ Nạp",
+                            color = Color(0xFFFFD166),
+                            fontSize = 10.5.sp,
+                            fontWeight = FontWeight.Bold,
+                            letterSpacing = 0.2.sp
+                        )
+                    } else {
+                        Icon(
+                            imageVector = Icons.Default.Star,
+                            contentDescription = null,
+                            tint = if (isCompleted) Color(0xFFFFD166) else Color(0xFFFFD166),
+                            modifier = Modifier.size(11.dp)
+                        )
+                        Spacer(modifier = Modifier.width(3.5.dp))
+                        Text(
+                            text = "${stage.completedLessons}/${stage.totalLessons} bài",
+                            color = Color.White,
+                            fontSize = 10.5.sp,
+                            fontWeight = FontWeight.Bold,
+                            letterSpacing = 0.2.sp
+                        )
+                    }
                 }
             }
         }

@@ -87,9 +87,10 @@ fun QuestsScreen(viewModel: StudyViewModel) {
             "ANSWER_QUESTIONS_20" -> QuestMeta(strings.quest5Title, strings.quest5Desc, iconRes = R.drawable.ic_action_thinking, color = Color(0xFFFFB74D))
             "PERFECT_SCORE" -> QuestMeta(strings.quest2Title, strings.quest2Desc, iconRes = R.drawable.ic_100_point, color = Color(0xFFFFD166))
             "ASK_AI_TUTOR" -> QuestMeta(strings.quest6Title, strings.quest6Desc, iconRes = R.drawable.ic_mentor_qa, color = Color(0xFFBA68C8))
+            "PLANET_RECHARGE" -> QuestMeta("Tái Nạp Năng Lượng Vũ Trụ ⚡", "Ôn tập 1 hành tinh đã cạn năng lượng để hồi phục 100%", iconRes = R.drawable.ic_action_thinking, color = Color(0xFFFFB74D))
             else -> QuestMeta(task.title, strings.quest3Desc, iconRes = R.drawable.ic_open_book, color = Color(0xFF27E0A9))
         }
-        // Phần thưởng sao: 15 + 20 + 15 + 20 + 15 + 15 = 100 ⭐ / ngày
+        // Phần thưởng sao: 15 + 20 + 15 + 20 + 15 + 15 + 20 ⭐ / ngày
         val starReward = when (task.taskType) {
             "LESSON_COMPLETE" -> 15
             "LESSON_COMPLETE_2" -> 20
@@ -97,6 +98,7 @@ fun QuestsScreen(viewModel: StudyViewModel) {
             "ANSWER_QUESTIONS_20" -> 20
             "PERFECT_SCORE" -> 15
             "ASK_AI_TUTOR" -> 15
+            "PLANET_RECHARGE" -> 20
             else -> 15
         }
         QuestData(

@@ -716,7 +716,8 @@ class DataRepository @Inject constructor(
             DailyTaskConfig("ANSWER_QUESTIONS", 10, 30),
             DailyTaskConfig("ANSWER_QUESTIONS_20", 20, 60),
             DailyTaskConfig("PERFECT_SCORE", 1, 40),
-            DailyTaskConfig("ASK_AI_TUTOR", 1, 30)
+            DailyTaskConfig("ASK_AI_TUTOR", 1, 30),
+            DailyTaskConfig("PLANET_RECHARGE", 1, 40)
         )
 
         for (cfg in taskConfigs) {

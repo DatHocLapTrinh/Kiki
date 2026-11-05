@@ -67,6 +67,7 @@ import com.example.sqlite.room.ResearchTelemetryEntity
 import com.example.util.Sm2Algorithm
 import com.example.util.Sm2State
 import com.example.util.ResearchTelemetryExporter
+import com.example.util.CosmicSpacedRepetitionManager
 import java.util.UUID
 import kotlinx.coroutines.delay
 import javax.inject.Inject
@@ -1018,6 +1019,31 @@ class StudyViewModel @Inject constructor(
         return true
     }
 
+    val cosmicSpacedRepetitionManager by lazy { CosmicSpacedRepetitionManager(appContext) }
+
+    fun getPlanetEnergy(planetIndex: Int, isCompleted: Boolean, totalCompleted: Int): Float {
+        val userId = _currentUserId.value?.takeIf { it > 0 } ?: 1L
+        return cosmicSpacedRepetitionManager.calculatePlanetEnergy(
+            userId = userId,
+            planetIndex = planetIndex,
+            isCompleted = isCompleted,
+            totalCompletedPlanets = totalCompleted
+        )
+    }
+
+    fun rechargePlanet(planetIndex: Int) {
+        val userId = _currentUserId.value?.takeIf { it > 0 } ?: 1L
+        cosmicSpacedRepetitionManager.rechargePlanet(userId, planetIndex)
+        addXp(CosmicSpacedRepetitionManager.RECHARGE_BONUS_XP)
+        addStars(CosmicSpacedRepetitionManager.RECHARGE_BONUS_STARS)
+        soundEffectManager.playCorrect(3)
+        viewModelScope.launch {
+            recordDailyTaskProgress(userId, "PLANET_RECHARGE", 1)
+            refreshDailyTasks()
+        }
+        refreshChapters()
+    }
+
     private val _isGeneratingNextChapter = MutableLiveData(false)
     val isGeneratingNextChapter: LiveData<Boolean> = _isGeneratingNextChapter
 
@@ -1034,6 +1060,11 @@ class StudyViewModel @Inject constructor(
 
         if (isFreshChapterCompletion) {
             handleChapterCompletion(userId, chapterTitle)
+        } else if (node >= 6) {
+            val currentIndex = _availableChapters.value?.indexOfFirst { it.equals(chapterTitle, ignoreCase = true) } ?: -1
+            if (currentIndex >= 0) {
+                rechargePlanet(currentIndex)
+            }
         }
     }
 

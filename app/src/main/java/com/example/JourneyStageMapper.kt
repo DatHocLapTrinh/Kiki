@@ -8,9 +8,11 @@ object JourneyStageMapper {
 
     fun mapStages(
         chapterTitles: List<String>,
-        nodeProgress: List<Int>
+        nodeProgress: List<Int>,
+        energyProvider: ((index: Int, isCompleted: Boolean, totalCompleted: Int) -> Float)? = null
     ): List<JourneyStageUiModel> {
         var currentAssigned = false
+        val totalCompleted = nodeProgress.count { it >= LESSONS_PER_STAGE + 1 }
 
         return chapterTitles.mapIndexed { index, rawTitle ->
             val node = nodeProgress.getOrNull(index)?.coerceIn(1, LESSONS_PER_STAGE + 1) ?: if (index == 0) 1 else 0
@@ -30,13 +32,20 @@ object JourneyStageMapper {
                 else -> JourneyStageState.LOCKED
             }
 
+            val energy = if (isCompleted && energyProvider != null) {
+                energyProvider(index, true, totalCompleted).coerceIn(0f, 1f)
+            } else {
+                1.0f
+            }
+            val needsReview = isCompleted && energy <= 0.70f
+
             val title = rawTitle.trim().ifEmpty { "Chapter ${index + 1}" }
             JourneyStageUiModel(
                 id = title,
                 sequence = index + 1,
                 title = title,
                 description = when (state) {
-                    JourneyStageState.COMPLETED -> "Bạn đã hoàn thành chặng học này."
+                    JourneyStageState.COMPLETED -> if (needsReview) "Năng lượng vũ trụ đang suy giảm. Hãy tái nạp!" else "Bạn đã hoàn thành chặng học này."
                     JourneyStageState.CURRENT -> "Tiếp tục bài học được đề xuất."
                     JourneyStageState.AVAILABLE -> "Chặng học đã sẵn sàng để khám phá."
                     JourneyStageState.LOCKED -> "Hoàn thành chặng trước để mở khóa."
@@ -55,7 +64,9 @@ object JourneyStageMapper {
                 },
                 destinationId = title,
                 rewardStars = CHAPTER_COMPLETION_BONUS_STARS,
-                isRecommended = state == JourneyStageState.CURRENT
+                isRecommended = state == JourneyStageState.CURRENT,
+                energyLevel = energy,
+                needsReview = needsReview
             )
         }
     }

@@ -9,9 +9,12 @@ import com.example.model.PairSlotItem
 import com.example.model.SentenceBuilderSlot
 import com.example.model.SpeakingChallengeSlot
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import java.util.concurrent.TimeUnit
+import com.example.util.CosmicSpacedRepetitionManager
 
 class ScaffoldingCurriculumProgressiveRoadmapTest {
 
@@ -578,5 +581,75 @@ class ScaffoldingCurriculumProgressiveRoadmapTest {
         val prevSec2Stages = stages.drop(prevSec2StartIdx).take(10)
         val isSec2Completed = prevSec2Stages.all { it.state == JourneyStageState.COMPLETED }
         assertFalse("Section 2 is not completed yet so Section 3 checkpoint is locked", isSec2Completed)
+    }
+
+    @Test
+    fun testPhase3CosmicSpacedRepetitionDecayAndRecharge() {
+        val now = 1000000000000L
+        val hours20Ago = now - TimeUnit.HOURS.toMillis(20) // < 24h
+        val hours40Ago = now - TimeUnit.HOURS.toMillis(40) // 36-48h -> needs review
+        val hours80Ago = now - TimeUnit.HOURS.toMillis(80) // > 72h -> critical decay
+
+        val manager = CosmicSpacedRepetitionManager()
+
+        val userId = 9999L
+        // 1. Not completed planet: energy = 1.0f, needsReview = false
+        val energyNotCompleted = manager.calculatePlanetEnergy(userId, 0, isCompleted = false, currentTimeMillis = now)
+        assertEquals(1.0f, energyNotCompleted, 0.01f)
+        assertFalse(manager.isReviewNeeded(energyNotCompleted))
+
+        // 2. Planet completed recently (< 24h ago): energy = 1.0f, needsReview = false
+        manager.setLastReviewTimestamp(userId, 1, hours20Ago)
+        val energyFresh = manager.calculatePlanetEnergy(userId, 1, isCompleted = true, currentTimeMillis = now)
+        assertEquals(1.0f, energyFresh, 0.01f)
+        assertFalse(manager.isReviewNeeded(energyFresh))
+
+        // 3. Planet completed 40h ago: energy = 0.65f, needsReview = true
+        manager.setLastReviewTimestamp(userId, 2, hours40Ago)
+        val energyDecayed = manager.calculatePlanetEnergy(userId, 2, isCompleted = true, currentTimeMillis = now)
+        assertEquals(0.65f, energyDecayed, 0.01f)
+        assertTrue(manager.isReviewNeeded(energyDecayed))
+
+        // 4. Planet completed 80h ago: energy = 0.25f, needsReview = true
+        manager.setLastReviewTimestamp(userId, 3, hours80Ago)
+        val energyCritical = manager.calculatePlanetEnergy(userId, 3, isCompleted = true, currentTimeMillis = now)
+        assertEquals(0.25f, energyCritical, 0.01f)
+        assertTrue(manager.isReviewNeeded(energyCritical))
+
+        // 5. Recharge planet 3: resets timestamp to now, restores energy to 100%
+        manager.rechargePlanet(userId, 3, timestamp = now)
+        val energyRecharged = manager.calculatePlanetEnergy(userId, 3, isCompleted = true, currentTimeMillis = now)
+        assertEquals(1.0f, energyRecharged, 0.01f)
+        assertFalse(manager.isReviewNeeded(energyRecharged))
+    }
+
+    @Test
+    fun testPhase3JourneyStageMapperWithEnergyProvider() {
+        val chapterTitles = listOf("Chapter 1", "Chapter 2", "Chapter 3")
+        val nodeProgress = listOf(6, 6, 1) // Chapters 1 & 2 completed, Chapter 3 current
+
+        val stages = JourneyStageMapper.mapStages(
+            chapterTitles = chapterTitles,
+            nodeProgress = nodeProgress,
+            energyProvider = { idx, _, _ ->
+                if (idx == 0) 0.50f else 1.0f
+            }
+        )
+
+        assertEquals(3, stages.size)
+        // Stage 0: Completed, energy 0.50, needsReview = true
+        assertEquals(JourneyStageState.COMPLETED, stages[0].state)
+        assertEquals(0.50f, stages[0].energyLevel, 0.01f)
+        assertTrue(stages[0].needsReview)
+        assertTrue(stages[0].description.contains("suy giảm"))
+
+        // Stage 1: Completed, energy 1.0, needsReview = false
+        assertEquals(JourneyStageState.COMPLETED, stages[1].state)
+        assertEquals(1.0f, stages[1].energyLevel, 0.01f)
+        assertFalse(stages[1].needsReview)
+
+        // Stage 2: Not completed
+        assertEquals(JourneyStageState.CURRENT, stages[2].state)
+        assertFalse(stages[2].needsReview)
     }
 }
