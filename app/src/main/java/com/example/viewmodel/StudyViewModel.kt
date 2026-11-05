@@ -58,6 +58,7 @@ import com.example.sync.FirestoreSyncManager
 import com.example.sqlite.room.VocabularyEntity
 import com.example.sqlite.room.WeakPointEntity
 import com.example.model.ChapterUnlockEvent
+import com.example.model.SectionCompletionEvent
 import com.example.model.ChapterGeneratedResponse
 import com.example.model.QuestionItemDto
 import com.example.model.MentorChatRequest
@@ -991,6 +992,32 @@ class StudyViewModel @Inject constructor(
         _chapterUnlockEvent.value = null
     }
 
+    private val _sectionCompletionEvent = MutableLiveData<SectionCompletionEvent?>(null)
+    val sectionCompletionEvent: LiveData<SectionCompletionEvent?> = _sectionCompletionEvent
+
+    fun clearSectionCompletionEvent() {
+        _sectionCompletionEvent.value = null
+    }
+
+    fun isSectionChestClaimed(sectionNum: Int): Boolean {
+        val userId = _currentUserId.value ?: 1L
+        val rewardPrefs = appContext.getSharedPreferences("kiki_rewards", Context.MODE_PRIVATE)
+        return rewardPrefs.getBoolean("claimed_section_chest_${userId}_$sectionNum", false)
+    }
+
+    fun claimSectionChest(sectionNum: Int): Boolean {
+        val userId = _currentUserId.value ?: 1L
+        val rewardPrefs = appContext.getSharedPreferences("kiki_rewards", Context.MODE_PRIVATE)
+        val key = "claimed_section_chest_${userId}_$sectionNum"
+        if (rewardPrefs.getBoolean(key, false)) return false
+
+        rewardPrefs.edit().putBoolean(key, true).apply()
+        addXp(100)
+        addStars(50)
+        soundEffectManager.playFanfare()
+        return true
+    }
+
     private val _isGeneratingNextChapter = MutableLiveData(false)
     val isGeneratingNextChapter: LiveData<Boolean> = _isGeneratingNextChapter
 
@@ -1922,6 +1949,24 @@ class StudyViewModel @Inject constructor(
                         weakPointsAddressedCount = 0
                     )
                 )
+
+                // Kiểm tra hoàn tất toàn bộ 10 hành tinh của một Chặng lớn (index 9 -> Chặng 1, index 19 -> Chặng 2, index 29 -> Chặng 3)
+                if ((currentIndex + 1) % 10 == 0) {
+                    val completedSecNum = (currentIndex + 1) / 10
+                    val nextSecNum = completedSecNum + 1
+                    val completedSecData = com.example.ui.CosmicSectionConfig.getSectionData(completedSecNum, 10, 10)
+                    val nextSecData = com.example.ui.CosmicSectionConfig.getSectionData(nextSecNum, 0, 10)
+                    _sectionCompletionEvent.postValue(
+                        SectionCompletionEvent(
+                            completedSectionNumber = completedSecNum,
+                            nextSectionNumber = nextSecNum,
+                            completedSectionTitle = completedSecData.title,
+                            nextSectionTitle = nextSecData.title,
+                            rewardXp = 100,
+                            rewardStars = 50
+                        )
+                    )
+                }
             } else {
                 // Tự sinh chương tiếp theo với AI dựa trên điểm yếu
                 generateNextChapterOnDemand(

@@ -9,6 +9,7 @@ import com.example.model.PairSlotItem
 import com.example.model.SentenceBuilderSlot
 import com.example.model.SpeakingChallengeSlot
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -517,5 +518,66 @@ class ScaffoldingCurriculumProgressiveRoadmapTest {
             "Advanced", "Chặng 35: Mạng Nhện Thiên Hà - Đàm Phán Hợp Đồng Cấp Cao"
         )
         assertEquals(com.example.model.SpiralCurriculumBlueprint.CurriculumTheme.ADVANCED_STAGE_2_NEGOTIATION_ACADEMIC, themeSec4)
+    }
+
+    @Test
+    fun testPhase2SectionCompletionAndRewardEventTrigger() {
+        val completedIdxPlanet10 = 9 // Index 9 is planet 10
+        val isTenthPlanet = (completedIdxPlanet10 + 1) % 10 == 0
+        assertTrue("Planet 10 must trigger section completion", isTenthPlanet)
+
+        val completedSecNum = (completedIdxPlanet10 + 1) / 10
+        val nextSecNum = completedSecNum + 1
+        assertEquals(1, completedSecNum)
+        assertEquals(2, nextSecNum)
+
+        val event = com.example.model.SectionCompletionEvent(
+            completedSectionNumber = completedSecNum,
+            nextSectionNumber = nextSecNum,
+            completedSectionTitle = "Hệ Mặt Trời & Giao Tiếp Cơ Bản",
+            nextSectionTitle = "Thiên Hà Tiên Nữ & Đời Sống Du Lịch",
+            rewardXp = 100,
+            rewardStars = 50
+        )
+        assertEquals(100, event.rewardXp)
+        assertEquals(50, event.rewardStars)
+        assertEquals(1, event.completedSectionNumber)
+        assertEquals(2, event.nextSectionNumber)
+    }
+
+    @Test
+    fun testPhase2MilestoneCheckpointCalculation() {
+        // Section 1: planets 0..9 (10 planets)
+        val stages = (0 until 40).map { idx ->
+            JourneyStageUiModel(
+                id = "stage_$idx",
+                sequence = idx + 1,
+                title = "Stage ${idx + 1}",
+                description = "Desc",
+                completedLessons = if (idx < 10) 5 else 0,
+                totalLessons = 5,
+                progress = if (idx < 10) 1f else 0f,
+                state = if (idx < 10) JourneyStageState.COMPLETED else JourneyStageState.LOCKED,
+                visualType = PlanetVisualType.CYAN,
+                destinationId = null,
+                rewardStars = 5,
+                isRecommended = false
+            )
+        }
+
+        // Section 2 milestone checkpoint (index 10)
+        val nextSectionNum = 2
+        val prevSectionStartIdx = (nextSectionNum - 2) * 10
+        val prevSectionStages = stages.drop(prevSectionStartIdx).take(10)
+        assertEquals(10, prevSectionStages.size)
+        val isPrevCompleted = prevSectionStages.all { it.state == JourneyStageState.COMPLETED }
+        assertTrue("Section 1 is fully completed so Section 2 checkpoint is unlocked", isPrevCompleted)
+
+        // Section 3 milestone checkpoint (index 20)
+        val sec3Num = 3
+        val prevSec2StartIdx = (sec3Num - 2) * 10
+        val prevSec2Stages = stages.drop(prevSec2StartIdx).take(10)
+        val isSec2Completed = prevSec2Stages.all { it.state == JourneyStageState.COMPLETED }
+        assertFalse("Section 2 is not completed yet so Section 3 checkpoint is locked", isSec2Completed)
     }
 }

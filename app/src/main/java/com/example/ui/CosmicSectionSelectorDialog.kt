@@ -25,6 +25,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Explore
+import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.RocketLaunch
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -48,6 +49,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
+import com.example.JourneyStageState
 import com.example.JourneyStageUiModel
 
 /**
@@ -66,6 +68,16 @@ fun CosmicSectionSelectorDialog(
     val sections = remember(stages) {
         CosmicSectionConfig.getAllSections(stages)
     }
+
+    val totalCompleted = remember(stages) {
+        stages.count { it.state == JourneyStageState.COMPLETED }
+    }
+    val overallProgress = (totalCompleted.toFloat() / 40f).coerceIn(0f, 1f)
+    val animatedOverallProgress by animateFloatAsState(
+        targetValue = overallProgress,
+        animationSpec = tween(700),
+        label = "overall_cosmic_progress"
+    )
 
     Dialog(
         onDismissRequest = onDismiss,
@@ -87,7 +99,7 @@ fun CosmicSectionSelectorDialog(
             Card(
                 modifier = Modifier
                     .fillMaxWidth(0.94f)
-                    .fillMaxHeight(0.86f)
+                    .fillMaxHeight(0.88f)
                     .clickable(
                         interactionSource = remember { MutableInteractionSource() },
                         indication = null,
@@ -178,7 +190,65 @@ fun CosmicSectionSelectorDialog(
                         }
                     }
 
-                    Spacer(modifier = Modifier.height(16.dp))
+                    Spacer(modifier = Modifier.height(14.dp))
+
+                    // ─── Mini Dashboard Tiến Độ Vũ Trụ Toàn Cầu ───
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(14.dp))
+                            .background(Color(0x1F00F5D4))
+                            .border(1.dp, Color(0x3300F5D4), RoundedCornerShape(14.dp))
+                            .padding(horizontal = 14.dp, vertical = 10.dp)
+                    ) {
+                        Column(modifier = Modifier.fillMaxWidth()) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.SpaceBetween
+                            ) {
+                                Text(
+                                    text = "TIẾN ĐỘ CHINH PHỤC VŨ TRỤ",
+                                    color = Color(0xFF00F5D4),
+                                    fontSize = 10.sp,
+                                    fontWeight = FontWeight.ExtraBold,
+                                    letterSpacing = 0.6.sp
+                                )
+                                Text(
+                                    text = "$totalCompleted/40 Hành Tinh (${(overallProgress * 100).toInt()}%)",
+                                    color = Color.White,
+                                    fontSize = 11.sp,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
+                            Spacer(modifier = Modifier.height(6.dp))
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(6.dp)
+                                    .clip(CircleShape)
+                                    .background(Color(0x33FFFFFF))
+                            ) {
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxHeight()
+                                        .fillMaxWidth(animatedOverallProgress)
+                                        .clip(CircleShape)
+                                        .background(
+                                            Brush.horizontalGradient(
+                                                listOf(
+                                                    Color(0xFF00F5D4),
+                                                    Color(0xFFC084FC),
+                                                    Color(0xFFFBBF24)
+                                                )
+                                            )
+                                        )
+                                )
+                            }
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(14.dp))
 
                     // ─── Danh Sách 4 Chặng Không Gian ───
                     Column(
@@ -188,9 +258,17 @@ fun CosmicSectionSelectorDialog(
                         verticalArrangement = Arrangement.spacedBy(14.dp)
                     ) {
                         sections.forEach { sectionData ->
+                            val prevSectionNum = sectionData.sectionNumber - 1
+                            val prevSectionStartIdx = (prevSectionNum - 1) * 10
+                            val prevSectionStages = stages.drop(prevSectionStartIdx).take(10)
+                            val isUnlocked = (sectionData.sectionNumber == 1) ||
+                                (prevSectionStages.isNotEmpty() && prevSectionStages.all { it.state == JourneyStageState.COMPLETED }) ||
+                                (stages.getOrNull((sectionData.sectionNumber - 1) * 10)?.state != JourneyStageState.LOCKED)
+
                             CosmicSectionCard(
                                 section = sectionData,
                                 isCurrent = (sectionData.sectionNumber == currentSectionNumber),
+                                isUnlocked = isUnlocked,
                                 onSelect = {
                                     haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
                                     onSelectSection(sectionData.sectionNumber)
@@ -200,7 +278,7 @@ fun CosmicSectionSelectorDialog(
                         }
                     }
 
-                    Spacer(modifier = Modifier.height(14.dp))
+                    Spacer(modifier = Modifier.height(12.dp))
 
                     // ─── Footer Gợi Ý ───
                     Box(
@@ -230,6 +308,7 @@ fun CosmicSectionSelectorDialog(
 private fun CosmicSectionCard(
     section: CosmicSectionData,
     isCurrent: Boolean,
+    isUnlocked: Boolean,
     onSelect: () -> Unit
 ) {
     val palette = remember(section.sectionNumber) {
@@ -249,7 +328,7 @@ private fun CosmicSectionCard(
             .clip(RoundedCornerShape(20.dp))
             .border(
                 width = if (isCurrent) 2.dp else 1.2.dp,
-                brush = Brush.horizontalGradient(palette.borderColors),
+                brush = if (isUnlocked) Brush.horizontalGradient(palette.borderColors) else Brush.horizontalGradient(listOf(Color(0x33FFFFFF), Color(0x22FFFFFF))),
                 shape = RoundedCornerShape(20.dp)
             )
             .clickable(onClick = onSelect),
@@ -260,9 +339,15 @@ private fun CosmicSectionCard(
             modifier = Modifier
                 .fillMaxWidth()
                 .background(
-                    Brush.verticalGradient(
-                        listOf(palette.bgStart, palette.bgMid, palette.bgEnd)
-                    )
+                    if (isUnlocked) {
+                        Brush.verticalGradient(
+                            listOf(palette.bgStart, palette.bgMid, palette.bgEnd)
+                        )
+                    } else {
+                        Brush.verticalGradient(
+                            listOf(Color(0xEE161328), Color(0xEE191630), Color(0xEE131122))
+                        )
+                    }
                 )
                 .padding(16.dp)
         ) {
@@ -276,7 +361,7 @@ private fun CosmicSectionCard(
                     // Tag số chặng và hành tinh
                     Text(
                         text = "CHẶNG ${section.sectionNumber} • HÀNH TINH ${section.startPlanet} - ${section.endPlanet}".uppercase(),
-                        color = palette.primaryColor,
+                        color = if (isUnlocked) palette.primaryColor else Color(0x88FFFFFF),
                         fontSize = 11.sp,
                         fontWeight = FontWeight.ExtraBold,
                         letterSpacing = 0.8.sp
@@ -286,13 +371,13 @@ private fun CosmicSectionCard(
                     Box(
                         modifier = Modifier
                             .clip(RoundedCornerShape(10.dp))
-                            .background(palette.primaryColor.copy(alpha = 0.16f))
-                            .border(1.dp, palette.primaryColor.copy(alpha = 0.5f), RoundedCornerShape(10.dp))
+                            .background(if (isUnlocked) palette.primaryColor.copy(alpha = 0.16f) else Color(0x18FFFFFF))
+                            .border(1.dp, if (isUnlocked) palette.primaryColor.copy(alpha = 0.5f) else Color(0x33FFFFFF), RoundedCornerShape(10.dp))
                             .padding(horizontal = 8.dp, vertical = 2.dp)
                     ) {
                         Text(
                             text = section.cefrLevel,
-                            color = palette.primaryColor,
+                            color = if (isUnlocked) palette.primaryColor else Color(0x99FFFFFF),
                             fontSize = 10.sp,
                             fontWeight = FontWeight.Bold
                         )
@@ -304,7 +389,7 @@ private fun CosmicSectionCard(
                 // Tiêu đề chặng
                 Text(
                     text = section.title,
-                    color = Color.White,
+                    color = if (isUnlocked) Color.White else Color(0xB3FFFFFF),
                     fontSize = 15.sp,
                     fontWeight = FontWeight.Bold,
                     lineHeight = 20.sp
@@ -341,7 +426,11 @@ private fun CosmicSectionCard(
                                 .clip(CircleShape)
                                 .background(
                                     Brush.horizontalGradient(
-                                        listOf(palette.primaryColor, palette.secondaryColor)
+                                        if (isUnlocked) {
+                                            listOf(palette.primaryColor, palette.secondaryColor)
+                                        } else {
+                                            listOf(Color(0x44FFFFFF), Color(0x22FFFFFF))
+                                        }
                                     )
                                 )
                         )
@@ -381,30 +470,65 @@ private fun CosmicSectionCard(
                             )
                         }
                         Spacer(modifier = Modifier.width(8.dp))
+                    } else if (!isUnlocked) {
+                        Box(
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(12.dp))
+                                .background(Color(0x18FFFFFF))
+                                .border(1.dp, Color(0x28FFFFFF), RoundedCornerShape(12.dp))
+                                .padding(horizontal = 10.dp, vertical = 6.dp)
+                        ) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Icon(
+                                    imageVector = Icons.Default.Lock,
+                                    contentDescription = null,
+                                    tint = Color(0x99FFFFFF),
+                                    modifier = Modifier.size(12.dp)
+                                )
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text(
+                                    text = "CHƯA MỞ KHÓA",
+                                    color = Color(0x99FFFFFF),
+                                    fontSize = 10.sp,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
+                        }
+                        Spacer(modifier = Modifier.width(8.dp))
                     }
 
                     Box(
                         modifier = Modifier
                             .clip(RoundedCornerShape(12.dp))
                             .background(
-                                Brush.horizontalGradient(
-                                    listOf(palette.primaryColor, palette.secondaryColor)
-                                )
+                                if (isUnlocked) {
+                                    Brush.horizontalGradient(
+                                        listOf(palette.primaryColor, palette.secondaryColor)
+                                    )
+                                } else {
+                                    Brush.horizontalGradient(
+                                        listOf(Color(0x44FFFFFF), Color(0x33FFFFFF))
+                                    )
+                                }
                             )
                             .clickable(onClick = onSelect)
                             .padding(horizontal = 14.dp, vertical = 7.dp)
                     ) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Icon(
-                                imageVector = Icons.Default.Explore,
+                                imageVector = if (isUnlocked) Icons.Default.Explore else Icons.Default.Lock,
                                 contentDescription = null,
-                                tint = Color(0xFF0F0C20),
+                                tint = if (isUnlocked) Color(0xFF0F0C20) else Color.White,
                                 modifier = Modifier.size(14.dp)
                             )
                             Spacer(modifier = Modifier.width(4.dp))
                             Text(
-                                text = if (section.completedCount == section.totalPlanets) "Xem lại chặng" else "Du hành tới chặng",
-                                color = Color(0xFF0F0C20),
+                                text = when {
+                                    !isUnlocked -> "Xem trước chặng"
+                                    section.completedCount == section.totalPlanets -> "Xem lại chặng"
+                                    else -> "Du hành tới chặng"
+                                },
+                                color = if (isUnlocked) Color(0xFF0F0C20) else Color.White,
                                 fontSize = 11.sp,
                                 fontWeight = FontWeight.ExtraBold
                             )

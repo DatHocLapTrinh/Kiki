@@ -57,6 +57,7 @@ import com.example.ui.CosmicSectionBanner
 import com.example.ui.CosmicSectionConfig
 import com.example.ui.CosmicSectionData
 import com.example.ui.CosmicSectionSelectorDialog
+import com.example.ui.CosmicSectionCompletedDialog
 import com.example.ui.SpeechBubbleShape
 import com.example.ui.CosmicPlanetLessonPopup
 import com.example.ui.CosmicMilestoneDivider
@@ -131,7 +132,7 @@ fun JourneyMapScreen(
                 unlockAnim.snapTo(0f)
 
                 val stageStepPx = with(density) { 255.dp.toPx() }
-                val sectionBreakPx = with(density) { 56.dp.toPx() }
+                val sectionBreakPx = with(density) { 88.dp.toPx() }
                 val targetPlanetY = (targetIdx / 10) * sectionBreakPx + targetIdx * stageStepPx + with(density) { 85.dp.toPx() }
                 val viewportHeightPx = scrollState.viewportSize.toFloat()
                 val desiredScroll = (targetPlanetY - (if (viewportHeightPx > 0) viewportHeightPx * 0.45f else 600f)).toInt().coerceAtLeast(0)
@@ -282,7 +283,9 @@ fun JourneyMapScreen(
                                     }
                                 }
                             }
-                        }
+                        },
+                        onCheckChestClaimed = viewModel::isSectionChestClaimed,
+                        onClaimSectionChest = { secNum -> viewModel.claimSectionChest(secNum) }
                     )
                 }
             }
@@ -310,7 +313,7 @@ fun JourneyMapScreen(
         }
         if (showSectionSelector) {
             val stageStepPx = with(density) { 255.dp.toPx() }
-            val sectionBreakPx = with(density) { 56.dp.toPx() }
+            val sectionBreakPx = with(density) { 88.dp.toPx() }
             val approxStageIndex = ((scrollState.value.toFloat() + 220f) / stageStepPx).toInt().coerceIn(0, stages.lastIndex.coerceAtLeast(0))
             val activeSectionNum = (approxStageIndex / 10) + 1
 
@@ -328,6 +331,31 @@ fun JourneyMapScreen(
                     }
                 },
                 onDismiss = { showSectionSelector = false }
+            )
+        }
+
+        // ─── Hộp Thoại Chúc Mừng Hoàn Thành Chặng Vũ Trụ (Cosmic Section Completed) ───
+        val sectionCompletionEvent by viewModel.sectionCompletionEvent.observeAsState(null)
+        sectionCompletionEvent?.let { secEvent ->
+            CosmicSectionCompletedDialog(
+                event = secEvent,
+                onExploreNextSection = { nextSecNum ->
+                    viewModel.claimSectionChest(secEvent.completedSectionNumber)
+                    viewModel.clearSectionCompletionEvent()
+                    if (stages.isNotEmpty()) {
+                        val targetPlanetIdx = ((nextSecNum - 1) * 10).coerceIn(0, stages.lastIndex)
+                        val sectionBreakPx = with(density) { 88.dp.toPx() }
+                        val stageStepPx = with(density) { 255.dp.toPx() }
+                        val targetScroll = ((targetPlanetIdx / 10) * sectionBreakPx + targetPlanetIdx * stageStepPx).toInt().coerceAtLeast(0)
+                        coroutineScope.launch {
+                            scrollState.animateScrollTo(targetScroll, tween(900, easing = androidx.compose.animation.core.FastOutSlowInEasing))
+                        }
+                    }
+                },
+                onDismiss = {
+                    viewModel.claimSectionChest(secEvent.completedSectionNumber)
+                    viewModel.clearSectionCompletionEvent()
+                }
             )
         }
     }
@@ -469,10 +497,12 @@ private fun JourneyPath(
     unlockAnimProgress: Float = 0f,
     onStageStartQuest: (JourneyStageUiModel) -> Unit,
     onStageLongClick: ((JourneyStageUiModel, Int) -> Unit)? = null,
-    onEnsureVisible: ((Float, Float) -> Unit)? = null
+    onEnsureVisible: ((Float, Float) -> Unit)? = null,
+    onCheckChestClaimed: ((Int) -> Boolean)? = null,
+    onClaimSectionChest: ((Int) -> Unit)? = null
 ) {
     val stageStep = 255.dp
-    val sectionBreakHeight = 56.dp
+    val sectionBreakHeight = 88.dp
 
     val totalSectionBreaks = if (stages.isEmpty()) 0 else (stages.lastIndex / 10)
     val totalPathHeight = (stages.size * stageStep.value + totalSectionBreaks * sectionBreakHeight.value + 190).dp
@@ -559,8 +589,21 @@ private fun JourneyPath(
             stages.forEachIndexed { index, stage ->
                 if (index > 0 && index % 10 == 0) {
                     val nextSectionNum = (index / 10) + 1
+                    val prevSectionStartIdx = (nextSectionNum - 2) * 10
+                    val prevSectionStages = stages.drop(prevSectionStartIdx).take(10)
+                    val isPrevCompleted = prevSectionStages.isNotEmpty() && prevSectionStages.all { it.state == JourneyStageState.COMPLETED }
+                    val completedInPrev = prevSectionStages.count { it.state == JourneyStageState.COMPLETED }
+                    val isChestClaimed = onCheckChestClaimed?.invoke(nextSectionNum - 1) ?: false
+
                     CosmicMilestoneDivider(
                         sectionNum = nextSectionNum,
+                        isUnlocked = isPrevCompleted || (stage.state != JourneyStageState.LOCKED),
+                        completedInPrev = completedInPrev,
+                        totalInPrev = if (prevSectionStages.isNotEmpty()) prevSectionStages.size else 10,
+                        isChestClaimed = isChestClaimed,
+                        onClaimChest = {
+                            onClaimSectionChest?.invoke(nextSectionNum - 1)
+                        },
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(sectionBreakHeight)

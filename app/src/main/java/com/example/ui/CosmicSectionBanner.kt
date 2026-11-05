@@ -22,6 +22,8 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AutoAwesome
+import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.RocketLaunch
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -36,6 +38,8 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -385,60 +389,180 @@ fun CosmicSectionBanner(
 }
 
 /**
- * Đường mốc phân cách ngân hà tinh tế giữa các Chặng 10 hành tinh
+ * Cổng Dịch Chuyển Ngân Hà (Cosmic Stargate Checkpoint) giữa các Chặng 10 hành tinh:
+ * - Hiển thị trạng thái mở khóa hoặc yêu cầu hoàn thành chặng trước.
+ * - Tích hợp Rương thưởng vũ trụ (+100 XP, +50 Sao) khi vượt qua chặng.
  */
 @Composable
 fun CosmicMilestoneDivider(
     sectionNum: Int,
+    isUnlocked: Boolean = true,
+    completedInPrev: Int = 10,
+    totalInPrev: Int = 10,
+    isChestClaimed: Boolean = false,
+    onClaimChest: (() -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
+    val haptic = LocalHapticFeedback.current
     val palette = remember(sectionNum) { CosmicSectionConfig.getSectionPalette(sectionNum) }
+    val sectionData = remember(sectionNum) { CosmicSectionConfig.getSectionData(sectionNum, 0, 10) }
+
     Box(
-        modifier = modifier.padding(horizontal = 24.dp),
+        modifier = modifier
+            .padding(horizontal = 16.dp, vertical = 6.dp)
+            .fillMaxWidth(),
         contentAlignment = Alignment.Center
     ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.Center
+        Card(
+            modifier = Modifier
+                .fillMaxWidth()
+                .shadow(
+                    elevation = if (isUnlocked) 8.dp else 2.dp,
+                    shape = RoundedCornerShape(18.dp),
+                    ambientColor = if (isUnlocked) palette.glowColor else Color.Transparent,
+                    spotColor = if (isUnlocked) palette.primaryColor else Color.Transparent
+                ),
+            shape = RoundedCornerShape(18.dp),
+            colors = CardDefaults.cardColors(containerColor = Color.Transparent)
         ) {
             Box(
                 modifier = Modifier
-                    .weight(1f)
-                    .height(1.dp)
+                    .fillMaxWidth()
                     .background(
-                        Brush.horizontalGradient(
-                            listOf(Color.Transparent, palette.primaryColor.copy(alpha = 0.5f))
-                        )
+                        if (isUnlocked) {
+                            Brush.horizontalGradient(
+                                listOf(palette.bgStart, palette.bgMid, palette.bgEnd)
+                            )
+                        } else {
+                            Brush.horizontalGradient(
+                                listOf(Color(0xEE141224), Color(0xEE18142C), Color(0xEE121020))
+                            )
+                        }
                     )
-            )
-            Spacer(modifier = Modifier.width(10.dp))
-            Box(
-                modifier = Modifier
-                    .clip(RoundedCornerShape(12.dp))
-                    .background(palette.primaryColor.copy(alpha = 0.15f))
-                    .border(1.dp, palette.primaryColor.copy(alpha = 0.5f), RoundedCornerShape(12.dp))
-                    .padding(horizontal = 12.dp, vertical = 4.dp)
+                    .border(
+                        width = if (isUnlocked) 1.2.dp else 0.8.dp,
+                        brush = if (isUnlocked) Brush.horizontalGradient(palette.borderColors) else Brush.horizontalGradient(listOf(Color(0x33FFFFFF), Color(0x22FFFFFF))),
+                        shape = RoundedCornerShape(18.dp)
+                    )
+                    .padding(horizontal = 14.dp, vertical = 10.dp)
             ) {
-                Text(
-                    text = "CHẶNG $sectionNum".uppercase(),
-                    color = palette.primaryColor,
-                    fontSize = 11.sp,
-                    fontWeight = FontWeight.ExtraBold,
-                    letterSpacing = 1.sp
-                )
-            }
-            Spacer(modifier = Modifier.width(10.dp))
-            Box(
-                modifier = Modifier
-                    .weight(1f)
-                    .height(1.dp)
-                    .background(
-                        Brush.horizontalGradient(
-                            listOf(palette.primaryColor.copy(alpha = 0.5f), Color.Transparent)
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    // Icon cổng dịch chuyển bên trái
+                    Box(
+                        modifier = Modifier
+                            .size(38.dp)
+                            .clip(CircleShape)
+                            .background(if (isUnlocked) palette.primaryColor.copy(alpha = 0.18f) else Color(0x22FFFFFF))
+                            .border(1.dp, if (isUnlocked) palette.primaryColor.copy(alpha = 0.5f) else Color(0x33FFFFFF), CircleShape),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        if (isUnlocked) {
+                            Icon(
+                                imageVector = Icons.Default.RocketLaunch,
+                                contentDescription = null,
+                                tint = palette.primaryColor,
+                                modifier = Modifier.size(18.dp)
+                            )
+                        } else {
+                            Icon(
+                                imageVector = Icons.Default.Lock,
+                                contentDescription = null,
+                                tint = Color(0x88FFFFFF),
+                                modifier = Modifier.size(16.dp)
+                            )
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.width(12.dp))
+
+                    // Cột thông tin mốc Chặng
+                    Column(modifier = Modifier.weight(1f)) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text(
+                                text = "CỔNG DỊCH CHUYỂN • CHẶNG $sectionNum".uppercase(),
+                                color = if (isUnlocked) palette.primaryColor else Color(0x88FFFFFF),
+                                fontSize = 10.sp,
+                                fontWeight = FontWeight.ExtraBold,
+                                letterSpacing = 0.6.sp
+                            )
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Box(
+                                modifier = Modifier
+                                    .clip(RoundedCornerShape(6.dp))
+                                    .background(if (isUnlocked) palette.primaryColor.copy(alpha = 0.15f) else Color(0x18FFFFFF))
+                                    .padding(horizontal = 5.dp, vertical = 1.dp)
+                            ) {
+                                Text(
+                                    text = sectionData.cefrLevel.split("•").firstOrNull()?.trim() ?: "A2",
+                                    color = if (isUnlocked) palette.primaryColor else Color(0x99FFFFFF),
+                                    fontSize = 9.sp,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.height(2.dp))
+
+                        Text(
+                            text = sectionData.title,
+                            color = if (isUnlocked) Color.White else Color(0xB3FFFFFF),
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.Bold,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
                         )
-                    )
-            )
+
+                        Spacer(modifier = Modifier.height(2.dp))
+
+                        Text(
+                            text = if (isUnlocked) "✨ Cổng đã mở • Sẵn sàng du hành" else "🔒 Cần hoàn thành ${totalInPrev - completedInPrev} hành tinh nữa ở Chặng ${sectionNum - 1}",
+                            color = if (isUnlocked) palette.secondaryColor else Color(0x88FFFFFF),
+                            fontSize = 10.5.sp,
+                            fontWeight = FontWeight.Normal
+                        )
+                    }
+
+                    // Rương phần thưởng mốc chặng
+                    if (isUnlocked && onClaimChest != null) {
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Box(
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(12.dp))
+                                .background(
+                                    if (!isChestClaimed) {
+                                        Brush.horizontalGradient(listOf(Color(0xFFFBBF24), Color(0xFFFB923C)))
+                                    } else {
+                                        Brush.horizontalGradient(listOf(Color(0x33FFFFFF), Color(0x22FFFFFF)))
+                                    }
+                                )
+                                .clickable(enabled = !isChestClaimed) {
+                                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                    onClaimChest.invoke()
+                                }
+                                .padding(horizontal = 8.dp, vertical = 6.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Image(
+                                    painter = painterResource(R.drawable.ic_reward_chest),
+                                    contentDescription = "Rương phần thưởng",
+                                    modifier = Modifier.size(18.dp)
+                                )
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text(
+                                    text = if (!isChestClaimed) "+100 XP" else "Đã nhận",
+                                    color = if (!isChestClaimed) Color(0xFF0F172A) else Color(0xCCFFFFFF),
+                                    fontSize = 10.sp,
+                                    fontWeight = FontWeight.Black
+                                )
+                            }
+                        }
+                    }
+                }
+            }
         }
     }
 }
