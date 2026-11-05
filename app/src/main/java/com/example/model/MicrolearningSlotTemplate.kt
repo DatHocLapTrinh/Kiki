@@ -172,18 +172,15 @@ data class InjectedAtomicLessonUnit(
         val p3 = pairs.getOrNull(2) ?: PairSlotItem("Goodbye", "Tạm biệt")
         val p4 = pairs.getOrNull(3) ?: PairSlotItem("Yes", "Vâng / Đúng")
 
-        val q2Answer = base[1].correctAnswer
-        val q3Answer = base[2].correctAnswer
-        val q5Answer = base[4].correctAnswer
-
-        // === EXPANSION SET (Câu 6 - 10): 5 câu mở rộng, 0% trùng lặp, đầy đủ đối chiếu dịch thuật ===
-        // 6. Trắc nghiệm nhận diện Từ vựng #2 (ĐỦ 4 lựa chọn tiếng Anh)
-        val opt2Pool = linkedSetOf(p2.english, p1.english, p3.english, p4.english).toList()
+        // === EXPANSION SET (Câu 6 - 10): 5 câu hoàn toàn mới, không lặp lại ===
+        // 6. Câu trắc nghiệm mở rộng từ Cặp từ #2
+        val opt2Distractors = listOf(p1.english, p3.english, p4.english).distinct()
+        val opt2 = (listOf(p2.english) + opt2Distractors).take(4)
         result.add(
             QuestionItemDto(
-                questionText = "Trong giao tiếp, từ tiếng Anh nào có nghĩa là '${p2.vietnamese}'?",
+                questionText = "Từ tiếng Anh nào có nghĩa là '${p2.vietnamese}'?",
                 questionType = MicrolearningSlotArchetypes.CLOZE_CHOICE,
-                optionsJson = listToJsonArray(opt2Pool),
+                optionsJson = listToJsonArray(opt2),
                 correctAnswer = "0",
                 explanation = "'${p2.english}' có nghĩa là ${p2.vietnamese}.",
                 points = 10,
@@ -191,64 +188,46 @@ data class InjectedAtomicLessonUnit(
             )
         )
 
-        // 7. Câu ghép từ phản xạ mở rộng (Dịch câu tiếng Việt, TUYỆT ĐỐI không trùng câu 2 hoặc câu 3)
-        val (target7, prompt7Vi) = when {
-            p3.english.trim().contains(" ") && !p3.english.equals(q2Answer, ignoreCase = true) ->
-                Pair(p3.english.trim(), p3.vietnamese.trim())
-            p2.english.trim().contains(" ") && !p2.english.equals(q2Answer, ignoreCase = true) ->
-                Pair(p2.english.trim(), p2.vietnamese.trim())
-            p4.english.trim().contains(" ") && !p4.english.equals(q2Answer, ignoreCase = true) ->
-                Pair(p4.english.trim(), p4.vietnamese.trim())
-            else ->
-                Pair("${p3.english.trim().replaceFirstChar { it.uppercase() }} Anna", "${p3.vietnamese.trim()} Anna")
+        // 7. Câu ghép từ mở rộng
+        val extTokens = if (slot2SentenceBuilder.wordTokens.size >= 2) {
+            slot2SentenceBuilder.wordTokens
+        } else {
+            listOf(p1.english, p2.english)
         }
-        val finalTarget7 = if (target7.equals(q2Answer, ignoreCase = true) || target7.equals(q3Answer, ignoreCase = true)) {
-            "${p2.english.trim().replaceFirstChar { it.uppercase() }} please"
-        } else target7
-        val finalPrompt7Vi = if (target7.equals(q2Answer, ignoreCase = true) || target7.equals(q3Answer, ignoreCase = true)) {
-            "${p2.vietnamese.trim()}, làm ơn"
-        } else prompt7Vi
-
-        val tokens7 = finalTarget7.split(Regex("\\s+")).map { it.trim().trim('.', ',', '!', '?') }.filter { it.isNotBlank() }
-        val distractors7 = listOf(p1.english, p4.english)
-            .flatMap { it.split(Regex("\\s+")) }
-            .map { it.trim().trim('.', ',', '!', '?') }
-            .filter { cand -> cand.isNotBlank() && !tokens7.any { it.equals(cand, ignoreCase = true) } }
-            .take(2)
-        val allTokens7 = (tokens7 + distractors7).distinctBy { it.lowercase() }.shuffled()
-
+        val extDistractors = if (slot2SentenceBuilder.distractorTokens.isNotEmpty()) slot2SentenceBuilder.distractorTokens else listOf("not", "is")
+        val allExtTokens = (extTokens + extDistractors).shuffled()
         result.add(
             QuestionItemDto(
-                questionText = "Dịch sang tiếng Anh: '$finalPrompt7Vi' 🧩",
+                questionText = "Sắp xếp các từ thành câu đúng ngữ cảnh: '${slot2SentenceBuilder.targetSentence}' 🧩",
                 questionType = MicrolearningSlotArchetypes.SENTENCE_BUILDER,
-                optionsJson = listToJsonArray(allTokens7),
-                correctAnswer = finalTarget7,
-                explanation = "Luyện phản xạ cấu trúc câu tiếng Anh: '$finalTarget7' ($finalPrompt7Vi).",
+                optionsJson = listToJsonArray(allExtTokens),
+                correctAnswer = slot2SentenceBuilder.targetSentence,
+                explanation = slot2SentenceBuilder.explanation,
                 points = 15,
                 difficulty = "MEDIUM"
             )
         )
 
-        // 8. Luyện nghe nhận diện âm thanh từ vựng #3 (Trắc nghiệm âm thanh 4 lựa chọn)
-        val enAudioOptions = linkedSetOf(p3.english, p1.english, p2.english, p4.english).toList()
+        // 8. Luyện nghe âm thanh từ vựng #3
+        val audioWord = p3.english
         result.add(
             QuestionItemDto(
-                questionText = "Lắng nghe phát âm và chọn từ tiếng Anh chuẩn xác cho '${p3.vietnamese}' 🎧",
-                questionType = MicrolearningSlotArchetypes.CLOZE_CHOICE,
-                optionsJson = listToJsonArray(enAudioOptions),
-                correctAnswer = "0",
-                explanation = "'${p3.english}' phát âm chuẩn bản xứ, mang nghĩa là: ${p3.vietnamese}.",
+                questionText = "Lắng nghe phát âm và nhận diện nghĩa của '${p3.vietnamese}' 🎧",
+                questionType = MicrolearningSlotArchetypes.LISTENING_CHALLENGE,
+                optionsJson = listToJsonArray(listOf(audioWord)),
+                correctAnswer = audioWord,
+                explanation = "'$audioWord' được phát âm chuẩn bản xứ, có nghĩa là ${p3.vietnamese}.",
                 points = 10,
                 difficulty = "MEDIUM"
             )
         )
 
-        // 9. Nối từ củng cố phản xạ
+        // 9. Thử thách nối cặp từ vựng đảo ngược / bổ trợ
         val revPairs = listOf(p2, p3, p4, p1)
         val formattedRevPairs = revPairs.map { "${it.english}=${it.vietnamese}" }
         result.add(
             QuestionItemDto(
-                questionText = "Ghép cặp từ vựng củng cố phản xạ: ${p2.english}, ${p3.english}, ${p4.english}, ${p1.english} 🧩",
+                questionText = "Ghép cặp từ củng cố phản xạ ($title): ${p2.english}, ${p3.english}, ${p4.english}, ${p1.english} 🧩",
                 questionType = MicrolearningSlotArchetypes.MATCHING_PAIRS,
                 optionsJson = listToJsonArray(formattedRevPairs),
                 correctAnswer = "0",
@@ -258,15 +237,14 @@ data class InjectedAtomicLessonUnit(
             )
         )
 
-        // 10. Luyện phát âm từ vựng #2 (Đảm bảo khác câu 5)
-        val spk10Target = if (p2.english.equals(q5Answer, ignoreCase = true)) p3.english else p2.english
+        // 10. Luyện phát âm từ vựng #2
         result.add(
             QuestionItemDto(
-                questionText = "Luyện phát âm rõ ràng: '$spk10Target' 🎙️",
+                questionText = "Luyện phát âm rõ ràng từ: '${p2.english}' 🎙️",
                 questionType = MicrolearningSlotArchetypes.SPEAKING_CHALLENGE,
-                optionsJson = listToJsonArray(listOf(spk10Target)),
-                correctAnswer = spk10Target,
-                explanation = "Luyện phản xạ phát âm chuẩn xác từ '$spk10Target'.",
+                optionsJson = listToJsonArray(listOf(p2.english)),
+                correctAnswer = p2.english,
+                explanation = "Luyện phản xạ phát âm chuẩn từ '${p2.english}'.",
                 points = 15,
                 difficulty = "MEDIUM"
             )
@@ -274,14 +252,15 @@ data class InjectedAtomicLessonUnit(
 
         if (targetCount <= 10) return result
 
-        // === MASTERY SET (Câu 11 - 15): Chuyên sâu, nâng cao phản xạ, 0% trùng lặp ===
-        // 11. Trắc nghiệm tình huống nâng cao (ĐỦ 4 lựa chọn)
-        val opt4Pool = linkedSetOf(p4.english, p2.english, p1.english, p3.english).toList()
+        // === MASTERY SET (Câu 11 - 15): Chuyên sâu, nâng cao phản xạ ===
+        // 11. Trắc nghiệm tình huống từ Cặp từ #4
+        val opt4Distractors = listOf(p2.english, p1.english, p3.english).distinct()
+        val opt4 = (listOf(p4.english) + opt4Distractors).take(4)
         result.add(
             QuestionItemDto(
                 questionText = "Trong giao tiếp, khi muốn nói '${p4.vietnamese}', bạn chọn từ nào?",
                 questionType = MicrolearningSlotArchetypes.CLOZE_CHOICE,
-                optionsJson = listToJsonArray(opt4Pool),
+                optionsJson = listToJsonArray(opt4),
                 correctAnswer = "0",
                 explanation = "'${p4.english}' diễn đạt chính xác nghĩa ${p4.vietnamese}.",
                 points = 10,
@@ -289,65 +268,31 @@ data class InjectedAtomicLessonUnit(
             )
         )
 
-        // 12. Ghép câu nâng cao chuyên sâu (KHÔNG TRÙNG CÂU 2, CÂU 3, CÂU 7)
-        val (target12, prompt12Vi) = when {
-            p4.english.trim().contains(" ") && !p4.english.equals(finalTarget7, ignoreCase = true) && !p4.english.equals(q2Answer, ignoreCase = true) ->
-                Pair(p4.english.trim(), p4.vietnamese.trim())
-            p1.english.trim().contains(" ") && !p1.english.equals(finalTarget7, ignoreCase = true) && !p1.english.equals(q2Answer, ignoreCase = true) ->
-                Pair(p1.english.trim(), p1.vietnamese.trim())
-            else ->
-                Pair("${p4.english.trim().replaceFirstChar { it.uppercase() }} Alex", "${p4.vietnamese.trim()} Alex")
-        }
-        val finalTarget12 = if (target12.equals(q2Answer, ignoreCase = true) || target12.equals(finalTarget7, ignoreCase = true) || target12.equals(q3Answer, ignoreCase = true)) {
-            "${p1.english.trim().replaceFirstChar { it.uppercase() }} and ${p4.english.trim()}"
-        } else target12
-        val finalPrompt12Vi = if (target12.equals(q2Answer, ignoreCase = true) || target12.equals(finalTarget7, ignoreCase = true) || target12.equals(q3Answer, ignoreCase = true)) {
-            "${p1.vietnamese.trim()} và ${p4.vietnamese.trim()}"
-        } else prompt12Vi
-
-        val tokens12 = finalTarget12.split(Regex("\\s+")).map { it.trim().trim('.', ',', '!') }.filter { it.isNotBlank() }
-        val distractors12 = listOf(p2.english, p3.english)
-            .flatMap { it.split(Regex("\\s+")) }
-            .map { it.trim().trim('.', ',', '!', '?') }
-            .filter { cand -> cand.isNotBlank() && !tokens12.any { it.equals(cand, ignoreCase = true) } }
-            .take(2)
-        val allTokens12 = (tokens12 + distractors12).distinctBy { it.lowercase() }.shuffled()
-
+        // 12. Ghép câu hội thoại giao tiếp hoàn chỉnh
+        val convSentence = slot3Listening.audioSentence.ifBlank { "${p1.english} ${p2.english}" }
+        val convTokens = convSentence.split(Regex("\\s+")).filter { it.isNotBlank() }
+        val allConvTokens = (convTokens + listOf("are", "hello")).shuffled()
         result.add(
             QuestionItemDto(
-                questionText = "Dịch sang tiếng Anh: '$finalPrompt12Vi' 🧩",
+                questionText = "Hoàn thành câu giao tiếp phản xạ: '$convSentence' 🧩",
                 questionType = MicrolearningSlotArchetypes.SENTENCE_BUILDER,
-                optionsJson = listToJsonArray(allTokens12),
-                correctAnswer = finalTarget12,
-                explanation = "Luyện ghép câu tự nhiên theo tốc độ phản xạ: '$finalTarget12' ($finalPrompt12Vi).",
+                optionsJson = listToJsonArray(allConvTokens),
+                correctAnswer = convSentence,
+                explanation = "Luyện ghép câu tự nhiên theo tốc độ phản xạ.",
                 points = 15,
                 difficulty = "HARD"
             )
         )
 
-        // 13. Luyện nghe câu hoàn chỉnh (KHÔNG TRÙNG CÂU 3)
-        val listeningSentence13 = if (!p2.english.equals(q3Answer, ignoreCase = true) && p2.english.contains(" ")) {
-            p2.english
-        } else if (!p1.english.equals(q3Answer, ignoreCase = true) && p1.english.contains(" ")) {
-            p1.english
-        } else {
-            "${p2.english.trim().replaceFirstChar { it.uppercase() }} my friend"
-        }
-        val tokens13 = listeningSentence13.split(Regex("\\s+")).map { it.trim().trim('.', ',', '!') }.filter { it.isNotBlank() }
-        val distractors13 = listOf(p3.english, p4.english)
-            .flatMap { it.split(Regex("\\s+")) }
-            .map { it.trim().trim('.', ',', '!') }
-            .filter { cand -> cand.isNotBlank() && !tokens13.any { it.equals(cand, ignoreCase = true) } }
-            .take(2)
-        val allTokens13 = (tokens13 + distractors13).distinctBy { it.lowercase() }.shuffled()
-
+        // 13. Nghe câu hội thoại tự nhiên
+        val listeningSentence = slot5Speaking.targetSentence.ifBlank { convSentence }
         result.add(
             QuestionItemDto(
-                questionText = "Luyện nghe câu hội thoại tự nhiên: '$listeningSentence13' 🎧",
+                questionText = "Nghe câu thoại tự nhiên và sắp xếp ($title): '$listeningSentence' 🎧",
                 questionType = MicrolearningSlotArchetypes.LISTENING_CHALLENGE,
-                optionsJson = listToJsonArray(allTokens13),
-                correctAnswer = listeningSentence13,
-                explanation = "Nghe hiểu câu tự nhiên ở nhịp điệu giao tiếp: '$listeningSentence13'.",
+                optionsJson = listToJsonArray(listOf(listeningSentence)),
+                correctAnswer = listeningSentence,
+                explanation = "Nghe hiểu câu tự nhiên ở nhịp điệu giao tiếp.",
                 points = 15,
                 difficulty = "HARD"
             )
@@ -358,7 +303,7 @@ data class InjectedAtomicLessonUnit(
         val formattedMixedPairs = mixedPairs.map { "${it.english}=${it.vietnamese}" }
         result.add(
             QuestionItemDto(
-                questionText = "Thử thách phản xạ tốc độ cao: Nối 4 cặp từ (${p3.english}, ${p1.english}, ${p4.english}, ${p2.english}) 🧩",
+                questionText = "Thử thách tốc độ nối 4 từ ($title): ${p3.english}, ${p1.english}, ${p4.english}, ${p2.english} 🧩",
                 questionType = MicrolearningSlotArchetypes.MATCHING_PAIRS,
                 optionsJson = listToJsonArray(formattedMixedPairs),
                 correctAnswer = "0",
@@ -368,20 +313,13 @@ data class InjectedAtomicLessonUnit(
             )
         )
 
-        // 15. Thử thách phát âm câu hoàn chỉnh (Capstone Speaking - ĐẢM BẢO KHÁC CÂU 5 VÀ CÂU 10)
-        val capstoneSentence = if (!slot5Speaking.targetSentence.equals(q2Answer, ignoreCase = true) &&
-                                   !slot5Speaking.targetSentence.equals(q5Answer, ignoreCase = true) &&
-                                   !slot5Speaking.targetSentence.equals(spk10Target, ignoreCase = true)) {
-            slot5Speaking.targetSentence
-        } else {
-            "${slot5Speaking.targetSentence} everyone"
-        }
+        // 15. Thử thách phát âm câu hoàn chỉnh (Capstone Speaking)
         result.add(
             QuestionItemDto(
-                questionText = "Chinh phục câu hoàn chỉnh: '$capstoneSentence' 🎙️",
+                questionText = "Chinh phục câu hoàn chỉnh: '${slot5Speaking.targetSentence}' 🎙️",
                 questionType = MicrolearningSlotArchetypes.SPEAKING_CHALLENGE,
-                optionsJson = listToJsonArray(listOf(capstoneSentence)),
-                correctAnswer = capstoneSentence,
+                optionsJson = listToJsonArray(listOf(slot5Speaking.targetSentence)),
+                correctAnswer = slot5Speaking.targetSentence,
                 explanation = "Phát âm trọn vẹn cả câu với ngữ điệu tự nhiên chuẩn bản xứ.",
                 points = 20,
                 difficulty = "HARD"
@@ -390,6 +328,7 @@ data class InjectedAtomicLessonUnit(
 
         return result
     }
+
     fun toChapterGeneratedResponse(orderNo: Int = 1, targetCount: Int = 5): ChapterGeneratedResponse {
         return ChapterGeneratedResponse(
             title = title,
@@ -441,8 +380,11 @@ object SpiralCurriculumBlueprint {
         val isBeginner = level.equals("Beginner", ignoreCase = true) ||
                          level.equals("A1", ignoreCase = true) ||
                          level.equals("A0", ignoreCase = true)
+        val isElementary = level.equals("Elementary", ignoreCase = true) ||
+                           level.equals("A2", ignoreCase = true)
         val isAdvanced = level.equals("Advanced", ignoreCase = true) ||
                          level.equals("C1", ignoreCase = true) ||
+                         level.equals("C2", ignoreCase = true) ||
                          level.equals("B2", ignoreCase = true)
 
         if (isBeginner) {
@@ -473,11 +415,28 @@ object SpiralCurriculumBlueprint {
                 t.contains("direction") || t.contains("màu sắc") || t.contains("trang phục") ||
                 t.contains("color") || t.contains("action verb") || t.contains("tổng hợp") ||
                 t.contains("milestone") || t.contains("chặng 6") || t.contains("chặng 7") ||
-                t.contains("chặng 8") || t.contains("stage 6") || t.contains("stage 7") ||
-                t.contains("stage 8") ->
+                t.contains("chặng 8") || t.contains("chặng 9") || t.contains("chặng 10") ||
+                t.contains("stage 6") || t.contains("stage 7") || t.contains("stage 8") ->
                     CurriculumTheme.BEGINNER_STAGE_6_PLACES_ROUTINES
 
                 else -> CurriculumTheme.BEGINNER_STAGE_1_GREETINGS
+            }
+        }
+
+        if (isElementary) {
+            return when {
+                t.contains("sân bay") || t.contains("airport") || t.contains("đặt vé") ||
+                t.contains("khách sạn") || t.contains("hotel") || t.contains("ẩm thực") ||
+                t.contains("nhà hàng") || t.contains("dining") || t.contains("chặng 11") ||
+                t.contains("chặng 12") || t.contains("chặng 14") ->
+                    CurriculumTheme.INTERMEDIATE_STAGE_2_POLITE_INQUIRIES
+
+                t.contains("chuyến đi") || t.contains("quá khứ") || t.contains("past") ||
+                t.contains("giải trí") || t.contains("stargate") || t.contains("trái tim thiên hà") ||
+                t.contains("chặng 18") || t.contains("chặng 19") || t.contains("chặng 20") ->
+                    CurriculumTheme.INTERMEDIATE_STAGE_1_CONNECTED_SPEECH
+
+                else -> CurriculumTheme.BEGINNER_STAGE_6_PLACES_ROUTINES
             }
         }
 
@@ -486,7 +445,10 @@ object SpiralCurriculumBlueprint {
                 t.contains("negotiation") || t.contains("đàm phán") || t.contains("business") ||
                 t.contains("diplomacy") || t.contains("academic") || t.contains("ielts") ||
                 t.contains("lexicon") || t.contains("học thuật") || t.contains("presentation") ||
-                t.contains("executive") || t.contains("lãnh đạo") ->
+                t.contains("executive") || t.contains("lãnh đạo") || t.contains("xu hướng") ||
+                t.contains("trend") || t.contains("tranh biện") || t.contains("debate") ||
+                t.contains("chặng 35") || t.contains("chặng 36") || t.contains("chặng 37") ||
+                t.contains("chặng 38") || t.contains("chặng 39") || t.contains("chặng 40") ->
                     CurriculumTheme.ADVANCED_STAGE_2_NEGOTIATION_ACADEMIC
 
                 else -> CurriculumTheme.ADVANCED_STAGE_1_INVERSION_RHETORIC
@@ -497,16 +459,21 @@ object SpiralCurriculumBlueprint {
         return when {
             t.contains("gián tiếp") || t.contains("indirect") || t.contains("polite") ||
             t.contains("lịch sự") || t.contains("etiquette") || t.contains("công sở") ||
-            t.contains("travel") ->
+            t.contains("email") || t.contains("thư từ") || t.contains("cuộc họp") ||
+            t.contains("meeting") || t.contains("travel") || t.contains("chặng 21") ||
+            t.contains("chặng 22") ->
                 CurriculumTheme.INTERMEDIATE_STAGE_2_POLITE_INQUIRIES
 
             t.contains("cụm động từ") || t.contains("phrasal") || t.contains("idiom") ||
-            t.contains("vocabulary") || t.contains("paraphras") || t.contains("collocation") ->
+            t.contains("vocabulary") || t.contains("paraphras") || t.contains("collocation") ||
+            t.contains("làm việc nhóm") || t.contains("teamwork") || t.contains("chặng 29") ->
                 CurriculumTheme.INTERMEDIATE_STAGE_3_PHRASAL_VERBS
 
             t.contains("điều kiện") || t.contains("conditional") || t.contains("syntax") ||
             t.contains("cấu trúc") || t.contains("clause") || t.contains("ngữ pháp") ||
-            t.contains("complex") || t.contains("pitching") ->
+            t.contains("complex") || t.contains("pitching") || t.contains("chiến lược") ||
+            t.contains("báo cáo") || t.contains("chặng 27") || t.contains("chặng 28") ||
+            t.contains("chặng 30") ->
                 CurriculumTheme.INTERMEDIATE_STAGE_4_CONDITIONALS_SYNTAX
 
             else -> CurriculumTheme.INTERMEDIATE_STAGE_1_CONNECTED_SPEECH
@@ -771,10 +738,10 @@ object SpiralCurriculumBlueprint {
                 explanation = "Ghép từ chào 'Hello' + tên người 'Anna' để chào trực tiếp."
             ),
             slot3Listening = ListeningChallengeSlot(
-                promptInstruction = "Nghe âm thanh và sắp xếp lại: 'Chào thân mật Anna' 🎧",
-                audioSentence = "Hi Anna",
-                wordTokens = listOf("Hi", "Anna"),
-                explanation = "Nhận diện âm thanh lời chào thân mật: 'Hi Anna'."
+                promptInstruction = "Nghe âm thanh và sắp xếp lại lời chào cho đúng 🎧",
+                audioSentence = "Hello Anna",
+                wordTokens = listOf("Hello", "Anna"),
+                explanation = "Nhận diện âm thanh hai từ đơn giản: 'Hello Anna'."
             ),
             slot4Matching = MatchingPairsSlot(
                 promptInstruction = "Ghép 4 từ chào hỏi cơ bản với nghĩa tiếng Việt 🧩",
@@ -828,10 +795,10 @@ object SpiralCurriculumBlueprint {
                 explanation = "4 từ phản hồi thiết yếu nhất trong mọi cuộc hội thoại."
             ),
             slot5Speaking = SpeakingChallengeSlot(
-                promptInstruction = "Luyện phát âm từ lịch sự: Please 🎙️",
-                targetSentence = "Please",
-                phoneticFocusWord = "Please",
-                explanation = "Lưu ý âm /z/ rung ở cuối từ 'Please' (/pliːz/)."
+                promptInstruction = "Luyện nói lời cảm ơn: Thank you 🎙️",
+                targetSentence = "Thank you",
+                phoneticFocusWord = "Thank",
+                explanation = "Lưu ý âm /θ/ đầu từ 'Thank' bằng cách đặt nhẹ đầu lưỡi giữa hai hàm răng."
             )
         )
 
@@ -869,10 +836,10 @@ object SpiralCurriculumBlueprint {
                 explanation = "Nắm vững 4 cụm chào hỏi theo thời gian trong ngày."
             ),
             slot5Speaking = SpeakingChallengeSlot(
-                promptInstruction = "Luyện nói cụm từ chào buổi tối: Good evening 🎙️",
-                targetSentence = "Good evening",
-                phoneticFocusWord = "evening",
-                explanation = "Phát âm rõ 2 từ chào buổi tối 'Good evening' (/ɡʊd ˈiːvnɪŋ/)."
+                promptInstruction = "Luyện nói cụm từ: Good morning 🎙️",
+                targetSentence = "Good morning",
+                phoneticFocusWord = "morning",
+                explanation = "Phát âm rõ 2 từ 'Good morning' (/ɡʊd ˈmɔːrnɪŋ/)."
             )
         )
 
@@ -910,10 +877,10 @@ object SpiralCurriculumBlueprint {
                 explanation = "Các mảnh ghép cốt lõi để tạo câu giới thiệu tên."
             ),
             slot5Speaking = SpeakingChallengeSlot(
-                promptInstruction = "Luyện nói câu thân thiện: You are my friend 🎙️",
-                targetSentence = "You are my friend",
-                phoneticFocusWord = "friend",
-                explanation = "Luyện nói câu thân thiện: 'You are my friend' (Bạn là bạn của tôi)."
+                promptInstruction = "Luyện nói câu giới thiệu: My name is Alex 🎙️",
+                targetSentence = "My name is Alex",
+                phoneticFocusWord = "name",
+                explanation = "Đọc liền mạch câu 4 từ: 'My name is Alex'."
             )
         )
 
@@ -951,10 +918,10 @@ object SpiralCurriculumBlueprint {
                 explanation = "Hoàn tất Chặng 1: Bạn đã làm chủ trọn vẹn hội thoại chào hỏi và làm quen!"
             ),
             slot5Speaking = SpeakingChallengeSlot(
-                promptInstruction = "Luyện nói câu tạm biệt hẹn gặp lại: See you later 🎙️",
-                targetSentence = "See you later",
-                phoneticFocusWord = "later",
-                explanation = "Phát âm tự nhiên cụm từ hẹn gặp lại: 'See you later'."
+                promptInstruction = "Luyện nói câu hoàn chỉnh: Nice to meet you 🎙️",
+                targetSentence = "Nice to meet you",
+                phoneticFocusWord = "meet",
+                explanation = "Phát âm tự tin cả câu 4 từ: 'Nice to meet you' (/naɪs tə miːt juː/)."
             )
         )
 

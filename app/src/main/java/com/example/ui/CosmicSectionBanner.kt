@@ -6,6 +6,8 @@ import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -19,8 +21,11 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.RocketLaunch
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -48,7 +53,8 @@ data class CosmicSectionData(
     val title: String,
     val description: String,
     val completedCount: Int,
-    val totalPlanets: Int = 10
+    val totalPlanets: Int = 10,
+    val cefrLevel: String = "A0 - A1 • Khởi Động"
 )
 
 /**
@@ -73,34 +79,38 @@ object CosmicSectionConfig {
             title = "Hệ Mặt Trời & Giao Tiếp Cơ Bản",
             description = "Làm chủ những mẫu câu nền tảng nhất: chào hỏi, giới thiệu bản thân, gia đình, đồ vật và thời gian trong không gian vũ trụ.",
             completedCount = 0,
-            totalPlanets = 10
+            totalPlanets = 10,
+            cefrLevel = "A0 - A1 • Khởi Động"
         ),
         CosmicSectionData(
             sectionNumber = 2,
             startPlanet = 11,
             endPlanet = 20,
-            title = "Thiên Hà & Nơi Chốn Du Lịch",
-            description = "Tự tin hỏi đường, đặt vé tàu con thoi, giao dịch mua sắm và thưởng thức ẩm thực ngân hà.",
+            title = "Thiên Hà Tiên Nữ & Đời Sống Du Lịch",
+            description = "Băng qua trạm không gian, tự tin đặt vé tàu bay, nhận phòng khách sạn, giao thông di chuyển và thưởng thức ẩm thực ngân hà.",
             completedCount = 0,
-            totalPlanets = 10
+            totalPlanets = 10,
+            cefrLevel = "A2 • Đời Sống & Du Lịch"
         ),
         CosmicSectionData(
             sectionNumber = 3,
             startPlanet = 21,
             endPlanet = 30,
-            title = "Tinh Vân & Đời Sống Công Sở",
-            description = "Trình bày quan điểm cá nhân, trao đổi trong môi trường làm việc và tự do đàm thoại lưu loát.",
+            title = "Tinh Vân Vô Cực & Đời Sống Công Sở",
+            description = "Làm chủ văn phong email, điều phối cuộc họp, phỏng vấn tuyển dụng, xử lý khiếu nại và thuyết trình báo cáo dữ liệu chuyên nghiệp.",
             completedCount = 0,
-            totalPlanets = 10
+            totalPlanets = 10,
+            cefrLevel = "B1 - B2 • Công Sở & Dự Án"
         ),
         CosmicSectionData(
             sectionNumber = 4,
             startPlanet = 31,
             endPlanet = 40,
-            title = "Quần Thể Sao & Thuyết Trình Chuyên Sâu",
-            description = "Phát triển tư duy hùng biện, phản biện và thuyết phục đối tác bằng tiếng Anh nâng cao.",
+            title = "Quần Thể Sao Hắc Mã & Thuyết Trình C1",
+            description = "Khai mở kho tàng thuật ngữ học thuật, đảo ngữ hùng biện, đàm phán hợp đồng cấp cao và tranh biện phản xạ tốc độ cao.",
             completedCount = 0,
-            totalPlanets = 10
+            totalPlanets = 10,
+            cefrLevel = "C1 • Tinh Hoa & Hùng Biện"
         )
     )
 
@@ -121,8 +131,19 @@ object CosmicSectionConfig {
                 title = "Thiên Hà Chặng $sectionNumber: Mở Rộng Tri Thức",
                 description = "Chinh phục các chặng bài học nâng cao để tiến gần hơn tới đỉnh cao giao tiếp toàn diện.",
                 completedCount = completedPlanets.coerceIn(0, totalInThisSection),
-                totalPlanets = totalInThisSection
+                totalPlanets = totalInThisSection,
+                cefrLevel = "C2 • Bậc Thầy Vũ Trụ"
             )
+        }
+    }
+
+    fun getAllSections(stages: List<com.example.JourneyStageUiModel> = emptyList()): List<CosmicSectionData> {
+        return (1..4).map { secNum ->
+            val startIdx = (secNum - 1) * 10
+            val sectionStages = stages.drop(startIdx).take(10)
+            val completed = sectionStages.count { it.state == com.example.JourneyStageState.COMPLETED }
+            val total = if (sectionStages.isNotEmpty()) sectionStages.size else 10
+            getSectionData(secNum, completed, total)
         }
     }
 
@@ -194,7 +215,8 @@ object CosmicSectionConfig {
 @Composable
 fun CosmicSectionBanner(
     section: CosmicSectionData,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    onClick: (() -> Unit)? = null
 ) {
     val progress = (section.completedCount.toFloat() / section.totalPlanets.coerceAtLeast(1)).coerceIn(0f, 1f)
     val animatedProgress by animateFloatAsState(
@@ -223,6 +245,11 @@ fun CosmicSectionBanner(
                 shape = RoundedCornerShape(20.dp),
                 ambientColor = animatedGlow,
                 spotColor = animatedPrimary.copy(alpha = 0.5f)
+            )
+            .then(
+                if (onClick != null) {
+                    Modifier.clickable(onClick = onClick)
+                } else Modifier
             ),
         shape = RoundedCornerShape(20.dp),
         colors = CardDefaults.cardColors(containerColor = Color.Transparent)
@@ -318,20 +345,39 @@ fun CosmicSectionBanner(
                         .background(animatedPrimary.copy(alpha = 0.25f))
                 )
 
-                // Biểu tượng sách trang trí
+                // Biểu tượng Stargate mở Galactic Section Drawer / Selector
                 Box(
                     modifier = Modifier
-                        .size(42.dp)
-                        .clip(RoundedCornerShape(12.dp))
+                        .size(44.dp)
+                        .clip(RoundedCornerShape(14.dp))
                         .background(animatedPrimary.copy(alpha = 0.16f))
-                        .border(1.dp, animatedPrimary.copy(alpha = 0.4f), RoundedCornerShape(12.dp)),
+                        .border(1.2.dp, animatedPrimary.copy(alpha = 0.5f), RoundedCornerShape(14.dp))
+                        .then(
+                            if (onClick != null) {
+                                Modifier.clickable(onClick = onClick)
+                            } else Modifier
+                        ),
                     contentAlignment = Alignment.Center
                 ) {
-                    Image(
-                        painter = painterResource(R.drawable.ic_open_book),
-                        contentDescription = null,
-                        modifier = Modifier.size(24.dp)
-                    )
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.RocketLaunch,
+                            contentDescription = "Cổng dịch chuyển ngân hà",
+                            tint = animatedPrimary,
+                            modifier = Modifier.size(20.dp)
+                        )
+                        Spacer(modifier = Modifier.height(1.dp))
+                        Text(
+                            text = "CHẶNG",
+                            color = animatedPrimary,
+                            fontSize = 8.sp,
+                            fontWeight = FontWeight.ExtraBold,
+                            letterSpacing = 0.5.sp
+                        )
+                    }
                 }
             }
         }

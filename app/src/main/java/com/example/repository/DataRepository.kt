@@ -92,6 +92,7 @@ class DataRepository @Inject constructor(
             }
 
             val defaultStages = listOf(
+                // ─── CHẶNG 1: HỆ MẶT TRỜI (PLANETS 1 - 10) - BEGINNER A0-A1 ───
                 Pair("Chặng 1: Sao Thủy - Chào Hỏi & Làm Quen Cơ Bản (Mercury: Greetings & Hello)", "Bắt đầu cuộc hành trình từ hành tinh gần Mặt Trời nhất với các từ chào hỏi kinh điển: Hello, Hi, Thank you, My name is."),
                 Pair("Chặng 2: Sao Kim - Giới Thiệu Bản Thân & Hỏi Thăm (Venus: Identity & How Are You)", "Vượt qua biển mây ngọc trai Sao Kim, tự tin giới thiệu bản thân và hỏi thăm bạn bè: How are you, I am fine."),
                 Pair("Chặng 3: Trái Đất - Nhu Cầu & Đồ Vật Thiết Yếu (Earth: Daily Essentials & Requests)", "Dừng chân tại ốc đảo xanh Trái Đất, rèn luyện giao tiếp cơ bản khi xin phép, cảm ơn và gọi món đồ thiết yếu."),
@@ -101,7 +102,43 @@ class DataRepository @Inject constructor(
                 Pair("Chặng 7: Sao Thổ - Mua Sắm, Ăn Uống & Giá Cả (Saturn: Shopping, Dining & Prices)", "Lướt qua vành đai vàng Sao Thổ, tự tin đi mua sắm, gọi món nhà hàng và giao dịch thanh toán chuẩn xác."),
                 Pair("Chặng 8: Sao Thiên Vương - Sở Thích, Thói Quen & Đời Sống (Uranus: Hobbies & Daily Routine)", "Tiến vào vùng băng ngọc bích Sao Thiên Vương, tự do chia sẻ sở thích cá nhân, hoạt động thể thao và thói quen."),
                 Pair("Chặng 9: Sao Hải Vương - Cảm Xúc, Ý Kiến & Phản Xạ Nâng Cao (Neptune: Opinions & Reflexes)", "Vượt qua siêu bão lam thẳm Sao Hải Vương, bày tỏ quan điểm sâu sắc, cảm xúc và đàm thoại tự tin lưu loát."),
-                Pair("Chặng 10: Mặt Trời - Đỉnh Cao Vũ Trụ & Giao Tiếp Toàn Diện (Solar Apex: Fluent Mastery)", "Chạm tới vầng thái dương rực rỡ, hoàn tất xuất sắc toàn bộ lộ trình phản xạ tiếng Anh toàn diện đỉnh cao.")
+                Pair("Chặng 10: Mặt Trời - Đỉnh Cao Hệ Mặt Trời & Giao Tiếp Nền Tảng (Solar Apex: Fluent Mastery)", "Chạm tới vầng thái dương rực rỡ, hoàn tất xuất sắc toàn bộ lộ trình phản xạ tiếng Anh toàn diện đỉnh cao."),
+
+                // ─── CHẶNG 2: THIÊN HÀ TIÊN NỮ (PLANETS 11 - 20) - ELEMENTARY A2 ───
+                Pair("Chặng 11: Trạm Không Gian ISS - Đặt Vé & Sân Bay (ISS Outpost: Flight & Airport)", "Bước vào trạm trung chuyển ngân hà, học cách đặt vé tàu bay, làm thủ tục hải quan và ký gửi hành lý."),
+                Pair("Chặng 12: Hành Tinh Kepler - Khách Sạn & Nhận Phòng (Kepler: Hotels & Check-in)", "Dừng chân tại trạm dừng chân Kepler, tự tin đặt phòng khách sạn, yêu cầu dịch vụ phòng và giải quyết sự cố."),
+                Pair("Chặng 13: Vành Đai Tiểu Hành Tinh - Giao Thông & Di Chuyển (Asteroid Belt: Transit & Transport)", "Băng qua vành đai thiên thạch, làm chủ các mẫu câu bắt taxi, hỏi tuyến tàu điện ngầm và di chuyển trong thành phố."),
+                Pair("Chặng 14: Tinh Vân Đại Bàng - Ẩm Thực Nhà Hàng (Eagle Nebula: Dining & Restaurant)", "Thưởng thức ẩm thực giữa muôn vì sao, học cách đặt bàn trước, gọi món ăn đặc biệt và thanh toán hóa đơn."),
+                Pair("Chặng 15: Chòm Sao Lạp Hộ - Mua Sắm & Mặc Cả (Orion Cluster: Shopping & Bargaining)", "Ghé thăm khu chợ thương mại sầm uất Orion, tự tin hỏi kích cỡ, màu sắc, chính sách đổi trả và mặc cả giá tốt."),
+                Pair("Chặng 16: Sao Chổi Halley - Thời Tiết & Khí Hậu (Halley Comet: Weather & Seasons)", "Lướt trên đuôi sao chổi băng giá, nắm vững từ vựng miêu tả thời tiết các mùa và hỏi dự báo khí tượng."),
+                Pair("Chặng 17: Hành Tinh Băng Gliese - Khám Bệnh & Sức Khỏe (Gliese: Health & Pharmacy)", "Trạm y tế vũ trụ Gliese: mô tả triệu chứng bệnh thường gặp, mua thuốc tại tiệm thuốc tây và xử lý tình huống khẩn cấp."),
+                Pair("Chặng 18: Vòng Xoáy Thiên Hà - Hoạt Động Giải Trí (Galactic Spiral: Leisure & Events)", "Hòa mình vào lễ hội ánh sáng, chia sẻ về xem phim, hòa nhạc, bảo tàng và các địa điểm vui chơi giải trí."),
+                Pair("Chặng 19: Cổng Dịch Chuyển Stargate - Kể Lại Chuyến Đi (Stargate: Travel Stories & Past Tense)", "Kể lại chuyến phiêu lưu đã qua bằng thì quá khứ đơn, chia sẻ kỷ niệm đáng nhớ và trải nghiệm du lịch."),
+                Pair("Chặng 20: Trái Tim Thiên Hà - Đỉnh Cao Giao Tiếp Du Lịch A2 (Galactic Core: A2 Travel Mastery)", "Chinh phục trung tâm dải ngân hà rực rỡ, tự tin du lịch và sinh sống độc lập tại bất kỳ quốc gia nào."),
+
+                // ─── CHẶNG 3: TINH VÂN VÔ CỰC (PLANETS 21 - 30) - INTERMEDIATE B1-B2 ───
+                Pair("Chặng 21: Tinh Vân Con Cua - Email & Thư Từ Công Sở (Crab Nebula: Workplace Correspondence)", "Khởi động chặng công sở với kỹ năng viết email chuyên nghiệp, đặt lịch hẹn, phúc đáp lịch sự và gửi tài liệu."),
+                Pair("Chặng 22: Tinh Vân Chiếc Nhẫn - Cuộc Họp & Thảo Luận Dự Án (Ring Nebula: Project Meetings)", "Chủ động tham gia cuộc họp dự án, xin phát biểu, ngắt lời khéo léo và tóm tắt biên bản cuộc họp."),
+                Pair("Chặng 23: Cụm Sao Thần Bí - Phân Công Công Việc & Hạn Chót (Mystic Cluster: Deadlines & Tasks)", "Trao đổi tiến độ công việc, thương lượng phân bổ công việc, giải thích nguyên nhân chậm trễ và cam kết hoàn thành."),
+                Pair("Chặng 24: Chuỗi Siêu Tân Tinh - Bày Tỏ Quan Điểm & Đồng Thuận (Supernova: Expressing Opinions)", "Nêu quan điểm cá nhân rõ ràng, đồng ý hoặc bất đồng quan điểm một cách lịch sự, nhã nhặn và mang tính xây dựng."),
+                Pair("Chặng 25: Trạm Nghiên Cứu Ngoại Tinh - Phỏng Vấn Tuyển Dụng (Exo-Station: Job Interviews)", "Chinh phục nhà tuyển dụng: giới thiệu điểm mạnh, kinh nghiệm làm việc và mục tiêu phát triển sự nghiệp."),
+                Pair("Chặng 26: Vành Đai Bức Xạ - Xử Lý Phàn Nàn & Khủng Hoảng (Radiation Belt: Customer Support)", "Bình tĩnh xoa dịu khách hàng khó tính, lắng nghe khiếu nại, xin lỗi chân thành và đưa ra giải pháp khắc phục."),
+                Pair("Chặng 27: Sao Khổng Lồ Đỏ - Thuyết Trình Báo Cáo Số Liệu (Red Giant: Data & Presentations)", "Mở đầu bài thuyết trình lôi cuốn, mô tả biểu đồ tăng trưởng, giải thích xu hướng số liệu và tóm tắt kết luận."),
+                Pair("Chặng 28: Dòng Sông Khí Thiên Hà - Lập Kế Hoạch & Chiến Lược (Cosmic River: Planning & Strategy)", "Thảo luận về chiến lược kinh doanh dài hạn, phân bổ nguồn lực, đánh giá cơ hội và quản trị rủi ro tiềm ẩn."),
+                Pair("Chặng 29: Quần Tụ Sao Cầu - Làm Việc Nhóm & Động Viên (Globular Cluster: Teamwork & Phrasal Verbs)", "Xây dựng tinh thần đồng đội gắn kết, khen ngợi thành tích đồng nghiệp, khích lệ tinh thần và giải quyết bất đồng."),
+                Pair("Chặng 30: Đỉnh Cao Tinh Vân - Làm Chủ Giao Tiếp Công Sở B2 (Nebula Apex: Professional Fluency)", "Làm chủ trọn vẹn ngôn ngữ giao tiếp công sở hiện đại, tự tin tương tác với đối tác và đồng nghiệp quốc tế."),
+
+                // ─── CHẶNG 4: QUẦN THỂ SAO HẮC MÃ (PLANETS 31 - 40) - ADVANCED C1 ───
+                Pair("Chặng 31: Hố Sâu Không Gian - Thuật Ngữ Học Thuật Nâng Cao (Abyss: Advanced Academic Lexicon)", "Khai mở kho tàng thuật ngữ học thuật và báo chí chuyên sâu, nâng tầm độ chuẩn xác và tính trang trọng."),
+                Pair("Chặng 32: Sao Neutron - Nghệ Thuật Rào Đón Ngoại Giao (Neutron Star: Diplomatic Hedging)", "Sử dụng các cấu trúc rào đón ngoại giao tinh tế (Hedging) để đưa ra nhận định khách quan, thận trọng và uyển chuyển."),
+                Pair("Chặng 33: Luồng Chuẩn Tinh Quasar - Cú Pháp Đảo Ngữ Hùng Biện (Quasar Stream: Inverted Syntax & Rhetoric)", "Làm chủ nghệ thuật đảo ngữ (Inversion) và cấu trúc song hành để tạo điểm nhấn mạnh mẽ trong diễn thuyết."),
+                Pair("Chặng 34: Bức Xạ Tàn Dư Vũ Trụ - Lập Luận & Phản Biện Sắc Bén (Cosmic Echo: Critical Arguments)", "Xây dựng luận điểm logic đa tầng, chỉ ra lỗ hổng trong lập luận của đối phương và bảo vệ luận điểm thuyết phục."),
+                Pair("Chặng 35: Mạng Nhện Thiên Hà - Đàm Phán Hợp Đồng Cấp Cao (Cosmic Web: Strategic Negotiation)", "Nắm vững kỹ năng đàm phán nhượng bộ có điều kiện, tìm kiếm điểm chung có lợi đôi bên (Win-Win) và chốt thỏa thuận."),
+                Pair("Chặng 36: Vùng Tối Dark Matter - Phân Tích Xu Hướng Toàn Cầu (Dark Matter: Global Trends)", "Đàm luận sâu sắc về các xu hướng vĩ mô: trí tuệ nhân tạo, biến đổi khí hậu, chuỗi cung ứng toàn cầu và kinh tế số."),
+                Pair("Chặng 37: Lỗ Đen Siêu Khối - Hùng Biện & Truyền Cảm Hứng Lãnh Đạo (Supermassive Black Hole: Executive Pitch)", "Tỏa sáng với bài thuyết trình gọi vốn đầu tư (Pitching), truyền cảm hứng tầm nhìn chiến lược cho đội ngũ."),
+                Pair("Chặng 38: Siêu Cụm Laniakea - Thành Ngữ & Ẩn Dụ Bậc Thầy (Laniakea: Idioms & Nuances)", "Sử dụng thành thạo các thành ngữ cao cấp (Idiomatic expressions) và ẩn dụ tinh tế tự nhiên như người bản xứ."),
+                Pair("Chặng 39: Chân Trời Sự Kiện - Tranh Biện Tình Huống Hóc Búa (Event Horizon: High-Stakes Debate)", "Thực chiến tranh biện phản xạ tốc độ cao trong các tình huống ngoại giao phức tạp đòi hỏi bản lĩnh ngôn ngữ tuyệt đỉnh."),
+                Pair("Chặng 40: Điểm Kỳ Dị Toàn Năng - Bậc Thầy Tiếng Anh Vũ Trụ C1 (Cosmic Singularity: C1 Mastery)", "Chạm tới đỉnh cao năng lực ngôn ngữ C1: tư duy, phản biện và giao tiếp hoàn toàn bằng tiếng Anh tự nhiên như tiếng mẹ đẻ.")
             )
 
             if (hasLegacySample || existing.size < defaultStages.size) {
@@ -112,10 +149,16 @@ class DataRepository @Inject constructor(
             val existingTitles = dao.getActiveChapters().toSet()
             defaultStages.forEachIndexed { cIndex, (chapterTitle, chapterDesc) ->
                 if (!existingTitles.contains(chapterTitle)) {
+                    val targetLevel = when (cIndex) {
+                        in 0..9 -> "Beginner"
+                        in 10..19 -> "Elementary"
+                        in 20..29 -> "Intermediate"
+                        else -> "Advanced"
+                    }
                     val chapter = ChapterEntity(
                         title = chapterTitle,
                         description = chapterDesc,
-                        level = "Beginner",
+                        level = targetLevel,
                         subject = "English",
                         orderNo = cIndex,
                         isActive = 1
@@ -134,13 +177,18 @@ class DataRepository @Inject constructor(
 
     suspend fun getChaptersByPreference(level: String?, subject: String?): List<String> = withContext(Dispatchers.IO) {
         ensureSeeded()
-        val targetSubject = if (subject.isNullOrBlank() || subject != "English") "English" else subject
-        val targetLevel = level ?: "Beginner"
-        val results = dao.getChaptersByPreference(targetLevel, targetSubject)
-        if (results.isNotEmpty()) {
-            results.distinct()
+        val allActive = dao.getActiveChapters().distinct()
+        if (allActive.isNotEmpty()) {
+            allActive
         } else {
-            dao.getActiveChapters().distinct()
+            val targetSubject = if (subject.isNullOrBlank() || subject != "English") "English" else subject
+            val targetLevel = level ?: "Beginner"
+            val results = dao.getChaptersByPreference(targetLevel, targetSubject)
+            if (results.isNotEmpty()) {
+                results.distinct()
+            } else {
+                dao.getActiveChapters().distinct()
+            }
         }
     }
 

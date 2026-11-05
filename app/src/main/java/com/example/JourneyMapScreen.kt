@@ -56,6 +56,7 @@ import com.example.ui.BubbleArrowDirection
 import com.example.ui.CosmicSectionBanner
 import com.example.ui.CosmicSectionConfig
 import com.example.ui.CosmicSectionData
+import com.example.ui.CosmicSectionSelectorDialog
 import com.example.ui.SpeechBubbleShape
 import com.example.ui.CosmicPlanetLessonPopup
 import com.example.ui.CosmicMilestoneDivider
@@ -98,6 +99,7 @@ fun JourneyMapScreen(
     val stars by viewModel.stars.observeAsState(0)
     val isEnglish by viewModel.isEnglish.observeAsState(false)
     var showOutOfHeartsPrompt by remember { mutableStateOf(false) }
+    var showSectionSelector by remember { mutableStateOf(false) }
     val availableChapters by viewModel.availableChapters.observeAsState(emptyList())
     val chapterProgress by viewModel.chapterProgress.observeAsState(emptyList())
     val chaptersLoading by viewModel.chaptersLoading.observeAsState(false)
@@ -215,7 +217,11 @@ fun JourneyMapScreen(
                     section = currentSectionData,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(98.dp)
+                        .height(98.dp),
+                    onClick = {
+                        haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                        showSectionSelector = true
+                    }
                 )
             }
 
@@ -300,6 +306,28 @@ fun JourneyMapScreen(
                 onQuitLesson = {
                     showOutOfHeartsPrompt = false
                 }
+            )
+        }
+        if (showSectionSelector) {
+            val stageStepPx = with(density) { 255.dp.toPx() }
+            val sectionBreakPx = with(density) { 56.dp.toPx() }
+            val approxStageIndex = ((scrollState.value.toFloat() + 220f) / stageStepPx).toInt().coerceIn(0, stages.lastIndex.coerceAtLeast(0))
+            val activeSectionNum = (approxStageIndex / 10) + 1
+
+            CosmicSectionSelectorDialog(
+                currentSectionNumber = activeSectionNum,
+                stages = stages,
+                onSelectSection = { targetSectionNum ->
+                    showSectionSelector = false
+                    if (stages.isNotEmpty()) {
+                        val targetPlanetIdx = ((targetSectionNum - 1) * 10).coerceIn(0, stages.lastIndex)
+                        val targetScroll = ((targetPlanetIdx / 10) * sectionBreakPx + targetPlanetIdx * stageStepPx).toInt().coerceAtLeast(0)
+                        coroutineScope.launch {
+                            scrollState.animateScrollTo(targetScroll, tween(850, easing = androidx.compose.animation.core.FastOutSlowInEasing))
+                        }
+                    }
+                },
+                onDismiss = { showSectionSelector = false }
             )
         }
     }

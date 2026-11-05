@@ -462,4 +462,60 @@ class ScaffoldingCurriculumProgressiveRoadmapTest {
             )
         }
     }
+
+    @Test
+    fun test40CosmicPlanetsAcross4SectionsAreConfigured() {
+        val sections = com.example.ui.CosmicSectionConfig.getAllSections()
+        assertEquals(4, sections.size)
+
+        // Section 1: 1-10
+        assertEquals(1, sections[0].sectionNumber)
+        assertEquals(1, sections[0].startPlanet)
+        assertEquals(10, sections[0].endPlanet)
+        assertTrue(sections[0].cefrLevel.contains("A0") || sections[0].cefrLevel.contains("A1"))
+
+        // Section 2: 11-20
+        assertEquals(2, sections[1].sectionNumber)
+        assertEquals(11, sections[1].startPlanet)
+        assertEquals(20, sections[1].endPlanet)
+        assertTrue(sections[1].cefrLevel.contains("A2"))
+
+        // Section 3: 21-30
+        assertEquals(3, sections[2].sectionNumber)
+        assertEquals(21, sections[2].startPlanet)
+        assertEquals(30, sections[2].endPlanet)
+        assertTrue(sections[2].cefrLevel.contains("B1") || sections[2].cefrLevel.contains("B2"))
+
+        // Section 4: 31-40
+        assertEquals(4, sections[3].sectionNumber)
+        assertEquals(31, sections[3].startPlanet)
+        assertEquals(40, sections[3].endPlanet)
+        assertTrue(sections[3].cefrLevel.contains("C1"))
+
+        val totalPlanets = sections.sumOf { it.totalPlanets }
+        assertEquals(40, totalPlanets)
+    }
+
+    @Test
+    fun testThemeResolutionAcrossAll4Sections() {
+        val themeSec1 = com.example.model.SpiralCurriculumBlueprint.resolveTheme(
+            "Beginner", "Chặng 1: Sao Thủy - Chào Hỏi & Làm Quen Cơ Bản"
+        )
+        assertEquals(com.example.model.SpiralCurriculumBlueprint.CurriculumTheme.BEGINNER_STAGE_1_GREETINGS, themeSec1)
+
+        val themeSec2 = com.example.model.SpiralCurriculumBlueprint.resolveTheme(
+            "Elementary", "Chặng 11: Trạm Không Gian ISS - Đặt Vé & Sân Bay"
+        )
+        assertEquals(com.example.model.SpiralCurriculumBlueprint.CurriculumTheme.INTERMEDIATE_STAGE_2_POLITE_INQUIRIES, themeSec2)
+
+        val themeSec3 = com.example.model.SpiralCurriculumBlueprint.resolveTheme(
+            "Intermediate", "Chặng 21: Tinh Vân Con Cua - Email & Thư Từ Công Sở"
+        )
+        assertEquals(com.example.model.SpiralCurriculumBlueprint.CurriculumTheme.INTERMEDIATE_STAGE_2_POLITE_INQUIRIES, themeSec3)
+
+        val themeSec4 = com.example.model.SpiralCurriculumBlueprint.resolveTheme(
+            "Advanced", "Chặng 35: Mạng Nhện Thiên Hà - Đàm Phán Hợp Đồng Cấp Cao"
+        )
+        assertEquals(com.example.model.SpiralCurriculumBlueprint.CurriculumTheme.ADVANCED_STAGE_2_NEGOTIATION_ACADEMIC, themeSec4)
+    }
 }
