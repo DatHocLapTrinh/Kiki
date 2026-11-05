@@ -48,6 +48,8 @@ import com.example.audio.SpeechRecognitionManager
 import com.example.model.GenerateChapterRequest
 import com.example.network.KikiBackendApiService
 import com.example.model.LeagueSettlementResult
+import com.example.notification.KikiNotificationManager
+import com.example.resolveBadgeTrophyResource
 import com.example.model.LeagueTier
 import com.example.model.LeagueZone
 import com.example.model.RankPlayer
@@ -547,6 +549,18 @@ class StudyViewModel @Inject constructor(
             val cured = prefs.getInt("cured_weak_points_count_$userId", 0)
             _curedWeakPointsCount.value = cured
             val mastered = repository.getMasteredVocabularyCount(userId)
+
+            // Tự động kiểm tra mở khóa nếu người dùng đã đạt yêu cầu từ trước
+            val streak = _streak.value ?: 0
+            if (streak >= 7 && !badges.contains(BadgeId.PERSISTENT_SCHOLAR.id)) {
+                checkAndUnlockBadge(BadgeId.PERSISTENT_SCHOLAR)
+            }
+            if (cured >= 10 && !badges.contains(BadgeId.CHIEF_DOCTOR.id)) {
+                checkAndUnlockBadge(BadgeId.CHIEF_DOCTOR)
+            }
+            if (mastered >= 30 && !badges.contains(BadgeId.SUPER_MEMORY.id)) {
+                checkAndUnlockBadge(BadgeId.SUPER_MEMORY)
+            }
             _masteredVocabCount.value = mastered
         }
     }
@@ -566,11 +580,30 @@ class StudyViewModel @Inject constructor(
                         unlockedIds = updated,
                         streak = _streak.value ?: 0,
                         curedWeakPoints = _curedWeakPointsCount.value ?: 0,
-                        masteredVocabCount = _masteredVocabCount.value ?: 0
+                        masteredVocabCount = _masteredVocabCount.value ?: 0,
+                        completedLessons = 1,
+                        hasNightOwl = badgeId == BadgeId.NIGHT_OWL,
+                        hasSpeakingAce = badgeId == BadgeId.SPEAKING_ACE,
+                        allStagesCompleted = badgeId == BadgeId.ALL_STAGES_MASTERY
                     )
                     val b = all.firstOrNull { it.id == badgeId.id }
                     if (b != null) {
                         _newlyUnlockedBadge.value = b
+                        // 1. Âm thanh vinh danh Fanfare
+                        soundEffectManager.playFanfare()
+
+                        // 2. Thông báo hệ thống Android (Push / Local Notification)
+                        val isEn = _isEnglish.value ?: false
+                        val title = if (isEn) b.titleEn else b.titleVi
+                        val desc = if (isEn) b.descriptionEn else b.descriptionVi
+                        val badgeRes = resolveBadgeTrophyResource(b.id, b.iconKey)
+                        KikiNotificationManager.showAchievementUnlockedNotification(
+                            context = appContext,
+                            badgeTitle = title,
+                            badgeDescription = desc,
+                            badgeDrawableRes = badgeRes,
+                            isEnglish = isEn
+                        )
                     }
                 }
             }
@@ -1192,6 +1225,13 @@ class StudyViewModel @Inject constructor(
                 }
                 if (results.any { it.type == QuestionType.SPEAKING_CHALLENGE && (it.pronunciationScore ?: 0) >= 85 }) {
                     checkAndUnlockBadge(BadgeId.SPEAKING_ACE)
+                }
+                val stages = _availableChapters.value?.let { chapters ->
+                    val progress = _chapterProgress.value ?: emptyList()
+                    com.example.JourneyStageMapper.mapStages(chapters, progress)
+                } ?: emptyList()
+                if (stages.isNotEmpty() && stages.all { it.state == com.example.JourneyStageState.COMPLETED }) {
+                    checkAndUnlockBadge(BadgeId.ALL_STAGES_MASTERY)
                 }
             }
 

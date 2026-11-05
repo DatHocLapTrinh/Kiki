@@ -989,22 +989,22 @@ private fun ProfileClusterHeader(title: String, icon: ImageVector, color: Color)
 
 fun resolveBadgeTrophyResource(badgeId: String, iconKey: String): Int {
     return when (badgeId) {
-        "first_step" -> R.drawable.trophy_bronze_curious_seeker
-        "persistent_scholar" -> R.drawable.trophy_silver_diligent_learner
-        "night_owl" -> R.drawable.trophy_silver
-        "super_memory" -> R.drawable.trophy_gold_scholarly_achiever
-        "chief_doctor" -> R.drawable.trophy_gold
-        "speaking_ace" -> R.drawable.trophy_platinum_master_graduate
-        "all_stages_mastery" -> R.drawable.trophy_diamond_grand_polymath
+        "first_step" -> R.drawable.badge_first_step
+        "persistent_scholar" -> R.drawable.badge_persistent_scholar
+        "night_owl" -> R.drawable.badge_night_owl
+        "super_memory" -> R.drawable.badge_super_memory
+        "chief_doctor" -> R.drawable.badge_chief_doctor
+        "speaking_ace" -> R.drawable.badge_speaking_ace
+        "all_stages_mastery" -> R.drawable.badge_all_stages_mastery
         else -> when (iconKey) {
-            "NIGHT_OWL" -> R.drawable.trophy_silver
-            "CHIEF_DOCTOR" -> R.drawable.trophy_gold
-            "SUPER_MEMORY" -> R.drawable.trophy_gold_scholarly_achiever
-            "PERSISTENT_SCHOLAR" -> R.drawable.trophy_silver_diligent_learner
-            "FIRST_STEP" -> R.drawable.trophy_bronze_curious_seeker
-            "SPEAKING_ACE" -> R.drawable.trophy_platinum_master_graduate
-            "ALL_STAGES_MASTERY" -> R.drawable.trophy_diamond_grand_polymath
-            else -> R.drawable.trophy_gold
+            "NIGHT_OWL" -> R.drawable.badge_night_owl
+            "CHIEF_DOCTOR" -> R.drawable.badge_chief_doctor
+            "SUPER_MEMORY" -> R.drawable.badge_super_memory
+            "PERSISTENT_SCHOLAR" -> R.drawable.badge_persistent_scholar
+            "FIRST_STEP" -> R.drawable.badge_first_step
+            "SPEAKING_ACE" -> R.drawable.badge_speaking_ace
+            "ALL_STAGES_MASTERY" -> R.drawable.badge_all_stages_mastery
+            else -> R.drawable.badge_first_step
         }
     }
 }
@@ -1274,48 +1274,59 @@ private fun ProfileAchievements(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
+                Row(
+                    modifier = Modifier
+                        .weight(1f)
+                        .padding(end = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
                     Box(
                         modifier = Modifier
                             .size(34.dp)
                             .clip(CircleShape)
-                            .background(Color(0x33FFD166)),
+                            .background(Color(0x3351FAC1)),
                         contentAlignment = Alignment.Center
                     ) {
                         AsyncImage(
-                            model = R.drawable.trophy_gold,
+                            model = R.drawable.badge_all_stages_mastery,
                             contentDescription = null,
-                            modifier = Modifier.size(24.dp),
+                            modifier = Modifier.size(26.dp),
                             contentScale = ContentScale.Fit
                         )
                     }
                     Spacer(modifier = Modifier.width(10.dp))
-                    Column {
+                    Column(modifier = Modifier.weight(1f, fill = false)) {
                         Text(
-                            text = if (isEnglish) "Mastery Trophy Hall" else "Bộ Sưu Tập Thành Tựu & Cúp",
+                            text = if (isEnglish) "Achievement Badges" else "Bộ Sưu Tập Huy Hiệu",
                             color = Color.White,
-                            fontSize = 16.sp,
-                            fontWeight = FontWeight.Black
+                            fontSize = 15.sp,
+                            fontWeight = FontWeight.Black,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
                         )
                         Text(
-                            text = if (isEnglish) "Tap any trophy to view milestones" else "Chạm vào từng cúp để xem chi tiết",
+                            text = if (isEnglish) "Tap any badge to view milestones" else "Chạm vào huy hiệu để xem chi tiết",
                             color = Color(0x99FFFFFF),
-                            fontSize = 10.sp
+                            fontSize = 10.sp,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
                         )
                     }
                 }
                 Box(
                     modifier = Modifier
                         .clip(RoundedCornerShape(12.dp))
-                        .background(Color(0x33FFD166))
-                        .border(1.2.dp, Color(0xFFFFD166), RoundedCornerShape(12.dp))
-                        .padding(horizontal = 10.dp, vertical = 4.dp)
+                        .background(Color(0x3351FAC1))
+                        .border(1.2.dp, Color(0xFF51FAC1), RoundedCornerShape(12.dp))
+                        .padding(horizontal = 10.dp, vertical = 5.dp)
                 ) {
                     Text(
                         text = "$unlockedCount/${allBadges.size}",
-                        color = Color(0xFFFFD166),
+                        color = Color(0xFF51FAC1),
                         fontSize = 12.sp,
-                        fontWeight = FontWeight.Black
+                        fontWeight = FontWeight.Black,
+                        maxLines = 1,
+                        softWrap = false
                     )
                 }
             }
@@ -1328,7 +1339,7 @@ private fun ProfileAchievements(
             ) {
                 items(allBadges.size) { index ->
                     val badge = allBadges[index]
-                    val trophyRes = resolveBadgeTrophyResource(badge.id, badge.iconKey)
+                    val badgeRes = resolveBadgeTrophyResource(badge.id, badge.iconKey)
 
                     Column(
                         horizontalAlignment = Alignment.CenterHorizontally,
@@ -1344,20 +1355,20 @@ private fun ProfileAchievements(
                                 .clip(CircleShape)
                                 .background(
                                     if (badge.isUnlocked) Brush.radialGradient(
-                                        listOf(Color(0x66FFD166), Color(0x333F2B66), Color(0xFF191032))
+                                        listOf(Color(0x6651FAC1), Color(0x331F3A3A), Color(0xFF102220))
                                     ) else Brush.radialGradient(
                                         listOf(Color(0x222C2444), Color(0xFF120E22))
                                     )
                                 )
                                 .border(
                                     2.dp,
-                                    if (badge.isUnlocked) Color(0xFFFFD166) else Color(0x445E5876),
+                                    if (badge.isUnlocked) Color(0xFF51FAC1) else Color(0x445E5876),
                                     CircleShape
                                 ),
                             contentAlignment = Alignment.Center
                         ) {
                             AsyncImage(
-                                model = trophyRes,
+                                model = badgeRes,
                                 contentDescription = if (isEnglish) badge.titleEn else badge.titleVi,
                                 contentScale = ContentScale.Fit,
                                 modifier = Modifier.size(46.dp),
@@ -1387,11 +1398,13 @@ private fun ProfileAchievements(
                         Text(
                             text = if (isEnglish) badge.titleEn else badge.titleVi,
                             color = if (badge.isUnlocked) Color.White else Color(0x77FFFFFF),
-                            fontSize = 11.sp,
+                            fontSize = 10.5.sp,
                             fontWeight = FontWeight.Bold,
-                            maxLines = 1,
+                            minLines = 2,
+                            maxLines = 2,
                             overflow = TextOverflow.Ellipsis,
-                            textAlign = TextAlign.Center
+                            textAlign = TextAlign.Center,
+                            lineHeight = 13.sp
                         )
 
                         Spacer(modifier = Modifier.height(2.dp))
@@ -1417,7 +1430,7 @@ private fun AchievementDetailDialog(
     onDismiss: () -> Unit
 ) {
     if (badge == null) return
-    val trophyRes = resolveBadgeTrophyResource(badge.id, badge.iconKey)
+    val badgeRes = resolveBadgeTrophyResource(badge.id, badge.iconKey)
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -1428,12 +1441,12 @@ private fun AchievementDetailDialog(
                     modifier = Modifier
                         .size(54.dp)
                         .clip(CircleShape)
-                        .background(if (badge.isUnlocked) Color(0x33FFD166) else Color(0x22444455))
-                        .border(1.5.dp, if (badge.isUnlocked) Color(0xFFFFD166) else Color(0x44888899), CircleShape),
+                        .background(if (badge.isUnlocked) Color(0x3351FAC1) else Color(0x22444455))
+                        .border(1.5.dp, if (badge.isUnlocked) Color(0xFF51FAC1) else Color(0x44888899), CircleShape),
                     contentAlignment = Alignment.Center
                 ) {
                     AsyncImage(
-                        model = trophyRes,
+                        model = badgeRes,
                         contentDescription = null,
                         contentScale = ContentScale.Fit,
                         modifier = Modifier.size(40.dp),
