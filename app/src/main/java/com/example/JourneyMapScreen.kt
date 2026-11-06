@@ -102,6 +102,7 @@ fun JourneyMapScreen(
     val streakShields by viewModel.streakShields.observeAsState(0)
     val stars by viewModel.stars.observeAsState(0)
     val isEnglish by viewModel.isEnglish.observeAsState(false)
+    val isCosmicPassActive by viewModel.isCosmicPassActive.observeAsState(false)
     var showOutOfHeartsPrompt by remember { mutableStateOf(false) }
     var showSectionSelector by remember { mutableStateOf(false) }
     val availableChapters by viewModel.availableChapters.observeAsState(emptyList())
@@ -276,7 +277,8 @@ fun JourneyMapScreen(
                 avatarUri = avatarUri,
                 streak = streak,
                 hearts = hearts,
-                streakShields = streakShields
+                streakShields = streakShields,
+                isCosmicPassActive = isCosmicPassActive
             )
 
             // ─── STICKY COSMIC SECTION BANNER (Ghim cố định ở đầu màn hình) ───
@@ -504,7 +506,8 @@ private fun CosmicUserStatsBanner(
     avatarUri: String?,
     streak: Int,
     hearts: Int,
-    streakShields: Int
+    streakShields: Int,
+    isCosmicPassActive: Boolean = false
 ) {
     Row(
         modifier = Modifier
@@ -588,9 +591,9 @@ private fun CosmicUserStatsBanner(
                 )
                 Spacer(modifier = Modifier.width(6.dp))
                 Text(
-                    text = "$hearts",
-                    color = Color.White,
-                    fontSize = 17.sp,
+                    text = if (isCosmicPassActive) "∞" else "$hearts",
+                    color = if (isCosmicPassActive) Color(0xFFFFD700) else Color.White,
+                    fontSize = if (isCosmicPassActive) 21.sp else 17.sp,
                     fontWeight = FontWeight.ExtraBold
                 )
             }

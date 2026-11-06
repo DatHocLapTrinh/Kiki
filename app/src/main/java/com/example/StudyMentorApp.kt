@@ -972,6 +972,7 @@ fun MainNavigation(viewModel: StudyViewModel, onLogout: () -> Unit) {
 
         val strings = LocalAppStrings.current
         var showDuolingoMoreSheet by remember { mutableStateOf(false) }
+        var showCosmicPassPaywall by remember { mutableStateOf(false) }
 
         val navBackStackEntry by navController.currentBackStackEntryAsState()
         val currentNavRoute = navBackStackEntry?.destination?.route
@@ -983,6 +984,10 @@ fun MainNavigation(viewModel: StudyViewModel, onLogout: () -> Unit) {
             DuolingoMoreFloatingMenu(
                 strings = strings,
                 onDismiss = { showDuolingoMoreSheet = false },
+                onNavigateCosmicPass = {
+                    showDuolingoMoreSheet = false
+                    showCosmicPassPaywall = true
+                },
                 onNavigateProfile = {
                     showDuolingoMoreSheet = false
                     viewModel.setKikiExplorerSection(KikiExplorerSection.PROFILE)
@@ -1010,6 +1015,18 @@ fun MainNavigation(viewModel: StudyViewModel, onLogout: () -> Unit) {
                         restoreState = true
                     }
                 }
+            )
+        }
+
+        if (showCosmicPassPaywall) {
+            val isCosmicPassActive by viewModel.isCosmicPassActive.observeAsState(false)
+            com.example.ui.CosmicPassPaywallDialog(
+                isCurrentActive = isCosmicPassActive,
+                onSubscribeTier = { tier ->
+                    viewModel.subscribeCosmicPass(tier)
+                    showCosmicPassPaywall = false
+                },
+                onDismiss = { showCosmicPassPaywall = false }
             )
         }
 
@@ -1203,6 +1220,7 @@ fun NavItem(
 fun DuolingoMoreFloatingMenu(
     strings: AppStrings,
     onDismiss: () -> Unit,
+    onNavigateCosmicPass: () -> Unit,
     onNavigateProfile: () -> Unit,
     onNavigateVocab: () -> Unit,
     onNavigateSettings: () -> Unit
@@ -1269,6 +1287,17 @@ fun DuolingoMoreFloatingMenu(
 
             HorizontalDivider(color = Color(0x1A51FAC1), thickness = 0.8.dp)
 
+            // 👑 Nạp VIP / Kiki Cosmic Pass (Đặc Quyền Vũ Trụ)
+            CosmicPassMenuItem(
+                isEnglish = isEnglish,
+                onClick = {
+                    haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                    onNavigateCosmicPass()
+                }
+            )
+
+            HorizontalDivider(color = Color(0x33FFD700), thickness = 0.8.dp)
+
             // 1. Hồ sơ (gồm danh hiệu và cột mốc bên trong)
             DuolingoMenuItem(
                 title = if (isEnglish) "Profile & Cosmic Badges" else "Hồ Sơ & Danh Hiệu Cột Mốc",
@@ -1309,6 +1338,100 @@ fun DuolingoMoreFloatingMenu(
                 }
             )
         }
+    }
+}
+
+@Composable
+private fun CosmicPassMenuItem(
+    isEnglish: Boolean,
+    onClick: () -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(18.dp))
+            .background(
+                Brush.horizontalGradient(
+                    listOf(Color(0xFF2C1D0B), Color(0xFF1B1428))
+                )
+            )
+            .border(
+                width = 1.3.dp,
+                brush = Brush.horizontalGradient(
+                    listOf(Color(0xFFFFD700), Color(0xFFFFA500), Color(0xFFC084FC))
+                ),
+                shape = RoundedCornerShape(18.dp)
+            )
+            .clickable(onClick = onClick)
+            .padding(horizontal = 12.dp, vertical = 11.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        // Avatar tròn 3D Royal Cosmic Kiki viền vàng kim
+        Box(
+            modifier = Modifier
+                .size(46.dp)
+                .clip(CircleShape)
+                .background(Color(0xFF180F03))
+                .border(1.5.dp, Color(0xFFFFD700), CircleShape),
+            contentAlignment = Alignment.Center
+        ) {
+            Image(
+                painter = painterResource(id = R.drawable.kiki_cosmic_pass_hero),
+                contentDescription = "Royal Cosmic Kiki",
+                modifier = Modifier
+                    .fillMaxSize()
+                    .clip(CircleShape),
+                contentScale = androidx.compose.ui.layout.ContentScale.Crop
+            )
+        }
+
+        Spacer(modifier = Modifier.width(12.dp))
+
+        Column(modifier = Modifier.weight(1f)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    text = "KIKI COSMIC PASS 👑",
+                    color = Color(0xFFFFD700),
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.Black,
+                    letterSpacing = 0.5.sp
+                )
+                Spacer(modifier = Modifier.width(6.dp))
+                Box(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(6.dp))
+                        .background(
+                            Brush.horizontalGradient(
+                                listOf(Color(0xFFFFD700), Color(0xFFFB923C))
+                            )
+                        )
+                        .padding(horizontal = 6.dp, vertical = 1.5.dp)
+                ) {
+                    Text(
+                        text = "VIP",
+                        color = Color(0xFF180E02),
+                        fontSize = 9.sp,
+                        fontWeight = FontWeight.Black
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(2.dp))
+
+            Text(
+                text = if (isEnglish) "Unlimited Hearts • 24/7 AI • x2 XP" else "Vô hạn Tim • AI Tutor 24/7 • x2 EXP",
+                color = Color(0xCCFFFFFF),
+                fontSize = 10.5.sp,
+                fontWeight = FontWeight.Medium
+            )
+        }
+
+        Icon(
+            imageVector = Icons.AutoMirrored.Filled.ArrowForwardIos,
+            contentDescription = null,
+            tint = Color(0xFFFFD700),
+            modifier = Modifier.size(13.dp)
+        )
     }
 }
 

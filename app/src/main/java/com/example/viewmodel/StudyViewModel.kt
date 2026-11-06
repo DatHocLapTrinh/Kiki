@@ -423,7 +423,39 @@ class StudyViewModel @Inject constructor(
     private val _hearts = MutableLiveData(5)
     val hearts: LiveData<Int> = _hearts
 
+    // --- Kiki Cosmic Pass (VIP / Super Subscription) ---
+    private val _isCosmicPassActive = MutableLiveData(false)
+    val isCosmicPassActive: LiveData<Boolean> = _isCosmicPassActive
+
+    fun subscribeCosmicPass(tier: com.example.model.CosmicPassTier): Boolean {
+        val currentShields = _streakShields.value ?: 1
+        val currentStarsVal = _stars.value ?: 200
+
+        when (tier) {
+            com.example.model.CosmicPassTier.ANNUAL -> {
+                _isCosmicPassActive.value = true
+                _hearts.value = 5
+                _streakShields.value = currentShields + 10
+                _stars.value = currentStarsVal + 500
+            }
+            com.example.model.CosmicPassTier.MONTHLY -> {
+                _isCosmicPassActive.value = true
+                _hearts.value = 5
+                _streakShields.value = currentShields + 2
+                _stars.value = currentStarsVal + 150
+            }
+            com.example.model.CosmicPassTier.STAR_BUNDLE -> {
+                _stars.value = currentStarsVal + 100
+                _hearts.value = 5
+            }
+        }
+
+        soundEffectManager.playCorrect()
+        return true
+    }
+
     fun deductHeart(amount: Int = 1) {
+        if (_isCosmicPassActive.value == true) return // Vô hạn tim cho tài khoản Cosmic Pass
         val current = _hearts.value ?: 5
         val newHearts = (current - amount).coerceAtLeast(0)
         _hearts.value = newHearts
@@ -438,6 +470,7 @@ class StudyViewModel @Inject constructor(
     fun dismissShieldNotice() { _shieldUsedNotice.value = false }
 
     fun deductHeart(): Int {
+        if (_isCosmicPassActive.value == true) return 5 // Vô hạn tim cho tài khoản Cosmic Pass
         val current = _hearts.value ?: 5
         val updated = (current - 1).coerceAtLeast(0)
         _hearts.value = updated
