@@ -526,7 +526,7 @@ private fun JourneyPath(
     val totalSectionBreaks = if (stages.isEmpty()) 0 else (stages.lastIndex / 10)
     val rewardTop = (stages.size * stageStep.value + totalSectionBreaks * sectionBreakHeight.value + 10).dp
     val multiverseTop = rewardTop + 130.dp
-    val multiverseHeight = 880.dp
+    val multiverseHeight = 440.dp
     val totalPathHeight = multiverseTop + multiverseHeight + 140.dp
 
     val auroraAnim = rememberCosmicAuroraAnimation()

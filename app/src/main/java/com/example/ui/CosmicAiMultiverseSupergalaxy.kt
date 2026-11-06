@@ -156,7 +156,7 @@ fun CosmicAiMultiverseSupergalaxyView(
             Box(
                 modifier = Modifier
                     .fillMaxWidth(0.96f)
-                    .height(390.dp)
+                    .height(420.dp)
                     .scale(portalBreathingPulse)
                     .clip(RoundedCornerShape(34.dp))
                     .background(Color(0xFF0B061A))
@@ -175,6 +175,10 @@ fun CosmicAiMultiverseSupergalaxyView(
                         ),
                         shape = RoundedCornerShape(34.dp)
                     )
+                    .clickable {
+                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                        onExploreClick()
+                    }
             ) {
                 // Tác Phẩm Nghệ Thuật SuperGalaxy Kiki Siêu Nét
                 Image(
@@ -184,18 +188,17 @@ fun CosmicAiMultiverseSupergalaxyView(
                     modifier = Modifier.fillMaxSize()
                 )
 
-                // Lớp Gradient Che Phủ Mờ Dần Ở Đáy Để Chuyển Tiếp Sang Card HUD
+                // Lớp Gradient Che Phủ Mờ Nhẹ Ở Đáy
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(110.dp)
+                        .height(90.dp)
                         .align(Alignment.BottomCenter)
                         .background(
                             Brush.verticalGradient(
                                 listOf(
                                     Color.Transparent,
-                                    Color(0xA00B061A),
-                                    Color(0xF0070314)
+                                    Color(0xB0070314)
                                 )
                             )
                         )
@@ -237,234 +240,51 @@ fun CosmicAiMultiverseSupergalaxyView(
                         letterSpacing = 1.2.sp
                     )
                 }
-            }
-        }
 
-        Spacer(modifier = Modifier.height(18.dp))
-
-        // ── 2. THẺ HOLOGRAPHIC VIP TRẠM CỔNG ĐA VŨ TRỤ (LUXURY QUANTUM GATEWAY HUD) ──
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .clip(RoundedCornerShape(30.dp))
-                .background(
-                    Brush.verticalGradient(
-                        listOf(
-                            Color(0xF0181133),
-                            Color(0xF80F0A24),
-                            Color(0xFF070414)
-                        )
-                    )
-                )
-                .border(
-                    2.dp,
-                    Brush.linearGradient(
-                        colors = listOf(
-                            Color(0xFF8B5CF6),
-                            Color(0xFF06B6D4),
-                            Color(0xFF51FAC1),
-                            Color(0xFFFFD700),
-                            Color(0xFFEC4899),
-                            Color(0xFF8B5CF6)
-                        ),
-                        start = Offset(borderShimmerPhase, 0f),
-                        end = Offset(borderShimmerPhase + 600f, 600f)
-                    ),
-                    RoundedCornerShape(30.dp)
-                )
-                .padding(22.dp)
-        ) {
-            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                Text(
-                    text = if (isEnglish) "The Final Apex of Multiverse Wisdom" else "Đỉnh Cao Tri Thức Vũ Trụ Tuyệt Đối",
-                    color = Color.White,
-                    fontSize = 20.sp,
-                    fontWeight = FontWeight.Black,
-                    textAlign = TextAlign.Center
-                )
-
-                Spacer(modifier = Modifier.height(8.dp))
-
-                Text(
-                    text = if (isEnglish) {
-                        "Conquer all 40 solar planets to awaken the Infinite AI Multiverse. Mentor Kiki stands by your side to explore boundless knowledge worlds!"
-                    } else {
-                        "Chinh phục trọn vẹn 40 Hành Tinh Hệ Mặt Trời để kích hoạt Đa Vũ Trụ AI Vô Tận. Nơi Kiến Kiki đồng hành cùng bạn khám phá các thế giới tri thức bất tận!"
-                    },
-                    color = Color(0xFFE2E8F0),
-                    fontSize = 13.5.sp,
-                    lineHeight = 19.sp,
-                    textAlign = TextAlign.Center
-                )
-
-                Spacer(modifier = Modifier.height(16.dp))
-
-                // 4 Huy hiệu đặc quyền Đa Vũ Trụ AI mini
+                // Pill Nổi Bật Ở Đáy Cổng: Chạm Để Khám Phá
                 Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    MultiverseMiniFeatureChip(
-                        icon = Icons.Default.AutoAwesome,
-                        color = Color(0xFF51FAC1),
-                        label = if (isEnglish) "AI Worlds" else "Vũ Trụ AI"
-                    )
-                    MultiverseMiniFeatureChip(
-                        icon = Icons.Default.RecordVoiceOver,
-                        color = Color(0xFF06B6D4),
-                        label = if (isEnglish) "Living Voice" else "Hội Thoại Sống"
-                    )
-                    MultiverseMiniFeatureChip(
-                        icon = Icons.Default.Bolt,
-                        color = Color(0xFFFFB703),
-                        label = if (isEnglish) "Infinite XP" else "Cấp Độ Vô Hạn"
-                    )
-                    MultiverseMiniFeatureChip(
-                        icon = Icons.Default.WorkspacePremium,
-                        color = Color(0xFFEC4899),
-                        label = if (isEnglish) "Immortals" else "Điện Bất Tử"
-                    )
-                }
-
-                Spacer(modifier = Modifier.height(18.dp))
-
-                // Thanh Năng Lượng Lỗ Sâu Lượng Tử (Quantum Singularity Warp Gauge)
-                Column(modifier = Modifier.fillMaxWidth()) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(
-                                imageVector = if (isFullyUnlocked) Icons.Default.CheckCircle else Icons.Default.HourglassTop,
-                                contentDescription = null,
-                                tint = if (isFullyUnlocked) Color(0xFF51FAC1) else Color(0xFF67E8F9),
-                                modifier = Modifier.size(15.dp)
-                            )
-                            Spacer(modifier = Modifier.width(6.dp))
-                            Text(
-                                text = if (isFullyUnlocked) {
-                                    (if (isEnglish) "Quantum Gateway Stabilized" else "Cổng Không Gian Đã Mở Khóa")
-                                } else {
-                                    (if (isEnglish) "Singularity Charge" else "Năng Lượng Lỗ Sâu Tích Tụ")
-                                },
-                                color = if (isFullyUnlocked) Color(0xFF51FAC1) else Color(0xFF67E8F9),
-                                fontSize = 12.sp,
-                                fontWeight = FontWeight.Bold
-                            )
-                        }
-                        Text(
-                            text = "$completedStages/$totalStages (${(progressPercent * 100).toInt()}%)",
-                            color = Color.White,
-                            fontSize = 12.5.sp,
-                            fontWeight = FontWeight.ExtraBold
-                        )
-                    }
-
-                    Spacer(modifier = Modifier.height(8.dp))
-
-                    // Gauge Bar với gradient đa sắc
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(10.dp)
-                            .clip(RoundedCornerShape(5.dp))
-                            .background(Color(0xFF1E1738))
-                    ) {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth(progressPercent)
-                                .fillMaxHeight()
-                                .clip(RoundedCornerShape(5.dp))
-                                .background(
-                                    Brush.horizontalGradient(
-                                        listOf(
-                                            Color(0xFF8B5CF6),
-                                            Color(0xFF06B6D4),
-                                            Color(0xFF51FAC1),
-                                            Color(0xFFFFD166)
-                                        )
-                                    )
-                                )
-                        )
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(22.dp))
-
-                // Nút Bấm Siêu Phẩm Phát Sáng
-                Button(
-                    onClick = {
-                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                        onExploreClick()
-                    },
+                    verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier
-                        .fillMaxWidth()
-                        .height(54.dp),
-                    shape = RoundedCornerShape(27.dp),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = if (isFullyUnlocked) Color(0xFF51FAC1) else Color(0xFF8B5CF6)
-                    )
+                        .align(Alignment.BottomCenter)
+                        .padding(bottom = 16.dp)
+                        .clip(RoundedCornerShape(22.dp))
+                        .background(
+                            Brush.horizontalGradient(
+                                listOf(
+                                    Color(0xEE1E1538),
+                                    Color(0xEE120A24)
+                                )
+                            )
+                        )
+                        .border(
+                            1.5.dp,
+                            Brush.horizontalGradient(
+                                listOf(Color(0xFF00F5D4), Color(0xFF8B5CF6), Color(0xFFFFD700))
+                            ),
+                            RoundedCornerShape(22.dp)
+                        )
+                        .padding(horizontal = 18.dp, vertical = 9.dp)
                 ) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(
-                            imageVector = if (isFullyUnlocked) Icons.Default.RocketLaunch else Icons.Default.AutoAwesome,
-                            contentDescription = null,
-                            tint = if (isFullyUnlocked) Color(0xFF092E20) else Color.White,
-                            modifier = Modifier.size(21.dp)
-                        )
-                        Spacer(modifier = Modifier.width(10.dp))
-                        Text(
-                            text = if (isFullyUnlocked) {
-                                (if (isEnglish) "ENTER THE MULTIVERSE" else "BƯỚC VÀO ĐA VŨ TRỤ AI")
-                            } else {
-                                (if (isEnglish) "EXPLORE MULTIVERSE SPECTRUM" else "CHIÊM NGƯỠNG ĐA VŨ TRỤ AI")
-                            },
-                            color = if (isFullyUnlocked) Color(0xFF092E20) else Color.White,
-                            fontWeight = FontWeight.Black,
-                            fontSize = 14.sp,
-                            letterSpacing = 1.1.sp
-                        )
-                    }
+                    Icon(
+                        imageVector = Icons.Default.AutoAwesome,
+                        contentDescription = null,
+                        tint = Color(0xFF51FAC1),
+                        modifier = Modifier.size(17.dp)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = if (isEnglish) "TAP TO EXPLORE AI MULTIVERSE" else "CHẠM ĐỂ CHIÊM NGƯỠNG ĐA VŨ TRỤ AI",
+                        color = Color.White,
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.ExtraBold,
+                        letterSpacing = 0.8.sp
+                    )
                 }
             }
         }
 
-        // Đệm an toàn 180dp ở đáy để KHÔNG BAO GIỜ bị che khuất bởi thanh điều hướng Bottom Navigation Bar!
-        Spacer(modifier = Modifier.height(180.dp))
-    }
-}
-
-/**
- * Chip hiển thị đặc quyền Đa Vũ Trụ mini
- */
-@Composable
-private fun MultiverseMiniFeatureChip(
-    icon: androidx.compose.ui.graphics.vector.ImageVector,
-    color: Color,
-    label: String
-) {
-    Column(
-        horizontalAlignment = Alignment.CenterHorizontally,
-        modifier = Modifier
-            .clip(RoundedCornerShape(12.dp))
-            .background(Color(0x221E193C))
-            .padding(horizontal = 8.dp, vertical = 6.dp)
-    ) {
-        Icon(
-            imageVector = icon,
-            contentDescription = null,
-            tint = color,
-            modifier = Modifier.size(17.dp)
-        )
-        Spacer(modifier = Modifier.height(4.dp))
-        Text(
-            text = label,
-            color = Color(0xFFCBD5E1),
-            fontSize = 9.5.sp,
-            fontWeight = FontWeight.Bold
-        )
+        // Đệm an toàn ở đáy để không bị thanh điều hướng Bottom Navigation Bar che khuất
+        Spacer(modifier = Modifier.height(140.dp))
     }
 }
 

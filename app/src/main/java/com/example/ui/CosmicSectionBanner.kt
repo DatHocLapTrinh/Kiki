@@ -362,50 +362,6 @@ fun CosmicSectionBanner(
                         )
                     }
                 }
-
-                // Đường phân cách mỏng dọc
-                Box(
-                    modifier = Modifier
-                        .padding(horizontal = 12.dp)
-                        .width(1.dp)
-                        .height(44.dp)
-                        .background(animatedPrimary.copy(alpha = 0.25f))
-                )
-
-                // Biểu tượng Stargate mở Galactic Section Drawer / Selector
-                Box(
-                    modifier = Modifier
-                        .size(44.dp)
-                        .clip(RoundedCornerShape(14.dp))
-                        .background(animatedPrimary.copy(alpha = 0.16f))
-                        .border(1.2.dp, animatedPrimary.copy(alpha = 0.5f), RoundedCornerShape(14.dp))
-                        .then(
-                            if (onClick != null) {
-                                Modifier.clickable(onClick = onClick)
-                            } else Modifier
-                        ),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Column(
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.Center
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.RocketLaunch,
-                            contentDescription = "Cổng dịch chuyển ngân hà",
-                            tint = animatedPrimary,
-                            modifier = Modifier.size(20.dp)
-                        )
-                        Spacer(modifier = Modifier.height(1.dp))
-                        Text(
-                            text = "CHẶNG",
-                            color = animatedPrimary,
-                            fontSize = 8.sp,
-                            fontWeight = FontWeight.ExtraBold,
-                            letterSpacing = 0.5.sp
-                        )
-                    }
-                }
             }
         }
     }
