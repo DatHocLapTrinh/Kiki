@@ -654,8 +654,8 @@ private fun JourneyPath(
     val totalSectionBreaks = if (stages.isEmpty()) 0 else (stages.lastIndex / 10)
     val rewardTop = (stages.size * stageStep.value + totalSectionBreaks * sectionBreakHeight.value + 10).dp
     val multiverseTop = rewardTop + 130.dp
-    val multiverseHeight = 660.dp
-    val totalPathHeight = multiverseTop + multiverseHeight + 60.dp
+    val multiverseHeight = 880.dp
+    val totalPathHeight = multiverseTop + multiverseHeight + 140.dp
 
     val auroraAnim = rememberCosmicAuroraAnimation()
     val density = LocalDensity.current
@@ -752,7 +752,7 @@ private fun JourneyPath(
                     val startX = nodeX(lastIdx)
                     val startY = nodeY(lastIdx)
                     val endX = size.width / 2f
-                    val endY = multiverseTop.toPx() + 160.dp.toPx()
+                    val endY = multiverseTop.toPx() + 205.dp.toPx()
 
                     val segMinY = minOf(startY, endY)
                     val segMaxY = maxOf(startY, endY)
