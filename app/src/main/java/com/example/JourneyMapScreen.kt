@@ -62,11 +62,8 @@ import com.example.ui.SpeechBubbleShape
 import com.example.ui.CosmicPlanetLessonPopup
 import com.example.ui.CosmicMilestoneDivider
 import com.example.ui.OutOfHeartsDialog
-import com.example.ui.CosmicDailyMissionsFloatingButton
 import com.example.ui.CosmicAiMultiverseSupergalaxyView
 import com.example.ui.CosmicMultiversePreviewDialog
-import com.example.ui.CosmicDailyMissionsDialog
-import com.example.QuestData
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -123,82 +120,6 @@ fun JourneyMapScreen(
     }
     val currentStageIndex = stages.indexOfFirst { it.state == JourneyStageState.CURRENT }
     var isNavigating by remember { mutableStateOf(false) }
-
-    val dailyTasks by viewModel.dailyTasks.observeAsState(emptyList())
-    val isDailyChestOpened by viewModel.isDailyChestOpened.observeAsState(false)
-    var showDailyMissionsDialog by remember { mutableStateOf(false) }
-
-    LaunchedEffect(Unit) {
-        viewModel.refreshDailyTasks()
-    }
-
-    val dailyQuests = remember(dailyTasks, isEnglish) {
-        dailyTasks.map { task ->
-            val metaTitle = when (task.taskType) {
-                "LESSON_COMPLETE" -> strings.quest1Title
-                "LESSON_COMPLETE_2" -> strings.quest4Title
-                "ANSWER_QUESTIONS" -> strings.quest3Title
-                "ANSWER_QUESTIONS_20" -> strings.quest5Title
-                "PERFECT_SCORE" -> strings.quest2Title
-                "ASK_AI_TUTOR" -> strings.quest6Title
-                "PLANET_RECHARGE" -> "Tái Nạp Năng Lượng Vũ Trụ ⚡"
-                else -> task.title
-            }
-            val metaDesc = when (task.taskType) {
-                "LESSON_COMPLETE" -> strings.quest1Desc
-                "LESSON_COMPLETE_2" -> strings.quest4Desc
-                "ANSWER_QUESTIONS" -> strings.quest3Desc
-                "ANSWER_QUESTIONS_20" -> strings.quest5Desc
-                "PERFECT_SCORE" -> strings.quest2Desc
-                "ASK_AI_TUTOR" -> strings.quest6Desc
-                "PLANET_RECHARGE" -> "Ôn tập 1 hành tinh đã cạn năng lượng để hồi phục 100%"
-                else -> strings.quest3Desc
-            }
-            val metaIconRes = when (task.taskType) {
-                "LESSON_COMPLETE" -> R.drawable.ic_education
-                "LESSON_COMPLETE_2" -> R.drawable.ic_nav_practice
-                "ANSWER_QUESTIONS" -> R.drawable.ic_open_book
-                "ANSWER_QUESTIONS_20" -> R.drawable.ic_action_thinking
-                "PERFECT_SCORE" -> R.drawable.ic_100_point
-                "ASK_AI_TUTOR" -> R.drawable.ic_mentor_qa
-                "PLANET_RECHARGE" -> R.drawable.ic_action_thinking
-                else -> R.drawable.ic_open_book
-            }
-            val metaColor = when (task.taskType) {
-                "LESSON_COMPLETE" -> Color(0xFF51FAC1)
-                "LESSON_COMPLETE_2" -> Color(0xFF64B5F6)
-                "ANSWER_QUESTIONS" -> Color(0xFF27E0A9)
-                "ANSWER_QUESTIONS_20" -> Color(0xFFFFB74D)
-                "PERFECT_SCORE" -> Color(0xFFFFD166)
-                "ASK_AI_TUTOR" -> Color(0xFFBA68C8)
-                "PLANET_RECHARGE" -> Color(0xFFFF9800)
-                else -> Color(0xFF27E0A9)
-            }
-            val starReward = when (task.taskType) {
-                "LESSON_COMPLETE" -> 15
-                "LESSON_COMPLETE_2" -> 20
-                "ANSWER_QUESTIONS" -> 15
-                "ANSWER_QUESTIONS_20" -> 20
-                "PERFECT_SCORE" -> 15
-                "ASK_AI_TUTOR" -> 15
-                "PLANET_RECHARGE" -> 20
-                else -> 15
-            }
-            QuestData(
-                taskId = task.taskId,
-                title = metaTitle,
-                desc = metaDesc,
-                current = task.currentValue.coerceAtMost(task.targetValue),
-                total = task.targetValue,
-                rewardXp = task.rewardXp,
-                rewardStar = starReward,
-                iconRes = metaIconRes,
-                color = metaColor,
-                isCompleted = task.currentValue >= task.targetValue,
-                isClaimed = task.status == "CLAIMED"
-            )
-        }
-    }
 
     val unlockEvent by viewModel.chapterUnlockEvent.observeAsState(null)
     var animatingUnlockStageIndex by remember { mutableIntStateOf(-1) }
@@ -382,25 +303,6 @@ fun JourneyMapScreen(
             }
         }
 
-        // ─── Nút Nổi Nhiệm Vụ Vũ Trụ (Floating Cosmic Missions Button) ───
-        val completedQuestsCount = dailyQuests.count { it.isCompleted }
-        val totalQuestsCount = dailyQuests.size
-        val hasClaimableQuests = dailyQuests.any { it.isCompleted && !it.isClaimed } || (dailyQuests.isNotEmpty() && dailyQuests.all { it.isCompleted } && !isDailyChestOpened)
-
-        if (dailyQuests.isNotEmpty()) {
-            Box(
-                modifier = Modifier
-                    .align(Alignment.BottomEnd)
-                    .padding(end = 16.dp, bottom = 22.dp)
-            ) {
-                CosmicDailyMissionsFloatingButton(
-                    completedCount = completedQuestsCount,
-                    totalCount = totalQuestsCount,
-                    hasClaimable = hasClaimableQuests,
-                    onClick = { showDailyMissionsDialog = true }
-                )
-            }
-        }
 
         if (showOutOfHeartsPrompt) {
             OutOfHeartsDialog(
@@ -471,37 +373,7 @@ fun JourneyMapScreen(
             )
         }
 
-        // ─── Hộp Thoại Trạm Nhiệm Vụ Vũ Trụ (Cosmic Daily Missions Dialog) ───
-        if (showDailyMissionsDialog) {
-            val planetNeedingReview = stages.firstOrNull { it.needsReview }
-            CosmicDailyMissionsDialog(
-                quests = dailyQuests,
-                streak = streak,
-                isChestClaimed = isDailyChestOpened,
-                hasPlanetNeedingReview = planetNeedingReview != null,
-                planetNeedingReviewName = planetNeedingReview?.title,
-                onClaimQuest = { taskId ->
-                    viewModel.claimDailyTask(taskId)
-                },
-                onClaimChest = {
-                    viewModel.claimDailyChest()
-                },
-                onReviewPlanet = {
-                    val targetIdx = stages.indexOfFirst { it.needsReview }
-                    if (targetIdx >= 0) {
-                        val stageStepPx = with(density) { 255.dp.toPx() }
-                        val sectionBreakPx = with(density) { 88.dp.toPx() }
-                        val targetPlanetY = (targetIdx / 10) * sectionBreakPx + targetIdx * stageStepPx + with(density) { 85.dp.toPx() }
-                        val viewportHeightPx = scrollState.viewportSize.toFloat()
-                        val desiredScroll = (targetPlanetY - (if (viewportHeightPx > 0) viewportHeightPx * 0.45f else 600f)).toInt().coerceAtLeast(0)
-                        coroutineScope.launch {
-                            scrollState.animateScrollTo(desiredScroll, tween(650, easing = FastOutSlowInEasing))
-                        }
-                    }
-                },
-                onDismiss = { showDailyMissionsDialog = false }
-            )
-        }
+
     }
 }
 
