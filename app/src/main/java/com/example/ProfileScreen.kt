@@ -416,6 +416,7 @@ fun ProfileScreen(
         EditProfileDialog(
             currentName = userName,
             currentAvatar = avatarUri,
+            googleAvatarUrl = viewModel.getGooglePhotoUrl(),
             currentMotto = studyMotto,
             isEnglish = isEnglish,
             onDismiss = { showEditProfileDialog = false },
@@ -783,6 +784,7 @@ private fun ProfileIdentityCard(
 fun EditProfileDialog(
     currentName: String,
     currentAvatar: String?,
+    googleAvatarUrl: String? = null,
     currentMotto: String,
     isEnglish: Boolean,
     onDismiss: () -> Unit,
@@ -791,6 +793,8 @@ fun EditProfileDialog(
     var name by remember { mutableStateOf(currentName) }
     var motto by remember { mutableStateOf(currentMotto) }
     var selectedAvatar by remember { mutableStateOf(currentAvatar ?: "kiki_icon") }
+
+    val effectiveGoogleUrl = googleAvatarUrl ?: if (currentAvatar?.startsWith("http://") == true || currentAvatar?.startsWith("https://") == true) currentAvatar else null
 
     val avatars = listOf(
         "kiki_icon" to (if (isEnglish) "Hero" else "Mặc định"),
@@ -837,52 +841,89 @@ fun EditProfileDialog(
                 )
 
                 Text(
-                    if (isEnglish) "Choose Your Kiki Avatar" else "Chọn Avatar Kiki",
+                    if (isEnglish) "Choose Your Avatar" else "Chọn Avatar Đại Diện",
                     color = Color(0xFF51FAC1),
                     fontSize = 12.sp,
                     fontWeight = FontWeight.Bold
                 )
 
-                if (currentAvatar != null && (currentAvatar.startsWith("http://") || currentAvatar.startsWith("https://"))) {
+                // Lựa chọn 1: Ảnh đại diện từ tài khoản Google (Luôn khả dụng nếu người dùng đã đăng nhập Google)
+                if (effectiveGoogleUrl != null) {
+                    val isGoogleSelected = selectedAvatar == effectiveGoogleUrl
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
                         modifier = Modifier
                             .fillMaxWidth()
-                            .clip(RoundedCornerShape(12.dp))
-                            .background(if (selectedAvatar == currentAvatar) Color(0x3351FAC1) else Color(0x14FFFFFF))
-                            .border(1.dp, if (selectedAvatar == currentAvatar) Color(0xFF51FAC1) else Color(0x26FFFFFF), RoundedCornerShape(12.dp))
-                            .clickable { selectedAvatar = currentAvatar }
-                            .padding(8.dp)
+                            .clip(RoundedCornerShape(14.dp))
+                            .background(if (isGoogleSelected) Color(0x3351FAC1) else Color(0x14FFFFFF))
+                            .border(
+                                1.5.dp,
+                                if (isGoogleSelected) Color(0xFF51FAC1) else Color(0x26FFFFFF),
+                                RoundedCornerShape(14.dp)
+                            )
+                            .clickable { selectedAvatar = effectiveGoogleUrl }
+                            .padding(10.dp)
                     ) {
                         Box(
                             modifier = Modifier
-                                .size(40.dp)
+                                .size(46.dp)
                                 .clip(CircleShape)
-                                .border(2.dp, if (selectedAvatar == currentAvatar) Color(0xFF51FAC1) else Color(0x33FFFFFF), CircleShape)
+                                .border(2.dp, if (isGoogleSelected) Color(0xFF51FAC1) else Color(0x44FFFFFF), CircleShape)
                         ) {
                             AsyncImage(
-                                model = currentAvatar,
+                                model = effectiveGoogleUrl,
                                 contentDescription = "Google Avatar",
                                 modifier = Modifier.fillMaxSize().clip(CircleShape),
                                 contentScale = ContentScale.Crop
                             )
                         }
-                        Spacer(modifier = Modifier.width(10.dp))
-                        Column {
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Column(modifier = Modifier.weight(1f)) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Text(
+                                    text = if (isEnglish) "Google Profile Picture" else "Ảnh đại diện Google",
+                                    color = Color.White,
+                                    fontSize = 13.sp,
+                                    fontWeight = FontWeight.Bold
+                                )
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Box(
+                                    modifier = Modifier
+                                        .clip(RoundedCornerShape(4.dp))
+                                        .background(Color(0x334285F4))
+                                        .padding(horizontal = 4.dp, vertical = 1.dp)
+                                ) {
+                                    Text(
+                                        text = "Google",
+                                        color = Color(0xFF60A5FA),
+                                        fontSize = 9.sp,
+                                        fontWeight = FontWeight.Black
+                                    )
+                                }
+                            }
                             Text(
-                                text = if (isEnglish) "Google Profile Picture" else "Ảnh đại diện Google",
-                                color = Color.White,
-                                fontSize = 12.sp,
-                                fontWeight = FontWeight.Bold
+                                text = if (isGoogleSelected) (if (isEnglish) "Selected ✓" else "Đang sử dụng ✓") else (if (isEnglish) "Tap to select" else "Chạm để chọn ảnh Google này"),
+                                color = if (isGoogleSelected) Color(0xFF51FAC1) else Color(0x88FFFFFF),
+                                fontSize = 11.sp
                             )
-                            Text(
-                                text = if (selectedAvatar == currentAvatar) (if (isEnglish) "Selected" else "Đang chọn") else (if (isEnglish) "Tap to select" else "Chạm để dùng lại"),
-                                color = if (selectedAvatar == currentAvatar) Color(0xFF51FAC1) else Color(0x88FFFFFF),
-                                fontSize = 10.sp
+                        }
+                        if (isGoogleSelected) {
+                            Icon(
+                                imageVector = Icons.Default.CheckCircle,
+                                contentDescription = "Selected",
+                                tint = Color(0xFF51FAC1),
+                                modifier = Modifier.size(22.dp)
                             )
                         }
                     }
                 }
+
+                Text(
+                    if (isEnglish) "Mascot Avatars" else "Bộ Sưu Tập Linh Vật Kiki",
+                    color = Color(0xFF8E8EA0),
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.Medium
+                )
 
                 Row(
                     modifier = Modifier.fillMaxWidth(),

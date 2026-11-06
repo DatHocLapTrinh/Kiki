@@ -1362,6 +1362,9 @@ class StudyViewModel @Inject constructor(
             try {
                 when (val result = authManager.signInWithGoogle(activityContext)) {
                     is GoogleAuthResult.Success -> {
+                        result.photoUrl?.let { url ->
+                            prefs.edit().putString("cached_google_photo_url", url).apply()
+                        }
                         val userId = repository.getOrCreateSocialUser(
                             email = result.email,
                             displayName = result.displayName,
@@ -1486,6 +1489,9 @@ class StudyViewModel @Inject constructor(
                 _streak.value = profile.currentStreak
                 _streakShields.value = profile.streakShields
                 _avatarUri.value = profile.avatarUri
+                if (profile.avatarUri?.startsWith("http://") == true || profile.avatarUri?.startsWith("https://") == true) {
+                    prefs.edit().putString("cached_google_photo_url", profile.avatarUri).apply()
+                }
                 _studyMotto.value = profile.studyMotto ?: ""
                 val currentStars = profile.stars
                 val finalStars = if (currentStars < 200) {
@@ -2962,6 +2968,9 @@ class StudyViewModel @Inject constructor(
     fun updateProfile(displayName: String, avatarUri: String?, motto: String?) {
         val userId = _currentUserId.value ?: return
         if (userId == -1L) return
+        if (avatarUri?.startsWith("http://") == true || avatarUri?.startsWith("https://") == true) {
+            prefs.edit().putString("cached_google_photo_url", avatarUri).apply()
+        }
         viewModelScope.launch {
             repository.updateProfileInfo(userId, displayName.trim(), avatarUri, motto?.trim())
             _userName.value = displayName.trim()
@@ -2970,6 +2979,21 @@ class StudyViewModel @Inject constructor(
             fetchLeaderboard()
             firestoreSyncManager.syncUserProfile(userId)
         }
+    }
+
+    /**
+     * Lấy URL ảnh đại diện Google từ tài khoản liên kết (Auth, Firebase hoặc Cache)
+     */
+    fun getGooglePhotoUrl(): String? {
+        val authPhoto = authManager.getCurrentUser()?.photoUrl?.toString()
+        val fbPhoto = com.google.firebase.auth.FirebaseAuth.getInstance().currentUser?.photoUrl?.toString()
+        val cachedPhoto = prefs.getString("cached_google_photo_url", null)
+        val currentPhoto = _avatarUri.value?.takeIf { it.startsWith("http://") || it.startsWith("https://") }
+        val resolved: String? = authPhoto ?: fbPhoto ?: cachedPhoto ?: currentPhoto
+        if (resolved != null && cachedPhoto != resolved) {
+            prefs.edit().putString("cached_google_photo_url", resolved).apply()
+        }
+        return resolved
     }
 
     private val _dueVocabularyList = MutableLiveData<List<VocabularyEntity>>(emptyList())

@@ -63,6 +63,8 @@ import com.example.ui.CosmicPlanetLessonPopup
 import com.example.ui.CosmicMilestoneDivider
 import com.example.ui.OutOfHeartsDialog
 import com.example.ui.CosmicDailyMissionsFloatingButton
+import com.example.ui.CosmicAiMultiverseSupergalaxyView
+import com.example.ui.CosmicMultiversePreviewDialog
 import com.example.ui.CosmicDailyMissionsDialog
 import com.example.QuestData
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -650,13 +652,16 @@ private fun JourneyPath(
     val sectionBreakHeight = 88.dp
 
     val totalSectionBreaks = if (stages.isEmpty()) 0 else (stages.lastIndex / 10)
-    val totalPathHeight = (stages.size * stageStep.value + totalSectionBreaks * sectionBreakHeight.value + 190).dp
     val rewardTop = (stages.size * stageStep.value + totalSectionBreaks * sectionBreakHeight.value + 10).dp
+    val multiverseTop = rewardTop + 130.dp
+    val multiverseHeight = 660.dp
+    val totalPathHeight = multiverseTop + multiverseHeight + 60.dp
 
     val auroraAnim = rememberCosmicAuroraAnimation()
     val density = LocalDensity.current
     val haptic = LocalHapticFeedback.current
     var selectedStageIndex by remember { mutableStateOf<Int?>(null) }
+    var showMultiversePreviewDialog by remember { mutableStateOf(false) }
 
     fun getStageColor(index: Int): Color {
         val planetType = CosmicPlanetHelper.getPlanetTypeForStage(index)
@@ -739,6 +744,33 @@ private fun JourneyPath(
                         alphaScale = if (isActive || isUnlockingThisSegment) 1f else 0.55f,
                         surgePulseProgress = surgePulse
                     )
+                }
+
+                // 2.2 Chùm cực quang lượng tử nối từ Mặt Trời (Hành tinh 40) vào Tâm Siêu Thiên Hà Đa Vũ Trụ AI
+                if (stages.isNotEmpty()) {
+                    val lastIdx = stages.lastIndex
+                    val startX = nodeX(lastIdx)
+                    val startY = nodeY(lastIdx)
+                    val endX = size.width / 2f
+                    val endY = multiverseTop.toPx() + 160.dp.toPx()
+
+                    val segMinY = minOf(startY, endY)
+                    val segMaxY = maxOf(startY, endY)
+                    if (segMaxY >= visibleTop && segMinY <= visibleBottom) {
+                        drawCosmicAuroraSegment(
+                            startX = startX,
+                            startY = startY,
+                            endX = endX,
+                            endY = endY,
+                            startColor = Color(0xFFFFB703),
+                            endColor = Color(0xFF51FAC1),
+                            animPhase = auroraAnim.phase.value,
+                            waveOffsetPx = auroraAnim.waveOffset.value.dp.toPx(),
+                            isActive = true,
+                            alphaScale = 0.85f,
+                            surgePulseProgress = null
+                        )
+                    }
                 }
             }
         }
@@ -867,6 +899,25 @@ private fun JourneyPath(
                 .fillMaxWidth()
                 .padding(top = rewardTop, start = 22.dp, end = 22.dp)
         )
+
+        // 5. SIÊU THIÊN HÀ ĐA VŨ TRỤ AI VÔ TẬN (The Infinite AI Multiverse Supergalaxy & Event Horizon Singularity)
+        CosmicAiMultiverseSupergalaxyView(
+            stages = stages,
+            isEnglish = isEnglish,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(top = multiverseTop),
+            onExploreClick = {
+                showMultiversePreviewDialog = true
+            }
+        )
+
+        if (showMultiversePreviewDialog) {
+            CosmicMultiversePreviewDialog(
+                isEnglish = isEnglish,
+                onDismiss = { showMultiversePreviewDialog = false }
+            )
+        }
 
         // 5. Duolingo-style Cosmic Planet Lesson Pop-up với mũi tên trỏ vào hành tinh
         // Đặt popupY = planetNodeY + 84.dp (ở dưới vành quỹ đạo, KHÔNG BỊ ĐÈ LÊN HÀNH TINH)
