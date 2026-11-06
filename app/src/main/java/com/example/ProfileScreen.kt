@@ -1750,8 +1750,8 @@ private fun ProfileSettingsContent(
                 HorizontalDivider(color = Color(0x1A51FAC1), thickness = 0.8.dp)
 
                 ProfileSettingRow(
-                    title = if (isEnglish) "Battery Saver Mode" else "Chế Độ Tiết Kiệm Pin",
-                    subtitle = if (isEnglish) "Reduce cosmic background animation" else "Giảm hoạt ảnh vũ trụ để tối ưu thời lượng pin",
+                    title = if (isEnglish) "Battery & Smooth Saver" else "Chế Độ Tiết Kiệm Pin & Mượt Mà",
+                    subtitle = if (isEnglish) "Optimize graphics for low-end devices and save battery" else "Tối ưu đồ họa cho máy cấu hình yếu và kéo dài thời lượng pin",
                     icon = Icons.Default.BatteryChargingFull,
                     checked = batterySaver,
                     onCheckedChange = onBatterySaverChanged

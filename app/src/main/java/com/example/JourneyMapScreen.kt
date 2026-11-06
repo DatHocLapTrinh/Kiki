@@ -744,29 +744,71 @@ private fun JourneyPath(
         }
 
         // 3. Cột chứa các hành tinh và mốc chuyển tiếp ngân hà (Column)
+        // 120 FPS & Low-End Optimization: Virtualized Stage Composition với derivedStateOf.
+        // Chỉ inflate các hành tinh trong khung nhìn (+ buffer 600dp), các hành tinh ngoài màn hình
+        // được thay thế bằng Box placeholder giữ nguyên chiều cao chuẩn xác tới từng pixel!
+        val stageStepPx = with(density) { stageStep.toPx() }
+        val sectionBreakPx = with(density) { sectionBreakHeight.toPx() }
+
+        val visibleStageRange by remember(stages.size, stageStepPx, sectionBreakPx) {
+            derivedStateOf {
+                val scrollY = scrollValueProvider()
+                val viewportH = viewportHeightProvider()
+                val bufferPx = 600f * density.density
+                val viewTop = scrollY - bufferPx
+                val viewBottom = scrollY + (if (viewportH > 0f) viewportH else 2500f) + bufferPx
+
+                var startIdx = 0
+                for (i in stages.indices) {
+                    val bottom = (i / 10) * sectionBreakPx + (i + 1) * stageStepPx
+                    if (bottom >= viewTop) {
+                        startIdx = (i - 1).coerceAtLeast(0)
+                        break
+                    }
+                }
+
+                var endIdx = stages.lastIndex
+                for (i in startIdx..stages.lastIndex) {
+                    val top = (i / 10) * sectionBreakPx + i * stageStepPx
+                    if (top > viewBottom) {
+                        endIdx = (i + 1).coerceAtMost(stages.lastIndex)
+                        break
+                    }
+                }
+
+                startIdx..endIdx
+            }
+        }
+
         Column(modifier = Modifier.fillMaxWidth()) {
             stages.forEachIndexed { index, stage ->
                 if (index > 0 && index % 10 == 0) {
-                    val nextSectionNum = (index / 10) + 1
-                    val prevSectionStartIdx = (nextSectionNum - 2) * 10
-                    val prevSectionStages = stages.drop(prevSectionStartIdx).take(10)
-                    val isPrevCompleted = prevSectionStages.isNotEmpty() && prevSectionStages.all { it.state == JourneyStageState.COMPLETED }
-                    val completedInPrev = prevSectionStages.count { it.state == JourneyStageState.COMPLETED }
-                    val isChestClaimed = onCheckChestClaimed?.invoke(nextSectionNum - 1) ?: false
+                    val isDividerVisible = (index - 1) in visibleStageRange || index in visibleStageRange
 
-                    CosmicMilestoneDivider(
-                        sectionNum = nextSectionNum,
-                        isUnlocked = isPrevCompleted || (stage.state != JourneyStageState.LOCKED),
-                        completedInPrev = completedInPrev,
-                        totalInPrev = if (prevSectionStages.isNotEmpty()) prevSectionStages.size else 10,
-                        isChestClaimed = isChestClaimed,
-                        onClaimChest = {
-                            onClaimSectionChest?.invoke(nextSectionNum - 1)
-                        },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(sectionBreakHeight)
-                    )
+                    if (isDividerVisible) {
+                        val nextSectionNum = (index / 10) + 1
+                        val prevSectionStartIdx = (nextSectionNum - 2) * 10
+                        val prevSectionStages = stages.drop(prevSectionStartIdx).take(10)
+                        val isPrevCompleted = prevSectionStages.isNotEmpty() && prevSectionStages.all { it.state == JourneyStageState.COMPLETED }
+                        val completedInPrev = prevSectionStages.count { it.state == JourneyStageState.COMPLETED }
+                        val isChestClaimed = onCheckChestClaimed?.invoke(nextSectionNum - 1) ?: false
+
+                        CosmicMilestoneDivider(
+                            sectionNum = nextSectionNum,
+                            isUnlocked = isPrevCompleted || (stage.state != JourneyStageState.LOCKED),
+                            completedInPrev = completedInPrev,
+                            totalInPrev = if (prevSectionStages.isNotEmpty()) prevSectionStages.size else 10,
+                            isChestClaimed = isChestClaimed,
+                            onClaimChest = {
+                                onClaimSectionChest?.invoke(nextSectionNum - 1)
+                            },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(sectionBreakHeight)
+                        )
+                    } else {
+                        Spacer(modifier = Modifier.fillMaxWidth().height(sectionBreakHeight))
+                    }
                 }
 
                 val isTargetUnlockingPlanet = (index == animatingUnlockStageIndex) ||
@@ -782,30 +824,39 @@ private fun JourneyPath(
                     ((unlockAnimProgress - 0.35f) / 0.65f).coerceIn(0f, 1f)
                 } else 0f
 
-                JourneyStageRow(
-                    stage = effectiveStage,
-                    index = index,
-                    totalStages = stages.size,
-                    stageStep = stageStep,
-                    strings = strings,
-                    unlockProgress = stageUnlockProgress,
-                    onStageClick = {
-                        if (animatingUnlockStageIndex != -1) return@JourneyStageRow
-                        haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                        val newIdx = if (selectedStageIndex == index) null else index
-                        selectedStageIndex = newIdx
-                        if (newIdx != null) {
-                            val sectionBreakPx = with(density) { sectionBreakHeight.toPx() }
-                            val stageStepPx = with(density) { stageStep.toPx() }
-                            val nodeYPx = (index / 10) * sectionBreakPx + index * stageStepPx + with(density) { 85.dp.toPx() }
-                            val popupBottomPx = nodeYPx + with(density) { 84.dp.toPx() } + with(density) { 180.dp.toPx() }
-                            onEnsureVisible?.invoke(popupBottomPx, nodeYPx)
+                val isStageVisible = index in visibleStageRange ||
+                    index == selectedStageIndex ||
+                    isTargetUnlockingPlanet
+
+                if (isStageVisible) {
+                    JourneyStageRow(
+                        stage = effectiveStage,
+                        index = index,
+                        totalStages = stages.size,
+                        stageStep = stageStep,
+                        strings = strings,
+                        unlockProgress = stageUnlockProgress,
+                        onStageClick = {
+                            if (animatingUnlockStageIndex != -1) return@JourneyStageRow
+                            haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                            val newIdx = if (selectedStageIndex == index) null else index
+                            selectedStageIndex = newIdx
+                            if (newIdx != null) {
+                                val sBreakPx = with(density) { sectionBreakHeight.toPx() }
+                                val sStepPx = with(density) { stageStep.toPx() }
+                                val nodeYPx = (index / 10) * sBreakPx + index * sStepPx + with(density) { 85.dp.toPx() }
+                                val popupBottomPx = nodeYPx + with(density) { 84.dp.toPx() } + with(density) { 180.dp.toPx() }
+                                onEnsureVisible?.invoke(popupBottomPx, nodeYPx)
+                            }
+                        },
+                        onStageLongClick = {
+                            onStageLongClick?.invoke(stage, index)
                         }
-                    },
-                    onStageLongClick = {
-                        onStageLongClick?.invoke(stage, index)
-                    }
-                )
+                    )
+                } else {
+                    // Placeholder giữ nguyên vẹn chiều cao layout, giải phóng 100% RAM và chi phí render cho Compose
+                    Box(modifier = Modifier.fillMaxWidth().height(stageStep))
+                }
             }
         }
 

@@ -27,47 +27,64 @@ import kotlin.math.*
 fun CosmicPhotorealisticSpaceBackground(
     currentX: Float = 0f,
     currentY: Float = 0f,
+    batterySaver: Boolean = false,
     modifier: Modifier = Modifier
 ) {
-    val infiniteTransition = rememberInfiniteTransition(label = "cosmic_bg_anim")
+    val nebulaDrift: Float
+    val starTwinkle: Float
+    val asteroidTumble: Float
 
-    // Nhịp trôi nhẹ của tinh vân khí quyển
-    val nebulaDrift by infiniteTransition.animateFloat(
-        initialValue = -8f,
-        targetValue = 8f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(24000, easing = LinearEasing),
-            repeatMode = RepeatMode.Reverse
-        ),
-        label = "nebula_drift"
-    )
+    if (batterySaver) {
+        // Chế độ máy yếu / Tiết kiệm pin: Triệt tiêu 100% animation clock của Choreographer, giữ nền tĩnh tuyệt đối
+        nebulaDrift = 0f
+        starTwinkle = 1.0f
+        asteroidTumble = 0f
+    } else {
+        val infiniteTransition = rememberInfiniteTransition(label = "cosmic_bg_anim")
 
-    // Nhịp thở phát quang dịu nhẹ của các vì sao (biên độ nhỏ êm mắt)
-    val starTwinkle by infiniteTransition.animateFloat(
-        initialValue = 0.88f,
-        targetValue = 1.12f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(2800, easing = FastOutSlowInEasing),
-            repeatMode = RepeatMode.Reverse
-        ),
-        label = "star_twinkle"
-    )
+        // Nhịp trôi nhẹ của tinh vân khí quyển
+        val nd by infiniteTransition.animateFloat(
+            initialValue = -8f,
+            targetValue = 8f,
+            animationSpec = infiniteRepeatable(
+                animation = tween(24000, easing = LinearEasing),
+                repeatMode = RepeatMode.Reverse
+            ),
+            label = "nebula_drift"
+        )
 
-    // Góc tự xoay chậm của các khối tiểu hành tinh đá
-    val asteroidTumble by infiniteTransition.animateFloat(
-        initialValue = 0f,
-        targetValue = 360f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(42000, easing = LinearEasing),
-            repeatMode = RepeatMode.Restart
-        ),
-        label = "asteroid_tumble"
-    )
+        // Nhịp thở phát quang dịu nhẹ của các vì sao (biên độ nhỏ êm mắt)
+        val st by infiniteTransition.animateFloat(
+            initialValue = 0.88f,
+            targetValue = 1.12f,
+            animationSpec = infiniteRepeatable(
+                animation = tween(2800, easing = FastOutSlowInEasing),
+                repeatMode = RepeatMode.Reverse
+            ),
+            label = "star_twinkle"
+        )
 
-    // Khởi tạo danh sách sao li ti nền dịu mắt (Seed cố định)
-    val backgroundStars = remember {
+        // Góc tự xoay chậm của các khối tiểu hành tinh đá
+        val at by infiniteTransition.animateFloat(
+            initialValue = 0f,
+            targetValue = 360f,
+            animationSpec = infiniteRepeatable(
+                animation = tween(42000, easing = LinearEasing),
+                repeatMode = RepeatMode.Restart
+            ),
+            label = "asteroid_tumble"
+        )
+
+        nebulaDrift = nd
+        starTwinkle = st
+        asteroidTumble = at
+    }
+
+    // Khởi tạo danh sách sao li ti nền dịu mắt (Seed cố định) - Giảm 65% số sao trên máy yếu
+    val backgroundStars = remember(batterySaver) {
+        val starCount = if (batterySaver) 55 else 170
         val random = java.util.Random(133742L)
-        List(170) {
+        List(starCount) {
             val x = random.nextFloat()
             val y = random.nextFloat()
             val size = when {
@@ -94,7 +111,7 @@ fun CosmicPhotorealisticSpaceBackground(
         }
     }
 
-    Canvas(modifier = modifier.fillMaxSize()) {
+    Canvas(modifier = modifier.fillMaxSize().graphicsLayer {}) {
         val w = size.width
         val h = size.height
 

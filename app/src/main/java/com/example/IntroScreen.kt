@@ -261,6 +261,7 @@ fun CosmicScaffold(
                 CosmicPhotorealisticSpaceBackground(
                     currentX = currentX,
                     currentY = currentY,
+                    batterySaver = batterySaver,
                     modifier = Modifier.fillMaxSize()
                 )
 

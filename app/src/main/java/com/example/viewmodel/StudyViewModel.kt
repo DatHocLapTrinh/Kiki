@@ -32,6 +32,7 @@ import com.example.network.GroqApiService
 import com.example.repository.DataRepository
 import com.example.sqlite.room.DailyTaskEntity
 import com.example.sqlite.room.UserProfileEntity
+import com.example.util.DevicePerformanceManager
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
@@ -112,11 +113,20 @@ class StudyViewModel @Inject constructor(
     val kikiExplorerSection: LiveData<KikiExplorerSection> = _kikiExplorerSection
     fun setKikiExplorerSection(section: KikiExplorerSection) { _kikiExplorerSection.value = section }
 
-    private val _batterySaver = MutableLiveData(prefs.getBoolean("battery_saver_mode", false))
+    private val initialBatterySaver: Boolean = if (prefs.contains("battery_saver_mode")) {
+        prefs.getBoolean("battery_saver_mode", false)
+    } else {
+        DevicePerformanceManager.isLowEnd(appContext)
+    }
+    private val _batterySaver = MutableLiveData(initialBatterySaver)
     val batterySaver: LiveData<Boolean> = _batterySaver
     fun setBatterySaver(enabled: Boolean) {
         prefs.edit().putBoolean("battery_saver_mode", enabled).apply()
         _batterySaver.value = enabled
+        DevicePerformanceManager.setPerformanceMode(
+            appContext,
+            if (enabled) "BATTERY_SAVER_LOW_END" else "HIGH_FIDELITY"
+        )
     }
 
     // --- Universal Multi-Provider AI Architecture ---

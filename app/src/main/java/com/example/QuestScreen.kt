@@ -243,8 +243,11 @@ fun QuestScreen(viewModel: StudyViewModel, onFinish: () -> Unit) {
                 )
             )
     ) {
+        val batterySaver by viewModel.batterySaver.observeAsState(false)
+
         // Nền Vũ Trụ Galaxy Siêu Thực Dịu Mắt
         CosmicPhotorealisticSpaceBackground(
+            batterySaver = batterySaver,
             modifier = Modifier.fillMaxSize()
         )
 
