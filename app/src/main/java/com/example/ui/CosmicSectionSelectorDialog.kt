@@ -258,12 +258,7 @@ fun CosmicSectionSelectorDialog(
                         verticalArrangement = Arrangement.spacedBy(14.dp)
                     ) {
                         sections.forEach { sectionData ->
-                            val prevSectionNum = sectionData.sectionNumber - 1
-                            val prevSectionStartIdx = (prevSectionNum - 1) * 10
-                            val prevSectionStages = stages.drop(prevSectionStartIdx).take(10)
-                            val isUnlocked = (sectionData.sectionNumber == 1) ||
-                                (prevSectionStages.isNotEmpty() && prevSectionStages.all { it.state == JourneyStageState.COMPLETED }) ||
-                                (stages.getOrNull((sectionData.sectionNumber - 1) * 10)?.state != JourneyStageState.LOCKED)
+                            val isUnlocked = CosmicSectionConfig.isSectionUnlocked(sectionData.sectionNumber, stages)
 
                             CosmicSectionCard(
                                 section = sectionData,

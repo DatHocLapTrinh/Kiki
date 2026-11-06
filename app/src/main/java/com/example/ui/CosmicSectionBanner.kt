@@ -144,11 +144,34 @@ object CosmicSectionConfig {
     fun getAllSections(stages: List<com.example.JourneyStageUiModel> = emptyList()): List<CosmicSectionData> {
         return (1..4).map { secNum ->
             val startIdx = (secNum - 1) * 10
-            val sectionStages = stages.drop(startIdx).take(10)
+            val sectionStages = if (stages.isNotEmpty() && startIdx in 0 until stages.size) {
+                stages.drop(startIdx).take(10)
+            } else {
+                emptyList()
+            }
             val completed = sectionStages.count { it.state == com.example.JourneyStageState.COMPLETED }
             val total = if (sectionStages.isNotEmpty()) sectionStages.size else 10
             getSectionData(secNum, completed, total)
         }
+    }
+
+    /**
+     * Xác định xem một Chặng vũ trụ đã được mở khóa hay chưa.
+     * Chặng 1 luôn luôn mở khóa.
+     * Các chặng tiếp theo (2, 3, 4) mở khóa khi toàn bộ hành tinh của chặng trước đã hoàn thành
+     * hoặc hành tinh đầu tiên của chặng hiện tại đã ở trạng thái khác LOCKED.
+     */
+    fun isSectionUnlocked(sectionNumber: Int, stages: List<com.example.JourneyStageUiModel>): Boolean {
+        if (sectionNumber <= 1) return true
+        val prevSectionStartIdx = (sectionNumber - 2) * 10
+        val prevSectionStages = if (prevSectionStartIdx in 0 until stages.size) {
+            stages.drop(prevSectionStartIdx).take(10)
+        } else {
+            emptyList()
+        }
+        val currentSectionFirstStage = stages.getOrNull((sectionNumber - 1) * 10)
+        return (prevSectionStages.isNotEmpty() && prevSectionStages.all { it.state == com.example.JourneyStageState.COMPLETED }) ||
+            (currentSectionFirstStage != null && currentSectionFirstStage.state != com.example.JourneyStageState.LOCKED)
     }
 
     /**

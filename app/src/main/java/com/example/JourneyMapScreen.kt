@@ -288,7 +288,7 @@ fun JourneyMapScreen(
                         val scrollY = scrollState.value.toFloat()
                         val approxStageIndex = ((scrollY + 220f) / stageStepPx).toInt().coerceIn(0, stages.lastIndex)
                         val sectionNum = (approxStageIndex / 10) + 1
-                        val startIdx = (sectionNum - 1) * 10
+                        val startIdx = ((sectionNum - 1) * 10).coerceAtLeast(0)
                         val sectionStages = stages.drop(startIdx).take(10)
                         val completed = sectionStages.count { it.state == JourneyStageState.COMPLETED }
                         CosmicSectionConfig.getSectionData(
