@@ -124,19 +124,41 @@ fun CosmicPlanetView(
     onLongClick: (() -> Unit)? = null,
     onClick: () -> Unit
 ) {
-    val planetType = remember(index, totalStages) { CosmicPlanetHelper.getPlanetTypeForStage(index, totalStages) }
-    val planetDiameter = remember(index, totalStages) { CosmicPlanetHelper.getPlanetDiameter(index, totalStages) }
-    val isSaturn = planetType == CosmicPlanetType.SATURN_MONARCH
-    val isSun = planetType == CosmicPlanetType.SOLAR_SUN
+    val isActivelyAnimating = stage.state == JourneyStageState.CURRENT || (unlockProgress > 0f && unlockProgress < 1f)
 
-    // Kích thước container mở rộng cho vành đai Sao Thổ hoặc hào quang nhật hoa / tai lửa Mặt Trời
-    val containerWidth = if (isSaturn) 236.dp else 216.dp
-    val containerHeight = 236.dp
+    if (isActivelyAnimating) {
+        AnimatedCosmicPlanetView(
+            stage = stage,
+            index = index,
+            modifier = modifier,
+            totalStages = totalStages,
+            unlockProgress = unlockProgress,
+            onLongClick = onLongClick,
+            onClick = onClick
+        )
+    } else {
+        StaticCosmicPlanetView(
+            stage = stage,
+            index = index,
+            modifier = modifier,
+            totalStages = totalStages,
+            unlockProgress = unlockProgress,
+            onLongClick = onLongClick,
+            onClick = onClick
+        )
+    }
+}
 
-    val isCurrent = stage.state == JourneyStageState.CURRENT
-    val isCompleted = stage.state == JourneyStageState.COMPLETED
-    val isLocked = stage.state == JourneyStageState.LOCKED
-
+@Composable
+private fun AnimatedCosmicPlanetView(
+    stage: JourneyStageUiModel,
+    index: Int,
+    modifier: Modifier = Modifier,
+    totalStages: Int = -1,
+    unlockProgress: Float = 0f,
+    onLongClick: (() -> Unit)? = null,
+    onClick: () -> Unit
+) {
     val infiniteTransition = rememberInfiniteTransition(label = "planet_anim")
 
     // Góc quay của mây/khí quyển bề mặt (Dynamic rotation tốc độ mượt mà, thấy rõ chuyển động)
@@ -163,9 +185,6 @@ fun CosmicPlanetView(
         label = "satellite_angle"
     )
 
-    // Hào quang vũ trụ tĩnh ổn định (Đã loại bỏ hoàn toàn hiệu ứng nhịp thở phập phồng)
-    val auraGlow = 0.55f
-
     // Góc quay lồng khiên năng lượng từ trường 3D (Cosmic Force Field Geodesic Shield)
     val shieldRotationPhase by infiniteTransition.animateFloat(
         initialValue = 0f,
@@ -181,6 +200,85 @@ fun CosmicPlanetView(
         animationSpec = infiniteRepeatable(tween(1800, easing = FastOutSlowInEasing), RepeatMode.Reverse),
         label = "shield_glow_pulse"
     )
+
+    CosmicPlanetContent(
+        stage = stage,
+        index = index,
+        modifier = modifier,
+        totalStages = totalStages,
+        unlockProgress = unlockProgress,
+        cloudRotationPhase = cloudRotationPhase,
+        ringRotationPhase = ringRotationPhase,
+        satelliteAngle = satelliteAngle,
+        shieldRotationPhase = shieldRotationPhase,
+        shieldGlowPulse = shieldGlowPulse,
+        onLongClick = onLongClick,
+        onClick = onClick
+    )
+}
+
+@Composable
+private fun StaticCosmicPlanetView(
+    stage: JourneyStageUiModel,
+    index: Int,
+    modifier: Modifier = Modifier,
+    totalStages: Int = -1,
+    unlockProgress: Float = 0f,
+    onLongClick: (() -> Unit)? = null,
+    onClick: () -> Unit
+) {
+    // 120 FPS Optimization: Hành tinh tĩnh sử dụng góc quay cố định, triệt tiêu 100% chi phí tính toán hoạt họa
+    val cloudRotationPhase = (index * 47f) % 360f
+    val ringRotationPhase = (index * 29f) % 360f
+    val satelliteAngle = (index * 61f) % 360f
+    val shieldRotationPhase = (index * 33f) % 360f
+    val shieldGlowPulse = 1.0f
+
+    CosmicPlanetContent(
+        stage = stage,
+        index = index,
+        modifier = modifier.graphicsLayer {}, // Tách biệt RenderNode trên GPU cache
+        totalStages = totalStages,
+        unlockProgress = unlockProgress,
+        cloudRotationPhase = cloudRotationPhase,
+        ringRotationPhase = ringRotationPhase,
+        satelliteAngle = satelliteAngle,
+        shieldRotationPhase = shieldRotationPhase,
+        shieldGlowPulse = shieldGlowPulse,
+        onLongClick = onLongClick,
+        onClick = onClick
+    )
+}
+
+@Composable
+private fun CosmicPlanetContent(
+    stage: JourneyStageUiModel,
+    index: Int,
+    modifier: Modifier = Modifier,
+    totalStages: Int = -1,
+    unlockProgress: Float = 0f,
+    cloudRotationPhase: Float,
+    ringRotationPhase: Float,
+    satelliteAngle: Float,
+    shieldRotationPhase: Float,
+    shieldGlowPulse: Float,
+    onLongClick: (() -> Unit)? = null,
+    onClick: () -> Unit
+) {
+    val planetType = remember(index, totalStages) { CosmicPlanetHelper.getPlanetTypeForStage(index, totalStages) }
+    val planetDiameter = remember(index, totalStages) { CosmicPlanetHelper.getPlanetDiameter(index, totalStages) }
+    val isSaturn = planetType == CosmicPlanetType.SATURN_MONARCH
+    val isSun = planetType == CosmicPlanetType.SOLAR_SUN
+
+    // Kích thước container mở rộng cho vành đai Sao Thổ hoặc hào quang nhật hoa / tai lửa Mặt Trời
+    val containerWidth = if (isSaturn) 236.dp else 216.dp
+    val containerHeight = 236.dp
+
+    val isCurrent = stage.state == JourneyStageState.CURRENT
+    val isCompleted = stage.state == JourneyStageState.COMPLETED
+    val isLocked = stage.state == JourneyStageState.LOCKED
+
+    val auraGlow = 0.55f
 
     val animatedProgress by animateFloatAsState(
         targetValue = stage.progress.coerceIn(0f, 1f),

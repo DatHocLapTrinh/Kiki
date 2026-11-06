@@ -340,6 +340,8 @@ fun JourneyMapScreen(
                         animatingUnlockStageIndex = animatingUnlockStageIndex,
                         pendingUnlockIndex = pendingUnlockIndex,
                         unlockAnimProgress = unlockAnim.value,
+                        scrollValueProvider = { scrollState.value.toFloat() },
+                        viewportHeightProvider = { scrollState.viewportSize.toFloat() },
                         onStageStartQuest = { stage ->
                             if (hearts <= 0) {
                                 showOutOfHeartsPrompt = true
@@ -636,6 +638,8 @@ private fun JourneyPath(
     animatingUnlockStageIndex: Int = -1,
     pendingUnlockIndex: Int = -1,
     unlockAnimProgress: Float = 0f,
+    scrollValueProvider: () -> Float = { 0f },
+    viewportHeightProvider: () -> Float = { 0f },
     onStageStartQuest: (JourneyStageUiModel) -> Unit,
     onStageLongClick: ((JourneyStageUiModel, Int) -> Unit)? = null,
     onEnsureVisible: ((Float, Float) -> Unit)? = null,
@@ -689,16 +693,30 @@ private fun JourneyPath(
         }
 
         // 2. Dải cực quang ngân hà nối các hành tinh (Cosmic Aurora Segments)
-        Canvas(modifier = Modifier.matchParentSize()) {
+        // 120 FPS Optimization: Sử dụng Viewport Frustum Culling để chỉ vẽ các đoạn nằm trong khung nhìn
+        Canvas(modifier = Modifier.matchParentSize().graphicsLayer {}) {
             val nodeX = { index: Int -> if (index % 2 == 0) 90.dp.toPx() else size.width - 90.dp.toPx() }
             val nodeY = { index: Int -> ((index / 10) * sectionBreakHeight.toPx()) + index * stageStep.toPx() + 85.dp.toPx() }
 
             if (stages.size > 1) {
+                val scrollY = scrollValueProvider()
+                val viewportH = viewportHeightProvider()
+                // Thêm biên đệm an toàn 380dp ở trên và dưới để cực quang không bị ngắt đột ngột khi cuộn siêu tốc
+                val bufferPx = 380.dp.toPx()
+                val visibleTop = scrollY - bufferPx
+                val visibleBottom = scrollY + (if (viewportH > 0f) viewportH else 2500f) + bufferPx
+
                 for (s in 1..stages.lastIndex) {
-                    val startX = nodeX(s - 1)
                     val startY = nodeY(s - 1)
-                    val endX = nodeX(s)
                     val endY = nodeY(s)
+                    val segMinY = minOf(startY, endY)
+                    val segMaxY = maxOf(startY, endY)
+
+                    // Viewport Frustum Culling: Bỏ qua đoạn nối nằm hoàn toàn ngoài màn hình
+                    if (segMaxY < visibleTop || segMinY > visibleBottom) continue
+
+                    val startX = nodeX(s - 1)
+                    val endX = nodeX(s)
                     val startColor = getStageColor(s - 1)
                     val endColor = getStageColor(s)
 
