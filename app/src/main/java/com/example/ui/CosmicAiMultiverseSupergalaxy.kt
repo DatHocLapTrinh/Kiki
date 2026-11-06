@@ -7,8 +7,10 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
@@ -30,6 +32,7 @@ import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.JourneyStageState
@@ -335,7 +338,9 @@ private fun DrawScope.drawPortalFloatingStardust(
 }
 
 /**
- * Hộp Thoại Trình Diễn Đa Vũ Trụ AI Tuyệt Đẹp (Interactive Multiverse Preview Dialog)
+ * Hộp Thoại Trình Diễn Đa Vũ Trụ AI Tuyệt Đẹp (Interactive Multiverse Preview Dialog):
+ * Thiết kế Lưới 2x2 Holographic Grid cân đối hoàn hảo, hiển thị đồng thời trọn vẹn cả 4 đặc quyền AI,
+ * hỗ trợ cuộn mượt mà không bao giờ bị cắt xén hay che khuất.
  */
 @Composable
 fun CosmicMultiversePreviewDialog(
@@ -344,49 +349,61 @@ fun CosmicMultiversePreviewDialog(
 ) {
     AlertDialog(
         onDismissRequest = onDismiss,
-        containerColor = Color(0xFF140F28),
+        containerColor = Color(0xFF120D24),
         modifier = Modifier
             .fillMaxWidth()
-            .padding(10.dp)
+            .padding(horizontal = 8.dp, vertical = 12.dp)
             .border(
                 2.dp,
                 Brush.linearGradient(
                     listOf(
                         Color(0xFF51FAC1),
-                        Color(0xFF06B6D4),
+                        Color(0xFF00F5D4),
                         Color(0xFF8B5CF6),
+                        Color(0xFFFFD700),
                         Color(0xFFEC4899),
-                        Color(0xFFFFD166)
+                        Color(0xFF51FAC1)
                     )
                 ),
-                RoundedCornerShape(32.dp)
+                RoundedCornerShape(28.dp)
             ),
         title = {
-            Row(verticalAlignment = Alignment.CenterVertically) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.Center,
+                modifier = Modifier.fillMaxWidth()
+            ) {
                 Icon(
                     imageVector = Icons.Default.AllInclusive,
                     contentDescription = null,
                     tint = Color(0xFF51FAC1),
-                    modifier = Modifier.size(30.dp)
+                    modifier = Modifier.size(26.dp)
                 )
-                Spacer(modifier = Modifier.width(10.dp))
+                Spacer(modifier = Modifier.width(8.dp))
                 Text(
-                    text = if (isEnglish) "The Infinite AI Multiverse" else "Đa Vũ Trụ AI Vô Tận",
+                    text = if (isEnglish) "THE AI MULTIVERSE" else "ĐA VŨ TRỤ AI VÔ TẬN",
                     color = Color.White,
                     fontWeight = FontWeight.Black,
-                    fontSize = 21.sp
+                    fontSize = 19.sp,
+                    letterSpacing = 0.8.sp
                 )
             }
         },
         text = {
-            Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
-                // Banner SuperGalaxy Kiki Thu Nhỏ Ở Đầu Dialog
+            val scrollState = rememberScrollState()
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .verticalScroll(scrollState),
+                verticalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                // 1. Banner SuperGalaxy Kiki Điện Ảnh Thu Nhỏ
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(130.dp)
-                        .clip(RoundedCornerShape(18.dp))
-                        .border(1.5.dp, Color(0x6651FAC1), RoundedCornerShape(18.dp))
+                        .height(110.dp)
+                        .clip(RoundedCornerShape(16.dp))
+                        .border(1.2.dp, Color(0x6651FAC1), RoundedCornerShape(16.dp))
                 ) {
                     Image(
                         painter = painterResource(id = R.drawable.img_kiki_supergalaxy_portal),
@@ -401,113 +418,157 @@ fun CosmicMultiversePreviewDialog(
                                 Brush.verticalGradient(
                                     listOf(
                                         Color.Transparent,
-                                        Color(0x99140F28)
+                                        Color(0x77120D24)
                                     )
                                 )
                             )
                     )
                 }
 
+                // 2. Dòng Dẫn Dắt Ngắn Gọn Sắc Nét
                 Text(
                     text = if (isEnglish) {
-                        "Congratulations on reaching the ultimate cosmic horizon! Here are the 4 God-Tier Privileges awaiting you in the AI Multiverse:"
+                        "Conquer 40 planets to unlock all 4 God-Tier AI Privileges:"
                     } else {
-                        "Chào mừng bạn đã chạm đến đỉnh cao vũ trụ! Đây là 4 đặc quyền tối thượng của Đa Vũ Trụ AI đang chờ bạn kích hoạt:"
+                        "Khám phá trọn vẹn 4 đặc quyền tối thượng của Đa Vũ Trụ AI:"
                     },
                     color = Color(0xFFE2E8F0),
-                    fontSize = 13.5.sp,
-                    lineHeight = 19.sp
+                    fontSize = 12.5.sp,
+                    fontWeight = FontWeight.Medium,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.fillMaxWidth()
                 )
 
-                MultiverseFeatureRow(
-                    icon = Icons.Default.AutoFixHigh,
-                    iconTint = Color(0xFF51FAC1),
-                    title = if (isEnglish) "Autonomous AI Worlds" else "Tự Sinh Thế Giới Học Tập Vô Tận",
-                    desc = if (isEnglish) "Generate any course from your wildest prompts." else "Nhập bất kỳ chủ đề hay sở thích nào, AI sẽ tự kiến tạo hành tinh học tập riêng."
-                )
+                // 3. LƯỚI 2x2 CẢ 4 ĐẶC QUYỀN VŨ TRỤ (HIỂN THỊ ĐẦY ĐỦ 100%, KHÔNG BỊ KHUẤT)
+                // Hàng 1: Vũ Trụ AI & Persona Sống
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    MultiversePrivilegeGridCard(
+                        modifier = Modifier.weight(1f),
+                        icon = Icons.Default.AutoFixHigh,
+                        accentColor = Color(0xFF51FAC1),
+                        title = if (isEnglish) "AI Worlds" else "Vũ Trụ AI",
+                        desc = if (isEnglish) "Generate custom courses from prompts" else "Tự tạo hành tinh học từ mọi sở thích"
+                    )
+                    MultiversePrivilegeGridCard(
+                        modifier = Modifier.weight(1f),
+                        icon = Icons.Default.RecordVoiceOver,
+                        accentColor = Color(0xFF00F5D4),
+                        title = if (isEnglish) "Live Persona" else "Persona Sống",
+                        desc = if (isEnglish) "Real-time 1-on-1 spoken AI practice" else "Luyện nói phản xạ 1-1 tự nhiên"
+                    )
+                }
 
-                MultiverseFeatureRow(
-                    icon = Icons.Default.RecordVoiceOver,
-                    iconTint = Color(0xFF06B6D4),
-                    title = if (isEnglish) "Living AI Personas" else "Hội Thoại Thời Gian Thực Với AI Persona",
-                    desc = if (isEnglish) "Converse in real-time with cosmic intelligent mentors." else "Trò chuyện tương tác phản xạ tự nhiên 1-1 không độ trễ như người bản xứ."
-                )
-
-                MultiverseFeatureRow(
-                    icon = Icons.Default.Bolt,
-                    iconTint = Color(0xFFFFB703),
-                    title = if (isEnglish) "500% Supercharged XP" else "Gia Tốc Lượng Tử 500% XP & Mana",
-                    desc = if (isEnglish) "Ascend to cosmic godhood at unprecedented speed." else "Tích lũy kinh nghiệm siêu tốc để thăng hạng liên ngân hà."
-                )
-
-                MultiverseFeatureRow(
-                    icon = Icons.Default.WorkspacePremium,
-                    iconTint = Color(0xFFEC4899),
-                    title = if (isEnglish) "Hall of Galactic Immortals" else "Điện Thờ Bất Tử Đa Vũ Trụ",
-                    desc = if (isEnglish) "Immortalize your name across the cosmic leaderboards." else "Khắc tên vĩnh hằng trên Bảng Vàng Ngân Hà và nhận vương miện AI Hoàng Kim."
-                )
+                // Hàng 2: Gia Tốc 500% & Điện Bất Tử
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    MultiversePrivilegeGridCard(
+                        modifier = Modifier.weight(1f),
+                        icon = Icons.Default.Bolt,
+                        accentColor = Color(0xFFFFD700),
+                        title = if (isEnglish) "500% Boost" else "Gia Tốc 500%",
+                        desc = if (isEnglish) "5X multiplier for XP, Mana & Stars" else "Nhân 5 tốc độ XP & Mana"
+                    )
+                    MultiversePrivilegeGridCard(
+                        modifier = Modifier.weight(1f),
+                        icon = Icons.Default.WorkspacePremium,
+                        accentColor = Color(0xFFEC4899),
+                        title = if (isEnglish) "Immortals" else "Điện Bất Tử",
+                        desc = if (isEnglish) "Galactic Hall of Fame & Crowns" else "Vương miện & Bảng Vàng vũ trụ"
+                    )
+                }
             }
         },
         confirmButton = {
             Button(
                 onClick = onDismiss,
                 colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF51FAC1)),
-                shape = RoundedCornerShape(22.dp),
-                modifier = Modifier.fillMaxWidth().height(48.dp)
+                shape = RoundedCornerShape(20.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(46.dp)
             ) {
                 Text(
-                    text = if (isEnglish) "I Will Conquer It!" else "Tôi Sẽ Chinh Phục!",
+                    text = if (isEnglish) "I Will Conquer It! 🚀" else "Tôi Sẽ Chinh Phục! 🚀",
                     color = Color(0xFF092E20),
                     fontWeight = FontWeight.Black,
-                    fontSize = 15.sp
+                    fontSize = 14.5.sp,
+                    letterSpacing = 0.5.sp
                 )
             }
         }
     )
 }
 
+/**
+ * Thẻ Đặc Quyền Vũ Trụ Lưới 2x2 Cực Đẹp (Hologram Privilege Grid Card)
+ */
 @Composable
-private fun MultiverseFeatureRow(
+private fun MultiversePrivilegeGridCard(
     icon: androidx.compose.ui.graphics.vector.ImageVector,
-    iconTint: Color,
+    accentColor: Color,
     title: String,
-    desc: String
+    desc: String,
+    modifier: Modifier = Modifier
 ) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
+    Box(
+        modifier = modifier
             .clip(RoundedCornerShape(16.dp))
-            .background(Color(0x331E1838))
-            .padding(12.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Box(
-            modifier = Modifier
-                .size(42.dp)
-                .clip(CircleShape)
-                .background(iconTint.copy(alpha = 0.22f)),
-            contentAlignment = Alignment.Center
-        ) {
-            Icon(
-                imageVector = icon,
-                contentDescription = null,
-                tint = iconTint,
-                modifier = Modifier.size(22.dp)
+            .background(
+                Brush.verticalGradient(
+                    listOf(
+                        Color(0xFF1D1733),
+                        Color(0xFF140F26)
+                    )
+                )
             )
-        }
-        Spacer(modifier = Modifier.width(14.dp))
-        Column {
+            .border(
+                1.2.dp,
+                Brush.verticalGradient(
+                    listOf(
+                        accentColor.copy(alpha = 0.85f),
+                        accentColor.copy(alpha = 0.20f)
+                    )
+                ),
+                RoundedCornerShape(16.dp)
+            )
+            .padding(horizontal = 10.dp, vertical = 10.dp)
+    ) {
+        Column(horizontalAlignment = Alignment.Start) {
+            Box(
+                modifier = Modifier
+                    .size(32.dp)
+                    .clip(CircleShape)
+                    .background(accentColor.copy(alpha = 0.20f)),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = icon,
+                    contentDescription = null,
+                    tint = accentColor,
+                    modifier = Modifier.size(18.dp)
+                )
+            }
+            Spacer(modifier = Modifier.height(7.dp))
             Text(
                 text = title,
                 color = Color.White,
-                fontWeight = FontWeight.Bold,
-                fontSize = 13.5.sp
+                fontWeight = FontWeight.Black,
+                fontSize = 12.5.sp,
+                maxLines = 1
             )
+            Spacer(modifier = Modifier.height(3.dp))
             Text(
                 text = desc,
                 color = Color(0xFF94A3B8),
-                fontSize = 11.5.sp,
-                lineHeight = 15.sp
+                fontSize = 10.5.sp,
+                lineHeight = 13.5.sp,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis
             )
         }
     }
