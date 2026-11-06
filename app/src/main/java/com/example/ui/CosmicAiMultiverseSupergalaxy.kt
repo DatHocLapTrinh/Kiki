@@ -23,7 +23,6 @@ import androidx.compose.ui.graphics.*
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.rotate
-import androidx.compose.ui.graphics.drawscope.withTransform
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalHapticFeedback
@@ -40,11 +39,10 @@ import com.example.util.DevicePerformanceManager
 import kotlin.math.*
 
 /**
- * Siêu Thiên Hà Đa Vũ Trụ AI Vô Tận (The Infinite AI Multiverse Grand Spiral Supergalaxy):
- * Kiệt tác thị giác thiên văn siêu thực chuẩn kính viễn vọng không gian Hubble / James Webb (M51 Whirlpool Galaxy).
- * Kết hợp thân thiên hà xoắn ốc photorealistic chân thực, lõi sao vàng ngọc trai rực rỡ,
- * các vườn ươm sao hồng ngọc (H-alpha ruby nebulae), bụi kim cương xanh băng lấp lánh,
- * tia nhiễu xạ sao James Webb và 4 tiểu thiên hà vệ tinh quay quanh.
+ * Siêu Thiên Hà Đa Vũ Trụ AI Vô Tận (The Infinite AI Multiverse Cosmic Gateway Portal):
+ * Kiệt tác thị giác vũ trụ học thuật Kiki đỉnh cao đặt tại điểm kết của lộ trình 40 hành tinh.
+ * Mô phỏng Cổng Không Gian Lượng Tử hiển thị bức tranh SuperGalaxy với linh vật Kiến Kiki học giả,
+ * thiên hà tri thức xoắn ốc rực sáng, các chữ cái neon phát quang và các hạt bụi sao sống động 120 FPS.
  */
 @Composable
 fun CosmicAiMultiverseSupergalaxyView(
@@ -62,63 +60,53 @@ fun CosmicAiMultiverseSupergalaxyView(
     val progressPercent = (completedStages.toFloat() / totalStages).coerceIn(0f, 1f)
     val isFullyUnlocked = completedStages >= totalStages
 
-    // Hệ thống Animation đa tầng mượt mà 60/120 FPS
-    val galaxyRotation: Float
-    val counterRotation: Float
-    val coreBreathingPulse: Float
-    val starTwinklePhase: Float
+    // Hệ thống Animation đa tầng mượt mà 60/120 FPS (Tự động thích ứng cấu hình máy)
+    val portalBreathingPulse: Float
     val borderShimmerPhase: Float
+    val starParticlePhase: Float
+    val auraPulsate: Float
 
     if (isLowEnd) {
-        galaxyRotation = 45f
-        counterRotation = -20f
-        coreBreathingPulse = 1.0f
-        starTwinklePhase = 0.5f
+        portalBreathingPulse = 1.0f
         borderShimmerPhase = 0f
+        starParticlePhase = 0.5f
+        auraPulsate = 1.0f
     } else {
-        val infiniteTransition = rememberInfiniteTransition(label = "grand_spiral_galaxy_anim")
+        val infiniteTransition = rememberInfiniteTransition(label = "supergalaxy_portal_anim")
 
-        // 1. Vòng xoay chậm rãi, kỳ vĩ của thiên hà xoắn ốc (Majestic Slow Cosmic Rotation: 45s/vòng)
-        val rot by infiniteTransition.animateFloat(
-            initialValue = 0f,
-            targetValue = 360f,
-            animationSpec = infiniteRepeatable(tween(45000, easing = LinearEasing), RepeatMode.Restart),
-            label = "galaxy_rot"
-        )
-        // 2. Vòng xoay ngược của tia tán xạ quang học James Webb (JWST Diffraction counter-rotation)
-        val cRot by infiniteTransition.animateFloat(
-            initialValue = 360f,
-            targetValue = 0f,
-            animationSpec = infiniteRepeatable(tween(30000, easing = LinearEasing), RepeatMode.Restart),
-            label = "counter_rot"
-        )
-        // 3. Nhịp thở năng lượng ánh sao của lõi thiên hà (Galactic Core Breathing)
+        // 1. Nhịp thở năng lượng điện ảnh của Cổng Không Gian (Cinematic Breath: 3.6s)
         val pulse by infiniteTransition.animateFloat(
-            initialValue = 0.96f,
-            targetValue = 1.05f,
-            animationSpec = infiniteRepeatable(tween(2600, easing = FastOutSlowInEasing), RepeatMode.Reverse),
-            label = "core_pulse"
+            initialValue = 0.985f,
+            targetValue = 1.018f,
+            animationSpec = infiniteRepeatable(tween(3600, easing = FastOutSlowInEasing), RepeatMode.Reverse),
+            label = "portal_pulse"
         )
-        // 4. Nhịp chớp sáng nhấp nháy của các cụm tinh vân sao non (Nebula twinkle phase)
-        val twinkle by infiniteTransition.animateFloat(
-            initialValue = 0f,
-            targetValue = 1f,
-            animationSpec = infiniteRepeatable(tween(2000, easing = LinearEasing), RepeatMode.Restart),
-            label = "star_twinkle"
-        )
-        // 5. Viền ánh sáng chuyển sắc HUD Hologram
+        // 2. Viền ánh sáng Holographic chuyển sắc liên tục (Shimmer Glow Phase)
         val shimmer by infiniteTransition.animateFloat(
             initialValue = 0f,
-            targetValue = 1000f,
-            animationSpec = infiniteRepeatable(tween(4000, easing = LinearEasing), RepeatMode.Restart),
-            label = "hud_shimmer"
+            targetValue = 1200f,
+            animationSpec = infiniteRepeatable(tween(4200, easing = LinearEasing), RepeatMode.Restart),
+            label = "border_shimmer"
+        )
+        // 3. Pha chuyển động hạt bụi sao & cực quang vi mô (Micro-stardust float phase)
+        val stardust by infiniteTransition.animateFloat(
+            initialValue = 0f,
+            targetValue = 1f,
+            animationSpec = infiniteRepeatable(tween(2800, easing = LinearEasing), RepeatMode.Restart),
+            label = "stardust_phase"
+        )
+        // 4. Nhịp xung quầng hào quang sau lưng cổng (Ambient Backlight Pulse)
+        val aura by infiniteTransition.animateFloat(
+            initialValue = 0.85f,
+            targetValue = 1.15f,
+            animationSpec = infiniteRepeatable(tween(2400, easing = FastOutSlowInEasing), RepeatMode.Reverse),
+            label = "aura_pulse"
         )
 
-        galaxyRotation = rot
-        counterRotation = cRot
-        coreBreathingPulse = pulse
-        starTwinklePhase = twinkle
+        portalBreathingPulse = pulse
         borderShimmerPhase = shimmer
+        starParticlePhase = stardust
+        auraPulsate = aura
     }
 
     Column(
@@ -127,7 +115,7 @@ fun CosmicAiMultiverseSupergalaxyView(
             .padding(horizontal = 16.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        // ── 1. ĐỒ HỌA SIÊU THIÊN HÀ XOẮN ỐC WHIRLPOOL PHOTOREALISTIC KHỔNG LỒ ──
+        // ── 1. CỔNG KHÔNG GIAN TRI THỨC ĐA VŨ TRỤ AI (HOLOGRAPHIC MULTIVERSE PORTAL) ──
         Box(
             modifier = Modifier
                 .fillMaxWidth()
@@ -135,26 +123,25 @@ fun CosmicAiMultiverseSupergalaxyView(
                 .graphicsLayer {},
             contentAlignment = Alignment.Center
         ) {
-            // Lớp 1: Quầng Hào Quang Tinh Vân Vũ Trụ Sâu (Deep Space Ambient Nebula Glow)
+            // Lớp 1.1: Quầng Hào Quang Tinh Vân Vũ Trụ Sau Lưng Cổng (Ambient Nebula Backlight)
             Canvas(
                 modifier = Modifier
                     .size(410.dp)
                     .graphicsLayer {
-                        scaleX = coreBreathingPulse
-                        scaleY = coreBreathingPulse
+                        scaleX = auraPulsate
+                        scaleY = auraPulsate
                     }
             ) {
                 val center = Offset(size.width / 2f, size.height / 2f)
                 val maxRadius = size.width / 2f
 
-                // Hào quang vàng hoàng kim starlight ấm áp từ tâm tỏa ra
                 drawCircle(
                     brush = Brush.radialGradient(
                         colors = listOf(
-                            Color(0x55FFE082), // Warm Starlight Gold
-                            Color(0x35FF8A65), // Coral Amber Dust
-                            Color(0x258B5CF6), // Cosmic Violet
-                            Color(0x1206B6D4), // Deep Cyan
+                            Color(0x667C3AED), // Cosmic Violet
+                            Color(0x4406B6D4), // Quantum Cyan
+                            Color(0x33FFB703), // Starlight Gold
+                            Color(0x22EC4899), // Nebula Pink
                             Color.Transparent
                         ),
                         center = center,
@@ -165,72 +152,95 @@ fun CosmicAiMultiverseSupergalaxyView(
                 )
             }
 
-            // Lớp 2: Thân Thiên Hà Xoắn Ốc Photorealistic M51 (Xoay chuyển động chân thực trên GPU)
-            Image(
-                painter = painterResource(id = R.drawable.img_whirlpool_supergalaxy),
-                contentDescription = "Grand Spiral Whirlpool Galaxy",
-                contentScale = ContentScale.Fit,
+            // Lớp 1.2: Khung Cổng Không Gian Lượng Tử Bo Tròn Lộng Lẫy (Hologram Portal Frame)
+            Box(
                 modifier = Modifier
-                    .size(390.dp)
-                    .graphicsLayer {
-                        rotationZ = galaxyRotation
-                        scaleX = coreBreathingPulse
-                        scaleY = coreBreathingPulse
-                    }
-            )
-
-            // Lớp 3: Canvas Hiệu Ứng Ánh Sao Sống Động (Starlight Spikes, Ruby Nebulae, Satellites)
-            Canvas(modifier = Modifier.fillMaxSize()) {
-                val center = Offset(size.width / 2f, size.height / 2f)
-                val coreRadius = 28.dp.toPx() * coreBreathingPulse
-
-                // 3.1. Lõi sao trung tâm siêu sáng (Super-Luminous Galactic Starlight Core)
-                drawCircle(
-                    brush = Brush.radialGradient(
-                        colors = listOf(
-                            Color.White,
-                            Color(0xFFFFF9C4),
-                            Color(0xFFFFD54F).copy(alpha = 0.85f),
-                            Color(0xFFFF8F00).copy(alpha = 0.40f),
-                            Color.Transparent
+                    .fillMaxWidth(0.96f)
+                    .height(390.dp)
+                    .scale(portalBreathingPulse)
+                    .clip(RoundedCornerShape(34.dp))
+                    .background(Color(0xFF0B061A))
+                    .border(
+                        width = 3.dp,
+                        brush = Brush.linearGradient(
+                            colors = listOf(
+                                Color(0xFF00F5D4), // Cyan Laser
+                                Color(0xFF8B5CF6), // Royal Purple
+                                Color(0xFFFFD700), // Starlight Gold
+                                Color(0xFFFF007F), // Cyber Magenta
+                                Color(0xFF00F5D4)
+                            ),
+                            start = Offset(borderShimmerPhase, 0f),
+                            end = Offset(borderShimmerPhase + 600f, 600f)
                         ),
-                        center = center,
-                        radius = coreRadius * 1.6f
-                    ),
-                    center = center,
-                    radius = coreRadius * 1.6f
+                        shape = RoundedCornerShape(34.dp)
+                    )
+            ) {
+                // Tác Phẩm Nghệ Thuật SuperGalaxy Kiki Siêu Nét
+                Image(
+                    painter = painterResource(id = R.drawable.img_kiki_supergalaxy_portal),
+                    contentDescription = "Kiki SuperGalaxy Multiverse Portal",
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier.fillMaxSize()
                 )
 
-                // 3.2. Tia Nhiễu Xạ Hình Sao James Webb 4 Cánh Lấp Lánh (JWST 4-Point Starlight Diffraction Spikes)
-                withTransform({
-                    rotate(counterRotation, center)
-                }) {
-                    drawStarlightDiffractionSpikes(center, spikeLength = coreRadius * 3.4f)
-                }
+                // Lớp Gradient Che Phủ Mờ Dần Ở Đáy Để Chuyển Tiếp Sang Card HUD
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(110.dp)
+                        .align(Alignment.BottomCenter)
+                        .background(
+                            Brush.verticalGradient(
+                                listOf(
+                                    Color.Transparent,
+                                    Color(0xA00B061A),
+                                    Color(0xF0070314)
+                                )
+                            )
+                        )
+                )
 
-                // 3.3. Các Vườn Ươm Sao Hồng Ruby & Cụm Sao Xanh Băng Lấp Lánh (Dọc theo các nhánh xoắn ốc)
-                withTransform({
-                    rotate(galaxyRotation, center)
-                }) {
-                    drawDynamicStellarNurseries(
-                        center = center,
-                        maxRadius = 180.dp.toPx(),
-                        twinklePhase = starTwinklePhase,
+                // Lớp Hạt Bụi Sao & Tia Sáng Sống Động Bay Lơ Lửng Trên Cổng (Floating Stardust Layer)
+                Canvas(modifier = Modifier.fillMaxSize()) {
+                    drawPortalFloatingStardust(
+                        width = size.width,
+                        height = size.height,
+                        phase = starParticlePhase,
                         isLowEnd = isLowEnd
                     )
                 }
 
-                // 3.4. 4 Tiểu Thiên Hà Vệ Tinh (Orbiting Satellite Dwarf Galaxies)
-                drawOrbitingSatelliteGalaxies(
-                    center = center,
-                    orbitRadius = 192.dp.toPx(),
-                    rotationDeg = galaxyRotation,
-                    isLowEnd = isLowEnd
-                )
+                // Huy hiệu Cổng Chiều Không Gian Ở Đỉnh Cổng
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier
+                        .align(Alignment.TopCenter)
+                        .padding(top = 14.dp)
+                        .clip(RoundedCornerShape(18.dp))
+                        .background(Color(0xCC070314))
+                        .border(1.2.dp, Color(0xAA00F5D4), RoundedCornerShape(18.dp))
+                        .padding(horizontal = 14.dp, vertical = 6.dp)
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(8.dp)
+                            .clip(CircleShape)
+                            .background(Color(0xFF00F5D4))
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = if (isEnglish) "KIKI AI MULTIVERSE GATEWAY" else "CỔNG ĐA VŨ TRỤ TRI THỨC KIKI",
+                        color = Color(0xFF00F5D4),
+                        fontSize = 11.5.sp,
+                        fontWeight = FontWeight.Black,
+                        letterSpacing = 1.2.sp
+                    )
+                }
             }
         }
 
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(18.dp))
 
         // ── 2. THẺ HOLOGRAPHIC VIP TRẠM CỔNG ĐA VŨ TRỤ (LUXURY QUANTUM GATEWAY HUD) ──
         Box(
@@ -265,40 +275,6 @@ fun CosmicAiMultiverseSupergalaxyView(
                 .padding(22.dp)
         ) {
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                // Huy hiệu Chip Lượng Tử phát sáng
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(16.dp))
-                        .background(
-                            Brush.horizontalGradient(
-                                listOf(
-                                    Color(0x448B5CF6),
-                                    Color(0x4406B6D4)
-                                )
-                            )
-                        )
-                        .border(1.2.dp, Color(0x8851FAC1), RoundedCornerShape(16.dp))
-                        .padding(horizontal = 14.dp, vertical = 6.dp)
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .size(8.dp)
-                            .clip(CircleShape)
-                            .background(Color(0xFF51FAC1))
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(
-                        text = if (isEnglish) "QUANTUM MULTIVERSE GATEWAY" else "CỔNG ĐA VŨ TRỤ LƯỢNG TỬ AI",
-                        color = Color(0xFF51FAC1),
-                        fontSize = 11.5.sp,
-                        fontWeight = FontWeight.Black,
-                        letterSpacing = 1.3.sp
-                    )
-                }
-
-                Spacer(modifier = Modifier.height(12.dp))
-
                 Text(
                     text = if (isEnglish) "The Final Apex of Multiverse Wisdom" else "Đỉnh Cao Tri Thức Vũ Trụ Tuyệt Đối",
                     color = Color.White,
@@ -311,9 +287,9 @@ fun CosmicAiMultiverseSupergalaxyView(
 
                 Text(
                     text = if (isEnglish) {
-                        "Conquer all 40 planets to shatter spacetime barriers. Generative AI will awaken to synthesize your own infinite personalized worlds!"
+                        "Conquer all 40 solar planets to awaken the Infinite AI Multiverse. Mentor Kiki stands by your side to explore boundless knowledge worlds!"
                     } else {
-                        "Chinh phục trọn vẹn 40 Hành Tinh Hệ Mặt Trời để xé toạc ranh giới không thời gian. Nơi AI Siêu Trí Tuệ kiến tạo thế giới học tập vô tận độc bản riêng bạn!"
+                        "Chinh phục trọn vẹn 40 Hành Tinh Hệ Mặt Trời để kích hoạt Đa Vũ Trụ AI Vô Tận. Nơi Kiến Kiki đồng hành cùng bạn khám phá các thế giới tri thức bất tận!"
                     },
                     color = Color(0xFFE2E8F0),
                     fontSize = 13.5.sp,
@@ -493,166 +469,47 @@ private fun MultiverseMiniFeatureChip(
 }
 
 /**
- * Vẽ tia Nhiễu Xạ Hình Sao James Webb 4 Cánh Lấp Lánh (JWST 4-Point Starlight Diffraction Spikes)
+ * Vẽ các hạt bụi sao & tia sáng lơ lửng trên cổng không gian (Floating Stardust Particles)
  */
-private fun DrawScope.drawStarlightDiffractionSpikes(center: Offset, spikeLength: Float) {
-    val angles = floatArrayOf(0f, 90f) // Tia chữ thập thanh mảnh chính xác
-    for (angle in angles) {
-        val rad = Math.toRadians(angle.toDouble()).toFloat()
-        val cosA = cos(rad)
-        val sinA = sin(rad)
-
-        // Tia sáng chính
-        drawLine(
-            brush = Brush.linearGradient(
-                colors = listOf(
-                    Color.Transparent,
-                    Color(0xFFFFF9C4).copy(alpha = 0.95f),
-                    Color.White,
-                    Color(0xFFFFF9C4).copy(alpha = 0.95f),
-                    Color.Transparent
-                ),
-                start = Offset(center.x - cosA * spikeLength, center.y - sinA * spikeLength),
-                end = Offset(center.x + cosA * spikeLength, center.y + sinA * spikeLength)
-            ),
-            start = Offset(center.x - cosA * spikeLength, center.y - sinA * spikeLength),
-            end = Offset(center.x + cosA * spikeLength, center.y + sinA * spikeLength),
-            strokeWidth = 2.2.dp.toPx()
-        )
-
-        // Tia mờ phụ 45 độ ngắn hơn
-        val diagRad = Math.toRadians((angle + 45f).toDouble()).toFloat()
-        val cosD = cos(diagRad)
-        val sinD = sin(diagRad)
-        val diagLen = spikeLength * 0.55f
-        drawLine(
-            brush = Brush.linearGradient(
-                colors = listOf(
-                    Color.Transparent,
-                    Color(0xFFFFD54F).copy(alpha = 0.60f),
-                    Color.Transparent
-                ),
-                start = Offset(center.x - cosD * diagLen, center.y - sinD * diagLen),
-                end = Offset(center.x + cosD * diagLen, center.y + sinD * diagLen)
-            ),
-            start = Offset(center.x - cosD * diagLen, center.y - sinD * diagLen),
-            end = Offset(center.x + cosD * diagLen, center.y + sinD * diagLen),
-            strokeWidth = 1.2.dp.toPx()
-        )
-    }
-}
-
-/**
- * Vẽ các Vườn Ươm Sao Hồng Ruby (H-II Emission Nebulae) & Cụm Sao Trẻ Xanh Băng lấp lánh dọc nhánh xoắn ốc
- */
-private fun DrawScope.drawDynamicStellarNurseries(
-    center: Offset,
-    maxRadius: Float,
-    twinklePhase: Float,
+private fun DrawScope.drawPortalFloatingStardust(
+    width: Float,
+    height: Float,
+    phase: Float,
     isLowEnd: Boolean
 ) {
-    val starCount = if (isLowEnd) 32 else 72
+    val count = if (isLowEnd) 20 else 46
 
-    // Tọa độ hạt mô phỏng 2 nhánh xoắn ốc logarithm chính của Whirlpool Galaxy M51
-    for (i in 0 until starCount) {
-        val arm = i % 2 // 2 nhánh chính
-        val t = (i.toFloat() / starCount)
-        val baseAngle = arm * PI.toFloat() + t * 4.2f
-        val r = maxRadius * (0.22f + t * 0.72f)
+    for (i in 0 until count) {
+        // Tọa độ hạt phân bố đều quanh khu vực thiên hà và chú kiến Kiki
+        val seedX = (sin(i * 91.3f) * 0.5f + 0.5f)
+        val seedY = (cos(i * 47.7f) * 0.5f + 0.5f)
 
-        // Phân tán nhẹ quanh nhánh xoắn ốc
-        val jitterRadius = (sin(i * 12.3f) * 12.dp.toPx())
-        val jitterAngle = cos(i * 7.7f) * 0.25f
+        // Bay nhẹ hướng lên trên theo phase
+        val curY = ((seedY * height - phase * 60.dp.toPx() + height) % height)
+        val curX = seedX * width + sin(phase * 2f * PI.toFloat() + i) * 10.dp.toPx()
 
-        val finalR = (r + jitterRadius).coerceIn(20.dp.toPx(), maxRadius)
-        val finalAngle = baseAngle + jitterAngle
+        // Nhấp nháy luân phiên
+        val starAlpha = 0.35f + 0.65f * (0.5f + 0.5f * sin((phase + i * 0.2f) * 2f * PI.toFloat()))
+        val starRadius = (1.4f + (i % 3) * 0.8f).dp.toPx()
 
-        val x = center.x + finalR * cos(finalAngle)
-        val y = center.y + finalR * sin(finalAngle)
-
-        // Hiệu ứng nhấp nháy luân phiên
-        val individualPhase = (twinklePhase + (i * 0.17f)) % 1f
-        val alpha = 0.35f + 0.65f * (0.5f + 0.5f * sin(individualPhase * 2f * PI.toFloat()))
-
-        // Màu sắc: 60% cụm tinh vân hồng ngọc (H-alpha), 40% cụm sao xanh băng (O/B stars)
-        val isRuby = (i % 5 != 0)
-        val dotColor = if (isRuby) {
-            Color(0xFFFF2A6D).copy(alpha = alpha) // Bright Ruby Pink
-        } else {
-            Color(0xFF00E5FF).copy(alpha = alpha) // Icy Cyan Blue
+        val color = when (i % 4) {
+            0 -> Color(0xFF00F5D4) // Cyan
+            1 -> Color(0xFFFFD700) // Gold
+            2 -> Color(0xFFFF007F) // Magenta
+            else -> Color.White
         }
 
-        val dotRadius = if (isRuby) {
-            (1.8f + (i % 3) * 0.9f).dp.toPx()
-        } else {
-            (1.4f + (i % 2) * 0.7f).dp.toPx()
-        }
-
-        // Vòng quầng sáng mờ quanh hạt sao
+        // Quầng phát sáng
         drawCircle(
-            color = dotColor.copy(alpha = alpha * 0.45f),
-            radius = dotRadius * 2.2f,
-            center = Offset(x, y)
+            color = color.copy(alpha = starAlpha * 0.4f),
+            radius = starRadius * 2.2f,
+            center = Offset(curX, curY)
         )
-        // Tâm hạt sao sắc nét
+        // Tâm hạt sao
         drawCircle(
-            color = if (isRuby) Color(0xFFFF80AB) else Color.White,
-            radius = dotRadius,
-            center = Offset(x, y)
-        )
-    }
-}
-
-/**
- * Vẽ 4 Tiểu Thiên Hà Vệ Tinh (Satellite Dwarf Galaxies) quay quanh ở rìa ngoài
- */
-private fun DrawScope.drawOrbitingSatelliteGalaxies(
-    center: Offset,
-    orbitRadius: Float,
-    rotationDeg: Float,
-    isLowEnd: Boolean
-) {
-    val portalColors = listOf(
-        Color(0xFFFF3366), // Tiểu thiên hà 1: Đỏ Dung Nham (Đấu Trường Ngân Hà)
-        Color(0xFF00F5D4), // Tiểu thiên hà 2: Lam Ngọc (Trợ Lý AI Persona)
-        Color(0xFFA855F7), // Tiểu thiên hà 3: Tím Pha Lê (Thư Viện Đa Vũ Trụ)
-        Color(0xFFFFD166)  // Tiểu thiên hà 4: Vàng Hoàng Kim (Điện Thần Thoại)
-    )
-
-    for (p in 0 until 4) {
-        val angle = Math.toRadians((rotationDeg * 0.70f + (p * 90f)).toDouble()).toFloat()
-        val orbitX = center.x + orbitRadius * cos(angle)
-        val orbitY = center.y + (orbitRadius * 0.50f) * sin(angle)
-        val pColor = portalColors[p]
-
-        // Quầng hào quang phát xạ của tiểu thiên hà
-        drawCircle(
-            brush = Brush.radialGradient(
-                colors = listOf(
-                    pColor.copy(alpha = 0.85f),
-                    pColor.copy(alpha = 0.35f),
-                    Color.Transparent
-                ),
-                center = Offset(orbitX, orbitY),
-                radius = 20.dp.toPx()
-            ),
-            center = Offset(orbitX, orbitY),
-            radius = 20.dp.toPx()
-        )
-
-        // Vành xoắn ốc mini của tiểu thiên hà
-        drawCircle(
-            color = Color.White.copy(alpha = 0.75f),
-            center = Offset(orbitX, orbitY),
-            radius = 7.dp.toPx(),
-            style = Stroke(width = 1.4.dp.toPx())
-        )
-
-        // Tâm tiểu thiên hà phát sáng
-        drawCircle(
-            color = Color.White,
-            center = Offset(orbitX, orbitY),
-            radius = 3.5.dp.toPx()
+            color = Color.White.copy(alpha = starAlpha),
+            radius = starRadius,
+            center = Offset(curX, curY)
         )
     }
 }
@@ -703,6 +560,34 @@ fun CosmicMultiversePreviewDialog(
         },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
+                // Banner SuperGalaxy Kiki Thu Nhỏ Ở Đầu Dialog
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(130.dp)
+                        .clip(RoundedCornerShape(18.dp))
+                        .border(1.5.dp, Color(0x6651FAC1), RoundedCornerShape(18.dp))
+                ) {
+                    Image(
+                        painter = painterResource(id = R.drawable.img_kiki_supergalaxy_portal),
+                        contentDescription = "Multiverse Preview Banner",
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier.fillMaxSize()
+                    )
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .background(
+                                Brush.verticalGradient(
+                                    listOf(
+                                        Color.Transparent,
+                                        Color(0x99140F28)
+                                    )
+                                )
+                            )
+                    )
+                }
+
                 Text(
                     text = if (isEnglish) {
                         "Congratulations on reaching the ultimate cosmic horizon! Here are the 4 God-Tier Privileges awaiting you in the AI Multiverse:"
