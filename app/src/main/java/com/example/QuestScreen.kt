@@ -1416,6 +1416,7 @@ fun QuestScreen(viewModel: StudyViewModel, onFinish: () -> Unit) {
                                         val isPassed = totalCount > 0 && (correctCount.toFloat() / totalCount >= 0.5f)
                                         if (isPassed) {
                                             viewModel.completeCurrentLesson()
+                                            com.example.util.FeedbackPromptManager.incrementCompletedLessons(context)
                                         }
                                         viewModel.analyzeQuestResults(context, finalResults)
                                         onFinish()

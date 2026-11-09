@@ -973,11 +973,18 @@ fun MainNavigation(viewModel: StudyViewModel, onLogout: () -> Unit) {
         val strings = LocalAppStrings.current
         var showDuolingoMoreSheet by remember { mutableStateOf(false) }
         var showCosmicPassPaywall by remember { mutableStateOf(false) }
+        var showFeedbackPrompt by remember { mutableStateOf(false) }
 
         val navBackStackEntry by navController.currentBackStackEntryAsState()
         val currentNavRoute = navBackStackEntry?.destination?.route
         LaunchedEffect(currentNavRoute) {
             showDuolingoMoreSheet = false
+            if (currentNavRoute == "map" && com.example.util.FeedbackPromptManager.shouldShowFeedbackPrompt(context)) {
+                delay(1200)
+                if (currentNavRoute == "map" && com.example.util.FeedbackPromptManager.shouldShowFeedbackPrompt(context)) {
+                    showFeedbackPrompt = true
+                }
+            }
         }
 
         if (showDuolingoMoreSheet) {
@@ -1014,6 +1021,10 @@ fun MainNavigation(viewModel: StudyViewModel, onLogout: () -> Unit) {
                         launchSingleTop = true
                         restoreState = true
                     }
+                },
+                onNavigateFeedback = {
+                    showDuolingoMoreSheet = false
+                    showFeedbackPrompt = true
                 }
             )
         }
@@ -1044,6 +1055,21 @@ fun MainNavigation(viewModel: StudyViewModel, onLogout: () -> Unit) {
                         launchSingleTop = true
                         restoreState = true
                     }
+                }
+            )
+        }
+
+        if (showFeedbackPrompt) {
+            com.example.ui.CosmicFeedbackDialog(
+                isEnglish = isEnglish,
+                onOpenSurvey = {
+                    viewModel.addStars(50)
+                    com.example.util.FeedbackPromptManager.openSurveyInBrowser(context)
+                    showFeedbackPrompt = false
+                },
+                onDismiss = {
+                    com.example.util.FeedbackPromptManager.recordDismissed(context)
+                    showFeedbackPrompt = false
                 }
             )
         }
@@ -1223,7 +1249,8 @@ fun DuolingoMoreFloatingMenu(
     onNavigateCosmicPass: () -> Unit,
     onNavigateProfile: () -> Unit,
     onNavigateVocab: () -> Unit,
-    onNavigateSettings: () -> Unit
+    onNavigateSettings: () -> Unit,
+    onNavigateFeedback: () -> Unit
 ) {
     val haptic = LocalHapticFeedback.current
     val isEnglish = strings.settingsTitle == "Settings"
@@ -1335,6 +1362,20 @@ fun DuolingoMoreFloatingMenu(
                 onClick = {
                     haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
                     onNavigateSettings()
+                }
+            )
+
+            HorizontalDivider(color = Color(0x1A51FAC1), thickness = 0.8.dp)
+
+            // 4. Khảo sát & Góp ý trải nghiệm (Google Form)
+            DuolingoMenuItem(
+                title = if (isEnglish) "Survey & Feedback (+50 ⭐)" else "Khảo Sát & Góp Ý (+50 ⭐)",
+                icon = Icons.Default.Star,
+                iconTint = Color(0xFFFFD166),
+                iconBg = Color(0x22FFD166),
+                onClick = {
+                    haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                    onNavigateFeedback()
                 }
             )
         }
