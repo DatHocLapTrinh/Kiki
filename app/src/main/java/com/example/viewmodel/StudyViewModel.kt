@@ -553,8 +553,14 @@ class StudyViewModel @Inject constructor(
             if (streak >= 7 && !badges.contains(BadgeId.PERSISTENT_SCHOLAR.id)) {
                 checkAndUnlockBadge(BadgeId.PERSISTENT_SCHOLAR)
             }
-            if (cured >= 10 && !badges.contains(BadgeId.CHIEF_DOCTOR.id)) {
-                checkAndUnlockBadge(BadgeId.CHIEF_DOCTOR)
+            if (streak >= 30 && !badges.contains(BadgeId.STREAK_30.id)) {
+                checkAndUnlockBadge(BadgeId.STREAK_30)
+            }
+            if (streak >= 100 && !badges.contains(BadgeId.STREAK_100.id)) {
+                checkAndUnlockBadge(BadgeId.STREAK_100)
+            }
+            if (streak >= 300 && !badges.contains(BadgeId.STREAK_300.id)) {
+                checkAndUnlockBadge(BadgeId.STREAK_300)
             }
             if (mastered >= 30 && !badges.contains(BadgeId.SUPER_MEMORY.id)) {
                 checkAndUnlockBadge(BadgeId.SUPER_MEMORY)
@@ -2784,6 +2790,15 @@ class StudyViewModel @Inject constructor(
             if (newStreak >= 7) {
                 checkAndUnlockBadge(BadgeId.PERSISTENT_SCHOLAR)
             }
+            if (newStreak >= 30) {
+                checkAndUnlockBadge(BadgeId.STREAK_30)
+            }
+            if (newStreak >= 100) {
+                checkAndUnlockBadge(BadgeId.STREAK_100)
+            }
+            if (newStreak >= 300) {
+                checkAndUnlockBadge(BadgeId.STREAK_300)
+            }
         }
     }
 
@@ -2810,9 +2825,6 @@ class StudyViewModel @Inject constructor(
             val newCuredCount = prefs.getInt("cured_weak_points_count_$userId", 0) + 1
             prefs.edit().putInt("cured_weak_points_count_$userId", newCuredCount).apply()
             _curedWeakPointsCount.value = newCuredCount
-            if (newCuredCount >= 10) {
-                checkAndUnlockBadge(BadgeId.CHIEF_DOCTOR)
-            }
         }
     }
 

@@ -989,22 +989,26 @@ private fun ProfileClusterHeader(title: String, icon: ImageVector, color: Color)
 
 fun resolveBadgeTrophyResource(badgeId: String, iconKey: String): Int {
     return when (badgeId) {
-        "first_step" -> R.drawable.badge_first_step
-        "persistent_scholar" -> R.drawable.badge_persistent_scholar
-        "night_owl" -> R.drawable.badge_night_owl
-        "super_memory" -> R.drawable.badge_super_memory
-        "chief_doctor" -> R.drawable.badge_chief_doctor
-        "speaking_ace" -> R.drawable.badge_speaking_ace
-        "all_stages_mastery" -> R.drawable.badge_all_stages_mastery
+        "first_step" -> R.drawable.danh_hieu_bai_hoc_dau_tien
+        "night_owl" -> R.drawable.danh_hieu_cu_dem
+        "speaking_ace" -> R.drawable.danh_hieu_speaking
+        "super_memory" -> R.drawable.danh_hieu_sieu_tri_nho
+        "persistent_scholar" -> R.drawable.danh_hieu_streak_7_day
+        "streak_30" -> R.drawable.danh_hieu_streak_30_day
+        "streak_100" -> R.drawable.danh_hieu_streak_100_day
+        "streak_300" -> R.drawable.danh_hieu_streak_300_day
+        "all_stages_mastery" -> R.drawable.danh_hieu_toi_thuong
         else -> when (iconKey) {
-            "NIGHT_OWL" -> R.drawable.badge_night_owl
-            "CHIEF_DOCTOR" -> R.drawable.badge_chief_doctor
-            "SUPER_MEMORY" -> R.drawable.badge_super_memory
-            "PERSISTENT_SCHOLAR" -> R.drawable.badge_persistent_scholar
-            "FIRST_STEP" -> R.drawable.badge_first_step
-            "SPEAKING_ACE" -> R.drawable.badge_speaking_ace
-            "ALL_STAGES_MASTERY" -> R.drawable.badge_all_stages_mastery
-            else -> R.drawable.badge_first_step
+            "FIRST_STEP" -> R.drawable.danh_hieu_bai_hoc_dau_tien
+            "NIGHT_OWL" -> R.drawable.danh_hieu_cu_dem
+            "SPEAKING_ACE" -> R.drawable.danh_hieu_speaking
+            "SUPER_MEMORY" -> R.drawable.danh_hieu_sieu_tri_nho
+            "PERSISTENT_SCHOLAR" -> R.drawable.danh_hieu_streak_7_day
+            "STREAK_30" -> R.drawable.danh_hieu_streak_30_day
+            "STREAK_100" -> R.drawable.danh_hieu_streak_100_day
+            "STREAK_300" -> R.drawable.danh_hieu_streak_300_day
+            "ALL_STAGES_MASTERY" -> R.drawable.danh_hieu_toi_thuong
+            else -> R.drawable.danh_hieu_bai_hoc_dau_tien
         }
     }
 }

@@ -27,25 +27,33 @@ class AchievementBadgeTest {
     }
 
     @Test
-    fun testChiefDoctorProgressAndUnlock() {
-        val progressBadges = AchievementRegistry.getAllBadges(
+    fun testStreakMilestonesProgressAndUnlock() {
+        val streak20 = AchievementRegistry.getAllBadges(
             unlockedIds = emptySet(),
-            curedWeakPoints = 6
+            streak = 20
         )
-        val doctorInProgress = progressBadges.first { it.id == BadgeId.CHIEF_DOCTOR.id }
-        assertFalse("Doctor should be locked with 6 cured points", doctorInProgress.isUnlocked)
-        assertEquals(6, doctorInProgress.currentProgress)
-        assertEquals(10, doctorInProgress.targetCount)
-        assertEquals(0.6f, doctorInProgress.progressFraction, 0.01f)
+        val streak7 = streak20.first { it.id == BadgeId.PERSISTENT_SCHOLAR.id }
+        val streak30 = streak20.first { it.id == BadgeId.STREAK_30.id }
+        val streak100 = streak20.first { it.id == BadgeId.STREAK_100.id }
+        val streak300 = streak20.first { it.id == BadgeId.STREAK_300.id }
 
-        val completedBadges = AchievementRegistry.getAllBadges(
+        assertTrue("Streak 7 should be unlocked with 20 days", streak7.isUnlocked)
+        assertEquals(7, streak7.currentProgress)
+
+        assertFalse("Streak 30 should be locked with 20 days", streak30.isUnlocked)
+        assertEquals(20, streak30.currentProgress)
+        assertEquals(30, streak30.targetCount)
+
+        assertFalse("Streak 100 should be locked with 20 days", streak100.isUnlocked)
+        assertFalse("Streak 300 should be locked with 20 days", streak300.isUnlocked)
+
+        val streak150 = AchievementRegistry.getAllBadges(
             unlockedIds = emptySet(),
-            curedWeakPoints = 12
+            streak = 150
         )
-        val doctorCompleted = completedBadges.first { it.id == BadgeId.CHIEF_DOCTOR.id }
-        assertTrue("Doctor should be unlocked when >= 10 cured points", doctorCompleted.isUnlocked)
-        assertEquals(10, doctorCompleted.currentProgress)
-        assertEquals(1.0f, doctorCompleted.progressFraction, 0.01f)
+        assertTrue("Streak 30 should be unlocked with 150 days", streak150.first { it.id == BadgeId.STREAK_30.id }.isUnlocked)
+        assertTrue("Streak 100 should be unlocked with 150 days", streak150.first { it.id == BadgeId.STREAK_100.id }.isUnlocked)
+        assertFalse("Streak 300 should be locked with 150 days", streak150.first { it.id == BadgeId.STREAK_300.id }.isUnlocked)
     }
 
     @Test
@@ -87,7 +95,7 @@ class AchievementBadgeTest {
     @Test
     fun testAllBadgesIntegrity() {
         val allBadges = AchievementRegistry.getAllBadges(unlockedIds = emptySet())
-        assertEquals(7, allBadges.size)
+        assertEquals(9, allBadges.size)
 
         for (badge in allBadges) {
             assertTrue("Badge titleVi should not be blank: ${badge.id}", badge.titleVi.isNotBlank())
@@ -103,9 +111,9 @@ class AchievementBadgeTest {
     fun testAllBadgesMapToUniqueDrawables() {
         val allBadges = AchievementRegistry.getAllBadges(unlockedIds = emptySet())
         val mappedDrawables = allBadges.map { resolveBadgeTrophyResource(it.id, it.iconKey) }
-        assertEquals(7, mappedDrawables.size)
-        // All 7 badges must have distinct non-repeating drawables
-        assertEquals(7, mappedDrawables.toSet().size)
+        assertEquals(9, mappedDrawables.size)
+        // All 9 badges must have distinct non-repeating drawables
+        assertEquals(9, mappedDrawables.toSet().size)
         for (res in mappedDrawables) {
             assertTrue("Drawable res should be positive", res > 0)
         }
