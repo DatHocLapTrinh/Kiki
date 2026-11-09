@@ -1886,6 +1886,18 @@ private fun ProfileSettingsContent(
                     icon = Icons.Default.Shield,
                     onClick = onPrivacyClick
                 )
+
+                HorizontalDivider(color = Color(0x1A51FAC1), thickness = 0.8.dp)
+
+                ProfileSettingActionRow(
+                    title = if (isEnglish) "A Thank-You from Kiki & Survey" else "Cảm Ơn & Khảo Sát Ý Kiến",
+                    subtitle = if (isEnglish) "Share your experience • Reward +50 Stars" else "Gửi cảm nhận đến nhóm Kiki • Nhận +50 ⭐",
+                    valueBadge = "+50 ⭐",
+                    icon = Icons.Default.Favorite,
+                    onClick = {
+                        com.example.util.FeedbackPromptManager.openSurveyInBrowser(context)
+                    }
+                )
             }
         }
 

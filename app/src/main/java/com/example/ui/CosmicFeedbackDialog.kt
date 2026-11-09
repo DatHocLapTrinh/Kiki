@@ -26,6 +26,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.OpenInNew
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -54,10 +55,10 @@ import androidx.compose.ui.window.DialogProperties
 import com.example.R
 
 /**
- * Hộp thoại Góp Ý & Khảo Sát Trải Nghiệm Phong Cách Vũ Trụ Kiki:
- * - Hiển thị thân thiện khi người dùng đã hoàn thành các bài học Microlearning đầu tiên.
- * - Tặng phần thưởng +50 Sao Năng Lượng Vũ Trụ khi người dùng đồng ý tham gia khảo sát.
- * - Dẫn trực tiếp đến biểu mẫu Google Form chuyên sâu của dự án.
+ * Hộp Thoại Tri Ân & Thư Tay Cảm Ơn Từ Chú Kiến Kiki (Cosmic Gratitude & Feedback Dialog):
+ * - Bày tỏ lòng biết ơn chân thành đến người học đã gắn bó và thám hiểm vũ trụ Kiki.
+ * - Cung cấp nút bấm chuyển hướng trực tiếp đến Google Form khảo sát chính thức.
+ * - Tặng phần thưởng +50 ⭐ Năng Lượng Vũ Trụ như một món quà cảm ơn.
  */
 @Composable
 fun CosmicFeedbackDialog(
@@ -69,7 +70,7 @@ fun CosmicFeedbackDialog(
     val infiniteTransition = rememberInfiniteTransition(label = "FeedbackAura")
     val pulseScale by infiniteTransition.animateFloat(
         initialValue = 0.96f,
-        targetValue = 1.04f,
+        targetValue = 1.05f,
         animationSpec = infiniteRepeatable(
             animation = tween(1800, easing = FastOutSlowInEasing),
             repeatMode = RepeatMode.Reverse
@@ -98,9 +99,9 @@ fun CosmicFeedbackDialog(
                     width = 1.6.dp,
                     brush = Brush.linearGradient(
                         colors = listOf(
+                            Color(0xFFFF758F),
                             Color(0xFF00F5D4),
-                            Color(0xFF7B2CBF),
-                            Color(0xFFFFB703)
+                            Color(0xFFFFD166)
                         )
                     ),
                     shape = RoundedCornerShape(32.dp)
@@ -128,33 +129,45 @@ fun CosmicFeedbackDialog(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 modifier = Modifier.fillMaxWidth()
             ) {
-                // Huy hiệu tiêu đề nhỏ
+                // Huy hiệu tri ân trên đỉnh
                 Box(
                     modifier = Modifier
                         .clip(RoundedCornerShape(20.dp))
-                        .background(Color(0x2200F5D4))
-                        .border(1.dp, Color(0x6600F5D4), RoundedCornerShape(20.dp))
+                        .background(Color(0x29FF758F))
+                        .border(1.dp, Color(0x66FF758F), RoundedCornerShape(20.dp))
                         .padding(horizontal = 14.dp, vertical = 5.dp)
                 ) {
-                    Text(
-                        text = if (isEnglish) "🌟 EXPLORER FEEDBACK" else "🌟 ĐỒNG HÀNH CÙNG KIKI",
-                        color = Color(0xFF00F5D4),
-                        fontSize = 11.5.sp,
-                        fontWeight = FontWeight.Bold,
-                        letterSpacing = 1.2.sp
-                    )
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Favorite,
+                            contentDescription = null,
+                            tint = Color(0xFFFF758F),
+                            modifier = Modifier.size(13.dp)
+                        )
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text(
+                            text = if (isEnglish) "A THANK-YOU FROM KIKI" else "LỜI CẢM ƠN TỪ KIẾN KIKI",
+                            color = Color(0xFFFF758F),
+                            fontSize = 11.5.sp,
+                            fontWeight = FontWeight.Black,
+                            letterSpacing = 1.2.sp
+                        )
+                    }
                 }
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                // Avatar linh thú Kiki với ánh hào quang
+                // Avatar linh thú Kiki chào đón ấm áp với ánh hào quang
                 Box(
                     modifier = Modifier
                         .size(100.dp)
                         .scale(pulseScale),
                     contentAlignment = Alignment.Center
                 ) {
-                    // Vòng hào quang tỏa sáng nền
+                    // Vòng hào quang tỏa sáng nền đa sắc
                     Box(
                         modifier = Modifier
                             .size(92.dp)
@@ -162,8 +175,8 @@ fun CosmicFeedbackDialog(
                             .background(
                                 Brush.radialGradient(
                                     colors = listOf(
-                                        Color(0x4400F5D4),
-                                        Color(0x227B2CBF),
+                                        Color(0x44FF758F),
+                                        Color(0x3300F5D4),
                                         Color.Transparent
                                     )
                                 )
@@ -174,7 +187,7 @@ fun CosmicFeedbackDialog(
                         painter = painterResource(id = R.drawable.kiki_welcome),
                         contentDescription = "Kiki Mascot",
                         modifier = Modifier
-                            .size(84.dp)
+                            .size(86.dp)
                             .clip(CircleShape),
                         contentScale = ContentScale.Fit
                     )
@@ -182,12 +195,12 @@ fun CosmicFeedbackDialog(
 
                 Spacer(modifier = Modifier.height(14.dp))
 
-                // Tiêu đề chính
+                // Tiêu đề cảm ơn chân thành
                 Text(
                     text = if (isEnglish)
-                        "How is Your Space Journey?"
+                        "Thank You for Learning with Kiki!"
                     else
-                        "Chuyến Thám Hiểm Của Bạn Thế Nào?",
+                        "Cảm Ơn Bạn Đã Đồng Hành Cùng Kiki!",
                     color = Color.White,
                     fontWeight = FontWeight.Black,
                     fontSize = 20.sp,
@@ -196,13 +209,13 @@ fun CosmicFeedbackDialog(
 
                 Spacer(modifier = Modifier.height(8.dp))
 
-                // Mô tả nội dung
+                // Lời nhắn tri ân cảm xúc
                 Text(
                     text = if (isEnglish)
-                        "Only 2 minutes to share your thoughts on Kiki's AI Microlearning lessons! Your input directly shapes the future of our universe."
+                        "Your daily dedication brings the Kiki universe to life! To make lessons smarter, smoother, and better for you, our team would love to hear your honest thoughts."
                     else
-                        "Chỉ mất 2 phút chia sẻ cảm nhận của bạn về các bài học Microlearning & phản xạ AI! Ý kiến quý giá của bạn sẽ giúp Kiki tiến hóa thông minh và hoàn hảo hơn mỗi ngày.",
-                    color = Color(0xCCFFFFFF),
+                        "Sự đồng hành của bạn giúp vũ trụ Kiki ngày càng sống động! Để Kiki tiến hóa thông minh, mượt mà và gần gũi hơn nữa, nhóm phát triển rất mong được lắng nghe cảm nhận thực tế của bạn qua 2 phút chia sẻ.",
+                    color = Color(0xDDFFFFFF),
                     fontSize = 13.5.sp,
                     textAlign = TextAlign.Center,
                     lineHeight = 20.sp
@@ -210,7 +223,7 @@ fun CosmicFeedbackDialog(
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                // Hộp quà tặng tri ân (+50 Sao Năng Lượng)
+                // Hộp quà tặng tri ân (+50 Sao Năng Lượng Vũ Trụ)
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -233,9 +246,9 @@ fun CosmicFeedbackDialog(
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(
                             text = if (isEnglish)
-                                "Gift: +50 Cosmic Energy Stars!"
+                                "Gratitude Gift: +50 Cosmic Stars!"
                             else
-                                "Quà tặng: Nhận ngay +50 ⭐ Năng Lượng!",
+                                "Quà tri ân: Nhận ngay +50 ⭐ Năng Lượng!",
                             color = Color(0xFFFFD166),
                             fontSize = 13.sp,
                             fontWeight = FontWeight.ExtraBold
@@ -243,9 +256,9 @@ fun CosmicFeedbackDialog(
                     }
                 }
 
-                Spacer(modifier = Modifier.height(22.dp))
+                Spacer(modifier = Modifier.height(20.dp))
 
-                // Nút hành động chính: Mở Form Khảo Sát
+                // Nút hành động chính: Dẫn trực tiếp đến Google Form
                 Button(
                     onClick = {
                         haptic.performHapticFeedback(HapticFeedbackType.LongPress)
@@ -279,16 +292,16 @@ fun CosmicFeedbackDialog(
                             horizontalArrangement = Arrangement.Center
                         ) {
                             Text(
-                                text = if (isEnglish) "Share Feedback Now" else "Góp Ý Ngay (+50 ⭐)",
+                                text = if (isEnglish) "Send Feedback to Kiki Team 💌" else "Gửi Góp Ý Cho Nhóm Kiki 💌",
                                 color = Color(0xFF05131A),
                                 fontWeight = FontWeight.Black,
-                                fontSize = 15.sp,
+                                fontSize = 14.5.sp,
                                 letterSpacing = 0.5.sp
                             )
                             Spacer(modifier = Modifier.width(8.dp))
                             Icon(
                                 imageVector = Icons.AutoMirrored.Filled.OpenInNew,
-                                contentDescription = "Open Survey",
+                                contentDescription = "Open Google Form",
                                 tint = Color(0xFF05131A),
                                 modifier = Modifier.size(18.dp)
                             )
@@ -296,7 +309,7 @@ fun CosmicFeedbackDialog(
                     }
                 }
 
-                Spacer(modifier = Modifier.height(8.dp))
+                Spacer(modifier = Modifier.height(6.dp))
 
                 // Nút phụ: Để lúc khác
                 TextButton(
@@ -306,12 +319,12 @@ fun CosmicFeedbackDialog(
                     },
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(40.dp)
+                        .height(38.dp)
                 ) {
                     Text(
-                        text = if (isEnglish) "Remind Me Later" else "Để lúc khác",
+                        text = if (isEnglish) "Remind Me Later" else "Để Kiki sau nhé",
                         color = Color(0x88FFFFFF),
-                        fontSize = 13.5.sp,
+                        fontSize = 13.sp,
                         fontWeight = FontWeight.Medium
                     )
                 }

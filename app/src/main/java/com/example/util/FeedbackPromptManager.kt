@@ -29,8 +29,8 @@ object FeedbackPromptManager {
     const val COOLDOWN_HOURS = 48
     private const val COOLDOWN_MILLIS = COOLDOWN_HOURS * 60 * 60 * 1000L
 
-    // Link Google Form mặc định thu thập khảo sát Microlearning AI của Kiki
-    const val DEFAULT_SURVEY_URL = "https://forms.gle/KikiAiMicrolearningSurvey"
+    // Link Google Form chính thức thu thập phản hồi và khảo sát trải nghiệm Kiki
+    const val DEFAULT_SURVEY_URL = "https://docs.google.com/forms/d/e/1FAIpQLSfhMLfox0eDKY62pfJ8SvRxvFQ3ymiPVneEK1E-_Lo8ANyDhA/viewform?usp=dialog"
 
     /**
      * Tăng số lượng bài học hoàn thành lên 1 và trả về giá trị mới
@@ -129,3 +129,4 @@ object FeedbackPromptManager {
         }
     }
 }
+
