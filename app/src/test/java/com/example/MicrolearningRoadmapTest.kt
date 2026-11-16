@@ -104,6 +104,52 @@ class MicrolearningRoadmapTest {
     }
 
     @Test
+    fun test10QuestionsPerLessonNoDuplicates() {
+        val chapter = com.example.model.SpiralCurriculumBlueprint.generateTopicAwareChapter(
+            level = "Beginner",
+            topic = "Chặng 1: Chào Hỏi & Làm Quen Cơ Bản",
+            questionsPerLesson = 10
+        )
+        // 5 lessons x 10 questions = 50 total questions
+        assertEquals(50, chapter.questions.size)
+
+        // Verify each lesson has 10 unique questions
+        for (lessonIdx in 0 until 5) {
+            val lessonQuestions = chapter.questions.drop(lessonIdx * 10).take(10)
+            assertEquals(10, lessonQuestions.size)
+            val uniqueInLesson = lessonQuestions.map { it.questionText }.toSet()
+            assertEquals("All 10 questions in Lesson " + (lessonIdx + 1) + " must be unique", 10, uniqueInLesson.size)
+        }
+
+        // Verify all 50 questions across the entire chapter are unique
+        val allUnique = chapter.questions.map { it.questionText }.toSet()
+        assertEquals("All 50 questions in chapter must be 100% unique (0 duplicates)", 50, allUnique.size)
+    }
+
+    @Test
+    fun test15QuestionsPerLessonNoDuplicates() {
+        val chapter = com.example.model.SpiralCurriculumBlueprint.generateTopicAwareChapter(
+            level = "Beginner",
+            topic = "Chặng 1: Chào Hỏi & Làm Quen Cơ Bản",
+            questionsPerLesson = 15
+        )
+        // 5 lessons x 15 questions = 75 total questions
+        assertEquals(75, chapter.questions.size)
+
+        // Verify each lesson has 15 unique questions
+        for (lessonIdx in 0 until 5) {
+            val lessonQuestions = chapter.questions.drop(lessonIdx * 15).take(15)
+            assertEquals(15, lessonQuestions.size)
+            val uniqueInLesson = lessonQuestions.map { it.questionText }.toSet()
+            assertEquals("All 15 questions in Lesson " + (lessonIdx + 1) + " must be unique", 15, uniqueInLesson.size)
+        }
+
+        // Verify all 75 questions across the entire chapter are unique
+        val allUnique = chapter.questions.map { it.questionText }.toSet()
+        assertEquals("All 75 questions in chapter must be 100% unique (0 duplicates)", 75, allUnique.size)
+    }
+
+    @Test
     fun test3CMicrolearningJsonResponseFormat() {
         val sample3CJson = """
             {

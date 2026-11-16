@@ -7,6 +7,7 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Bolt
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -153,25 +154,70 @@ fun CosmicPlanetLessonPopup(
 
                 Spacer(modifier = Modifier.height(4.dp))
 
-                // 2. Phụ đề tiến độ bài học (cập nhật chính xác số bài đã làm)
-                Text(
-                    text = formatLessonSubtitle(
-                        completedLessons = stage.completedLessons,
-                        totalLessons = stage.totalLessons,
-                        isLocked = isLocked,
-                        isCompleted = isCompleted,
-                        isEnglish = isEnglish
-                    ),
-                    color = Color(0xFF94A3B8),
-                    fontSize = 13.sp,
-                    fontWeight = FontWeight.Normal
-                )
+                // 2. Phụ đề tiến độ bài học & Chỉ số Năng lượng Vũ trụ
+                if (isCompleted && stage.needsReview) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.padding(bottom = 6.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Bolt,
+                            contentDescription = null,
+                            tint = Color(0xFFFFB74D),
+                            modifier = Modifier.size(14.dp)
+                        )
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text(
+                            text = if (isEnglish) "Cosmic Energy: ${(stage.energyLevel * 100).toInt()}% • Needs Recharge" else "Năng lượng: ${(stage.energyLevel * 100).toInt()}% • Cần Tái Nạp ⚡",
+                            color = Color(0xFFFFB74D),
+                            fontSize = 12.5.sp,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                    }
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(5.dp)
+                            .clip(RoundedCornerShape(3.dp))
+                            .background(Color(0x33FFFFFF))
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxHeight()
+                                .fillMaxWidth(stage.energyLevel.coerceIn(0.1f, 1f))
+                                .clip(RoundedCornerShape(3.dp))
+                                .background(
+                                    Brush.horizontalGradient(
+                                        listOf(Color(0xFFFFB74D), Color(0xFFFF9800))
+                                    )
+                                )
+                        )
+                    }
+                } else {
+                    Text(
+                        text = formatLessonSubtitle(
+                            completedLessons = stage.completedLessons,
+                            totalLessons = stage.totalLessons,
+                            isLocked = isLocked,
+                            isCompleted = isCompleted,
+                            isEnglish = isEnglish
+                        ),
+                        color = Color(0xFF94A3B8),
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.Normal
+                    )
+                }
 
                 Spacer(modifier = Modifier.height(14.dp))
 
                 // 3. Nút bấm CTA phong cách Duolingo (chỉ đặt XP ở đây, bỏ icon tên lửa)
                 if (!isLocked) {
-                    val buttonColor = if (isCompleted) Color(0xFFFFC72C) else Color(0xFF51FAC1)
+                    val isRecharge = isCompleted && stage.needsReview
+                    val buttonColor = when {
+                        isRecharge -> Color(0xFFFF9800)
+                        isCompleted -> Color(0xFFFFC72C)
+                        else -> Color(0xFF51FAC1)
+                    }
                     val buttonTextColor = Color(0xFF0F172A)
 
                     Button(
@@ -189,14 +235,14 @@ fun CosmicPlanetLessonPopup(
                             .height(44.dp)
                     ) {
                         Text(
-                            text = if (isCompleted) {
-                                if (isEnglish) "REVIEW +10 XP" else "ÔN TẬP +10 XP"
-                            } else {
-                                if (isEnglish) "START +20 XP" else "BẮT ĐẦU +20 XP"
+                            text = when {
+                                isRecharge -> if (isEnglish) "RECHARGE +30 XP (+5 ⭐)" else "TÁI NẠP NĂNG LƯỢNG +30 XP (+5 ⭐)"
+                                isCompleted -> if (isEnglish) "REVIEW +10 XP" else "ÔN TẬP +10 XP"
+                                else -> if (isEnglish) "START +20 XP" else "BẮT ĐẦU +20 XP"
                             },
                             color = buttonTextColor,
                             fontWeight = FontWeight.Black,
-                            fontSize = 14.sp,
+                            fontSize = 13.5.sp,
                             letterSpacing = 0.5.sp
                         )
                     }

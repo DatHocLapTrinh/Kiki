@@ -47,12 +47,30 @@ fun rememberCosmicAuroraAnimation(): CosmicAuroraAnimationState {
 }
 
 /**
+ * Reusable scratch buffer to eliminate all heap allocations during the 120 FPS draw loop.
+ */
+private class AuroraSegmentScratch {
+    val ptsX = FloatArray(33)
+    val ptsY = FloatArray(33)
+    val tanX = FloatArray(33)
+    val tanY = FloatArray(33)
+    val normX = FloatArray(33)
+    val normY = FloatArray(33)
+    val mainPath = Path()
+    val fiber1Path = Path()
+    val fiber2Path = Path()
+    val fiber4Path = Path()
+}
+
+private val auroraScratchPool = ThreadLocal.withInitial { AuroraSegmentScratch() }
+private fun getAuroraScratch(): AuroraSegmentScratch = auroraScratchPool.get() ?: AuroraSegmentScratch()
+
+/**
  * Draws a flowing cosmic aurora energy ribbon connecting two nodes (spheres)
  * with translucent waving ribbon bands, stardust, 4-point sparkle cross stars,
  * and luminous neon filaments.
  *
- * Precisely connects from (startX, startY) to (endX, endY) with zero offset at the endpoints,
- * tapering perfectly to the center of each sphere.
+ * Zero-allocation & GPU-optimized for rock-solid 120 FPS performance.
  */
 fun DrawScope.drawCosmicAuroraSegment(
     startX: Float,
@@ -76,19 +94,19 @@ fun DrawScope.drawCosmicAuroraSegment(
     val c2x = endX - dx * 0.10f
     val c2y = startY + dy * 0.48f
 
-    // Main cubic bezier path
-    val mainPath = Path().apply {
-        moveTo(startX, startY)
-        cubicTo(c1x, c1y, c2x, c2y, endX, endY)
-    }
+    val scratch = getAuroraScratch()
+    val mainPath = scratch.mainPath
+    mainPath.reset()
+    mainPath.moveTo(startX, startY)
+    mainPath.cubicTo(c1x, c1y, c2x, c2y, endX, endY)
 
     val samples = 32
-    val ptsX = FloatArray(samples + 1)
-    val ptsY = FloatArray(samples + 1)
-    val tanX = FloatArray(samples + 1)
-    val tanY = FloatArray(samples + 1)
-    val normX = FloatArray(samples + 1)
-    val normY = FloatArray(samples + 1)
+    val ptsX = scratch.ptsX
+    val ptsY = scratch.ptsY
+    val tanX = scratch.tanX
+    val tanY = scratch.tanY
+    val normX = scratch.normX
+    val normY = scratch.normY
 
     for (k in 0..samples) {
         val t = k.toFloat() / samples
@@ -110,7 +128,7 @@ fun DrawScope.drawCosmicAuroraSegment(
 
     // ── 1. Cosmic Dust Gas Clouds (Mây khói tinh vân vũ trụ nền - Deep Violet & Magenta) ──
     val cloudAlpha = if (isActive) 0.28f * alphaScale else 0.16f * alphaScale
-    val cloudSteps = 9
+    val cloudSteps = 5
     for (c in 1 until cloudSteps) {
         val t = c.toFloat() / cloudSteps
         val idx = (t * samples).toInt().coerceIn(0, samples)
@@ -138,9 +156,12 @@ fun DrawScope.drawCosmicAuroraSegment(
     // ── 2. Braided Multi-Strand Cosmic Fibers (Các chùm sợi plasma đan bện xoắn ốc) ──
     val fiberAlpha = if (isActive) 0.78f * alphaScale else 0.48f * alphaScale
 
-    val fiber1Path = Path()
-    val fiber2Path = Path()
-    val fiber4Path = Path()
+    val fiber1Path = scratch.fiber1Path
+    val fiber2Path = scratch.fiber2Path
+    val fiber4Path = scratch.fiber4Path
+    fiber1Path.reset()
+    fiber2Path.reset()
+    fiber4Path.reset()
 
     for (k in 0..samples) {
         val t = k.toFloat() / samples

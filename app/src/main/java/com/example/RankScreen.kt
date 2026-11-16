@@ -126,8 +126,9 @@ fun RankScreen(viewModel: StudyViewModel) {
                 )
             )
     ) {
+        val batterySaver by viewModel.batterySaver.observeAsState(false)
         // Nền vũ trụ dải ngân hà siêu thực của Kiki
-        CosmicPhotorealisticSpaceBackground(modifier = Modifier.fillMaxSize())
+        CosmicPhotorealisticSpaceBackground(batterySaver = batterySaver, modifier = Modifier.fillMaxSize())
 
         Column(
             modifier = Modifier
@@ -622,7 +623,9 @@ fun GoogleSignInGateScreen(
                 )
             )
     ) {
-        CosmicPhotorealisticSpaceBackground(modifier = Modifier.fillMaxSize())
+        val context = LocalContext.current
+        val isLowEnd = remember { com.example.util.DevicePerformanceManager.isLowEnd(context) }
+        CosmicPhotorealisticSpaceBackground(batterySaver = isLowEnd, modifier = Modifier.fillMaxSize())
 
         Box(
             modifier = Modifier

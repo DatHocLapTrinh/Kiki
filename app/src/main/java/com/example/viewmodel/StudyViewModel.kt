@@ -32,6 +32,7 @@ import com.example.network.GroqApiService
 import com.example.repository.DataRepository
 import com.example.sqlite.room.DailyTaskEntity
 import com.example.sqlite.room.UserProfileEntity
+import com.example.util.DevicePerformanceManager
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
@@ -48,6 +49,8 @@ import com.example.audio.SpeechRecognitionManager
 import com.example.model.GenerateChapterRequest
 import com.example.network.KikiBackendApiService
 import com.example.model.LeagueSettlementResult
+import com.example.notification.KikiNotificationManager
+import com.example.resolveBadgeTrophyResource
 import com.example.model.LeagueTier
 import com.example.model.LeagueZone
 import com.example.model.RankPlayer
@@ -58,6 +61,7 @@ import com.example.sync.FirestoreSyncManager
 import com.example.sqlite.room.VocabularyEntity
 import com.example.sqlite.room.WeakPointEntity
 import com.example.model.ChapterUnlockEvent
+import com.example.model.SectionCompletionEvent
 import com.example.model.ChapterGeneratedResponse
 import com.example.model.QuestionItemDto
 import com.example.model.MentorChatRequest
@@ -66,6 +70,7 @@ import com.example.sqlite.room.ResearchTelemetryEntity
 import com.example.util.Sm2Algorithm
 import com.example.util.Sm2State
 import com.example.util.ResearchTelemetryExporter
+import com.example.util.CosmicSpacedRepetitionManager
 import java.util.UUID
 import kotlinx.coroutines.delay
 import javax.inject.Inject
@@ -108,11 +113,20 @@ class StudyViewModel @Inject constructor(
     val kikiExplorerSection: LiveData<KikiExplorerSection> = _kikiExplorerSection
     fun setKikiExplorerSection(section: KikiExplorerSection) { _kikiExplorerSection.value = section }
 
-    private val _batterySaver = MutableLiveData(prefs.getBoolean("battery_saver_mode", false))
+    private val initialBatterySaver: Boolean = if (prefs.contains("battery_saver_mode")) {
+        prefs.getBoolean("battery_saver_mode", false)
+    } else {
+        DevicePerformanceManager.isLowEnd(appContext)
+    }
+    private val _batterySaver = MutableLiveData(initialBatterySaver)
     val batterySaver: LiveData<Boolean> = _batterySaver
     fun setBatterySaver(enabled: Boolean) {
         prefs.edit().putBoolean("battery_saver_mode", enabled).apply()
         _batterySaver.value = enabled
+        DevicePerformanceManager.setPerformanceMode(
+            appContext,
+            if (enabled) "BATTERY_SAVER_LOW_END" else "HIGH_FIDELITY"
+        )
     }
 
     // --- Universal Multi-Provider AI Architecture ---
@@ -419,7 +433,39 @@ class StudyViewModel @Inject constructor(
     private val _hearts = MutableLiveData(5)
     val hearts: LiveData<Int> = _hearts
 
+    // --- Kiki Cosmic Pass (VIP / Super Subscription) ---
+    private val _isCosmicPassActive = MutableLiveData(false)
+    val isCosmicPassActive: LiveData<Boolean> = _isCosmicPassActive
+
+    fun subscribeCosmicPass(tier: com.example.model.CosmicPassTier): Boolean {
+        val currentShields = _streakShields.value ?: 1
+        val currentStarsVal = _stars.value ?: 200
+
+        when (tier) {
+            com.example.model.CosmicPassTier.ANNUAL -> {
+                _isCosmicPassActive.value = true
+                _hearts.value = 5
+                _streakShields.value = currentShields + 10
+                _stars.value = currentStarsVal + 500
+            }
+            com.example.model.CosmicPassTier.MONTHLY -> {
+                _isCosmicPassActive.value = true
+                _hearts.value = 5
+                _streakShields.value = currentShields + 2
+                _stars.value = currentStarsVal + 150
+            }
+            com.example.model.CosmicPassTier.STAR_BUNDLE -> {
+                _stars.value = currentStarsVal + 100
+                _hearts.value = 5
+            }
+        }
+
+        soundEffectManager.playCorrect()
+        return true
+    }
+
     fun deductHeart(amount: Int = 1) {
+        if (_isCosmicPassActive.value == true) return // Vô hạn tim cho tài khoản Cosmic Pass
         val current = _hearts.value ?: 5
         val newHearts = (current - amount).coerceAtLeast(0)
         _hearts.value = newHearts
@@ -434,6 +480,7 @@ class StudyViewModel @Inject constructor(
     fun dismissShieldNotice() { _shieldUsedNotice.value = false }
 
     fun deductHeart(): Int {
+        if (_isCosmicPassActive.value == true) return 5 // Vô hạn tim cho tài khoản Cosmic Pass
         val current = _hearts.value ?: 5
         val updated = (current - 1).coerceAtLeast(0)
         _hearts.value = updated
@@ -545,6 +592,18 @@ class StudyViewModel @Inject constructor(
             val cured = prefs.getInt("cured_weak_points_count_$userId", 0)
             _curedWeakPointsCount.value = cured
             val mastered = repository.getMasteredVocabularyCount(userId)
+
+            // Tự động kiểm tra mở khóa nếu người dùng đã đạt yêu cầu từ trước
+            val streak = _streak.value ?: 0
+            if (streak >= 7 && !badges.contains(BadgeId.PERSISTENT_SCHOLAR.id)) {
+                checkAndUnlockBadge(BadgeId.PERSISTENT_SCHOLAR)
+            }
+            if (cured >= 10 && !badges.contains(BadgeId.CHIEF_DOCTOR.id)) {
+                checkAndUnlockBadge(BadgeId.CHIEF_DOCTOR)
+            }
+            if (mastered >= 30 && !badges.contains(BadgeId.SUPER_MEMORY.id)) {
+                checkAndUnlockBadge(BadgeId.SUPER_MEMORY)
+            }
             _masteredVocabCount.value = mastered
         }
     }
@@ -564,11 +623,30 @@ class StudyViewModel @Inject constructor(
                         unlockedIds = updated,
                         streak = _streak.value ?: 0,
                         curedWeakPoints = _curedWeakPointsCount.value ?: 0,
-                        masteredVocabCount = _masteredVocabCount.value ?: 0
+                        masteredVocabCount = _masteredVocabCount.value ?: 0,
+                        completedLessons = 1,
+                        hasNightOwl = badgeId == BadgeId.NIGHT_OWL,
+                        hasSpeakingAce = badgeId == BadgeId.SPEAKING_ACE,
+                        allStagesCompleted = badgeId == BadgeId.ALL_STAGES_MASTERY
                     )
                     val b = all.firstOrNull { it.id == badgeId.id }
                     if (b != null) {
                         _newlyUnlockedBadge.value = b
+                        // 1. Âm thanh vinh danh Fanfare
+                        soundEffectManager.playFanfare()
+
+                        // 2. Thông báo hệ thống Android (Push / Local Notification)
+                        val isEn = _isEnglish.value ?: false
+                        val title = if (isEn) b.titleEn else b.titleVi
+                        val desc = if (isEn) b.descriptionEn else b.descriptionVi
+                        val badgeRes = resolveBadgeTrophyResource(b.id, b.iconKey)
+                        KikiNotificationManager.showAchievementUnlockedNotification(
+                            context = appContext,
+                            badgeTitle = title,
+                            badgeDescription = desc,
+                            badgeDrawableRes = badgeRes,
+                            isEnglish = isEn
+                        )
                     }
                 }
             }
@@ -885,16 +963,33 @@ class StudyViewModel @Inject constructor(
     fun loadQuestions(chapterId: Long, lessonIndex: Int = 1) {
         viewModelScope.launch {
             allChapterQuestions = repository.getQuestionsByChapter(chapterId)
+            val pageSize = getLessonPageSize()
+            val requiredTotal = 5 * pageSize
 
-            // Thanh trừng triệt để bất kỳ câu hỏi mẫu cũ nào còn sót lại HOẶC nếu chapter chưa đủ 25 câu (kẹt 5 câu cũ)
+            // Kiểm tra: Nếu chưa có câu hỏi HOẶC số câu hỏi trong DB không đủ cho pacing hiện tại (ví dụ DB chỉ có 25 câu cũ mà user chọn 10 câu/bài cần 50 câu)
+            // HOẶC có câu mẫu cũ gạch chân ______ HOẶC câu ghép câu thiếu bản dịch đối chiếu HOẶC trùng lặp câu đích trong cùng bài -> Dọn dẹp và tái sinh đủ 100% không trùng lặp
+            val hasVagueSentenceBuilder = allChapterQuestions.any {
+                it.type == QuestionType.SENTENCE_BUILDER &&
+                (it.question.contains("Sắp xếp các từ sau thành câu hoàn chỉnh") && !it.question.contains("'") && !it.question.contains("\""))
+            }
+            val hasDuplicateTargetSentence = allChapterQuestions.chunked(pageSize).any { lessonQs ->
+                val sentences = lessonQs.mapNotNull {
+                    if (it.type == QuestionType.SENTENCE_BUILDER || it.type == QuestionType.SPEAKING_CHALLENGE || it.type == QuestionType.LISTENING_CHALLENGE) {
+                        (it.correctSentence.ifEmpty { it.speakingSentence }).trim().lowercase()
+                    } else null
+                }.filter { it.isNotBlank() }
+                sentences.size != sentences.toSet().size
+            }
             if (allChapterQuestions.any { it.question.contains("______") || it.question.contains("in her crib", ignoreCase = true) || it.question.contains("by bus every morning", ignoreCase = true) }
-                || (allChapterQuestions.isNotEmpty() && allChapterQuestions.size < 25)) {
+                || (allChapterQuestions.size < requiredTotal)
+                || hasVagueSentenceBuilder
+                || hasDuplicateTargetSentence) {
                 repository.clearQuestionsByChapter(chapterId)
                 allChapterQuestions = emptyList()
             }
 
             // JIT (Just-In-Time) AI Microlearning Question Generation:
-            // Sinh trọn vẹn 25 câu hỏi (5 bài học x 5 câu) phân tầng từ từ vựng đơn đến hội thoại
+            // Sinh trọn vẹn đủ requiredTotal câu hỏi (5 bài học x pageSize câu) độc lập, không trùng lặp
             if (allChapterQuestions.isEmpty()) {
                 val currentTitle = repository.getChapterTitleById(chapterId)
                     ?: _currentChapterTitle.value
@@ -904,9 +999,9 @@ class StudyViewModel @Inject constructor(
                 val weakPointsList = if (userId > 0) repository.getWeakPoints(userId) else emptyList()
                 val weakWords = extractWeakKeywords(weakPointsList)
 
-                val generated = generate3CMicrolearningWithGemini(currentTitle, level, weakWords)
-                    ?.takeIf { it.questions.size >= 25 }
-                    ?: generatePersonalizedChapter(level, currentTitle, weakWords)
+                val generated = generate3CMicrolearningWithGemini(currentTitle, level, weakWords, pageSize)
+                    ?.takeIf { it.questions.size >= requiredTotal }
+                    ?: generatePersonalizedChapter(level, currentTitle, weakWords, pageSize)
 
                 generated.questions.forEach { qDto ->
                     val question = com.example.sqlite.room.QuestionEntity(
@@ -932,7 +1027,11 @@ class StudyViewModel @Inject constructor(
         val safeLesson = lessonIndex.coerceIn(1, 5)
         val pageSize = getLessonPageSize()
         val rawStartIndex = (safeLesson - 1) * pageSize
-        if (allChapterQuestions.isNotEmpty()) {
+
+        if (allChapterQuestions.size >= safeLesson * pageSize) {
+            // Lấy lát cắt độc lập chính xác cho bài học: 100% không trùng lặp câu hỏi giữa các bài
+            _questions.value = allChapterQuestions.drop(rawStartIndex).take(pageSize)
+        } else if (allChapterQuestions.isNotEmpty()) {
             val lessonList = mutableListOf<QuestItem>()
             for (i in 0 until pageSize) {
                 val idx = (rawStartIndex + i) % allChapterQuestions.size
@@ -948,25 +1047,16 @@ class StudyViewModel @Inject constructor(
                 } else -1L
 
                 if (chapterId != -1L) {
-                    allChapterQuestions = repository.getQuestionsByChapter(chapterId)
+                    loadQuestions(chapterId, safeLesson)
                 } else {
                     val defaultChapters = repository.getChaptersByPreference(_selectedLevel.value ?: "Beginner", "English")
                     val defaultTitle = defaultChapters.firstOrNull() ?: "Atomic Microlearning"
                     val defId = repository.getChapterIdByTitle(defaultTitle)
                     if (defId != -1L) {
-                        allChapterQuestions = repository.getQuestionsByChapter(defId)
+                        loadQuestions(defId, safeLesson)
+                    } else {
+                        _questions.value = emptyList()
                     }
-                }
-
-                if (allChapterQuestions.isNotEmpty()) {
-                    val lessonList = mutableListOf<QuestItem>()
-                    for (i in 0 until pageSize) {
-                        val idx = (rawStartIndex + i) % allChapterQuestions.size
-                        lessonList.add(allChapterQuestions[idx].copy())
-                    }
-                    _questions.value = lessonList
-                } else {
-                    _questions.value = emptyList()
                 }
             }
         }
@@ -977,6 +1067,57 @@ class StudyViewModel @Inject constructor(
 
     fun clearChapterUnlockEvent() {
         _chapterUnlockEvent.value = null
+    }
+
+    private val _sectionCompletionEvent = MutableLiveData<SectionCompletionEvent?>(null)
+    val sectionCompletionEvent: LiveData<SectionCompletionEvent?> = _sectionCompletionEvent
+
+    fun clearSectionCompletionEvent() {
+        _sectionCompletionEvent.value = null
+    }
+
+    fun isSectionChestClaimed(sectionNum: Int): Boolean {
+        val userId = _currentUserId.value ?: 1L
+        val rewardPrefs = appContext.getSharedPreferences("kiki_rewards", Context.MODE_PRIVATE)
+        return rewardPrefs.getBoolean("claimed_section_chest_${userId}_$sectionNum", false)
+    }
+
+    fun claimSectionChest(sectionNum: Int): Boolean {
+        val userId = _currentUserId.value ?: 1L
+        val rewardPrefs = appContext.getSharedPreferences("kiki_rewards", Context.MODE_PRIVATE)
+        val key = "claimed_section_chest_${userId}_$sectionNum"
+        if (rewardPrefs.getBoolean(key, false)) return false
+
+        rewardPrefs.edit().putBoolean(key, true).apply()
+        addXp(100)
+        addStars(50)
+        soundEffectManager.playFanfare()
+        return true
+    }
+
+    val cosmicSpacedRepetitionManager by lazy { CosmicSpacedRepetitionManager(appContext) }
+
+    fun getPlanetEnergy(planetIndex: Int, isCompleted: Boolean, totalCompleted: Int): Float {
+        val userId = _currentUserId.value?.takeIf { it > 0 } ?: 1L
+        return cosmicSpacedRepetitionManager.calculatePlanetEnergy(
+            userId = userId,
+            planetIndex = planetIndex,
+            isCompleted = isCompleted,
+            totalCompletedPlanets = totalCompleted
+        )
+    }
+
+    fun rechargePlanet(planetIndex: Int) {
+        val userId = _currentUserId.value?.takeIf { it > 0 } ?: 1L
+        cosmicSpacedRepetitionManager.rechargePlanet(userId, planetIndex)
+        addXp(CosmicSpacedRepetitionManager.RECHARGE_BONUS_XP)
+        addStars(CosmicSpacedRepetitionManager.RECHARGE_BONUS_STARS)
+        soundEffectManager.playCorrect(3)
+        viewModelScope.launch {
+            recordDailyTaskProgress(userId, "PLANET_RECHARGE", 1)
+            refreshDailyTasks()
+        }
+        refreshChapters()
     }
 
     private val _isGeneratingNextChapter = MutableLiveData(false)
@@ -995,6 +1136,11 @@ class StudyViewModel @Inject constructor(
 
         if (isFreshChapterCompletion) {
             handleChapterCompletion(userId, chapterTitle)
+        } else if (node >= 6) {
+            val currentIndex = _availableChapters.value?.indexOfFirst { it.equals(chapterTitle, ignoreCase = true) } ?: -1
+            if (currentIndex >= 0) {
+                rechargePlanet(currentIndex)
+            }
         }
     }
 
@@ -1123,6 +1269,13 @@ class StudyViewModel @Inject constructor(
                 if (results.any { it.type == QuestionType.SPEAKING_CHALLENGE && (it.pronunciationScore ?: 0) >= 85 }) {
                     checkAndUnlockBadge(BadgeId.SPEAKING_ACE)
                 }
+                val stages = _availableChapters.value?.let { chapters ->
+                    val progress = _chapterProgress.value ?: emptyList()
+                    com.example.JourneyStageMapper.mapStages(chapters, progress)
+                } ?: emptyList()
+                if (stages.isNotEmpty() && stages.all { it.state == com.example.JourneyStageState.COMPLETED }) {
+                    checkAndUnlockBadge(BadgeId.ALL_STAGES_MASTERY)
+                }
             }
 
             // Build analysis prompt for deeper AI insight
@@ -1209,6 +1362,9 @@ class StudyViewModel @Inject constructor(
             try {
                 when (val result = authManager.signInWithGoogle(activityContext)) {
                     is GoogleAuthResult.Success -> {
+                        result.photoUrl?.let { url ->
+                            prefs.edit().putString("cached_google_photo_url", url).apply()
+                        }
                         val userId = repository.getOrCreateSocialUser(
                             email = result.email,
                             displayName = result.displayName,
@@ -1333,6 +1489,9 @@ class StudyViewModel @Inject constructor(
                 _streak.value = profile.currentStreak
                 _streakShields.value = profile.streakShields
                 _avatarUri.value = profile.avatarUri
+                if (profile.avatarUri?.startsWith("http://") == true || profile.avatarUri?.startsWith("https://") == true) {
+                    prefs.edit().putString("cached_google_photo_url", profile.avatarUri).apply()
+                }
                 _studyMotto.value = profile.studyMotto ?: ""
                 val currentStars = profile.stars
                 val finalStars = if (currentStars < 200) {
@@ -1877,14 +2036,16 @@ class StudyViewModel @Inject constructor(
     fun generatePersonalizedChapter(
         level: String,
         topic: String,
-        weakWords: List<String> = emptyList()
+        weakWords: List<String> = emptyList(),
+        pageSize: Int = getLessonPageSize()
     ): ChapterGeneratedResponse {
         val isEng = _isEnglish.value ?: false
         return com.example.model.SpiralCurriculumBlueprint.generateTopicAwareChapter(
             level = level,
             topic = topic,
             weakWords = weakWords,
-            isEng = isEng
+            isEng = isEng,
+            questionsPerLesson = pageSize
         )
     }
 
@@ -1908,6 +2069,24 @@ class StudyViewModel @Inject constructor(
                         weakPointsAddressedCount = 0
                     )
                 )
+
+                // Kiểm tra hoàn tất toàn bộ 10 hành tinh của một Chặng lớn (index 9 -> Chặng 1, index 19 -> Chặng 2, index 29 -> Chặng 3)
+                if ((currentIndex + 1) % 10 == 0) {
+                    val completedSecNum = (currentIndex + 1) / 10
+                    val nextSecNum = completedSecNum + 1
+                    val completedSecData = com.example.ui.CosmicSectionConfig.getSectionData(completedSecNum, 10, 10)
+                    val nextSecData = com.example.ui.CosmicSectionConfig.getSectionData(nextSecNum, 0, 10)
+                    _sectionCompletionEvent.postValue(
+                        SectionCompletionEvent(
+                            completedSectionNumber = completedSecNum,
+                            nextSectionNumber = nextSecNum,
+                            completedSectionTitle = completedSecData.title,
+                            nextSectionTitle = nextSecData.title,
+                            rewardXp = 100,
+                            rewardStars = 50
+                        )
+                    )
+                }
             } else {
                 // Tự sinh chương tiếp theo với AI dựa trên điểm yếu
                 generateNextChapterOnDemand(
@@ -1943,8 +2122,10 @@ class StudyViewModel @Inject constructor(
     suspend fun generate3CMicrolearningWithGemini(
         topic: String,
         level: String,
-        weakWords: List<String>
+        weakWords: List<String>,
+        pageSize: Int = getLessonPageSize()
     ): ChapterGeneratedResponse? = withContext(Dispatchers.IO) {
+        val totalQuestionsNeeded = 5 * pageSize
         try {
             val apiKey = getEffectiveGeminiApiKey()
             if (apiKey.isBlank() || apiKey.startsWith("sk-")) return@withContext null
@@ -1999,18 +2180,18 @@ class StudyViewModel @Inject constructor(
 
             val prompt = """
                 You are Kiki AI, an expert Microlearning Pedagogical Designer modeled after Duolingo's Spiral Curriculum.
-                Create a complete 5-Lesson Chapter Curriculum with exactly 25 progressive questions (5 lessons x 5 questions per lesson) for the topic: "$topic" at level "$level".
+                Create a complete 5-Lesson Chapter Curriculum with exactly $totalQuestionsNeeded progressive questions (5 lessons x $pageSize questions per lesson) for the topic: "$topic" at level "$level".
                 $weakPrompt
                 $levelQuestionConstraints
                 $topicSpecificGuidance
                 CRITICAL INSTRUCTION: NEVER use raw blanks or underscores like '______'. All sentences and questions must be complete, natural, and engaging.
 
-                SCAFFOLDING LESSON STRUCTURE (EXACTLY 25 QUESTIONS SPECIFIC TO "$topic"):
-                - Lesson 1 (Questions 1-5): Step 1 Foundation - Core single words/concepts of "$topic". 1 MULTIPLE_CHOICE, 1 SENTENCE_BUILDER, 1 LISTENING_CHALLENGE, 1 MATCHING_PAIRS (4 pairs), 1 SPEAKING_CHALLENGE.
-                - Lesson 2 (Questions 6-10): Step 2 Expansion - Action verbs, modifiers, or reactions of "$topic". 1 MULTIPLE_CHOICE, 1 SENTENCE_BUILDER, 1 LISTENING_CHALLENGE, 1 MATCHING_PAIRS, 1 SPEAKING_CHALLENGE.
-                - Lesson 3 (Questions 11-15): Step 3 Phrase & Chunk Assembly - 2-3 word collocations/phrases of "$topic". 1 MULTIPLE_CHOICE, 1 SENTENCE_BUILDER, 1 LISTENING_CHALLENGE, 1 MATCHING_PAIRS, 1 SPEAKING_CHALLENGE.
-                - Lesson 4 (Questions 16-20): Step 4 Sentence Construction - Complete sentences applying "$topic". 1 MULTIPLE_CHOICE, 1 SENTENCE_BUILDER, 1 LISTENING_CHALLENGE, 1 MATCHING_PAIRS, 1 SPEAKING_CHALLENGE.
-                - Lesson 5 (Questions 21-25): Step 5 Reflex Dialogue & Mastery - Real-world Q&A dialogue mastering "$topic". 1 MULTIPLE_CHOICE, 1 SENTENCE_BUILDER, 1 LISTENING_CHALLENGE, 1 MATCHING_PAIRS, 1 SPEAKING_CHALLENGE.
+                SCAFFOLDING LESSON STRUCTURE (EXACTLY $totalQuestionsNeeded PROGRESSIVE QUESTIONS, 5 LESSONS x $pageSize QUESTIONS PER LESSON):
+                - All 5 lessons MUST strictly follow progressive microlearning for "$topic".
+                - Every lesson contains exactly $pageSize questions with balanced distribution of: MULTIPLE_CHOICE (visual/semantic recognition), SENTENCE_BUILDER (syntax assembly), LISTENING_CHALLENGE (auditory decoding), MATCHING_PAIRS (speed association), and SPEAKING_CHALLENGE (oral pronunciation).
+                - CRITICAL RULE 1: For MULTIPLE_CHOICE, optionsJson MUST ALWAYS contain exactly 4 distinct choices.
+                - CRITICAL RULE 2: For SENTENCE_BUILDER, questionText MUST be in Vietnamese prompt format (e.g. "Dịch sang tiếng Anh: '...' 🧩"). NEVER reveal or print the target English sentence in the prompt!
+                - CRITICAL RULE 3: For LISTENING_CHALLENGE, provide a complete sentence with distinct tokens to assemble.
 
                 You MUST return ONLY a raw JSON object (no markdown, no backticks) with this exact schema:
                 {
@@ -2035,7 +2216,7 @@ class StudyViewModel @Inject constructor(
 
             val contents = listOf(GeminiModels.Content(role = "user", parts = listOf(GeminiModels.Part(text = prompt))))
             val systemInstruction = GeminiModels.createSystemInstruction(
-                "You are Kiki AI, an expert Microlearning Pedagogical Designer. Always output strict JSON only, without markdown fences or outside explanations. NEVER generate raw underscores or blanks. Strictly teach the vocabulary and grammar of the requested topic '$topic' at CEFR level '$level' across all 25 progressive questions (5 lessons x 5 questions)."
+                "You are Kiki AI, an expert Microlearning Pedagogical Designer. Always output strict JSON only, without markdown fences or outside explanations. NEVER generate raw underscores or blanks. Strictly teach the vocabulary and grammar of the requested topic '$topic' at CEFR level '$level' across all $totalQuestionsNeeded progressive questions (5 lessons x $pageSize questions)."
             )
             val request = GeminiModels.GenerateContentRequest(
                 contents = contents,
@@ -2365,20 +2546,28 @@ class StudyViewModel @Inject constructor(
                 // 1. Sinh 5 chặng lộ trình bằng Gemini 2.5 Flash
                 val stages = generate5StageMicrolearningRoadmapWithGemini(profile)
 
-                // 2. Sinh đơn vị bài học 3C đầu tiên cho Chặng 1 bằng Gemini 2.5 Flash
+                // 2. Xác định dung lượng câu hỏi theo mục tiêu thời gian đã chọn
+                val pacingPageSize = when {
+                    profile.dailyTargetMinutes <= 3 -> 5
+                    profile.dailyTargetMinutes <= 7 -> 10
+                    else -> 15
+                }
+
                 val firstStageTitle = stages.firstOrNull()?.first ?: profile.goal
                 val chapter1Units = generate3CMicrolearningWithGemini(
                     topic = firstStageTitle,
                     level = profile.evaluatedCefr,
-                    weakWords = profile.baselineWeakPoints
-                ) ?: generatePersonalizedChapter(profile.evaluatedCefr, firstStageTitle, profile.baselineWeakPoints)
+                    weakWords = profile.baselineWeakPoints,
+                    pageSize = pacingPageSize
+                ) ?: generatePersonalizedChapter(profile.evaluatedCefr, firstStageTitle, profile.baselineWeakPoints, pageSize = pacingPageSize)
 
-                // 3. Xóa các chapter tĩnh cũ và nạp lộ trình 100% AI vào Room SQLite
+                // 3. Xóa các chapter tĩnh cũ và nạp lộ trình 100% AI vào Room SQLite với đầy đủ số lượng câu hỏi không lặp
                 val targetUserId = if (userId > 0) userId else _currentUserId.value ?: 0L
                 repository.resetWithAiMicrolearningRoadmap(
                     level = profile.evaluatedCefr,
                     stages = stages,
-                    firstChapterUnits = chapter1Units
+                    firstChapterUnits = chapter1Units,
+                    questionsPerLesson = pacingPageSize
                 )
 
                 // 4. Lưu hồ sơ cá nhân hóa
@@ -2779,6 +2968,9 @@ class StudyViewModel @Inject constructor(
     fun updateProfile(displayName: String, avatarUri: String?, motto: String?) {
         val userId = _currentUserId.value ?: return
         if (userId == -1L) return
+        if (avatarUri?.startsWith("http://") == true || avatarUri?.startsWith("https://") == true) {
+            prefs.edit().putString("cached_google_photo_url", avatarUri).apply()
+        }
         viewModelScope.launch {
             repository.updateProfileInfo(userId, displayName.trim(), avatarUri, motto?.trim())
             _userName.value = displayName.trim()
@@ -2787,6 +2979,21 @@ class StudyViewModel @Inject constructor(
             fetchLeaderboard()
             firestoreSyncManager.syncUserProfile(userId)
         }
+    }
+
+    /**
+     * Lấy URL ảnh đại diện Google từ tài khoản liên kết (Auth, Firebase hoặc Cache)
+     */
+    fun getGooglePhotoUrl(): String? {
+        val authPhoto = authManager.getCurrentUser()?.photoUrl?.toString()
+        val fbPhoto = com.google.firebase.auth.FirebaseAuth.getInstance().currentUser?.photoUrl?.toString()
+        val cachedPhoto = prefs.getString("cached_google_photo_url", null)
+        val currentPhoto = _avatarUri.value?.takeIf { it.startsWith("http://") || it.startsWith("https://") }
+        val resolved: String? = authPhoto ?: fbPhoto ?: cachedPhoto ?: currentPhoto
+        if (resolved != null && cachedPhoto != resolved) {
+            prefs.edit().putString("cached_google_photo_url", resolved).apply()
+        }
+        return resolved
     }
 
     private val _dueVocabularyList = MutableLiveData<List<VocabularyEntity>>(emptyList())
