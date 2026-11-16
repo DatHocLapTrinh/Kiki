@@ -188,18 +188,19 @@ fun ShopScreen(viewModel: StudyViewModel) {
             }
         }
 
-        // Toast thông báo mua thành công
+        // Toast thông báo mua / đổi vật phẩm
         showSuccessToast?.let { msg ->
             LaunchedEffect(msg) {
                 kotlinx.coroutines.delay(2000)
                 showSuccessToast = null
             }
+            val isFailure = msg.contains("thất bại") || msg.contains("failed")
             Box(
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
                     .padding(bottom = 140.dp)
                     .clip(RoundedCornerShape(24.dp))
-                    .background(Color(0xFF51FAC1))
+                    .background(if (isFailure) Color(0xFFFF6B8A) else Color(0xFF51FAC1))
                     .padding(horizontal = 24.dp, vertical = 12.dp)
             ) {
                 Text(msg, color = Color(0xFF0A0A1A), fontWeight = FontWeight.Bold, fontSize = 14.sp)
@@ -215,13 +216,12 @@ fun ShopScreen(viewModel: StudyViewModel) {
             isEnglish = isEnglish,
             onConfirm = {
                 val success = viewModel.purchaseShopItem(item.id, item.type, item.starCost, item.quantity)
-                if (success) {
-                    val msg = if (isEnglish)
-                        "✅ Purchased! ${item.name} ×${item.quantity}"
-                    else
-                        "✅ Mua thành công! ${item.name} ×${item.quantity}"
-                    showSuccessToast = msg
+                val msg = if (success) {
+                    if (isEnglish) "Purchased ${item.name} successfully" else "Đã mua ${item.name} thành công"
+                } else {
+                    if (isEnglish) "Purchase failed" else "Mua thất bại"
                 }
+                showSuccessToast = msg
                 showConfirmDialog = null
             },
             onDismiss = { showConfirmDialog = null }

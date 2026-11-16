@@ -146,7 +146,7 @@ fun OutOfHeartsDialog(
 
                         // Tiêu đề Game Over
                         Text(
-                            text = if (isEnglish) "Out of Hearts! 💔" else "Hết Tim Rồi! 💔",
+                            text = if (isEnglish) "Out of Hearts" else "Hết Tim",
                             color = Color(0xFFFF5252),
                             fontSize = 22.sp,
                             fontWeight = FontWeight.Black,

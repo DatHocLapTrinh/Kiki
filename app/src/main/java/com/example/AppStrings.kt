@@ -83,7 +83,7 @@ data class AppStrings(
     val rewardClaimed: String = "Đã nhận thưởng!",
     val claim: String = "NHẬN",
     val noActiveQuests: String = "Không có nhiệm vụ nào hôm nay",
-    val chestOpenedMsg: String = "Đã mở rương! +500 XP",
+    val chestOpenedMsg: String = "Đã mở rương thành công! +500 XP",
     
     // QuestScreen
     val manaLevel: String = "Câu ",
@@ -122,7 +122,7 @@ data class AppStrings(
     val quest5Desc: String = "Tích lũy trả lời 20 câu hỏi bài tập",
     val quest6Title: String = "Hỏi Đáp Kiki AI",
     val quest6Desc: String = "Hỏi gia sư AI 1 câu trong tab Gia sư",
-    val chestOpenedToast: String = "Đã mở rương! +500 XP + ⭐10",
+    val chestOpenedToast: String = "Đã mở rương thành công! +500 XP, +10 Sao",
     val tapChest: String = "Chạm để nhận thưởng lớn!",
     val completeAllToOpen: String = "Hoàn thành tất cả để mở",
 
@@ -133,7 +133,7 @@ data class AppStrings(
     val shopHeartSection: String = "❤️ Trái Tim — Bảo Vệ Khi Học",
     val shopShieldSection: String = "🛡️ Khiên — Bảo Vệ Chuỗi Ngày",
     val shopNotEnoughStars: String = "Không đủ ⭐ Sao",
-    val shopPurchaseSuccess: String = "✅ Mua thành công!",
+    val shopPurchaseSuccess: String = "Đã mua thành công",
     val shopConfirmBuy: String = "Xác Nhận Mua",
     val shopCancel: String = "Hủy",
     
@@ -360,7 +360,7 @@ val EnglishStrings = AppStrings(
     rewardClaimed = "Reward Claimed!",
     claim = "CLAIM",
     noActiveQuests = "No active quests today",
-    chestOpenedMsg = "Chest opened! +500 XP",
+    chestOpenedMsg = "Chest opened successfully! +500 XP",
     
     manaLevel = "Question ",
     questPrefix = "QUESTION #",
@@ -396,7 +396,7 @@ val EnglishStrings = AppStrings(
     quest5Desc = "Answer 20 questions in lessons",
     quest6Title = "Ask Kiki AI",
     quest6Desc = "Ask the AI tutor 1 question in Tutor tab",
-    chestOpenedToast = "Chest Opened! +500 XP + ⭐10",
+    chestOpenedToast = "Chest opened successfully! +500 XP, +10 Stars",
     tapChest = "Tap chest for big rewards!",
     completeAllToOpen = "Complete all to open",
 
@@ -406,7 +406,7 @@ val EnglishStrings = AppStrings(
     shopHeartSection = "❤️ Hearts — Answer Protection",
     shopShieldSection = "🛡️ Shields — Streak Protection",
     shopNotEnoughStars = "Not enough ⭐ Stars",
-    shopPurchaseSuccess = "✅ Purchase successful!",
+    shopPurchaseSuccess = "Purchased successfully",
     shopConfirmBuy = "Confirm Purchase",
     shopCancel = "Cancel",
     

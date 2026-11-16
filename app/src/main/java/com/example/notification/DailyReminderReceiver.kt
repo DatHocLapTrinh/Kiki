@@ -31,7 +31,7 @@ class DailyReminderReceiver : BroadcastReceiver() {
             Log.d(TAG, "Kích hoạt thông báo thử nghiệm từ người dùng.")
             KikiNotificationManager.showFcmNotification(
                 context = context,
-                title = "🔥 Kiki: Bắn thử thông báo thành công!",
+                title = "Kiki: Bắn thử thông báo thành công",
                 body = "Hệ thống thông báo đẩy và đồng hồ báo thức ngầm đang hoạt động hoàn hảo trên máy bạn!",
                 channelId = KikiNotificationManager.CHANNEL_STREAK
             )

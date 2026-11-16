@@ -312,7 +312,7 @@ fun QuestReviewScreen(viewModel: StudyViewModel, onBack: () -> Unit) {
                                         )
                                         Toast.makeText(
                                             context,
-                                            if (isEnglish) "Bookmarked to Vocabulary Vault! ⭐" else "Đã lưu câu hỏi vào Sổ tay từ vựng! ⭐",
+                                            if (isEnglish) "Saved question to Vocabulary Vault successfully" else "Đã lưu câu hỏi vào Sổ tay từ vựng thành công",
                                             Toast.LENGTH_SHORT
                                         ).show()
                                     },

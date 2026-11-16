@@ -1250,7 +1250,7 @@ fun QuestScreen(viewModel: StudyViewModel, onFinish: () -> Unit) {
                                                         )
                                                         Toast.makeText(
                                                             context,
-                                                            if (isEnglish) "Saved to Vocabulary Vault! ⭐" else "Đã lưu vào Sổ tay từ vựng! ⭐",
+                                                            if (isEnglish) "Saved to Vocabulary Vault successfully" else "Đã lưu vào Sổ tay từ vựng thành công",
                                                             Toast.LENGTH_SHORT
                                                         ).show()
                                                     }
