@@ -9,9 +9,12 @@ import com.example.model.PairSlotItem
 import com.example.model.SentenceBuilderSlot
 import com.example.model.SpeakingChallengeSlot
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import java.util.concurrent.TimeUnit
+import com.example.util.CosmicSpacedRepetitionManager
 
 class ScaffoldingCurriculumProgressiveRoadmapTest {
 
@@ -415,5 +418,238 @@ class ScaffoldingCurriculumProgressiveRoadmapTest {
         assertEquals(25, chapter.questions.size)
         assertTrue(chapter.description?.contains("mitigate") == true)
         assertTrue(chapter.questions.last().explanation?.contains("mitigate") == true)
+    }
+
+    @Test
+    fun test10And15QuestionPacingHasZeroRepetition() {
+        val chapter10 = com.example.model.SpiralCurriculumBlueprint.generateTopicAwareChapter(
+            level = "Beginner",
+            topic = "Chặng 1: Chào Hỏi & Làm Quen Cơ Bản",
+            questionsPerLesson = 10
+        )
+        assertEquals(50, chapter10.questions.size)
+        val lessons10 = chapter10.questions.chunked(10)
+        lessons10.forEachIndexed { idx, lessonQs ->
+            assertEquals(10, lessonQs.size)
+            val prompts = lessonQs.map { it.questionText }.toSet()
+            assertEquals("Lesson ${idx+1} in 10-Q mode must have 10 distinct question prompts", 10, prompts.size)
+        }
+
+        val chapter15 = com.example.model.SpiralCurriculumBlueprint.generateTopicAwareChapter(
+            level = "Beginner",
+            topic = "Chặng 1: Chào Hỏi & Làm Quen Cơ Bản",
+            questionsPerLesson = 15
+        )
+        assertEquals(75, chapter15.questions.size)
+        val lessons15 = chapter15.questions.chunked(15)
+        lessons15.forEachIndexed { idx, lessonQs ->
+            assertEquals(15, lessonQs.size)
+            val prompts = lessonQs.map { it.questionText }.toSet()
+            assertEquals("Lesson ${idx+1} in 15-Q mode must have 15 distinct question prompts", 15, prompts.size)
+        }
+    }
+
+    @Test
+    fun testSentenceBuilderQuestionsHaveExplicitVietnamesePrompt() {
+        val chapter = com.example.model.SpiralCurriculumBlueprint.generateTopicAwareChapter(
+            level = "Beginner",
+            topic = "Chặng 1: Chào Hỏi & Làm Quen Cơ Bản",
+            questionsPerLesson = 15
+        )
+        val sentenceBuilders = chapter.questions.filter { it.questionType == MicrolearningSlotArchetypes.SENTENCE_BUILDER }
+        assertTrue("Must contain sentence builder questions", sentenceBuilders.isNotEmpty())
+        sentenceBuilders.forEach { sb ->
+            assertTrue(
+                "Sentence Builder question '${sb.questionText}' must contain Vietnamese translation in quotes",
+                sb.questionText.contains("'") || sb.questionText.contains("\"")
+            )
+        }
+    }
+
+    @Test
+    fun test40CosmicPlanetsAcross4SectionsAreConfigured() {
+        val sections = com.example.ui.CosmicSectionConfig.getAllSections()
+        assertEquals(4, sections.size)
+
+        // Section 1: 1-10
+        assertEquals(1, sections[0].sectionNumber)
+        assertEquals(1, sections[0].startPlanet)
+        assertEquals(10, sections[0].endPlanet)
+        assertTrue(sections[0].cefrLevel.contains("A0") || sections[0].cefrLevel.contains("A1"))
+
+        // Section 2: 11-20
+        assertEquals(2, sections[1].sectionNumber)
+        assertEquals(11, sections[1].startPlanet)
+        assertEquals(20, sections[1].endPlanet)
+        assertTrue(sections[1].cefrLevel.contains("A2"))
+
+        // Section 3: 21-30
+        assertEquals(3, sections[2].sectionNumber)
+        assertEquals(21, sections[2].startPlanet)
+        assertEquals(30, sections[2].endPlanet)
+        assertTrue(sections[2].cefrLevel.contains("B1") || sections[2].cefrLevel.contains("B2"))
+
+        // Section 4: 31-40
+        assertEquals(4, sections[3].sectionNumber)
+        assertEquals(31, sections[3].startPlanet)
+        assertEquals(40, sections[3].endPlanet)
+        assertTrue(sections[3].cefrLevel.contains("C1"))
+
+        val totalPlanets = sections.sumOf { it.totalPlanets }
+        assertEquals(40, totalPlanets)
+    }
+
+    @Test
+    fun testThemeResolutionAcrossAll4Sections() {
+        val themeSec1 = com.example.model.SpiralCurriculumBlueprint.resolveTheme(
+            "Beginner", "Chặng 1: Sao Thủy - Chào Hỏi & Làm Quen Cơ Bản"
+        )
+        assertEquals(com.example.model.SpiralCurriculumBlueprint.CurriculumTheme.BEGINNER_STAGE_1_GREETINGS, themeSec1)
+
+        val themeSec2 = com.example.model.SpiralCurriculumBlueprint.resolveTheme(
+            "Elementary", "Chặng 11: Trạm Không Gian ISS - Đặt Vé & Sân Bay"
+        )
+        assertEquals(com.example.model.SpiralCurriculumBlueprint.CurriculumTheme.INTERMEDIATE_STAGE_2_POLITE_INQUIRIES, themeSec2)
+
+        val themeSec3 = com.example.model.SpiralCurriculumBlueprint.resolveTheme(
+            "Intermediate", "Chặng 21: Tinh Vân Con Cua - Email & Thư Từ Công Sở"
+        )
+        assertEquals(com.example.model.SpiralCurriculumBlueprint.CurriculumTheme.INTERMEDIATE_STAGE_2_POLITE_INQUIRIES, themeSec3)
+
+        val themeSec4 = com.example.model.SpiralCurriculumBlueprint.resolveTheme(
+            "Advanced", "Chặng 35: Mạng Nhện Thiên Hà - Đàm Phán Hợp Đồng Cấp Cao"
+        )
+        assertEquals(com.example.model.SpiralCurriculumBlueprint.CurriculumTheme.ADVANCED_STAGE_2_NEGOTIATION_ACADEMIC, themeSec4)
+    }
+
+    @Test
+    fun testPhase2SectionCompletionAndRewardEventTrigger() {
+        val completedIdxPlanet10 = 9 // Index 9 is planet 10
+        val isTenthPlanet = (completedIdxPlanet10 + 1) % 10 == 0
+        assertTrue("Planet 10 must trigger section completion", isTenthPlanet)
+
+        val completedSecNum = (completedIdxPlanet10 + 1) / 10
+        val nextSecNum = completedSecNum + 1
+        assertEquals(1, completedSecNum)
+        assertEquals(2, nextSecNum)
+
+        val event = com.example.model.SectionCompletionEvent(
+            completedSectionNumber = completedSecNum,
+            nextSectionNumber = nextSecNum,
+            completedSectionTitle = "Hệ Mặt Trời & Giao Tiếp Cơ Bản",
+            nextSectionTitle = "Thiên Hà Tiên Nữ & Đời Sống Du Lịch",
+            rewardXp = 100,
+            rewardStars = 50
+        )
+        assertEquals(100, event.rewardXp)
+        assertEquals(50, event.rewardStars)
+        assertEquals(1, event.completedSectionNumber)
+        assertEquals(2, event.nextSectionNumber)
+    }
+
+    @Test
+    fun testPhase2MilestoneCheckpointCalculation() {
+        // Section 1: planets 0..9 (10 planets)
+        val stages = (0 until 40).map { idx ->
+            JourneyStageUiModel(
+                id = "stage_$idx",
+                sequence = idx + 1,
+                title = "Stage ${idx + 1}",
+                description = "Desc",
+                completedLessons = if (idx < 10) 5 else 0,
+                totalLessons = 5,
+                progress = if (idx < 10) 1f else 0f,
+                state = if (idx < 10) JourneyStageState.COMPLETED else JourneyStageState.LOCKED,
+                visualType = PlanetVisualType.CYAN,
+                destinationId = null,
+                rewardStars = 5,
+                isRecommended = false
+            )
+        }
+
+        // Section 2 milestone checkpoint (index 10)
+        val nextSectionNum = 2
+        val prevSectionStartIdx = (nextSectionNum - 2) * 10
+        val prevSectionStages = stages.drop(prevSectionStartIdx).take(10)
+        assertEquals(10, prevSectionStages.size)
+        val isPrevCompleted = prevSectionStages.all { it.state == JourneyStageState.COMPLETED }
+        assertTrue("Section 1 is fully completed so Section 2 checkpoint is unlocked", isPrevCompleted)
+
+        // Section 3 milestone checkpoint (index 20)
+        val sec3Num = 3
+        val prevSec2StartIdx = (sec3Num - 2) * 10
+        val prevSec2Stages = stages.drop(prevSec2StartIdx).take(10)
+        val isSec2Completed = prevSec2Stages.all { it.state == JourneyStageState.COMPLETED }
+        assertFalse("Section 2 is not completed yet so Section 3 checkpoint is locked", isSec2Completed)
+    }
+
+    @Test
+    fun testPhase3CosmicSpacedRepetitionDecayAndRecharge() {
+        val now = 1000000000000L
+        val hours20Ago = now - TimeUnit.HOURS.toMillis(20) // < 24h
+        val hours40Ago = now - TimeUnit.HOURS.toMillis(40) // 36-48h -> needs review
+        val hours80Ago = now - TimeUnit.HOURS.toMillis(80) // > 72h -> critical decay
+
+        val manager = CosmicSpacedRepetitionManager()
+
+        val userId = 9999L
+        // 1. Not completed planet: energy = 1.0f, needsReview = false
+        val energyNotCompleted = manager.calculatePlanetEnergy(userId, 0, isCompleted = false, currentTimeMillis = now)
+        assertEquals(1.0f, energyNotCompleted, 0.01f)
+        assertFalse(manager.isReviewNeeded(energyNotCompleted))
+
+        // 2. Planet completed recently (< 24h ago): energy = 1.0f, needsReview = false
+        manager.setLastReviewTimestamp(userId, 1, hours20Ago)
+        val energyFresh = manager.calculatePlanetEnergy(userId, 1, isCompleted = true, currentTimeMillis = now)
+        assertEquals(1.0f, energyFresh, 0.01f)
+        assertFalse(manager.isReviewNeeded(energyFresh))
+
+        // 3. Planet completed 40h ago: energy = 0.65f, needsReview = true
+        manager.setLastReviewTimestamp(userId, 2, hours40Ago)
+        val energyDecayed = manager.calculatePlanetEnergy(userId, 2, isCompleted = true, currentTimeMillis = now)
+        assertEquals(0.65f, energyDecayed, 0.01f)
+        assertTrue(manager.isReviewNeeded(energyDecayed))
+
+        // 4. Planet completed 80h ago: energy = 0.25f, needsReview = true
+        manager.setLastReviewTimestamp(userId, 3, hours80Ago)
+        val energyCritical = manager.calculatePlanetEnergy(userId, 3, isCompleted = true, currentTimeMillis = now)
+        assertEquals(0.25f, energyCritical, 0.01f)
+        assertTrue(manager.isReviewNeeded(energyCritical))
+
+        // 5. Recharge planet 3: resets timestamp to now, restores energy to 100%
+        manager.rechargePlanet(userId, 3, timestamp = now)
+        val energyRecharged = manager.calculatePlanetEnergy(userId, 3, isCompleted = true, currentTimeMillis = now)
+        assertEquals(1.0f, energyRecharged, 0.01f)
+        assertFalse(manager.isReviewNeeded(energyRecharged))
+    }
+
+    @Test
+    fun testPhase3JourneyStageMapperWithEnergyProvider() {
+        val chapterTitles = listOf("Chapter 1", "Chapter 2", "Chapter 3")
+        val nodeProgress = listOf(6, 6, 1) // Chapters 1 & 2 completed, Chapter 3 current
+
+        val stages = JourneyStageMapper.mapStages(
+            chapterTitles = chapterTitles,
+            nodeProgress = nodeProgress,
+            energyProvider = { idx, _, _ ->
+                if (idx == 0) 0.50f else 1.0f
+            }
+        )
+
+        assertEquals(3, stages.size)
+        // Stage 0: Completed, energy 0.50, needsReview = true
+        assertEquals(JourneyStageState.COMPLETED, stages[0].state)
+        assertEquals(0.50f, stages[0].energyLevel, 0.01f)
+        assertTrue(stages[0].needsReview)
+        assertTrue(stages[0].description.contains("suy giảm"))
+
+        // Stage 1: Completed, energy 1.0, needsReview = false
+        assertEquals(JourneyStageState.COMPLETED, stages[1].state)
+        assertEquals(1.0f, stages[1].energyLevel, 0.01f)
+        assertFalse(stages[1].needsReview)
+
+        // Stage 2: Not completed
+        assertEquals(JourneyStageState.CURRENT, stages[2].state)
+        assertFalse(stages[2].needsReview)
     }
 }

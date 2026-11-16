@@ -56,10 +56,14 @@ import com.example.ui.BubbleArrowDirection
 import com.example.ui.CosmicSectionBanner
 import com.example.ui.CosmicSectionConfig
 import com.example.ui.CosmicSectionData
+import com.example.ui.CosmicSectionSelectorDialog
+import com.example.ui.CosmicSectionCompletedDialog
 import com.example.ui.SpeechBubbleShape
 import com.example.ui.CosmicPlanetLessonPopup
 import com.example.ui.CosmicMilestoneDivider
 import com.example.ui.OutOfHeartsDialog
+import com.example.ui.CosmicAiMultiverseSupergalaxyView
+import com.example.ui.CosmicMultiversePreviewDialog
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -97,14 +101,22 @@ fun JourneyMapScreen(
     val streakShields by viewModel.streakShields.observeAsState(0)
     val stars by viewModel.stars.observeAsState(0)
     val isEnglish by viewModel.isEnglish.observeAsState(false)
+    val isCosmicPassActive by viewModel.isCosmicPassActive.observeAsState(false)
     var showOutOfHeartsPrompt by remember { mutableStateOf(false) }
+    var showSectionSelector by remember { mutableStateOf(false) }
     val availableChapters by viewModel.availableChapters.observeAsState(emptyList())
     val chapterProgress by viewModel.chapterProgress.observeAsState(emptyList())
     val chaptersLoading by viewModel.chaptersLoading.observeAsState(false)
     val chaptersError by viewModel.chaptersError.observeAsState(null)
 
     val stages = remember(availableChapters, chapterProgress) {
-        JourneyStageMapper.mapStages(availableChapters, chapterProgress)
+        JourneyStageMapper.mapStages(
+            chapterTitles = availableChapters,
+            nodeProgress = chapterProgress,
+            energyProvider = { idx, isCompleted, totalCompleted ->
+                viewModel.getPlanetEnergy(idx, isCompleted, totalCompleted)
+            }
+        )
     }
     val currentStageIndex = stages.indexOfFirst { it.state == JourneyStageState.CURRENT }
     var isNavigating by remember { mutableStateOf(false) }
@@ -129,7 +141,7 @@ fun JourneyMapScreen(
                 unlockAnim.snapTo(0f)
 
                 val stageStepPx = with(density) { 255.dp.toPx() }
-                val sectionBreakPx = with(density) { 56.dp.toPx() }
+                val sectionBreakPx = with(density) { 88.dp.toPx() }
                 val targetPlanetY = (targetIdx / 10) * sectionBreakPx + targetIdx * stageStepPx + with(density) { 85.dp.toPx() }
                 val viewportHeightPx = scrollState.viewportSize.toFloat()
                 val desiredScroll = (targetPlanetY - (if (viewportHeightPx > 0) viewportHeightPx * 0.45f else 600f)).toInt().coerceAtLeast(0)
@@ -188,7 +200,8 @@ fun JourneyMapScreen(
                 avatarUri = avatarUri,
                 streak = streak,
                 hearts = hearts,
-                streakShields = streakShields
+                streakShields = streakShields,
+                isCosmicPassActive = isCosmicPassActive
             )
 
             // ─── STICKY COSMIC SECTION BANNER (Ghim cố định ở đầu màn hình) ───
@@ -200,7 +213,7 @@ fun JourneyMapScreen(
                         val scrollY = scrollState.value.toFloat()
                         val approxStageIndex = ((scrollY + 220f) / stageStepPx).toInt().coerceIn(0, stages.lastIndex)
                         val sectionNum = (approxStageIndex / 10) + 1
-                        val startIdx = (sectionNum - 1) * 10
+                        val startIdx = ((sectionNum - 1) * 10).coerceAtLeast(0)
                         val sectionStages = stages.drop(startIdx).take(10)
                         val completed = sectionStages.count { it.state == JourneyStageState.COMPLETED }
                         CosmicSectionConfig.getSectionData(
@@ -215,7 +228,11 @@ fun JourneyMapScreen(
                     section = currentSectionData,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(98.dp)
+                        .height(98.dp),
+                    onClick = {
+                        haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                        showSectionSelector = true
+                    }
                 )
             }
 
@@ -246,6 +263,8 @@ fun JourneyMapScreen(
                         animatingUnlockStageIndex = animatingUnlockStageIndex,
                         pendingUnlockIndex = pendingUnlockIndex,
                         unlockAnimProgress = unlockAnim.value,
+                        scrollValueProvider = { scrollState.value.toFloat() },
+                        viewportHeightProvider = { scrollState.viewportSize.toFloat() },
                         onStageStartQuest = { stage ->
                             if (hearts <= 0) {
                                 showOutOfHeartsPrompt = true
@@ -276,11 +295,15 @@ fun JourneyMapScreen(
                                     }
                                 }
                             }
-                        }
+                        },
+                        onCheckChestClaimed = viewModel::isSectionChestClaimed,
+                        onClaimSectionChest = { secNum -> viewModel.claimSectionChest(secNum) }
                     )
                 }
             }
         }
+
+
         if (showOutOfHeartsPrompt) {
             OutOfHeartsDialog(
                 currentStars = stars,
@@ -302,6 +325,55 @@ fun JourneyMapScreen(
                 }
             )
         }
+        if (showSectionSelector) {
+            val stageStepPx = with(density) { 255.dp.toPx() }
+            val sectionBreakPx = with(density) { 88.dp.toPx() }
+            val approxStageIndex = ((scrollState.value.toFloat() + 220f) / stageStepPx).toInt().coerceIn(0, stages.lastIndex.coerceAtLeast(0))
+            val activeSectionNum = (approxStageIndex / 10) + 1
+
+            CosmicSectionSelectorDialog(
+                currentSectionNumber = activeSectionNum,
+                stages = stages,
+                onSelectSection = { targetSectionNum ->
+                    showSectionSelector = false
+                    if (stages.isNotEmpty()) {
+                        val targetPlanetIdx = ((targetSectionNum - 1) * 10).coerceIn(0, stages.lastIndex)
+                        val targetScroll = ((targetPlanetIdx / 10) * sectionBreakPx + targetPlanetIdx * stageStepPx).toInt().coerceAtLeast(0)
+                        coroutineScope.launch {
+                            scrollState.animateScrollTo(targetScroll, tween(850, easing = androidx.compose.animation.core.FastOutSlowInEasing))
+                        }
+                    }
+                },
+                onDismiss = { showSectionSelector = false }
+            )
+        }
+
+        // ─── Hộp Thoại Chúc Mừng Hoàn Thành Chặng Vũ Trụ (Cosmic Section Completed) ───
+        val sectionCompletionEvent by viewModel.sectionCompletionEvent.observeAsState(null)
+        sectionCompletionEvent?.let { secEvent ->
+            CosmicSectionCompletedDialog(
+                event = secEvent,
+                onExploreNextSection = { nextSecNum ->
+                    viewModel.claimSectionChest(secEvent.completedSectionNumber)
+                    viewModel.clearSectionCompletionEvent()
+                    if (stages.isNotEmpty()) {
+                        val targetPlanetIdx = ((nextSecNum - 1) * 10).coerceIn(0, stages.lastIndex)
+                        val sectionBreakPx = with(density) { 88.dp.toPx() }
+                        val stageStepPx = with(density) { 255.dp.toPx() }
+                        val targetScroll = ((targetPlanetIdx / 10) * sectionBreakPx + targetPlanetIdx * stageStepPx).toInt().coerceAtLeast(0)
+                        coroutineScope.launch {
+                            scrollState.animateScrollTo(targetScroll, tween(900, easing = androidx.compose.animation.core.FastOutSlowInEasing))
+                        }
+                    }
+                },
+                onDismiss = {
+                    viewModel.claimSectionChest(secEvent.completedSectionNumber)
+                    viewModel.clearSectionCompletionEvent()
+                }
+            )
+        }
+
+
     }
 }
 
@@ -310,7 +382,8 @@ private fun CosmicUserStatsBanner(
     avatarUri: String?,
     streak: Int,
     hearts: Int,
-    streakShields: Int
+    streakShields: Int,
+    isCosmicPassActive: Boolean = false
 ) {
     Row(
         modifier = Modifier
@@ -394,9 +467,9 @@ private fun CosmicUserStatsBanner(
                 )
                 Spacer(modifier = Modifier.width(6.dp))
                 Text(
-                    text = "$hearts",
-                    color = Color.White,
-                    fontSize = 17.sp,
+                    text = if (isCosmicPassActive) "∞" else "$hearts",
+                    color = if (isCosmicPassActive) Color(0xFFFFD700) else Color.White,
+                    fontSize = if (isCosmicPassActive) 21.sp else 17.sp,
                     fontWeight = FontWeight.ExtraBold
                 )
             }
@@ -439,21 +512,28 @@ private fun JourneyPath(
     animatingUnlockStageIndex: Int = -1,
     pendingUnlockIndex: Int = -1,
     unlockAnimProgress: Float = 0f,
+    scrollValueProvider: () -> Float = { 0f },
+    viewportHeightProvider: () -> Float = { 0f },
     onStageStartQuest: (JourneyStageUiModel) -> Unit,
     onStageLongClick: ((JourneyStageUiModel, Int) -> Unit)? = null,
-    onEnsureVisible: ((Float, Float) -> Unit)? = null
+    onEnsureVisible: ((Float, Float) -> Unit)? = null,
+    onCheckChestClaimed: ((Int) -> Boolean)? = null,
+    onClaimSectionChest: ((Int) -> Unit)? = null
 ) {
     val stageStep = 255.dp
-    val sectionBreakHeight = 56.dp
+    val sectionBreakHeight = 88.dp
 
     val totalSectionBreaks = if (stages.isEmpty()) 0 else (stages.lastIndex / 10)
-    val totalPathHeight = (stages.size * stageStep.value + totalSectionBreaks * sectionBreakHeight.value + 190).dp
     val rewardTop = (stages.size * stageStep.value + totalSectionBreaks * sectionBreakHeight.value + 10).dp
+    val multiverseTop = rewardTop + 130.dp
+    val multiverseHeight = 440.dp
+    val totalPathHeight = multiverseTop + multiverseHeight + 140.dp
 
     val auroraAnim = rememberCosmicAuroraAnimation()
     val density = LocalDensity.current
     val haptic = LocalHapticFeedback.current
     var selectedStageIndex by remember { mutableStateOf<Int?>(null) }
+    var showMultiversePreviewDialog by remember { mutableStateOf(false) }
 
     fun getStageColor(index: Int): Color {
         val planetType = CosmicPlanetHelper.getPlanetTypeForStage(index)
@@ -490,16 +570,30 @@ private fun JourneyPath(
         }
 
         // 2. Dải cực quang ngân hà nối các hành tinh (Cosmic Aurora Segments)
-        Canvas(modifier = Modifier.matchParentSize()) {
+        // 120 FPS Optimization: Sử dụng Viewport Frustum Culling để chỉ vẽ các đoạn nằm trong khung nhìn
+        Canvas(modifier = Modifier.matchParentSize().graphicsLayer {}) {
             val nodeX = { index: Int -> if (index % 2 == 0) 90.dp.toPx() else size.width - 90.dp.toPx() }
             val nodeY = { index: Int -> ((index / 10) * sectionBreakHeight.toPx()) + index * stageStep.toPx() + 85.dp.toPx() }
 
             if (stages.size > 1) {
+                val scrollY = scrollValueProvider()
+                val viewportH = viewportHeightProvider()
+                // Thêm biên đệm an toàn 380dp ở trên và dưới để cực quang không bị ngắt đột ngột khi cuộn siêu tốc
+                val bufferPx = 380.dp.toPx()
+                val visibleTop = scrollY - bufferPx
+                val visibleBottom = scrollY + (if (viewportH > 0f) viewportH else 2500f) + bufferPx
+
                 for (s in 1..stages.lastIndex) {
-                    val startX = nodeX(s - 1)
                     val startY = nodeY(s - 1)
-                    val endX = nodeX(s)
                     val endY = nodeY(s)
+                    val segMinY = minOf(startY, endY)
+                    val segMaxY = maxOf(startY, endY)
+
+                    // Viewport Frustum Culling: Bỏ qua đoạn nối nằm hoàn toàn ngoài màn hình
+                    if (segMaxY < visibleTop || segMinY > visibleBottom) continue
+
+                    val startX = nodeX(s - 1)
+                    val endX = nodeX(s)
                     val startColor = getStageColor(s - 1)
                     val endColor = getStageColor(s)
 
@@ -523,20 +617,102 @@ private fun JourneyPath(
                         surgePulseProgress = surgePulse
                     )
                 }
+
+                // 2.2 Chùm cực quang lượng tử nối từ Mặt Trời (Hành tinh 40) vào Tâm Siêu Thiên Hà Đa Vũ Trụ AI
+                if (stages.isNotEmpty()) {
+                    val lastIdx = stages.lastIndex
+                    val startX = nodeX(lastIdx)
+                    val startY = nodeY(lastIdx)
+                    val endX = size.width / 2f
+                    val endY = multiverseTop.toPx() + 205.dp.toPx()
+
+                    val segMinY = minOf(startY, endY)
+                    val segMaxY = maxOf(startY, endY)
+                    if (segMaxY >= visibleTop && segMinY <= visibleBottom) {
+                        drawCosmicAuroraSegment(
+                            startX = startX,
+                            startY = startY,
+                            endX = endX,
+                            endY = endY,
+                            startColor = Color(0xFFFFB703),
+                            endColor = Color(0xFF51FAC1),
+                            animPhase = auroraAnim.phase.value,
+                            waveOffsetPx = auroraAnim.waveOffset.value.dp.toPx(),
+                            isActive = true,
+                            alphaScale = 0.85f,
+                            surgePulseProgress = null
+                        )
+                    }
+                }
             }
         }
 
         // 3. Cột chứa các hành tinh và mốc chuyển tiếp ngân hà (Column)
+        // 120 FPS & Low-End Optimization: Virtualized Stage Composition với derivedStateOf.
+        // Chỉ inflate các hành tinh trong khung nhìn (+ buffer 600dp), các hành tinh ngoài màn hình
+        // được thay thế bằng Box placeholder giữ nguyên chiều cao chuẩn xác tới từng pixel!
+        val stageStepPx = with(density) { stageStep.toPx() }
+        val sectionBreakPx = with(density) { sectionBreakHeight.toPx() }
+
+        val visibleStageRange by remember(stages.size, stageStepPx, sectionBreakPx) {
+            derivedStateOf {
+                val scrollY = scrollValueProvider()
+                val viewportH = viewportHeightProvider()
+                val bufferPx = 600f * density.density
+                val viewTop = scrollY - bufferPx
+                val viewBottom = scrollY + (if (viewportH > 0f) viewportH else 2500f) + bufferPx
+
+                var startIdx = 0
+                for (i in stages.indices) {
+                    val bottom = (i / 10) * sectionBreakPx + (i + 1) * stageStepPx
+                    if (bottom >= viewTop) {
+                        startIdx = (i - 1).coerceAtLeast(0)
+                        break
+                    }
+                }
+
+                var endIdx = stages.lastIndex
+                for (i in startIdx..stages.lastIndex) {
+                    val top = (i / 10) * sectionBreakPx + i * stageStepPx
+                    if (top > viewBottom) {
+                        endIdx = (i + 1).coerceAtMost(stages.lastIndex)
+                        break
+                    }
+                }
+
+                startIdx..endIdx
+            }
+        }
+
         Column(modifier = Modifier.fillMaxWidth()) {
             stages.forEachIndexed { index, stage ->
                 if (index > 0 && index % 10 == 0) {
-                    val nextSectionNum = (index / 10) + 1
-                    CosmicMilestoneDivider(
-                        sectionNum = nextSectionNum,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(sectionBreakHeight)
-                    )
+                    val isDividerVisible = (index - 1) in visibleStageRange || index in visibleStageRange
+
+                    if (isDividerVisible) {
+                        val nextSectionNum = (index / 10) + 1
+                        val prevSectionStartIdx = (nextSectionNum - 2) * 10
+                        val prevSectionStages = stages.drop(prevSectionStartIdx).take(10)
+                        val isPrevCompleted = prevSectionStages.isNotEmpty() && prevSectionStages.all { it.state == JourneyStageState.COMPLETED }
+                        val completedInPrev = prevSectionStages.count { it.state == JourneyStageState.COMPLETED }
+                        val isChestClaimed = onCheckChestClaimed?.invoke(nextSectionNum - 1) ?: false
+
+                        CosmicMilestoneDivider(
+                            sectionNum = nextSectionNum,
+                            isUnlocked = isPrevCompleted || (stage.state != JourneyStageState.LOCKED),
+                            completedInPrev = completedInPrev,
+                            totalInPrev = if (prevSectionStages.isNotEmpty()) prevSectionStages.size else 10,
+                            isChestClaimed = isChestClaimed,
+                            onClaimChest = {
+                                onClaimSectionChest?.invoke(nextSectionNum - 1)
+                            },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(sectionBreakHeight)
+                        )
+                    } else {
+                        Spacer(modifier = Modifier.fillMaxWidth().height(sectionBreakHeight))
+                    }
                 }
 
                 val isTargetUnlockingPlanet = (index == animatingUnlockStageIndex) ||
@@ -552,30 +728,39 @@ private fun JourneyPath(
                     ((unlockAnimProgress - 0.35f) / 0.65f).coerceIn(0f, 1f)
                 } else 0f
 
-                JourneyStageRow(
-                    stage = effectiveStage,
-                    index = index,
-                    totalStages = stages.size,
-                    stageStep = stageStep,
-                    strings = strings,
-                    unlockProgress = stageUnlockProgress,
-                    onStageClick = {
-                        if (animatingUnlockStageIndex != -1) return@JourneyStageRow
-                        haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                        val newIdx = if (selectedStageIndex == index) null else index
-                        selectedStageIndex = newIdx
-                        if (newIdx != null) {
-                            val sectionBreakPx = with(density) { sectionBreakHeight.toPx() }
-                            val stageStepPx = with(density) { stageStep.toPx() }
-                            val nodeYPx = (index / 10) * sectionBreakPx + index * stageStepPx + with(density) { 85.dp.toPx() }
-                            val popupBottomPx = nodeYPx + with(density) { 84.dp.toPx() } + with(density) { 180.dp.toPx() }
-                            onEnsureVisible?.invoke(popupBottomPx, nodeYPx)
+                val isStageVisible = index in visibleStageRange ||
+                    index == selectedStageIndex ||
+                    isTargetUnlockingPlanet
+
+                if (isStageVisible) {
+                    JourneyStageRow(
+                        stage = effectiveStage,
+                        index = index,
+                        totalStages = stages.size,
+                        stageStep = stageStep,
+                        strings = strings,
+                        unlockProgress = stageUnlockProgress,
+                        onStageClick = {
+                            if (animatingUnlockStageIndex != -1) return@JourneyStageRow
+                            haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                            val newIdx = if (selectedStageIndex == index) null else index
+                            selectedStageIndex = newIdx
+                            if (newIdx != null) {
+                                val sBreakPx = with(density) { sectionBreakHeight.toPx() }
+                                val sStepPx = with(density) { stageStep.toPx() }
+                                val nodeYPx = (index / 10) * sBreakPx + index * sStepPx + with(density) { 85.dp.toPx() }
+                                val popupBottomPx = nodeYPx + with(density) { 84.dp.toPx() } + with(density) { 180.dp.toPx() }
+                                onEnsureVisible?.invoke(popupBottomPx, nodeYPx)
+                            }
+                        },
+                        onStageLongClick = {
+                            onStageLongClick?.invoke(stage, index)
                         }
-                    },
-                    onStageLongClick = {
-                        onStageLongClick?.invoke(stage, index)
-                    }
-                )
+                    )
+                } else {
+                    // Placeholder giữ nguyên vẹn chiều cao layout, giải phóng 100% RAM và chi phí render cho Compose
+                    Box(modifier = Modifier.fillMaxWidth().height(stageStep))
+                }
             }
         }
 
@@ -586,6 +771,25 @@ private fun JourneyPath(
                 .fillMaxWidth()
                 .padding(top = rewardTop, start = 22.dp, end = 22.dp)
         )
+
+        // 5. SIÊU THIÊN HÀ ĐA VŨ TRỤ AI VÔ TẬN (The Infinite AI Multiverse Supergalaxy & Event Horizon Singularity)
+        CosmicAiMultiverseSupergalaxyView(
+            stages = stages,
+            isEnglish = isEnglish,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(top = multiverseTop),
+            onExploreClick = {
+                showMultiversePreviewDialog = true
+            }
+        )
+
+        if (showMultiversePreviewDialog) {
+            CosmicMultiversePreviewDialog(
+                isEnglish = isEnglish,
+                onDismiss = { showMultiversePreviewDialog = false }
+            )
+        }
 
         // 5. Duolingo-style Cosmic Planet Lesson Pop-up với mũi tên trỏ vào hành tinh
         // Đặt popupY = planetNodeY + 84.dp (ở dưới vành quỹ đạo, KHÔNG BỊ ĐÈ LÊN HÀNH TINH)

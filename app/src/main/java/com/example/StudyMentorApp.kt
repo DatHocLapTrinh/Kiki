@@ -881,6 +881,15 @@ fun OptionButton(text: String, isSelected: Boolean, onClick: () -> Unit) {
 fun MainNavigation(viewModel: StudyViewModel, onLogout: () -> Unit) {
     val navController = rememberNavController()
     val context = androidx.compose.ui.platform.LocalContext.current
+    LaunchedEffect(Unit) {
+        val activity = context as? android.app.Activity
+        val targetScreen = activity?.intent?.getStringExtra(com.example.notification.KikiNotificationManager.EXTRA_TARGET_SCREEN)
+        if (targetScreen == "profile") {
+            activity.intent?.removeExtra(com.example.notification.KikiNotificationManager.EXTRA_TARGET_SCREEN)
+            viewModel.setKikiExplorerSection(KikiExplorerSection.PROFILE)
+            navController.navigate("profile") { launchSingleTop = true }
+        }
+    }
     val isEnglish by viewModel.isEnglish.observeAsState(false)
     var showFocusPrompt by remember {
         mutableStateOf(!com.example.util.FocusModeManager.hasPrompted(context))
@@ -963,17 +972,29 @@ fun MainNavigation(viewModel: StudyViewModel, onLogout: () -> Unit) {
 
         val strings = LocalAppStrings.current
         var showDuolingoMoreSheet by remember { mutableStateOf(false) }
+        var showCosmicPassPaywall by remember { mutableStateOf(false) }
+        var showFeedbackPrompt by remember { mutableStateOf(false) }
 
         val navBackStackEntry by navController.currentBackStackEntryAsState()
         val currentNavRoute = navBackStackEntry?.destination?.route
         LaunchedEffect(currentNavRoute) {
             showDuolingoMoreSheet = false
+            if (currentNavRoute == "map" && com.example.util.FeedbackPromptManager.shouldShowFeedbackPrompt(context)) {
+                delay(1200)
+                if (currentNavRoute == "map" && com.example.util.FeedbackPromptManager.shouldShowFeedbackPrompt(context)) {
+                    showFeedbackPrompt = true
+                }
+            }
         }
 
         if (showDuolingoMoreSheet) {
             DuolingoMoreFloatingMenu(
                 strings = strings,
                 onDismiss = { showDuolingoMoreSheet = false },
+                onNavigateCosmicPass = {
+                    showDuolingoMoreSheet = false
+                    showCosmicPassPaywall = true
+                },
                 onNavigateProfile = {
                     showDuolingoMoreSheet = false
                     viewModel.setKikiExplorerSection(KikiExplorerSection.PROFILE)
@@ -1000,6 +1021,55 @@ fun MainNavigation(viewModel: StudyViewModel, onLogout: () -> Unit) {
                         launchSingleTop = true
                         restoreState = true
                     }
+                },
+                onNavigateFeedback = {
+                    showDuolingoMoreSheet = false
+                    showFeedbackPrompt = true
+                }
+            )
+        }
+
+        if (showCosmicPassPaywall) {
+            val isCosmicPassActive by viewModel.isCosmicPassActive.observeAsState(false)
+            com.example.ui.CosmicPassPaywallDialog(
+                isCurrentActive = isCosmicPassActive,
+                onSubscribeTier = { tier ->
+                    viewModel.subscribeCosmicPass(tier)
+                    showCosmicPassPaywall = false
+                },
+                onDismiss = { showCosmicPassPaywall = false }
+            )
+        }
+
+        val newlyUnlockedBadge by viewModel.newlyUnlockedBadge.observeAsState(null)
+        if (newlyUnlockedBadge != null) {
+            com.example.ui.AchievementUnlockedCelebrationDialog(
+                badge = newlyUnlockedBadge!!,
+                isEnglish = isEnglish,
+                onDismiss = { viewModel.dismissNewlyUnlockedBadge() },
+                onViewProfile = {
+                    viewModel.dismissNewlyUnlockedBadge()
+                    viewModel.setKikiExplorerSection(KikiExplorerSection.PROFILE)
+                    navController.navigate("profile") {
+                        popUpTo(navController.graph.startDestinationId) { saveState = true }
+                        launchSingleTop = true
+                        restoreState = true
+                    }
+                }
+            )
+        }
+
+        if (showFeedbackPrompt) {
+            com.example.ui.CosmicFeedbackDialog(
+                isEnglish = isEnglish,
+                onOpenSurvey = {
+                    viewModel.addStars(50)
+                    com.example.util.FeedbackPromptManager.openSurveyInBrowser(context)
+                    showFeedbackPrompt = false
+                },
+                onDismiss = {
+                    com.example.util.FeedbackPromptManager.recordDismissed(context)
+                    showFeedbackPrompt = false
                 }
             )
         }
@@ -1176,9 +1246,11 @@ fun NavItem(
 fun DuolingoMoreFloatingMenu(
     strings: AppStrings,
     onDismiss: () -> Unit,
+    onNavigateCosmicPass: () -> Unit,
     onNavigateProfile: () -> Unit,
     onNavigateVocab: () -> Unit,
-    onNavigateSettings: () -> Unit
+    onNavigateSettings: () -> Unit,
+    onNavigateFeedback: () -> Unit
 ) {
     val haptic = LocalHapticFeedback.current
     val isEnglish = strings.settingsTitle == "Settings"
@@ -1242,10 +1314,21 @@ fun DuolingoMoreFloatingMenu(
 
             HorizontalDivider(color = Color(0x1A51FAC1), thickness = 0.8.dp)
 
+            // 👑 Nạp VIP / Kiki Cosmic Pass (Đặc Quyền Vũ Trụ)
+            CosmicPassMenuItem(
+                isEnglish = isEnglish,
+                onClick = {
+                    haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                    onNavigateCosmicPass()
+                }
+            )
+
+            HorizontalDivider(color = Color(0x33FFD700), thickness = 0.8.dp)
+
             // 1. Hồ sơ (gồm danh hiệu và cột mốc bên trong)
             DuolingoMenuItem(
                 title = if (isEnglish) "Profile & Cosmic Badges" else "Hồ Sơ & Danh Hiệu Cột Mốc",
-                icon = Icons.Default.Person,
+                iconRes = R.drawable.profile,
                 iconTint = Color(0xFF51FAC1),
                 iconBg = Color(0x2251FAC1),
                 onClick = {
@@ -1259,7 +1342,7 @@ fun DuolingoMoreFloatingMenu(
             // 2. Từ vựng & Ngữ pháp
             DuolingoMenuItem(
                 title = if (isEnglish) "Vocabulary & Grammar" else "Từ Vựng & Ngữ Pháp",
-                icon = Icons.Default.CollectionsBookmark,
+                iconRes = R.drawable.ic_open_book,
                 iconTint = Color(0xFF51FAC1),
                 iconBg = Color(0x2251FAC1),
                 onClick = {
@@ -1273,7 +1356,7 @@ fun DuolingoMoreFloatingMenu(
             // 3. Cài đặt & Tuỳ chọn
             DuolingoMenuItem(
                 title = if (isEnglish) "Settings & Preferences" else "Cài Đặt & Tuỳ Chọn",
-                icon = Icons.Default.Settings,
+                iconRes = R.drawable.ic_action_setting,
                 iconTint = Color(0xFF51FAC1),
                 iconBg = Color(0x2251FAC1),
                 onClick = {
@@ -1281,14 +1364,123 @@ fun DuolingoMoreFloatingMenu(
                     onNavigateSettings()
                 }
             )
+
+            HorizontalDivider(color = Color(0x1A51FAC1), thickness = 0.8.dp)
+
+            // 4. Khảo sát & Góp ý trải nghiệm (Google Form)
+            DuolingoMenuItem(
+                title = if (isEnglish) "Survey & Feedback (+50 ⭐)" else "Khảo Sát & Góp Ý (+50 ⭐)",
+                icon = Icons.Default.Star,
+                iconTint = Color(0xFFFFD166),
+                iconBg = Color(0x22FFD166),
+                onClick = {
+                    haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                    onNavigateFeedback()
+                }
+            )
         }
+    }
+}
+
+@Composable
+private fun CosmicPassMenuItem(
+    isEnglish: Boolean,
+    onClick: () -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(18.dp))
+            .background(
+                Brush.horizontalGradient(
+                    listOf(Color(0xFF2C1D0B), Color(0xFF1B1428))
+                )
+            )
+            .border(
+                width = 1.3.dp,
+                brush = Brush.horizontalGradient(
+                    listOf(Color(0xFFFFD700), Color(0xFFFFA500), Color(0xFFC084FC))
+                ),
+                shape = RoundedCornerShape(18.dp)
+            )
+            .clickable(onClick = onClick)
+            .padding(horizontal = 12.dp, vertical = 11.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        // Avatar tròn 3D Royal Cosmic Kiki viền vàng kim
+        Box(
+            modifier = Modifier
+                .size(46.dp)
+                .clip(CircleShape)
+                .background(Color(0xFF180F03))
+                .border(1.5.dp, Color(0xFFFFD700), CircleShape),
+            contentAlignment = Alignment.Center
+        ) {
+            Image(
+                painter = painterResource(id = R.drawable.kiki_cosmic_pass_hero),
+                contentDescription = "Royal Cosmic Kiki",
+                modifier = Modifier
+                    .fillMaxSize()
+                    .clip(CircleShape),
+                contentScale = androidx.compose.ui.layout.ContentScale.Crop
+            )
+        }
+
+        Spacer(modifier = Modifier.width(12.dp))
+
+        Column(modifier = Modifier.weight(1f)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    text = "KIKI COSMIC PASS 👑",
+                    color = Color(0xFFFFD700),
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.Black,
+                    letterSpacing = 0.5.sp
+                )
+                Spacer(modifier = Modifier.width(6.dp))
+                Box(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(6.dp))
+                        .background(
+                            Brush.horizontalGradient(
+                                listOf(Color(0xFFFFD700), Color(0xFFFB923C))
+                            )
+                        )
+                        .padding(horizontal = 6.dp, vertical = 1.5.dp)
+                ) {
+                    Text(
+                        text = "VIP",
+                        color = Color(0xFF180E02),
+                        fontSize = 9.sp,
+                        fontWeight = FontWeight.Black
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(2.dp))
+
+            Text(
+                text = if (isEnglish) "Unlimited Hearts • 24/7 AI • x2 XP" else "Vô hạn Tim • AI Tutor 24/7 • x2 EXP",
+                color = Color(0xCCFFFFFF),
+                fontSize = 10.5.sp,
+                fontWeight = FontWeight.Medium
+            )
+        }
+
+        Icon(
+            imageVector = Icons.AutoMirrored.Filled.ArrowForwardIos,
+            contentDescription = null,
+            tint = Color(0xFFFFD700),
+            modifier = Modifier.size(13.dp)
+        )
     }
 }
 
 @Composable
 private fun DuolingoMenuItem(
     title: String,
-    icon: ImageVector,
+    icon: ImageVector? = null,
+    iconRes: Int? = null,
     iconTint: Color = Color(0xFF51FAC1),
     iconBg: Color = Color(0x2251FAC1),
     onClick: () -> Unit
@@ -1309,12 +1501,20 @@ private fun DuolingoMenuItem(
                 .border(1.dp, iconTint.copy(alpha = 0.4f), RoundedCornerShape(13.dp)),
             contentAlignment = Alignment.Center
         ) {
-            Icon(
-                imageVector = icon,
-                contentDescription = title,
-                tint = iconTint,
-                modifier = Modifier.size(24.dp)
-            )
+            if (iconRes != null) {
+                Image(
+                    painter = painterResource(id = iconRes),
+                    contentDescription = title,
+                    modifier = Modifier.size(26.dp)
+                )
+            } else if (icon != null) {
+                Icon(
+                    imageVector = icon,
+                    contentDescription = title,
+                    tint = iconTint,
+                    modifier = Modifier.size(24.dp)
+                )
+            }
         }
         Spacer(modifier = Modifier.width(16.dp))
         Text(

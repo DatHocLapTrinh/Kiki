@@ -43,14 +43,16 @@ fun MascotParticleCanvas(
     emotion: MascotEmotion,
     modifier: Modifier = Modifier
 ) {
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val isLowEnd = remember { com.example.util.DevicePerformanceManager.isLowEnd(context) }
     val particles = remember { mutableStateListOf<MascotParticle>() }
 
-    // Sinh hạt khi thay đổi trạng thái cảm xúc
+    // Sinh hạt khi thay đổi trạng thái cảm xúc (giảm số hạt trên máy yếu để giữ 60fps)
     LaunchedEffect(emotion) {
         when (emotion) {
             MascotEmotion.CHEER -> {
-                // Tung 15 hạt sao lấp lánh màu vàng Gold & lục bảo
-                repeat(16) {
+                val count = if (isLowEnd) 6 else 16
+                repeat(count) {
                     val angle = Random.nextFloat() * 2f * Math.PI.toFloat()
                     val speed = Random.nextFloat() * 7f + 3f
                     particles.add(
@@ -72,8 +74,8 @@ fun MascotParticleCanvas(
             }
 
             MascotEmotion.STREAK -> {
-                // Bốc 24 hạt lửa cuộn trào
-                repeat(24) {
+                val count = if (isLowEnd) 8 else 24
+                repeat(count) {
                     val colors = listOf(Color(0xFFFF3D00), Color(0xFFFF9100), Color(0xFFFFEA00))
                     particles.add(
                         MascotParticle(
@@ -94,8 +96,8 @@ fun MascotParticleCanvas(
             }
 
             MascotEmotion.PETTED -> {
-                // Tung 12 trái tim ngọt ngào
-                repeat(12) {
+                val count = if (isLowEnd) 5 else 12
+                repeat(count) {
                     particles.add(
                         MascotParticle(
                             x = Random.nextFloat() * 0.5f + 0.25f,

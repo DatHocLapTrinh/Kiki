@@ -27,7 +27,9 @@ data class JourneyStageUiModel(
     val visualType: PlanetVisualType,
     val destinationId: String?,
     val rewardStars: Int,
-    val isRecommended: Boolean
+    val isRecommended: Boolean,
+    val energyLevel: Float = 1.0f,
+    val needsReview: Boolean = false
 )
 
 sealed interface JourneyMapUiState {

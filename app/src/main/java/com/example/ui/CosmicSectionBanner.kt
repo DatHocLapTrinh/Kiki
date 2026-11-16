@@ -6,6 +6,8 @@ import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -19,8 +21,13 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AutoAwesome
+import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.filled.RocketLaunch
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -31,6 +38,8 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -48,7 +57,8 @@ data class CosmicSectionData(
     val title: String,
     val description: String,
     val completedCount: Int,
-    val totalPlanets: Int = 10
+    val totalPlanets: Int = 10,
+    val cefrLevel: String = "A0 - A1 • Khởi Động"
 )
 
 /**
@@ -73,34 +83,38 @@ object CosmicSectionConfig {
             title = "Hệ Mặt Trời & Giao Tiếp Cơ Bản",
             description = "Làm chủ những mẫu câu nền tảng nhất: chào hỏi, giới thiệu bản thân, gia đình, đồ vật và thời gian trong không gian vũ trụ.",
             completedCount = 0,
-            totalPlanets = 10
+            totalPlanets = 10,
+            cefrLevel = "A0 - A1 • Khởi Động"
         ),
         CosmicSectionData(
             sectionNumber = 2,
             startPlanet = 11,
             endPlanet = 20,
-            title = "Thiên Hà & Nơi Chốn Du Lịch",
-            description = "Tự tin hỏi đường, đặt vé tàu con thoi, giao dịch mua sắm và thưởng thức ẩm thực ngân hà.",
+            title = "Thiên Hà Tiên Nữ & Đời Sống Du Lịch",
+            description = "Băng qua trạm không gian, tự tin đặt vé tàu bay, nhận phòng khách sạn, giao thông di chuyển và thưởng thức ẩm thực ngân hà.",
             completedCount = 0,
-            totalPlanets = 10
+            totalPlanets = 10,
+            cefrLevel = "A2 • Đời Sống & Du Lịch"
         ),
         CosmicSectionData(
             sectionNumber = 3,
             startPlanet = 21,
             endPlanet = 30,
-            title = "Tinh Vân & Đời Sống Công Sở",
-            description = "Trình bày quan điểm cá nhân, trao đổi trong môi trường làm việc và tự do đàm thoại lưu loát.",
+            title = "Tinh Vân Vô Cực & Đời Sống Công Sở",
+            description = "Làm chủ văn phong email, điều phối cuộc họp, phỏng vấn tuyển dụng, xử lý khiếu nại và thuyết trình báo cáo dữ liệu chuyên nghiệp.",
             completedCount = 0,
-            totalPlanets = 10
+            totalPlanets = 10,
+            cefrLevel = "B1 - B2 • Công Sở & Dự Án"
         ),
         CosmicSectionData(
             sectionNumber = 4,
             startPlanet = 31,
             endPlanet = 40,
-            title = "Quần Thể Sao & Thuyết Trình Chuyên Sâu",
-            description = "Phát triển tư duy hùng biện, phản biện và thuyết phục đối tác bằng tiếng Anh nâng cao.",
+            title = "Quần Thể Sao Hắc Mã & Thuyết Trình C1",
+            description = "Khai mở kho tàng thuật ngữ học thuật, đảo ngữ hùng biện, đàm phán hợp đồng cấp cao và tranh biện phản xạ tốc độ cao.",
             completedCount = 0,
-            totalPlanets = 10
+            totalPlanets = 10,
+            cefrLevel = "C1 • Tinh Hoa & Hùng Biện"
         )
     )
 
@@ -121,9 +135,43 @@ object CosmicSectionConfig {
                 title = "Thiên Hà Chặng $sectionNumber: Mở Rộng Tri Thức",
                 description = "Chinh phục các chặng bài học nâng cao để tiến gần hơn tới đỉnh cao giao tiếp toàn diện.",
                 completedCount = completedPlanets.coerceIn(0, totalInThisSection),
-                totalPlanets = totalInThisSection
+                totalPlanets = totalInThisSection,
+                cefrLevel = "C2 • Bậc Thầy Vũ Trụ"
             )
         }
+    }
+
+    fun getAllSections(stages: List<com.example.JourneyStageUiModel> = emptyList()): List<CosmicSectionData> {
+        return (1..4).map { secNum ->
+            val startIdx = (secNum - 1) * 10
+            val sectionStages = if (stages.isNotEmpty() && startIdx in 0 until stages.size) {
+                stages.drop(startIdx).take(10)
+            } else {
+                emptyList()
+            }
+            val completed = sectionStages.count { it.state == com.example.JourneyStageState.COMPLETED }
+            val total = if (sectionStages.isNotEmpty()) sectionStages.size else 10
+            getSectionData(secNum, completed, total)
+        }
+    }
+
+    /**
+     * Xác định xem một Chặng vũ trụ đã được mở khóa hay chưa.
+     * Chặng 1 luôn luôn mở khóa.
+     * Các chặng tiếp theo (2, 3, 4) mở khóa khi toàn bộ hành tinh của chặng trước đã hoàn thành
+     * hoặc hành tinh đầu tiên của chặng hiện tại đã ở trạng thái khác LOCKED.
+     */
+    fun isSectionUnlocked(sectionNumber: Int, stages: List<com.example.JourneyStageUiModel>): Boolean {
+        if (sectionNumber <= 1) return true
+        val prevSectionStartIdx = (sectionNumber - 2) * 10
+        val prevSectionStages = if (prevSectionStartIdx in 0 until stages.size) {
+            stages.drop(prevSectionStartIdx).take(10)
+        } else {
+            emptyList()
+        }
+        val currentSectionFirstStage = stages.getOrNull((sectionNumber - 1) * 10)
+        return (prevSectionStages.isNotEmpty() && prevSectionStages.all { it.state == com.example.JourneyStageState.COMPLETED }) ||
+            (currentSectionFirstStage != null && currentSectionFirstStage.state != com.example.JourneyStageState.LOCKED)
     }
 
     /**
@@ -194,7 +242,8 @@ object CosmicSectionConfig {
 @Composable
 fun CosmicSectionBanner(
     section: CosmicSectionData,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    onClick: (() -> Unit)? = null
 ) {
     val progress = (section.completedCount.toFloat() / section.totalPlanets.coerceAtLeast(1)).coerceIn(0f, 1f)
     val animatedProgress by animateFloatAsState(
@@ -223,6 +272,11 @@ fun CosmicSectionBanner(
                 shape = RoundedCornerShape(20.dp),
                 ambientColor = animatedGlow,
                 spotColor = animatedPrimary.copy(alpha = 0.5f)
+            )
+            .then(
+                if (onClick != null) {
+                    Modifier.clickable(onClick = onClick)
+                } else Modifier
             ),
         shape = RoundedCornerShape(20.dp),
         colors = CardDefaults.cardColors(containerColor = Color.Transparent)
@@ -308,91 +362,186 @@ fun CosmicSectionBanner(
                         )
                     }
                 }
-
-                // Đường phân cách mỏng dọc
-                Box(
-                    modifier = Modifier
-                        .padding(horizontal = 12.dp)
-                        .width(1.dp)
-                        .height(44.dp)
-                        .background(animatedPrimary.copy(alpha = 0.25f))
-                )
-
-                // Biểu tượng sách trang trí
-                Box(
-                    modifier = Modifier
-                        .size(42.dp)
-                        .clip(RoundedCornerShape(12.dp))
-                        .background(animatedPrimary.copy(alpha = 0.16f))
-                        .border(1.dp, animatedPrimary.copy(alpha = 0.4f), RoundedCornerShape(12.dp)),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Image(
-                        painter = painterResource(R.drawable.ic_open_book),
-                        contentDescription = null,
-                        modifier = Modifier.size(24.dp)
-                    )
-                }
             }
         }
     }
 }
 
 /**
- * Đường mốc phân cách ngân hà tinh tế giữa các Chặng 10 hành tinh
+ * Cổng Dịch Chuyển Ngân Hà (Cosmic Stargate Checkpoint) giữa các Chặng 10 hành tinh:
+ * - Hiển thị trạng thái mở khóa hoặc yêu cầu hoàn thành chặng trước.
+ * - Tích hợp Rương thưởng vũ trụ (+100 XP, +50 Sao) khi vượt qua chặng.
  */
 @Composable
 fun CosmicMilestoneDivider(
     sectionNum: Int,
+    isUnlocked: Boolean = true,
+    completedInPrev: Int = 10,
+    totalInPrev: Int = 10,
+    isChestClaimed: Boolean = false,
+    onClaimChest: (() -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
+    val haptic = LocalHapticFeedback.current
     val palette = remember(sectionNum) { CosmicSectionConfig.getSectionPalette(sectionNum) }
+    val sectionData = remember(sectionNum) { CosmicSectionConfig.getSectionData(sectionNum, 0, 10) }
+
     Box(
-        modifier = modifier.padding(horizontal = 24.dp),
+        modifier = modifier
+            .padding(horizontal = 16.dp, vertical = 6.dp)
+            .fillMaxWidth(),
         contentAlignment = Alignment.Center
     ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.Center
+        Card(
+            modifier = Modifier
+                .fillMaxWidth()
+                .shadow(
+                    elevation = if (isUnlocked) 8.dp else 2.dp,
+                    shape = RoundedCornerShape(18.dp),
+                    ambientColor = if (isUnlocked) palette.glowColor else Color.Transparent,
+                    spotColor = if (isUnlocked) palette.primaryColor else Color.Transparent
+                ),
+            shape = RoundedCornerShape(18.dp),
+            colors = CardDefaults.cardColors(containerColor = Color.Transparent)
         ) {
             Box(
                 modifier = Modifier
-                    .weight(1f)
-                    .height(1.dp)
+                    .fillMaxWidth()
                     .background(
-                        Brush.horizontalGradient(
-                            listOf(Color.Transparent, palette.primaryColor.copy(alpha = 0.5f))
-                        )
+                        if (isUnlocked) {
+                            Brush.horizontalGradient(
+                                listOf(palette.bgStart, palette.bgMid, palette.bgEnd)
+                            )
+                        } else {
+                            Brush.horizontalGradient(
+                                listOf(Color(0xEE141224), Color(0xEE18142C), Color(0xEE121020))
+                            )
+                        }
                     )
-            )
-            Spacer(modifier = Modifier.width(10.dp))
-            Box(
-                modifier = Modifier
-                    .clip(RoundedCornerShape(12.dp))
-                    .background(palette.primaryColor.copy(alpha = 0.15f))
-                    .border(1.dp, palette.primaryColor.copy(alpha = 0.5f), RoundedCornerShape(12.dp))
-                    .padding(horizontal = 12.dp, vertical = 4.dp)
+                    .border(
+                        width = if (isUnlocked) 1.2.dp else 0.8.dp,
+                        brush = if (isUnlocked) Brush.horizontalGradient(palette.borderColors) else Brush.horizontalGradient(listOf(Color(0x33FFFFFF), Color(0x22FFFFFF))),
+                        shape = RoundedCornerShape(18.dp)
+                    )
+                    .padding(horizontal = 14.dp, vertical = 10.dp)
             ) {
-                Text(
-                    text = "CHẶNG $sectionNum".uppercase(),
-                    color = palette.primaryColor,
-                    fontSize = 11.sp,
-                    fontWeight = FontWeight.ExtraBold,
-                    letterSpacing = 1.sp
-                )
-            }
-            Spacer(modifier = Modifier.width(10.dp))
-            Box(
-                modifier = Modifier
-                    .weight(1f)
-                    .height(1.dp)
-                    .background(
-                        Brush.horizontalGradient(
-                            listOf(palette.primaryColor.copy(alpha = 0.5f), Color.Transparent)
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    // Icon cổng dịch chuyển bên trái
+                    Box(
+                        modifier = Modifier
+                            .size(38.dp)
+                            .clip(CircleShape)
+                            .background(if (isUnlocked) palette.primaryColor.copy(alpha = 0.18f) else Color(0x22FFFFFF))
+                            .border(1.dp, if (isUnlocked) palette.primaryColor.copy(alpha = 0.5f) else Color(0x33FFFFFF), CircleShape),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        if (isUnlocked) {
+                            Icon(
+                                imageVector = Icons.Default.RocketLaunch,
+                                contentDescription = null,
+                                tint = palette.primaryColor,
+                                modifier = Modifier.size(18.dp)
+                            )
+                        } else {
+                            Icon(
+                                imageVector = Icons.Default.Lock,
+                                contentDescription = null,
+                                tint = Color(0x88FFFFFF),
+                                modifier = Modifier.size(16.dp)
+                            )
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.width(12.dp))
+
+                    // Cột thông tin mốc Chặng
+                    Column(modifier = Modifier.weight(1f)) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text(
+                                text = "CỔNG DỊCH CHUYỂN • CHẶNG $sectionNum".uppercase(),
+                                color = if (isUnlocked) palette.primaryColor else Color(0x88FFFFFF),
+                                fontSize = 10.sp,
+                                fontWeight = FontWeight.ExtraBold,
+                                letterSpacing = 0.6.sp
+                            )
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Box(
+                                modifier = Modifier
+                                    .clip(RoundedCornerShape(6.dp))
+                                    .background(if (isUnlocked) palette.primaryColor.copy(alpha = 0.15f) else Color(0x18FFFFFF))
+                                    .padding(horizontal = 5.dp, vertical = 1.dp)
+                            ) {
+                                Text(
+                                    text = sectionData.cefrLevel.split("•").firstOrNull()?.trim() ?: "A2",
+                                    color = if (isUnlocked) palette.primaryColor else Color(0x99FFFFFF),
+                                    fontSize = 9.sp,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.height(2.dp))
+
+                        Text(
+                            text = sectionData.title,
+                            color = if (isUnlocked) Color.White else Color(0xB3FFFFFF),
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.Bold,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
                         )
-                    )
-            )
+
+                        Spacer(modifier = Modifier.height(2.dp))
+
+                        Text(
+                            text = if (isUnlocked) "✨ Cổng đã mở • Sẵn sàng du hành" else "🔒 Cần hoàn thành ${totalInPrev - completedInPrev} hành tinh nữa ở Chặng ${sectionNum - 1}",
+                            color = if (isUnlocked) palette.secondaryColor else Color(0x88FFFFFF),
+                            fontSize = 10.5.sp,
+                            fontWeight = FontWeight.Normal
+                        )
+                    }
+
+                    // Rương phần thưởng mốc chặng
+                    if (isUnlocked && onClaimChest != null) {
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Box(
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(12.dp))
+                                .background(
+                                    if (!isChestClaimed) {
+                                        Brush.horizontalGradient(listOf(Color(0xFFFBBF24), Color(0xFFFB923C)))
+                                    } else {
+                                        Brush.horizontalGradient(listOf(Color(0x33FFFFFF), Color(0x22FFFFFF)))
+                                    }
+                                )
+                                .clickable(enabled = !isChestClaimed) {
+                                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                    onClaimChest.invoke()
+                                }
+                                .padding(horizontal = 8.dp, vertical = 6.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Image(
+                                    painter = painterResource(R.drawable.ic_reward_chest),
+                                    contentDescription = "Rương phần thưởng",
+                                    modifier = Modifier.size(18.dp)
+                                )
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text(
+                                    text = if (!isChestClaimed) "+100 XP" else "Đã nhận",
+                                    color = if (!isChestClaimed) Color(0xFF0F172A) else Color(0xCCFFFFFF),
+                                    fontSize = 10.sp,
+                                    fontWeight = FontWeight.Black
+                                )
+                            }
+                        }
+                    }
+                }
+            }
         }
     }
 }
