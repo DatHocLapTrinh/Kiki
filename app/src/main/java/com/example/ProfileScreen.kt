@@ -67,6 +67,15 @@ fun resolveAvatarResource(avatarUri: String?): Int {
         "kiki_happy", "kiki_mascot_head", "kiki_state_happy" -> R.drawable.kiki_happy
         "kiki_sad" -> R.drawable.kiki_sad
         "kiki_speaker" -> R.drawable.kiki_speaker
+        "first_step", "badge_first_step", "FIRST_STEP" -> R.drawable.danh_hieu_bai_hoc_dau_tien
+        "night_owl", "badge_night_owl", "NIGHT_OWL" -> R.drawable.danh_hieu_cu_dem
+        "speaking_ace", "badge_speaking_ace", "SPEAKING_ACE" -> R.drawable.danh_hieu_speaking
+        "super_memory", "badge_super_memory", "SUPER_MEMORY" -> R.drawable.danh_hieu_sieu_tri_nho
+        "persistent_scholar", "badge_persistent_scholar", "PERSISTENT_SCHOLAR" -> R.drawable.danh_hieu_streak_7_day
+        "streak_30", "badge_streak_30", "STREAK_30" -> R.drawable.danh_hieu_streak_30_day
+        "streak_100", "badge_streak_100", "STREAK_100" -> R.drawable.danh_hieu_streak_100_day
+        "streak_300", "badge_streak_300", "STREAK_300" -> R.drawable.danh_hieu_streak_300_day
+        "all_stages_mastery", "badge_all_stages_mastery", "ALL_STAGES_MASTERY" -> R.drawable.danh_hieu_toi_thuong
         else -> R.drawable.kiki_icon
     }
 }
@@ -417,6 +426,7 @@ fun ProfileScreen(
             currentName = userName,
             currentAvatar = avatarUri,
             currentMotto = studyMotto,
+            allBadges = allBadges,
             isEnglish = isEnglish,
             onDismiss = { showEditProfileDialog = false },
             onSave = { newName, newAvatar, newMotto ->
@@ -463,9 +473,20 @@ fun ProfileScreen(
     }
 
     if (selectedBadgeForDetail != null) {
+        val currentDetailBadge = selectedBadgeForDetail
         AchievementDetailDialog(
-            badge = selectedBadgeForDetail,
+            badge = currentDetailBadge,
             isEnglish = isEnglish,
+            isCurrentAvatar = avatarUri == currentDetailBadge?.id,
+            onSetAsAvatar = { badge ->
+                viewModel.updateProfile(userName, badge.id, studyMotto)
+                android.widget.Toast.makeText(
+                    context,
+                    if (isEnglish) "Avatar set to: ${badge.titleEn}!" else "\u0110\u00e3 \u0111\u1eb7t danh hi\u1ec7u ${badge.titleVi} l\u00e0m Avatar!",
+                    android.widget.Toast.LENGTH_SHORT
+                ).show()
+                selectedBadgeForDetail = null
+            },
             onDismiss = { selectedBadgeForDetail = null }
         )
     }
@@ -784,6 +805,7 @@ fun EditProfileDialog(
     currentName: String,
     currentAvatar: String?,
     currentMotto: String,
+    allBadges: List<AchievementBadge> = emptyList(),
     isEnglish: Boolean,
     onDismiss: () -> Unit,
     onSave: (newName: String, newAvatar: String?, newMotto: String?) -> Unit
@@ -936,6 +958,76 @@ fun EditProfileDialog(
                                 fontSize = 9.sp,
                                 maxLines = 1
                             )
+                        }
+                    }
+                }
+                val unlockedBadges = allBadges.filter { it.isUnlocked }
+                if (unlockedBadges.isNotEmpty()) {
+                    Spacer(modifier = Modifier.height(6.dp))
+                    Text(
+                        if (isEnglish) "Unlocked Badges as Avatar" else "Danh hi\u1ec7u \u0111\u00e3 \u0111\u1ea1t (Ch\u1ecdn l\u00e0m Avatar)",
+                        color = Color(0xFFFFD166),
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    androidx.compose.foundation.lazy.LazyRow(
+                        horizontalArrangement = Arrangement.spacedBy(10.dp),
+                        modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp)
+                    ) {
+                        items(unlockedBadges.size) { index ->
+                            val badge = unlockedBadges[index]
+                            val isSelected = selectedAvatar == badge.id
+                            val badgeRes = resolveBadgeTrophyResource(badge.id, badge.iconKey)
+                            Column(
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                modifier = Modifier
+                                    .clip(RoundedCornerShape(12.dp))
+                                    .clickable { selectedAvatar = badge.id }
+                                    .padding(2.dp)
+                            ) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(46.dp)
+                                        .clip(CircleShape)
+                                        .background(Color(0xFF14141E))
+                                        .border(
+                                            2.dp,
+                                            if (isSelected) Color(0xFFFFD166) else Color(0x33FFFFFF),
+                                            CircleShape
+                                        )
+                                        .padding(3.dp),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    AsyncImage(
+                                        model = badgeRes,
+                                        contentScale = ContentScale.Fit,
+                                        contentDescription = badge.titleVi,
+                                        modifier = Modifier.fillMaxSize().clip(CircleShape)
+                                    )
+                                    if (isSelected) {
+                                        Box(
+                                            modifier = Modifier
+                                                .align(Alignment.BottomEnd)
+                                                .size(14.dp)
+                                                .clip(CircleShape)
+                                                .background(Color(0xFFFFD166)),
+                                            contentAlignment = Alignment.Center
+                                        ) {
+                                            Icon(Icons.Default.Check, contentDescription = null, tint = Color(0xFF0D0A1A), modifier = Modifier.size(10.dp))
+                                        }
+                                    }
+                                }
+                                Spacer(modifier = Modifier.height(4.dp))
+                                Text(
+                                    text = if (isEnglish) badge.titleEn else badge.titleVi,
+                                    color = if (isSelected) Color(0xFFFFD166) else Color(0x88FFFFFF),
+                                    fontSize = 9.sp,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis,
+                                    modifier = Modifier.widthIn(max = 64.dp)
+                                )
+                            }
                         }
                     }
                 }
@@ -1288,14 +1380,15 @@ private fun ProfileAchievements(
                         modifier = Modifier
                             .size(34.dp)
                             .clip(CircleShape)
-                            .background(Color(0x3351FAC1)),
+                            .background(Brush.linearGradient(listOf(Color(0x33FFD166), Color(0x22FF9E00))))
+                            .border(1.2.dp, Color(0x66FFD166), CircleShape),
                         contentAlignment = Alignment.Center
                     ) {
-                        AsyncImage(
-                            model = R.drawable.badge_all_stages_mastery,
+                        Icon(
+                            imageVector = Icons.Default.EmojiEvents,
                             contentDescription = null,
-                            modifier = Modifier.size(26.dp),
-                            contentScale = ContentScale.Fit
+                            modifier = Modifier.size(20.dp),
+                            tint = Color(0xFFFFD166)
                         )
                     }
                     Spacer(modifier = Modifier.width(10.dp))
@@ -1431,6 +1524,8 @@ private fun ProfileAchievements(
 private fun AchievementDetailDialog(
     badge: AchievementBadge?,
     isEnglish: Boolean,
+    isCurrentAvatar: Boolean = false,
+    onSetAsAvatar: ((AchievementBadge) -> Unit)? = null,
     onDismiss: () -> Unit
 ) {
     if (badge == null) return
@@ -1467,7 +1562,7 @@ private fun AchievementDetailDialog(
                     )
                     Text(
                         text = if (badge.isUnlocked) (if (isEnglish) "✨ Unlocked" else "✨ Đã mở khóa") else (if (isEnglish) "🔒 Locked" else "🔒 Chưa mở khóa"),
-                        color = if (badge.isUnlocked) Color(0xFF51FAC1) else Color(0xFFFF9E00),
+                        color = if (badge.isUnlocked) Color(0xFF51FAC1) else Color(0xFFFFD166),
                         fontSize = 12.sp,
                         fontWeight = FontWeight.SemiBold
                     )
@@ -1512,13 +1607,67 @@ private fun AchievementDetailDialog(
             }
         },
         confirmButton = {
-            TextButton(onClick = onDismiss) {
-                Text(if (isEnglish) "Close" else "Đóng", color = Color(0xFF51FAC1), fontWeight = FontWeight.Bold)
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.End,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                if (badge.isUnlocked && onSetAsAvatar != null) {
+                    if (isCurrentAvatar) {
+                        OutlinedButton(
+                            onClick = { },
+                            shape = RoundedCornerShape(12.dp),
+                            border = BorderStroke(1.dp, Color(0xFF51FAC1)),
+                            colors = ButtonDefaults.outlinedButtonColors(
+                                contentColor = Color(0xFF51FAC1)
+                            ),
+                            modifier = Modifier.padding(end = 8.dp)
+                        ) {
+                            Icon(
+                                Icons.Default.Check,
+                                contentDescription = null,
+                                modifier = Modifier.size(16.dp),
+                                tint = Color(0xFF51FAC1)
+                            )
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text(
+                                text = if (isEnglish) "Current Avatar" else "Đang là Avatar",
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                    } else {
+                        Button(
+                            onClick = { onSetAsAvatar(badge) },
+                            shape = RoundedCornerShape(12.dp),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = Color(0xFFFFD166),
+                                contentColor = Color(0xFF141224)
+                            ),
+                            modifier = Modifier.padding(end = 8.dp)
+                        ) {
+                            Icon(
+                                Icons.Default.AccountCircle,
+                                contentDescription = null,
+                                modifier = Modifier.size(16.dp),
+                                tint = Color(0xFF141224)
+                            )
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text(
+                                text = if (isEnglish) "Set as Avatar" else "Đặt làm Avatar",
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                    }
+                }
+                TextButton(onClick = onDismiss) {
+                    Text(if (isEnglish) "Close" else "Đóng", color = Color(0xFF51FAC1), fontWeight = FontWeight.Bold)
+                }
             }
         }
     )
 }
-
 @Composable
 private fun ProfileSettingsSectionView(
     isEnglish: Boolean,
