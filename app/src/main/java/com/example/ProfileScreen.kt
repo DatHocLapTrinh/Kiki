@@ -4,6 +4,7 @@ import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
@@ -174,9 +175,9 @@ fun ProfileScreen(
         )
     }
 
-    val xpInLevel = xp.mod(100)
-    val xpProgress = xpInLevel / 100f
-    val xpToNextLevel = 100 - xpInLevel
+    val nextLevelTargetXp = level * 100
+    val xpToNextLevel = (nextLevelTargetXp - xp).coerceAtLeast(0)
+    val xpProgress = if (nextLevelTargetXp > 0) (xp.toFloat() / nextLevelTargetXp).coerceIn(0.02f, 1f) else 0.02f
     val isEnglishText = { vi: String, en: String -> if (isEnglish) en else vi }
 
     Box(
@@ -783,13 +784,19 @@ private fun ProfileIdentityCard(
             )
 
             Spacer(modifier = Modifier.height(15.dp))
+            val nextLevelXp = level * 100
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                 Text(if (isEnglish) "Level $level progress" else "Tiến độ cấp $level", color = Color(0xCCFFFFFF), fontSize = 11.sp)
-                Text("$xp XP", color = Color(0xFFFFD166), fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                Text("$xp / $nextLevelXp XP", color = Color(0xFFFFD166), fontSize = 11.sp, fontWeight = FontWeight.Bold)
             }
             Spacer(modifier = Modifier.height(7.dp))
+            val animatedProgress by animateFloatAsState(
+                targetValue = xpProgress,
+                animationSpec = tween(durationMillis = 600, easing = FastOutSlowInEasing),
+                label = "profile_xp_progress"
+            )
             Box(modifier = Modifier.fillMaxWidth().height(9.dp).clip(CircleShape).background(Color(0x442B2940))) {
-                Box(modifier = Modifier.fillMaxWidth(xpProgress).fillMaxHeight().background(Brush.horizontalGradient(listOf(Color(0xFF51FAC1), Color(0xFFFFD166)))))
+                Box(modifier = Modifier.fillMaxWidth(animatedProgress).fillMaxHeight().background(Brush.horizontalGradient(listOf(Color(0xFF51FAC1), Color(0xFFFFD166)))))
             }
             Spacer(modifier = Modifier.height(6.dp))
             Text(
