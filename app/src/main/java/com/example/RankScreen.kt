@@ -483,12 +483,22 @@ fun DuolingoRankRow(player: RankPlayer, isCurrentUser: Boolean) {
                     shape = CircleShape
                 )
         ) {
-            if (player.avatarUrl.isNotBlank()) {
+            val isRemoteOrContentUri = player.avatarUrl.startsWith("http://") ||
+                player.avatarUrl.startsWith("https://") ||
+                player.avatarUrl.startsWith("content://")
+            if (isRemoteOrContentUri) {
                 AsyncImage(
                     model = player.avatarUrl,
                     contentDescription = null,
                     modifier = Modifier.fillMaxSize(),
                     contentScale = ContentScale.Crop
+                )
+            } else if (player.avatarUrl.isNotBlank()) {
+                AsyncImage(
+                    model = resolveAvatarResource(player.avatarUrl),
+                    contentDescription = null,
+                    modifier = Modifier.fillMaxSize().padding(3.dp),
+                    contentScale = ContentScale.Fit
                 )
             } else {
                 Icon(

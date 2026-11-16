@@ -129,4 +129,15 @@ class AchievementBadgeTest {
             .first { it.id == BadgeId.ALL_STAGES_MASTERY.id }
         assertTrue(unlocked.isUnlocked)
     }
+
+    @Test
+    fun testUnlockedBadgesResolveAsUniqueAvatarResources() {
+        val allBadges = AchievementRegistry.getAllBadges(unlockedIds = emptySet())
+        val avatarResources = allBadges.map { resolveAvatarResource(it.id) }
+        assertEquals(9, avatarResources.size)
+        assertEquals(9, avatarResources.toSet().size)
+        for (res in avatarResources) {
+            assertNotEquals("Badge ID should not fall back to default Kiki icon", R.drawable.kiki_icon, res)
+        }
+    }
 }
