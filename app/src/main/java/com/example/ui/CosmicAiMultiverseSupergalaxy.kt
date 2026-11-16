@@ -52,6 +52,7 @@ fun CosmicAiMultiverseSupergalaxyView(
     stages: List<JourneyStageUiModel>,
     isEnglish: Boolean = false,
     modifier: Modifier = Modifier,
+    onStartKikiCall: (() -> Unit)? = null,
     onExploreClick: () -> Unit
 ) {
     val context = LocalContext.current
@@ -286,6 +287,49 @@ fun CosmicAiMultiverseSupergalaxyView(
             }
         }
 
+        // Nút Gọi Trực Tiếp Với Kiki (AI Voice Tutor 1-1)
+        if (onStartKikiCall != null) {
+            Spacer(modifier = Modifier.height(14.dp))
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.Center,
+                modifier = Modifier
+                    .fillMaxWidth(0.94f)
+                    .clip(RoundedCornerShape(22.dp))
+                    .background(
+                        Brush.horizontalGradient(
+                            listOf(Color(0xFF2C1945), Color(0xFF130E26))
+                        )
+                    )
+                    .border(
+                        1.5.dp,
+                        Brush.horizontalGradient(
+                            listOf(Color(0xFFFFD700), Color(0xFF00F5D4), Color(0xFF8B5CF6))
+                        ),
+                        RoundedCornerShape(22.dp)
+                    )
+                    .clickable {
+                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                        onStartKikiCall()
+                    }
+                    .padding(horizontal = 16.dp, vertical = 12.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Default.PhoneInTalk,
+                    contentDescription = null,
+                    tint = Color(0xFFFFD700),
+                    modifier = Modifier.size(20.dp)
+                )
+                Spacer(modifier = Modifier.width(10.dp))
+                Text(
+                    text = if (isEnglish) "Call Kiki (AI Voice Tutor 1-1 👑)" else "Gọi Trực Tiếp Với Kiki (AI Tutor 1-1 👑)",
+                    color = Color.White,
+                    fontSize = 13.5.sp,
+                    fontWeight = FontWeight.Black
+                )
+            }
+        }
+
         // Đệm an toàn ở đáy để không bị thanh điều hướng Bottom Navigation Bar che khuất
         Spacer(modifier = Modifier.height(140.dp))
     }
@@ -345,6 +389,7 @@ private fun DrawScope.drawPortalFloatingStardust(
 @Composable
 fun CosmicMultiversePreviewDialog(
     isEnglish: Boolean = false,
+    onStartKikiCall: (() -> Unit)? = null,
     onDismiss: () -> Unit
 ) {
     AlertDialog(
@@ -440,7 +485,7 @@ fun CosmicMultiversePreviewDialog(
                 )
 
                 // 3. LƯỚI 2x2 CẢ 4 ĐẶC QUYỀN VŨ TRỤ (HIỂN THỊ ĐẦY ĐỦ 100%, KHÔNG BỊ KHUẤT)
-                // Hàng 1: Vũ Trụ AI & Persona Sống
+                // Hàng 1: Vũ Trụ AI & Persona Sống (Hỗ trợ gọi Kiki đàm thoại)
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -457,7 +502,14 @@ fun CosmicMultiversePreviewDialog(
                         icon = Icons.Default.RecordVoiceOver,
                         accentColor = Color(0xFF00F5D4),
                         title = if (isEnglish) "Live Persona" else "Persona Sống",
-                        desc = if (isEnglish) "Real-time 1-on-1 spoken AI practice" else "Luyện nói phản xạ 1-1 tự nhiên"
+                        desc = if (isEnglish) "Real-time 1-on-1 spoken AI practice" else "Luyện nói phản xạ 1-1 tự nhiên",
+                        badgeText = "GỌI KIKI 📞",
+                        onClick = onStartKikiCall?.let { callAction ->
+                            {
+                                onDismiss()
+                                callAction()
+                            }
+                        }
                     )
                 }
 
@@ -484,21 +536,57 @@ fun CosmicMultiversePreviewDialog(
             }
         },
         confirmButton = {
-            Button(
-                onClick = onDismiss,
-                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF51FAC1)),
-                shape = RoundedCornerShape(20.dp),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(46.dp)
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                Text(
-                    text = if (isEnglish) "I Will Conquer It! 🚀" else "Tôi Sẽ Chinh Phục! 🚀",
-                    color = Color(0xFF092E20),
-                    fontWeight = FontWeight.Black,
-                    fontSize = 14.5.sp,
-                    letterSpacing = 0.5.sp
-                )
+                if (onStartKikiCall != null) {
+                    Button(
+                        onClick = {
+                            onDismiss()
+                            onStartKikiCall()
+                        },
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = Color(0xFFFFD700)
+                        ),
+                        shape = RoundedCornerShape(20.dp),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(46.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.PhoneInTalk,
+                            contentDescription = null,
+                            tint = Color(0xFF1E1405),
+                            modifier = Modifier.size(18.dp)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = if (isEnglish) "Call Kiki Now (AI Tutor 1-1 👑)" else "Gọi Với Kiki Ngay (AI Tutor 1-1 👑)",
+                            color = Color(0xFF1E1405),
+                            fontWeight = FontWeight.Black,
+                            fontSize = 13.5.sp,
+                            letterSpacing = 0.5.sp
+                        )
+                    }
+                }
+
+                Button(
+                    onClick = onDismiss,
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF51FAC1)),
+                    shape = RoundedCornerShape(20.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(44.dp)
+                ) {
+                    Text(
+                        text = if (isEnglish) "I Will Conquer It! 🚀" else "Tôi Sẽ Chinh Phục! 🚀",
+                        color = Color(0xFF092E20),
+                        fontWeight = FontWeight.Black,
+                        fontSize = 14.sp,
+                        letterSpacing = 0.5.sp
+                    )
+                }
             }
         }
     )
@@ -513,10 +601,18 @@ private fun MultiversePrivilegeGridCard(
     accentColor: Color,
     title: String,
     desc: String,
+    badgeText: String? = null,
+    onClick: (() -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
+    val clickableModifier = if (onClick != null) {
+        modifier.clickable(onClick = onClick)
+    } else {
+        modifier
+    }
+
     Box(
-        modifier = modifier
+        modifier = clickableModifier
             .clip(RoundedCornerShape(16.dp))
             .background(
                 Brush.verticalGradient(
@@ -539,19 +635,42 @@ private fun MultiversePrivilegeGridCard(
             .padding(horizontal = 10.dp, vertical = 10.dp)
     ) {
         Column(horizontalAlignment = Alignment.Start) {
-            Box(
-                modifier = Modifier
-                    .size(32.dp)
-                    .clip(CircleShape)
-                    .background(accentColor.copy(alpha = 0.20f)),
-                contentAlignment = Alignment.Center
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Icon(
-                    imageVector = icon,
-                    contentDescription = null,
-                    tint = accentColor,
-                    modifier = Modifier.size(18.dp)
-                )
+                Box(
+                    modifier = Modifier
+                        .size(32.dp)
+                        .clip(CircleShape)
+                        .background(accentColor.copy(alpha = 0.20f)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = icon,
+                        contentDescription = null,
+                        tint = accentColor,
+                        modifier = Modifier.size(18.dp)
+                    )
+                }
+
+                if (badgeText != null) {
+                    Box(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(8.dp))
+                            .background(accentColor.copy(alpha = 0.25f))
+                            .border(0.8.dp, accentColor, RoundedCornerShape(8.dp))
+                            .padding(horizontal = 6.dp, vertical = 2.dp)
+                    ) {
+                        Text(
+                            text = badgeText,
+                            color = accentColor,
+                            fontSize = 8.5.sp,
+                            fontWeight = FontWeight.Black
+                        )
+                    }
+                }
             }
             Spacer(modifier = Modifier.height(7.dp))
             Text(

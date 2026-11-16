@@ -9,8 +9,10 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.*
 import androidx.compose.material.icons.filled.*
@@ -973,7 +975,11 @@ fun MainNavigation(viewModel: StudyViewModel, onLogout: () -> Unit) {
         val strings = LocalAppStrings.current
         var showDuolingoMoreSheet by remember { mutableStateOf(false) }
         var showCosmicPassPaywall by remember { mutableStateOf(false) }
+        var showKikiCallDialog by remember { mutableStateOf(false) }
+        var pendingKikiCallAfterSubscribe by remember { mutableStateOf(false) }
         var showFeedbackPrompt by remember { mutableStateOf(false) }
+
+        val isCosmicPassActive by viewModel.isCosmicPassActive.observeAsState(false)
 
         val navBackStackEntry by navController.currentBackStackEntryAsState()
         val currentNavRoute = navBackStackEntry?.destination?.route
@@ -993,6 +999,7 @@ fun MainNavigation(viewModel: StudyViewModel, onLogout: () -> Unit) {
                 onDismiss = { showDuolingoMoreSheet = false },
                 onNavigateCosmicPass = {
                     showDuolingoMoreSheet = false
+                    pendingKikiCallAfterSubscribe = false
                     showCosmicPassPaywall = true
                 },
                 onNavigateProfile = {
@@ -1022,6 +1029,15 @@ fun MainNavigation(viewModel: StudyViewModel, onLogout: () -> Unit) {
                         restoreState = true
                     }
                 },
+                onStartKikiCall = {
+                    showDuolingoMoreSheet = false
+                    if (isCosmicPassActive) {
+                        showKikiCallDialog = true
+                    } else {
+                        pendingKikiCallAfterSubscribe = true
+                        showCosmicPassPaywall = true
+                    }
+                },
                 onNavigateFeedback = {
                     showDuolingoMoreSheet = false
                     showFeedbackPrompt = true
@@ -1030,14 +1046,45 @@ fun MainNavigation(viewModel: StudyViewModel, onLogout: () -> Unit) {
         }
 
         if (showCosmicPassPaywall) {
-            val isCosmicPassActive by viewModel.isCosmicPassActive.observeAsState(false)
             com.example.ui.CosmicPassPaywallDialog(
                 isCurrentActive = isCosmicPassActive,
                 onSubscribeTier = { tier ->
                     viewModel.subscribeCosmicPass(tier)
                     showCosmicPassPaywall = false
+                    if (pendingKikiCallAfterSubscribe) {
+                        pendingKikiCallAfterSubscribe = false
+                        showKikiCallDialog = true
+                    }
                 },
-                onDismiss = { showCosmicPassPaywall = false }
+                onDismiss = {
+                    pendingKikiCallAfterSubscribe = false
+                    showCosmicPassPaywall = false
+                }
+            )
+        }
+
+        if (showKikiCallDialog) {
+            val availableChapters by viewModel.availableChapters.observeAsState(emptyList())
+            val chapterProgress by viewModel.chapterProgress.observeAsState(emptyList())
+            val stages = remember(availableChapters, chapterProgress) {
+                JourneyStageMapper.mapStages(
+                    chapterTitles = availableChapters,
+                    nodeProgress = chapterProgress,
+                    energyProvider = { idx, isCompleted, totalCompleted ->
+                        viewModel.getPlanetEnergy(idx, isCompleted, totalCompleted)
+                    }
+                )
+            }
+            com.example.ui.KikiCosmicCallDialog(
+                stages = stages,
+                ttsManager = viewModel.ttsManager,
+                speechManager = viewModel.speechRecognitionManager,
+                isEnglish = isEnglish,
+                onRewardEarned = { xp, starsCount ->
+                    viewModel.addXp(xp)
+                    viewModel.addStars(starsCount)
+                },
+                onDismiss = { showKikiCallDialog = false }
             )
         }
 
@@ -1250,6 +1297,7 @@ fun DuolingoMoreFloatingMenu(
     onNavigateProfile: () -> Unit,
     onNavigateVocab: () -> Unit,
     onNavigateSettings: () -> Unit,
+    onStartKikiCall: () -> Unit,
     onNavigateFeedback: () -> Unit
 ) {
     val haptic = LocalHapticFeedback.current
@@ -1277,6 +1325,7 @@ fun DuolingoMoreFloatingMenu(
                 .navigationBarsPadding()
                 .padding(bottom = 88.dp)
                 .fillMaxWidth(0.92f)
+                .heightIn(max = 540.dp)
                 .clip(RoundedCornerShape(24.dp))
                 .background(Color(0xFF131722))
                 .border(1.5.dp, Color(0x4451FAC1), RoundedCornerShape(24.dp))
@@ -1284,6 +1333,7 @@ fun DuolingoMoreFloatingMenu(
                     interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() },
                     indication = null
                 ) { /* absorb clicks */ }
+                .verticalScroll(rememberScrollState())
                 .padding(horizontal = 14.dp, vertical = 10.dp),
             verticalArrangement = Arrangement.spacedBy(2.dp)
         ) {
@@ -1367,7 +1417,21 @@ fun DuolingoMoreFloatingMenu(
 
             HorizontalDivider(color = Color(0x1A51FAC1), thickness = 0.8.dp)
 
-            // 4. Khảo sát & Góp ý trải nghiệm (Google Form)
+            // 4. Cuộc Gọi Trực Tiếp Với Kiki (AI Voice Tutor 1-1 👑)
+            DuolingoMenuItem(
+                title = if (isEnglish) "Call Kiki (AI Voice 1-1 👑)" else "Gọi Với Kiki 1-1 (AI Call 👑)",
+                icon = Icons.Default.PhoneInTalk,
+                iconTint = Color(0xFFFFD700),
+                iconBg = Color(0x33FFD700),
+                onClick = {
+                    haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                    onStartKikiCall()
+                }
+            )
+
+            HorizontalDivider(color = Color(0x1A51FAC1), thickness = 0.8.dp)
+
+            // 5. Khảo sát & Góp ý trải nghiệm (Google Form)
             DuolingoMenuItem(
                 title = if (isEnglish) "Survey & Feedback (+50 ⭐)" else "Khảo Sát & Góp Ý (+50 ⭐)",
                 icon = Icons.Default.Star,
@@ -1532,4 +1596,3 @@ private fun DuolingoMenuItem(
         )
     }
 }
-
