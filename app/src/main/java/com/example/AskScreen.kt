@@ -398,7 +398,7 @@ fun AskScreen(viewModel: StudyViewModel) {
                                                 )
                                                 Toast.makeText(
                                                     context,
-                                                    if (isEnglish) "Saved '${extracted.word}' to Vocabulary Vault! ⭐" else "Đã lưu '${extracted.word}' vào Sổ tay từ vựng! ⭐",
+                                                    if (isEnglish) "Saved '${extracted.word}' to Vocabulary Vault successfully" else "Đã lưu '${extracted.word}' vào Sổ tay từ vựng thành công",
                                                     Toast.LENGTH_SHORT
                                                 ).show()
                                             },
@@ -603,7 +603,7 @@ fun AskScreen(viewModel: StudyViewModel) {
                                                                 )
                                                                 Toast.makeText(
                                                                     context,
-                                                                    if (isEnglish) "Saved '${vocab.word}' to Vault! ⭐" else "Đã lưu '${vocab.word}' vào Sổ tay! ⭐",
+                                                                    if (isEnglish) "Saved '${vocab.word}' to Vault successfully" else "Đã lưu '${vocab.word}' vào Sổ tay thành công",
                                                                     Toast.LENGTH_SHORT
                                                                 ).show()
                                                             }
