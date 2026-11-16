@@ -397,7 +397,7 @@ fun CosmicPassPaywallDialog(
                                             text = when (selectedTier) {
                                                 CosmicPassTier.ANNUAL -> "DÙNG THỬ 7 NGÀY MIỄN PHÍ"
                                                 CosmicPassTier.MONTHLY -> "NÂNG CẤP GÓI 1 THÁNG NGAY"
-                                                CosmicPassTier.STAR_BUNDLE -> "NẠP 100 ĐÁ QUÝ VŨ TRỤ"
+                                                CosmicPassTier.STAR_BUNDLE -> "NẠP 100 SAO VŨ TRỤ"
                                             },
                                             color = Color(0xFF180E02),
                                             fontSize = 14.sp,
@@ -414,7 +414,7 @@ fun CosmicPassPaywallDialog(
                                 text = when (selectedTier) {
                                     CosmicPassTier.ANNUAL -> "Sau 7 ngày: 708.000 đ/năm (59.000 đ/tháng) • Hủy bất kỳ lúc nào"
                                     CosmicPassTier.MONTHLY -> "Thanh toán 99.000 đ/tháng • Tự động gia hạn • Hủy mọi lúc"
-                                    CosmicPassTier.STAR_BUNDLE -> "Thanh toán 1 lần 19.000 đ • Nhận 100 Đá Quý ngay lập tức"
+                                    CosmicPassTier.STAR_BUNDLE -> "Thanh toán 1 lần 19.000 đ • Nhận 100 Sao ngay lập tức"
                                 },
                                 color = Color(0x99FFFFFF),
                                 fontSize = 10.5.sp,

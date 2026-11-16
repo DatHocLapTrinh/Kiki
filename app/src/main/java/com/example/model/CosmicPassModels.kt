@@ -35,7 +35,7 @@ enum class CosmicPassTier(
     ),
     STAR_BUNDLE(
         id = "cosmic_stars_100",
-        title = "Túi 100 Đá Quý Vũ Trụ",
+        title = "Túi 100 Sao Vũ Trụ",
         periodLabel = "Nạp nhanh dùng ngay",
         priceText = "19.000 đ",
         originalPriceText = null,
