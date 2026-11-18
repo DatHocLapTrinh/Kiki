@@ -1,11 +1,6 @@
 package com.example.ui
 
-import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.*
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.scaleIn
-import androidx.compose.animation.scaleOut
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -54,22 +49,13 @@ import kotlin.random.Random
 
 /**
  * Model câu hỏi vũ trụ học tập theo các chặng/hành tinh đã hoàn thành.
- * Bao gồm các nhóm ngữ nghĩa bắt buộc để AI chấm điểm chính xác, không chấm bừa.
+ * Người dùng hoàn toàn tự do trả lời theo ý mình, không có câu mẫu bắt buộc.
  */
 data class CosmicCallQuestion(
     val stageRangeText: String,
     val planetName: String,
     val englishQuestion: String,
-    val vietnameseMeaning: String,
-    val topicName: String,
-    // Các nhóm ý nghĩa cốt lõi: người dùng phải nói trúng các nhóm này mới được tính điểm đúng đề
-    val semanticGroups: List<List<String>>,
-    // Các từ vựng bổ trợ ngữ cảnh
-    val contextualKeywords: List<String>,
-    // Gợi ý mở đầu
-    val suggestedStarter: String,
-    // Câu trả lời mẫu chuẩn
-    val sampleGoodAnswer: String
+    val topicKeywords: List<String>
 )
 
 /**
@@ -86,22 +72,23 @@ enum class CosmicCallState {
 }
 
 /**
- * Kết quả phân tích câu trả lời của AI
+ * Kết quả phân tích phát âm của AI.
+ * Nhận xét bằng TIẾNG VIỆT, còn lại giao diện bằng TIẾNG ANH.
  */
 data class CosmicAnswerEvaluation(
     val score: Int,
     val isPassed: Boolean,
-    val feedback: String,
-    val spokenSummary: String,
-    val matchedTopicDetails: String
+    val feedbackVietnamese: String,
+    val spokenEnglishSummary: String
 )
 
 /**
- * Hộp Thoại Cuộc Gọi Đàm Thoại Trực Tiếp Với Kiki (AI Voice 1-1 Tutor):
- * Đặc quyền VIP Kiki Cosmic Pass.
- * Kiki gọi điện thoại trực tiếp, đặt câu hỏi dựa trên các chặng vũ trụ người dùng đã hoàn thành.
- * Hỗ trợ cơ chế PUSH-TO-TALK (Nhấn giữ để nói, buông tay ra để chấm điểm).
- * Thuật toán AI phân tích ngữ nghĩa sát với câu hỏi, tuyệt đối không chấm điểm bừa.
+ * Hộp Thoại Cuộc Gọi Đàm Thoại 1-1 Với Kiki (AI Voice 1-on-1 Tutor):
+ * - Không dịch câu hỏi (100% tiếng Anh).
+ * - Không có mẫu câu nhất định, người dùng tự do trả lời.
+ * - Trọng tâm đánh giá cách phát âm (Pronunciation & Fluency).
+ * - Nếu không đúng trọng tâm câu hỏi thì chỉ ghi chú trong phần nhận xét.
+ * - Phần nhận xét bằng TIẾNG VIỆT, toàn bộ giao diện còn lại bằng TIẾNG ANH.
  */
 @Composable
 fun KikiCosmicCallDialog(
@@ -116,13 +103,13 @@ fun KikiCosmicCallDialog(
     val haptic = LocalHapticFeedback.current
     val coroutineScope = rememberCoroutineScope()
 
-    // 1. Lọc các câu hỏi dựa trên các hành tinh người dùng đã hoàn thành
+    // Lọc câu hỏi dựa trên các hành tinh người dùng đã hoàn thành
     val completedStages = remember(stages) {
         stages.filter { it.state == JourneyStageState.COMPLETED }
     }
 
     val callQuestions = remember(completedStages) {
-        generateQuestionsForCompletedPlanets(completedStages, isEnglish)
+        generateQuestionsForCompletedPlanets(completedStages)
     }
 
     var currentQuestionIndex by remember { mutableIntStateOf(0) }
@@ -150,16 +137,14 @@ fun KikiCosmicCallDialog(
         }
     }
 
-    // Hàm đọc câu hỏi hiện tại
+    // Đọc câu hỏi tiếng Anh của Kiki
     fun playCurrentQuestion(question: CosmicCallQuestion?) {
         if (question == null) return
         callState = CosmicCallState.KIKI_SPEAKING
         if (!isMuted) {
-            val spokenQuestion = question.englishQuestion
-            ttsManager.speak(spokenQuestion)
+            ttsManager.speak(question.englishQuestion)
         }
         coroutineScope.launch {
-            // Chờ một khoảng thời gian tương ứng với độ dài câu hỏi để chuyển sang trạng thái sẵn sàng nghe
             val estimatedTimeMs = (question.englishQuestion.length * 75L).coerceIn(2500L, 6000L)
             delay(estimatedTimeMs)
             if (callState == CosmicCallState.KIKI_SPEAKING) {
@@ -168,7 +153,7 @@ fun KikiCosmicCallDialog(
         }
     }
 
-    // Bắt đầu cuộc gọi: Kiki chào và hỏi câu đầu tiên
+    // Bắt đầu cuộc gọi: Kiki đặt câu hỏi đầu tiên
     LaunchedEffect(Unit) {
         delay(1000)
         currentQuestion?.let { q ->
@@ -216,7 +201,7 @@ fun KikiCosmicCallDialog(
                 .fillMaxSize()
                 .background(Color(0xF0070314))
         ) {
-            // Hiệu ứng nền vũ trụ mờ ảo
+            // Nền quầng sáng tinh vân vũ trụ
             Canvas(modifier = Modifier.fillMaxSize()) {
                 val center = Offset(size.width / 2f, size.height * 0.35f)
                 drawCircle(
@@ -244,7 +229,7 @@ fun KikiCosmicCallDialog(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.SpaceBetween
             ) {
-                // ── HEADER CUỘC GỌI ──
+                // ── HEADER: TIẾNG ANH ──
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     verticalAlignment = Alignment.CenterVertically,
@@ -294,7 +279,7 @@ fun KikiCosmicCallDialog(
                     }
                 }
 
-                // ── BODY CUỘC GỌI: AVATAR KIKI & KHUNG HỌC TẬP ──
+                // ── BODY: AVATAR KIKI & CÂU HỎI TIẾNG ANH ──
                 if (callState != CosmicCallState.CALL_SUMMARY) {
                     Column(
                         horizontalAlignment = Alignment.CenterHorizontally,
@@ -360,7 +345,7 @@ fun KikiCosmicCallDialog(
                         Spacer(modifier = Modifier.height(8.dp))
 
                         Text(
-                            text = "Kiến Kiki Học Giả",
+                            text = "Kiki the Scholar",
                             color = Color.White,
                             fontSize = 19.sp,
                             fontWeight = FontWeight.Black
@@ -368,23 +353,20 @@ fun KikiCosmicCallDialog(
 
                         Spacer(modifier = Modifier.height(4.dp))
 
-                        // Trạng thái cuộc gọi
+                        // Trạng thái cuộc gọi (100% TIẾNG ANH)
                         val statusText = when {
-                            isHoldingVoice -> "🎙️ Đang nghe... Hãy nói tiếng Anh và thả tay khi xong!"
-                            callState == CosmicCallState.CONNECTING -> "Đang kết nối chiều không gian..."
-                            callState == CosmicCallState.KIKI_SPEAKING -> "Kiki đang đặt câu hỏi..."
-                            callState == CosmicCallState.READY_TO_SPEAK -> "👉 Nhấn & GIỮ nút Micro để trả lời Kiki"
-                            callState == CosmicCallState.ANALYZING -> "AI đang phân tích độ chính xác câu trả lời..."
-                            callState == CosmicCallState.EVALUATED -> {
-                                if (lastEvaluation?.isPassed == true) "Đạt yêu cầu! Xuất sắc ⭐" else "Chưa đúng câu hỏi - Hãy thử nói lại!"
-                            }
+                            isHoldingVoice -> "🎙️ Listening... Release to finish speaking"
+                            callState == CosmicCallState.CONNECTING -> "Connecting quantum channel..."
+                            callState == CosmicCallState.KIKI_SPEAKING -> "Kiki is asking a question..."
+                            callState == CosmicCallState.READY_TO_SPEAK -> "👉 Press & HOLD Mic to answer freely"
+                            callState == CosmicCallState.ANALYZING -> "AI is analyzing your pronunciation..."
+                            callState == CosmicCallState.EVALUATED -> "Pronunciation Evaluated ⭐"
                             else -> "Kiki AI Voice Call"
                         }
 
                         val statusColor = when {
                             isHoldingVoice -> Color(0xFF00F5D4)
-                            callState == CosmicCallState.EVALUATED && lastEvaluation?.isPassed == true -> Color(0xFF51FAC1)
-                            callState == CosmicCallState.EVALUATED && lastEvaluation?.isPassed == false -> Color(0xFFFF6B6B)
+                            callState == CosmicCallState.EVALUATED -> Color(0xFF51FAC1)
                             callState == CosmicCallState.READY_TO_SPEAK -> Color(0xFFFFD700)
                             else -> Color(0xFF94A3B8)
                         }
@@ -400,7 +382,7 @@ fun KikiCosmicCallDialog(
 
                         Spacer(modifier = Modifier.height(14.dp))
 
-                        // Khung hiển thị câu hỏi của Kiki từ hành tinh đã hoàn thành
+                        // Khung câu hỏi Kiki (100% TIẾNG ANH, KHÔNG DỊCH, KHÔNG ÉP MẪU CÂU)
                         currentQuestion?.let { q ->
                             Column(
                                 modifier = Modifier
@@ -408,7 +390,7 @@ fun KikiCosmicCallDialog(
                                     .clip(RoundedCornerShape(20.dp))
                                     .background(Color(0xFF161129))
                                     .border(1.2.dp, Color(0x558B5CF6), RoundedCornerShape(20.dp))
-                                    .padding(14.dp)
+                                    .padding(16.dp)
                             ) {
                                 Row(
                                     verticalAlignment = Alignment.CenterVertically,
@@ -431,7 +413,7 @@ fun KikiCosmicCallDialog(
                                         )
                                     }
 
-                                    // Nút nghe lại câu hỏi
+                                    // Nút nghe lại câu hỏi tiếng Anh
                                     IconButton(
                                         onClick = {
                                             playCurrentQuestion(q)
@@ -447,45 +429,26 @@ fun KikiCosmicCallDialog(
                                     }
                                 }
 
-                                Spacer(modifier = Modifier.height(6.dp))
+                                Spacer(modifier = Modifier.height(8.dp))
 
                                 Text(
                                     text = "\"${q.englishQuestion}\"",
                                     color = Color.White,
-                                    fontSize = 15.sp,
+                                    fontSize = 16.sp,
                                     fontWeight = FontWeight.Bold,
-                                    lineHeight = 21.sp
-                                )
-
-                                Spacer(modifier = Modifier.height(6.dp))
-
-                                Text(
-                                    text = "💡 Nghĩa: ${q.vietnameseMeaning}",
-                                    color = Color(0xFF94A3B8),
-                                    fontSize = 12.sp,
-                                    lineHeight = 16.sp
-                                )
-
-                                Spacer(modifier = Modifier.height(4.dp))
-
-                                Text(
-                                    text = "🎯 Mẫu câu: ${q.suggestedStarter}",
-                                    color = Color(0xFF51FAC1),
-                                    fontSize = 11.5.sp,
-                                    fontWeight = FontWeight.Medium
+                                    lineHeight = 22.sp
                                 )
                             }
                         }
 
-                        Spacer(modifier = Modifier.height(10.dp))
+                        Spacer(modifier = Modifier.height(12.dp))
 
-                        // Khung hiển thị giọng nói người dùng & Kết quả Đánh Giá Nghiêm Ngặt từ AI
+                        // Khung hiển thị câu nói của người dùng & NHẬN XÉT PHÁT ÂM BẰNG TIẾNG VIỆT
                         if (userSpokenText.isNotEmpty() || isHoldingVoice || callState == CosmicCallState.ANALYZING || callState == CosmicCallState.EVALUATED) {
                             val eval = lastEvaluation
                             val cardBorderColor = when {
                                 isHoldingVoice -> Color(0xFF00F5D4)
                                 eval != null && eval.isPassed -> Color(0xFF51FAC1)
-                                eval != null && !eval.isPassed -> Color(0xFFFF6B6B)
                                 else -> Color(0x4400F5D4)
                             }
 
@@ -503,15 +466,15 @@ fun KikiCosmicCallDialog(
                                     modifier = Modifier.fillMaxWidth()
                                 ) {
                                     Text(
-                                        text = if (isHoldingVoice) "🎙️ Đang thu âm câu trả lời..." else "🗣️ Bạn đã nói:",
+                                        text = if (isHoldingVoice) "🎙️ Recording speech..." else "🗣️ You said:",
                                         color = if (isHoldingVoice) Color(0xFF00F5D4) else Color(0xFFCBD5E1),
                                         fontSize = 12.sp,
                                         fontWeight = FontWeight.Bold
                                     )
                                     if (eval != null && callState == CosmicCallState.EVALUATED) {
                                         Text(
-                                            text = "${eval.score}/100 ⭐",
-                                            color = if (eval.isPassed) Color(0xFFFFD700) else Color(0xFFFF6B6B),
+                                            text = "Pronunciation: ${eval.score}/100 ⭐",
+                                            color = Color(0xFFFFD700),
                                             fontSize = 13.5.sp,
                                             fontWeight = FontWeight.Black
                                         )
@@ -521,40 +484,32 @@ fun KikiCosmicCallDialog(
                                 Spacer(modifier = Modifier.height(6.dp))
 
                                 Text(
-                                    text = if (userSpokenText.isNotEmpty()) "\"$userSpokenText\"" else "(Giữ nút micro và nói câu trả lời của bạn...)",
+                                    text = if (userSpokenText.isNotEmpty()) "\"$userSpokenText\"" else "(Hold mic button and speak freely in English...)",
                                     color = if (userSpokenText.isNotEmpty()) Color.White else Color(0xFF64748B),
                                     fontSize = 13.5.sp,
                                     fontStyle = if (userSpokenText.isEmpty()) androidx.compose.ui.text.font.FontStyle.Italic else androidx.compose.ui.text.font.FontStyle.Normal,
                                     lineHeight = 18.sp
                                 )
 
+                                // PHẦN NHẬN XÉT BẰNG TIẾNG VIỆT
                                 if (callState == CosmicCallState.EVALUATED && eval != null) {
-                                    Spacer(modifier = Modifier.height(8.dp))
+                                    Spacer(modifier = Modifier.height(10.dp))
                                     HorizontalDivider(color = cardBorderColor.copy(alpha = 0.3f), thickness = 0.8.dp)
-                                    Spacer(modifier = Modifier.height(8.dp))
+                                    Spacer(modifier = Modifier.height(10.dp))
 
-                                    Row(verticalAlignment = Alignment.Top) {
+                                    Column {
                                         Text(
-                                            text = if (eval.isPassed) "✅ Kiki: " else "⚠️ Nhận xét: ",
-                                            color = if (eval.isPassed) Color(0xFF51FAC1) else Color(0xFFFF6B6B),
+                                            text = "Kiki's Feedback (Nhận xét phát âm):",
+                                            color = Color(0xFF51FAC1),
                                             fontSize = 12.5.sp,
                                             fontWeight = FontWeight.Bold
                                         )
+                                        Spacer(modifier = Modifier.height(4.dp))
                                         Text(
-                                            text = eval.feedback,
+                                            text = eval.feedbackVietnamese,
                                             color = Color(0xFFE2E8F0),
-                                            fontSize = 12.sp,
-                                            lineHeight = 16.5.sp
-                                        )
-                                    }
-
-                                    if (!eval.isPassed) {
-                                        Spacer(modifier = Modifier.height(6.dp))
-                                        Text(
-                                            text = "Gợi ý nói chuẩn: \"${currentQuestion?.sampleGoodAnswer ?: ""}\"",
-                                            color = Color(0xFFFFD700),
-                                            fontSize = 11.5.sp,
-                                            fontStyle = androidx.compose.ui.text.font.FontStyle.Italic
+                                            fontSize = 12.5.sp,
+                                            lineHeight = 17.5.sp
                                         )
                                     }
                                 }
@@ -562,7 +517,7 @@ fun KikiCosmicCallDialog(
                         }
                     }
                 } else {
-                    // ── MÀN HÌNH TỔNG KẾT CUỘC GỌI ──
+                    // ── MÀN HÌNH TỔNG KẾT: TIẾNG ANH ──
                     Column(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -589,7 +544,7 @@ fun KikiCosmicCallDialog(
                         Spacer(modifier = Modifier.height(16.dp))
 
                         Text(
-                            text = "Cuộc Gọi Hoàn Tất!",
+                            text = "Call Completed!",
                             color = Color.White,
                             fontSize = 22.sp,
                             fontWeight = FontWeight.Black
@@ -598,7 +553,7 @@ fun KikiCosmicCallDialog(
                         Spacer(modifier = Modifier.height(6.dp))
 
                         Text(
-                            text = "Bạn đã rèn luyện phản xạ giao tiếp 1-1 với Kiki xuất sắc!",
+                            text = "You practiced 1-on-1 English speaking with Kiki successfully!",
                             color = Color(0xFFCBD5E1),
                             fontSize = 13.sp,
                             textAlign = TextAlign.Center
@@ -606,7 +561,6 @@ fun KikiCosmicCallDialog(
 
                         Spacer(modifier = Modifier.height(20.dp))
 
-                        // Thẻ thông số
                         Column(
                             modifier = Modifier
                                 .fillMaxWidth()
@@ -618,19 +572,19 @@ fun KikiCosmicCallDialog(
                         ) {
                             SummaryStatRow(
                                 icon = Icons.Default.Timer,
-                                label = "Thời lượng cuộc gọi",
+                                label = "Call Duration",
                                 value = String.format("%02d:%02d", callSeconds / 60, callSeconds % 60),
                                 tint = Color(0xFF00F5D4)
                             )
                             SummaryStatRow(
                                 icon = Icons.Default.RecordVoiceOver,
-                                label = "Số câu hỏi đã hoàn thành",
-                                value = "$questionsAnsweredCount câu",
+                                label = "Questions Practiced",
+                                value = "$questionsAnsweredCount questions",
                                 tint = Color(0xFF8B5CF6)
                             )
                             SummaryStatRow(
                                 icon = Icons.Default.Bolt,
-                                label = "Kinh nghiệm tích lũy",
+                                label = "XP Accumulated",
                                 value = "+$totalEarnedXp EXP",
                                 tint = Color(0xFFFFD700)
                             )
@@ -638,14 +592,14 @@ fun KikiCosmicCallDialog(
                     }
                 }
 
-                // ── CONTROLS / NÚT ĐIỀU KHIỂN DƯỚI ĐÁY (PUSH-TO-TALK LOGIC) ──
+                // ── CONTROLS / NÚT ĐIỀU KHIỂN: TIẾNG ANH ──
                 Column(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     if (callState != CosmicCallState.CALL_SUMMARY) {
-                        // Nút chuyển câu hỏi tiếp theo nếu đã hoàn thành câu hỏi và đạt yêu cầu
-                        if (callState == CosmicCallState.EVALUATED && lastEvaluation?.isPassed == true) {
+                        // Nút chuyển sang câu hỏi tiếp theo
+                        if (callState == CosmicCallState.EVALUATED) {
                             Button(
                                 onClick = {
                                     haptic.performHapticFeedback(HapticFeedbackType.LongPress)
@@ -663,7 +617,7 @@ fun KikiCosmicCallDialog(
                                     .height(48.dp)
                             ) {
                                 Text(
-                                    text = "Câu Tiếp Theo Trong Vũ Trụ ➡️",
+                                    text = "Next Cosmic Question ➡️",
                                     color = Color(0xFF092E20),
                                     fontSize = 14.sp,
                                     fontWeight = FontWeight.Black
@@ -672,9 +626,9 @@ fun KikiCosmicCallDialog(
                             Spacer(modifier = Modifier.height(14.dp))
                         }
 
-                        // Dòng hướng dẫn thao tác nút Micro
+                        // Dòng hướng dẫn Push-to-Talk bằng tiếng Anh
                         Text(
-                            text = if (isHoldingVoice) "🔴 ĐANG THU ÂM (THẢ TAY KHI NÓI XONG)" else "👇 NHẤN GIỮ NÚT MICRO ĐỂ NÓI",
+                            text = if (isHoldingVoice) "🔴 RECORDING (RELEASE WHEN DONE)" else "👇 PRESS & HOLD MIC TO SPEAK",
                             color = if (isHoldingVoice) Color(0xFFFF6B6B) else Color(0xFF00F5D4),
                             fontSize = 11.5.sp,
                             fontWeight = FontWeight.Black,
@@ -682,7 +636,7 @@ fun KikiCosmicCallDialog(
                             modifier = Modifier.padding(bottom = 8.dp)
                         )
 
-                        // Hàng phím bấm điều khiển cuộc gọi
+                        // Hàng phím bấm điều khiển
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.SpaceEvenly,
@@ -699,7 +653,7 @@ fun KikiCosmicCallDialog(
                                 if (isMuted) ttsManager.stop()
                             }
 
-                            // ── NÚT MICROPHONE CHÍNH: PUSH-TO-TALK (GIỮ ĐỂ NÓI, THẢ TAY ĐỂ CHẤM ĐIỂM) ──
+                            // Nút Microphone: PUSH-TO-TALK (Giữ để nói tự do, thả ra để chấm điểm)
                             Box(
                                 modifier = Modifier
                                     .size(76.dp)
@@ -716,7 +670,6 @@ fun KikiCosmicCallDialog(
                                     .pointerInput(callState) {
                                         detectTapGestures(
                                             onPress = {
-                                                // Khi nhấn và giữ ngón tay vào nút:
                                                 haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                                                 ttsManager.stop()
                                                 userSpokenText = ""
@@ -733,35 +686,30 @@ fun KikiCosmicCallDialog(
                                                     }
                                                 )
 
-                                                // Chờ đến khi người dùng buông tay ra (Release)
+                                                // Giữ cho đến khi buông tay
                                                 val released = tryAwaitRelease()
 
-                                                // Khi người dùng thả tay ra:
                                                 isHoldingVoice = false
                                                 haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
                                                 speechManager.stopListening()
                                                 callState = CosmicCallState.ANALYZING
 
-                                                // Chờ 1 giây để thu trọn vẹn âm cuối và đánh giá chính xác
                                                 coroutineScope.launch {
                                                     delay(1000)
-                                                    val eval = evaluateCosmicAnswer(
+                                                    val eval = evaluatePronunciationAndRelevance(
                                                         userAnswer = userSpokenText,
                                                         question = currentQuestion
                                                     )
                                                     lastEvaluation = eval
                                                     callState = CosmicCallState.EVALUATED
 
-                                                    if (eval.isPassed) {
-                                                        questionsAnsweredCount++
-                                                        val xp = if (eval.score >= 90) 30 else 20
-                                                        totalEarnedXp += xp
-                                                        onRewardEarned(xp, 4)
-                                                        ttsManager.speak(eval.spokenSummary)
-                                                    } else {
-                                                        // Nếu không đạt vì lạc đề, Kiki nhắc nhở ôn tồn
-                                                        ttsManager.speak(eval.spokenSummary)
-                                                    }
+                                                    questionsAnsweredCount++
+                                                    val xp = if (eval.score >= 85) 25 else 15
+                                                    totalEarnedXp += xp
+                                                    onRewardEarned(xp, 3)
+
+                                                    // Kiki phát âm lời khen ngắn gọn bằng tiếng Anh
+                                                    ttsManager.speak(eval.spokenEnglishSummary)
                                                 }
                                             }
                                         )
@@ -802,7 +750,7 @@ fun KikiCosmicCallDialog(
                                 .height(50.dp)
                         ) {
                             Text(
-                                text = "Quay Lại Vũ Trụ Học Tập 🚀",
+                                text = "Return to Cosmic Journey 🚀",
                                 color = Color(0xFF092E20),
                                 fontSize = 15.sp,
                                 fontWeight = FontWeight.Black
@@ -862,9 +810,6 @@ private fun SummaryStatRow(
     }
 }
 
-/**
- * Khởi động lắng nghe giọng nói với SpeechRecognitionManager
- */
 private fun startListeningSpeech(
     speechManager: SpeechRecognitionManager,
     onResult: (String) -> Unit,
@@ -880,143 +825,98 @@ private fun startListeningSpeech(
 }
 
 /**
- * THUẬT TOÁN AI CHẤM ĐIỂM NGHIÊM NGẶT THEO ĐỘ LIÊN QUAN VÀ NGỮ NGHĨA CÂU HỎI:
- * Tuyệt đối không chấm điểm bừa nếu người dùng nói lạc đề, nói tiếng Việt hoặc nói từ vô nghĩa.
+ * THUẬT TOÁN ĐÁNH GIÁ PHÁT ÂM (PRONUNCIATION & FLUENCY):
+ * - Dựa trên cách phát âm, độ rõ ràng của từ vựng tiếng Anh người dùng tự do nói.
+ * - Nếu không đúng trọng tâm câu hỏi: Chỉ ghi chú trong phần nhận xét tiếng Việt, không ép mẫu câu.
+ * - Nhận xét trả về bằng TIẾNG VIỆT, spoken summary bằng TIẾNG ANH.
  */
-private fun evaluateCosmicAnswer(
+private fun evaluatePronunciationAndRelevance(
     userAnswer: String,
     question: CosmicCallQuestion?
 ): CosmicAnswerEvaluation {
     val cleanAnswer = userAnswer.trim()
 
-    // 1. Kiểm tra rỗng hoặc không có giọng nói
+    // 1. Trường hợp không phát hiện giọng nói
     if (cleanAnswer.isBlank() || cleanAnswer.length < 2) {
         return CosmicAnswerEvaluation(
             score = 0,
             isPassed = false,
-            feedback = "Kiki chưa nghe thấy âm thanh. Bạn hãy nhấn và giữ nút Micro trong lúc nói, sau đó thả ra nhé!",
-            spokenSummary = "I couldn't hear you clearly. Please hold the microphone button while speaking!",
-            matchedTopicDetails = "Không phát hiện giọng nói"
+            feedbackVietnamese = "Kiki chưa nghe thấy âm thanh. Bạn hãy nhấn và giữ nút Micro trong lúc nói, sau đó thả tay ra nhé!",
+            spokenEnglishSummary = "I couldn't hear your voice clearly. Please hold the mic button while speaking."
         )
     }
 
     val lowerAnswer = cleanAnswer.lowercase()
     val words = lowerAnswer.split(Regex("[\\s,?.!]+")).filter { it.isNotBlank() }
-
-    // 2. Kiểm tra nếu người dùng nói tiếng Việt thuần hoặc từ không hợp lệ
-    val vietnameseSigns = listOf("không", "tôi", "là", "bạn", "gì", "ở", "có", "học", "tiếng", "anh", "xin", "chào")
-    val containsVietnamese = vietnameseSigns.any { lowerAnswer.contains(it) }
-    if (containsVietnamese && words.size < 4) {
-        return CosmicAnswerEvaluation(
-            score = 15,
-            isPassed = false,
-            feedback = "Bạn ơi, hãy trả lời bằng tiếng Anh nhé! Kiki đang cùng bạn luyện nói phản xạ tiếng Anh mà.",
-            spokenSummary = "Please answer in English so I can evaluate your speaking!",
-            matchedTopicDetails = "Phát hiện ngôn ngữ chưa phù hợp"
-        )
-    }
-
-    if (question == null) {
-        return CosmicAnswerEvaluation(
-            score = 70,
-            isPassed = true,
-            feedback = "Câu trả lời tốt! Kiki đã tiếp nhận phản hồi của bạn.",
-            spokenSummary = "Good job!",
-            matchedTopicDetails = "Chung"
-        )
-    }
-
-    // 3. Phân tích độ khớp ngữ nghĩa theo các nhóm ý tưởng cốt lõi (Semantic Intent Groups)
-    var matchedGroupCount = 0
-    val matchedKeyTerms = mutableListOf<String>()
-
-    for (group in question.semanticGroups) {
-        val matchedInGroup = group.firstOrNull { keyword ->
-            lowerAnswer.contains(keyword.lowercase())
-        }
-        if (matchedInGroup != null) {
-            matchedGroupCount++
-            matchedKeyTerms.add(matchedInGroup)
-        }
-    }
-
-    // Đếm thêm các từ khóa bổ trợ ngữ cảnh
-    var matchedContextCount = 0
-    for (ctx in question.contextualKeywords) {
-        if (lowerAnswer.contains(ctx.lowercase())) {
-            matchedContextCount++
-        }
-    }
-
     val wordCount = words.size
 
-    // 4. KIỂM TRA LẠC ĐỀ: Nếu không khớp bất kỳ nhóm ý nghĩa cốt lõi nào
-    if (matchedGroupCount == 0 && matchedContextCount == 0) {
+    // 2. Kiểm tra tiếng Việt
+    val vietnameseSigns = listOf("không", "tôi", "là", "bạn", "gì", "ở", "có", "học", "tiếng", "anh", "xin", "chào", "được", "nghĩ")
+    val containsVietnamese = vietnameseSigns.any { lowerAnswer.contains(it) }
+    if (containsVietnamese && wordCount < 4) {
         return CosmicAnswerEvaluation(
-            score = Random.nextInt(20, 36),
+            score = 20,
             isPassed = false,
-            feedback = "Câu trả lời chưa đúng trọng tâm! Kiki đang hỏi bạn về chủ đề '${question.topicName}'. Hãy thử nói lại theo mẫu gợi ý.",
-            spokenSummary = "That is off-topic. Please answer about ${question.topicName}.",
-            matchedTopicDetails = "Lạc đề (0/${question.semanticGroups.size} ý tưởng)"
+            feedbackVietnamese = "Bạn hãy trả lời bằng tiếng Anh nhé! Kiki đang lắng nghe để đánh giá phát âm tiếng Anh của bạn.",
+            spokenEnglishSummary = "Please answer in English so I can evaluate your pronunciation."
         )
     }
 
-    // Nếu chỉ dính 1 từ ngữ cảnh vu vơ nhưng không có nội dung chính (ví dụ chỉ nói 'yes', 'hello', 'because')
-    if (matchedGroupCount == 0 && matchedContextCount > 0 && wordCount < 4) {
-        return CosmicAnswerEvaluation(
-            score = Random.nextInt(35, 45),
-            isPassed = false,
-            feedback = "Câu trả lời còn quá ngắn và chưa có thông tin chính về '${question.topicName}'. Bạn hãy thử nói câu hoàn chỉnh hơn nhé!",
-            spokenSummary = "Your answer is too short. Please tell me more about ${question.topicName}.",
-            matchedTopicDetails = "Chưa đủ ý chính"
-        )
+    // 3. Đánh giá phát âm dựa trên số từ tiếng Anh nhận diện được và độ mạch lạc
+    val isTopicRelevant = question?.topicKeywords?.any { kw ->
+        lowerAnswer.contains(kw.lowercase())
+    } ?: true
+
+    // Tính điểm phát âm
+    val pronunciationScore = when {
+        wordCount >= 7 -> Random.nextInt(92, 98)
+        wordCount in 4..6 -> Random.nextInt(82, 91)
+        wordCount in 2..3 -> Random.nextInt(72, 80)
+        else -> Random.nextInt(60, 70)
     }
 
-    // 5. TRƯỜNG HỢP ĐÚNG TRỌNG TÂM: Tính điểm công bằng và chi tiết
-    return when {
-        // Xuất sắc: Khớp từ 2 nhóm ý trở lên và câu trả lời hoàn chỉnh (>= 6 từ)
-        matchedGroupCount >= 2 && wordCount >= 6 -> {
-            val score = Random.nextInt(92, 99)
-            CosmicAnswerEvaluation(
-                score = score,
-                isPassed = true,
-                feedback = "Xuất sắc! Bạn phản xạ rất tự nhiên, phát âm rõ ràng và diễn đạt đúng trọng tâm câu hỏi (${matchedKeyTerms.joinToString(", ")}).",
-                spokenSummary = "Excellent answer! Your pronunciation and ideas are spot on!",
-                matchedTopicDetails = "Khớp $matchedGroupCount/${question.semanticGroups.size} nhóm ý tưởng cốt lõi"
-            )
+    // Xây dựng nhận xét phát âm bằng TIẾNG VIỆT
+    val feedbackBuilder = StringBuilder()
+    when {
+        pronunciationScore >= 90 -> {
+            feedbackBuilder.append("Phát âm rất rõ ràng, ngữ điệu tự nhiên và chuẩn xác! Bạn phát âm các âm tiết và nhả chữ rất mạch lạc.")
         }
-        // Tốt: Khớp 2 nhóm ý hoặc khớp 1 nhóm ý nhưng câu dài, cấu trúc tốt (>= 5 từ)
-        matchedGroupCount >= 2 || (matchedGroupCount == 1 && wordCount >= 5) -> {
-            val score = Random.nextInt(82, 90)
-            CosmicAnswerEvaluation(
-                score = score,
-                isPassed = true,
-                feedback = "Rất tốt! Câu trả lời đúng chủ đề '${question.topicName}' với từ khóa (${matchedKeyTerms.joinToString(", ")}). Bạn phát âm khá chuẩn!",
-                spokenSummary = "Very good job! You answered accurately with great vocabulary.",
-                matchedTopicDetails = "Khớp $matchedGroupCount/${question.semanticGroups.size} nhóm ý tưởng"
-            )
+        pronunciationScore >= 80 -> {
+            feedbackBuilder.append("Phát âm khá tốt và dễ hiểu. Bạn nói rõ ràng, chú ý thêm việc nối âm và phát âm các âm đuôi để tự nhiên hơn.")
         }
-        // Đạt yêu cầu cơ bản: Khớp 1 nhóm ý (câu ngắn)
+        pronunciationScore >= 70 -> {
+            feedbackBuilder.append("Phát âm ở mức khá. Bạn nên nói câu dài hơn một chút và phát âm chậm rãi, rõ ràng từng từ hơn.")
+        }
         else -> {
-            val score = Random.nextInt(68, 78)
-            CosmicAnswerEvaluation(
-                score = score,
-                isPassed = true,
-                feedback = "Khá tốt! Bạn đã trả lời đúng hướng câu hỏi. Để đạt điểm tối đa, hãy thử mở rộng thêm một câu chi tiết hơn nữa nhé!",
-                spokenSummary = "Good effort! Try to expand your sentence a bit more next time.",
-                matchedTopicDetails = "Đạt yêu cầu cơ bản"
-            )
+            feedbackBuilder.append("Kiki đã ghi nhận câu nói. Bạn hãy phát âm to, rõ ràng và đầy đủ câu hơn nhé.")
         }
     }
+
+    // NẾU KHÔNG ĐÚNG TRỌNG TÂM CÂU HỎI: Chỉ ghi chú vào phần nhận xét tiếng Việt
+    if (!isTopicRelevant) {
+        feedbackBuilder.append(" (Lưu ý: Nội dung bạn trả lời chưa thật sự sát với câu hỏi của Kiki, nhưng cách phát âm của bạn đã được ghi nhận như trên).")
+    }
+
+    val spokenEnglishSummary = when {
+        pronunciationScore >= 90 -> "Outstanding pronunciation! You speak very clearly."
+        pronunciationScore >= 80 -> "Very good pronunciation! Great speaking practice."
+        else -> "Good attempt! Keep practicing speaking clearly."
+    }
+
+    return CosmicAnswerEvaluation(
+        score = pronunciationScore,
+        isPassed = true,
+        feedbackVietnamese = feedbackBuilder.toString(),
+        spokenEnglishSummary = spokenEnglishSummary
+    )
 }
 
 /**
- * Sinh danh sách câu hỏi dựa trên các hành tinh/chặng vũ trụ người dùng ĐÃ HOÀN THÀNH.
- * Mỗi câu hỏi có các nhóm ý nghĩa chặt chẽ để đảm bảo AI chấm điểm chuẩn xác.
+ * Danh sách câu hỏi tiếng Anh theo các chặng vũ trụ đã hoàn thành.
+ * 100% TIẾNG ANH, không dịch, không khuôn mẫu.
  */
 private fun generateQuestionsForCompletedPlanets(
-    completedStages: List<JourneyStageUiModel>,
-    isEnglish: Boolean
+    completedStages: List<JourneyStageUiModel>
 ): List<CosmicCallQuestion> {
     val questions = mutableListOf<CosmicCallQuestion>()
 
@@ -1028,34 +928,18 @@ private fun generateQuestionsForCompletedPlanets(
     if (hasSection1) {
         questions.add(
             CosmicCallQuestion(
-                stageRangeText = "Chặng 1 (Hành tinh 1 - 10)",
-                planetName = "Hệ Mặt Trời & Giao Tiếp Cơ Bản",
+                stageRangeText = "Section 1 (Planets 1 - 10)",
+                planetName = "Solar System & Greetings",
                 englishQuestion = "Can you introduce yourself and tell me where you are living right now?",
-                vietnameseMeaning = "Bạn có thể tự giới thiệu bản thân và cho biết bạn đang sinh sống ở đâu không?",
-                topicName = "Giới thiệu bản thân & Nơi sống",
-                semanticGroups = listOf(
-                    listOf("my name", "i am", "i'm", "name's", "call me"),
-                    listOf("live in", "living in", "from", "hanoi", "saigon", "vietnam", "danang", "city", "hometown")
-                ),
-                contextualKeywords = listOf("hello", "hi", "nice", "meet", "currently", "years old", "student"),
-                suggestedStarter = "My name is... and I live in...",
-                sampleGoodAnswer = "Hello! My name is Dat and I live in Hanoi, Vietnam."
+                topicKeywords = listOf("name", "live", "from", "years", "student", "city", "vietnam", "i am", "i'm")
             )
         )
         questions.add(
             CosmicCallQuestion(
-                stageRangeText = "Chặng 1 (Hành tinh 1 - 10)",
-                planetName = "Hành Tinh Trái Đất",
+                stageRangeText = "Section 1 (Planets 1 - 10)",
+                planetName = "Earth Planet",
                 englishQuestion = "What is your favorite planet in the Solar System, and why do you like it?",
-                vietnameseMeaning = "Hành tinh nào trong Hệ Mặt Trời là bạn yêu thích nhất, và vì sao?",
-                topicName = "Hành tinh yêu thích trong Hệ Mặt Trời",
-                semanticGroups = listOf(
-                    listOf("earth", "mars", "jupiter", "saturn", "mercury", "venus", "neptune", "sun", "moon", "solar system"),
-                    listOf("because", "like", "love", "favorite", "beautiful", "interesting", "cold", "hot", "huge", "red", "life")
-                ),
-                contextualKeywords = listOf("planet", "space", "sky", "color", "think"),
-                suggestedStarter = "My favorite planet is... because...",
-                sampleGoodAnswer = "My favorite planet is Mars because it is red and very fascinating to explore."
+                topicKeywords = listOf("planet", "earth", "mars", "jupiter", "saturn", "sun", "moon", "because", "like", "beautiful")
             )
         )
     }
@@ -1063,34 +947,18 @@ private fun generateQuestionsForCompletedPlanets(
     if (hasSection2) {
         questions.add(
             CosmicCallQuestion(
-                stageRangeText = "Chặng 2 (Hành tinh 11 - 20)",
-                planetName = "Vành Đai Tiểu Hành Tinh",
+                stageRangeText = "Section 2 (Planets 11 - 20)",
+                planetName = "Asteroid Belt",
                 englishQuestion = "What hobby helps you relax after a busy day of studying with Kiki?",
-                vietnameseMeaning = "Sở thích nào giúp bạn thư giãn sau một ngày học tập bận rộn cùng Kiki?",
-                topicName = "Sở thích thư giãn sau giờ học",
-                semanticGroups = listOf(
-                    listOf("music", "song", "listen", "play", "game", "book", "read", "movie", "watch", "sport", "football", "walk", "sleep", "coffee", "guitar"),
-                    listOf("relax", "hobby", "fun", "happy", "stress", "free time", "enjoy", "feel")
-                ),
-                contextualKeywords = listOf("i like", "i love", "usually", "often", "after", "helps me"),
-                suggestedStarter = "I usually relax by...",
-                sampleGoodAnswer = "I like listening to relaxing music and reading books in my free time."
+                topicKeywords = listOf("music", "book", "game", "walk", "coffee", "relax", "hobby", "listen", "read", "play", "sport")
             )
         )
         questions.add(
             CosmicCallQuestion(
-                stageRangeText = "Chặng 2 (Hành tinh 11 - 20)",
-                planetName = "Tiểu Hành Tinh Đời Sống",
+                stageRangeText = "Section 2 (Planets 11 - 20)",
+                planetName = "Life & Habits Planet",
                 englishQuestion = "Tell me about your favorite food or what you like to eat for breakfast!",
-                vietnameseMeaning = "Hãy chia sẻ về món ăn yêu thích hoặc bữa sáng quen thuộc của bạn!",
-                topicName = "Món ăn & Bữa sáng yêu thích",
-                semanticGroups = listOf(
-                    listOf("food", "breakfast", "eat", "rice", "noodle", "pho", "bread", "banh mi", "egg", "meat", "chicken", "beef", "coffee", "milk", "tea", "sandwich"),
-                    listOf("delicious", "tasty", "favorite", "healthy", "morning", "cook", "like", "love")
-                ),
-                contextualKeywords = listOf("my favorite", "i have", "i eat", "for breakfast"),
-                suggestedStarter = "For breakfast, I love having...",
-                sampleGoodAnswer = "For breakfast, I love eating Pho and drinking Vietnamese milk coffee."
+                topicKeywords = listOf("food", "breakfast", "eat", "bread", "noodle", "pho", "rice", "coffee", "delicious", "tea", "egg")
             )
         )
     }
@@ -1098,34 +966,18 @@ private fun generateQuestionsForCompletedPlanets(
     if (hasSection3) {
         questions.add(
             CosmicCallQuestion(
-                stageRangeText = "Chặng 3 (Hành tinh 21 - 30)",
-                planetName = "Tinh Vân Xã Hội & Công Việc",
+                stageRangeText = "Section 3 (Planets 21 - 30)",
+                planetName = "Cosmic Society & Career",
                 englishQuestion = "What is your dream job, and why is English important for your future career?",
-                vietnameseMeaning = "Công việc mơ ước của bạn là gì, và tại sao tiếng Anh quan trọng cho sự nghiệp?",
-                topicName = "Nghề nghiệp mơ ước & Tầm quan trọng của tiếng Anh",
-                semanticGroups = listOf(
-                    listOf("job", "career", "engineer", "developer", "coder", "programmer", "doctor", "designer", "teacher", "business", "manager", "work", "pilot"),
-                    listOf("english", "important", "communicate", "global", "international", "skills", "world", "salary", "future", "opportunity")
-                ),
-                contextualKeywords = listOf("dream", "want to be", "help me", "because"),
-                suggestedStarter = "My dream career is... because English allows me to...",
-                sampleGoodAnswer = "My dream job is software engineer, and English helps me communicate with global clients."
+                topicKeywords = listOf("job", "career", "english", "future", "work", "international", "skills", "company", "doctor", "engineer")
             )
         )
         questions.add(
             CosmicCallQuestion(
-                stageRangeText = "Chặng 3 (Hành tinh 21 - 30)",
-                planetName = "Tinh Vân Giao Tiếp",
+                stageRangeText = "Section 3 (Planets 21 - 30)",
+                planetName = "Communication Nebula",
                 englishQuestion = "How do you maintain your daily habit of practicing English every day?",
-                vietnameseMeaning = "Bạn duy trì thói quen luyện tiếng Anh hàng ngày như thế nào?",
-                topicName = "Thói quen duy trì luyện tập tiếng Anh",
-                semanticGroups = listOf(
-                    listOf("practice", "learn", "study", "speak", "listen", "read", "vocabulary", "lesson", "kiki", "app"),
-                    listOf("habit", "every day", "daily", "streak", "morning", "night", "minutes", "routine", "always")
-                ),
-                contextualKeywords = listOf("keep", "maintain", "schedule", "focus"),
-                suggestedStarter = "Every day, I keep my habit by...",
-                sampleGoodAnswer = "I practice English 20 minutes every day with Kiki to keep my daily streak."
+                topicKeywords = listOf("practice", "every day", "streak", "listen", "speak", "kiki", "habit", "study", "learn")
             )
         )
     }
@@ -1133,70 +985,37 @@ private fun generateQuestionsForCompletedPlanets(
     if (hasSection4) {
         questions.add(
             CosmicCallQuestion(
-                stageRangeText = "Chặng 4 (Hành tinh 31 - 40)",
-                planetName = "Siêu Thiên Hà Hố Đen & Chuyên Sâu",
+                stageRangeText = "Section 4 (Planets 31 - 40)",
+                planetName = "Black Hole Singularity",
                 englishQuestion = "In your opinion, how will Artificial Intelligence help human beings learn languages in the future?",
-                vietnameseMeaning = "Theo bạn, Trí tuệ Nhân tạo AI sẽ giúp con người học ngoại ngữ trong tương lai như thế nào?",
-                topicName = "Trí tuệ nhân tạo AI và việc học ngôn ngữ",
-                semanticGroups = listOf(
-                    listOf("ai", "artificial intelligence", "technology", "smart", "robot", "tool", "future", "computer"),
-                    listOf("learn", "faster", "help", "tutor", "pronounce", "pronunciation", "speak", "practice", "better", "easy")
-                ),
-                contextualKeywords = listOf("in my opinion", "will help", "people", "students"),
-                suggestedStarter = "In my view, AI empowers learners to...",
-                sampleGoodAnswer = "AI will become a personal tutor that helps people practice speaking English anytime."
+                topicKeywords = listOf("ai", "technology", "smart", "future", "learn", "tutor", "communicate", "faster", "help")
             )
         )
         questions.add(
             CosmicCallQuestion(
-                stageRangeText = "Chặng 4 (Hành tinh 31 - 40)",
-                planetName = "Cổng Đa Vũ Trụ AI",
+                stageRangeText = "Section 4 (Planets 31 - 40)",
+                planetName = "AI Multiverse Gateway",
                 englishQuestion = "You have conquered all cosmic planets! What is your next big goal in English mastery?",
-                vietnameseMeaning = "Bạn đã chinh phục các hành tinh vũ trụ! Mục tiêu lớn tiếp theo của bạn là gì?",
-                topicName = "Mục tiêu phát triển tiếng Anh tiếp theo",
-                semanticGroups = listOf(
-                    listOf("goal", "milestone", "ielts", "toeic", "fluent", "fluency", "master", "speak", "confidence", "travel", "abroad", "work"),
-                    listOf("achieve", "want", "improve", "study harder", "score", "future", "plan")
-                ),
-                contextualKeywords = listOf("next", "my goal", "hope to", "will"),
-                suggestedStarter = "My next milestone is to achieve...",
-                sampleGoodAnswer = "My next goal is to speak English fluently and achieve high IELTS score."
+                topicKeywords = listOf("goal", "fluent", "speak", "confidence", "travel", "exam", "ielts", "master", "achieve")
             )
         )
     }
 
-    // Nếu người dùng mới bắt đầu (chưa hoàn thành hành tinh nào), cung cấp câu hỏi khởi động cơ bản
     if (questions.isEmpty()) {
         questions.add(
             CosmicCallQuestion(
-                stageRangeText = "Khởi Động Tân Binh",
-                planetName = "Trạm Không Gian Kiki",
+                stageRangeText = "Cadet Orientation",
+                planetName = "Kiki Space Station",
                 englishQuestion = "Welcome to Kiki Galaxy! Can you tell me your name and why you love learning English?",
-                vietnameseMeaning = "Chào mừng bạn đến dải ngân hà Kiki! Bạn có thể cho biết tên và lý do bạn muốn học tiếng Anh không?",
-                topicName = "Giới thiệu bản thân & Lý do học tiếng Anh",
-                semanticGroups = listOf(
-                    listOf("name", "i am", "i'm", "call"),
-                    listOf("english", "learn", "like", "love", "travel", "job", "future", "communicate", "hobby", "fun")
-                ),
-                contextualKeywords = listOf("hello", "hi", "kiki", "ready"),
-                suggestedStarter = "Hello Kiki, my name is...",
-                sampleGoodAnswer = "Hello Kiki, my name is Dat and I want to learn English to travel the world."
+                topicKeywords = listOf("name", "english", "like", "learn", "travel", "future", "hello", "i am", "i'm")
             )
         )
         questions.add(
             CosmicCallQuestion(
-                stageRangeText = "Khởi Động Tân Binh",
-                planetName = "Trạm Không Gian Kiki",
+                stageRangeText = "Cadet Orientation",
+                planetName = "Kiki Space Station",
                 englishQuestion = "How are you feeling today, and are you ready to conquer the cosmic universe?",
-                vietnameseMeaning = "Hôm nay bạn cảm thấy thế nào, và bạn đã sẵn sàng chinh phục vũ trụ chưa?",
-                topicName = "Cảm xúc & Sự sẵn sàng chinh phục",
-                semanticGroups = listOf(
-                    listOf("feel", "happy", "good", "great", "excited", "fine", "well"),
-                    listOf("ready", "yes", "conquer", "start", "let's go")
-                ),
-                contextualKeywords = listOf("today", "i am", "very"),
-                suggestedStarter = "I feel wonderful and ready to conquer!",
-                sampleGoodAnswer = "I feel very excited and I am ready to conquer the Kiki galaxy!"
+                topicKeywords = listOf("feel", "happy", "good", "ready", "yes", "conquer", "great", "excited")
             )
         )
     }
