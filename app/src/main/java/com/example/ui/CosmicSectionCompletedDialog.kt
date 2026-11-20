@@ -58,10 +58,17 @@ import com.example.model.SectionCompletionEvent
 @Composable
 fun CosmicSectionCompletedDialog(
     event: SectionCompletionEvent,
+    isEnglish: Boolean = false,
     onExploreNextSection: (nextSectionNumber: Int) -> Unit,
     onDismiss: () -> Unit
 ) {
     val haptic = LocalHapticFeedback.current
+    val completedTitle = remember(event.completedSectionNumber, isEnglish) {
+        CosmicSectionConfig.getSectionData(event.completedSectionNumber, 10).getDisplayTitle(isEnglish)
+    }
+    val nextTitle = remember(event.nextSectionNumber, isEnglish) {
+        CosmicSectionConfig.getSectionData(event.nextSectionNumber, 0).getDisplayTitle(isEnglish)
+    }
 
     Dialog(
         onDismissRequest = onDismiss,
@@ -130,7 +137,7 @@ fun CosmicSectionCompletedDialog(
                         ) {
                             Icon(
                                 imageVector = Icons.Default.Close,
-                                contentDescription = "Đóng",
+                                contentDescription = if (isEnglish) "Close" else "Đóng",
                                 tint = Color.White,
                                 modifier = Modifier.size(16.dp)
                             )
@@ -158,7 +165,7 @@ fun CosmicSectionCompletedDialog(
                     ) {
                         Image(
                             painter = painterResource(R.drawable.kiki_happy),
-                            contentDescription = "Kiki vui mừng",
+                            contentDescription = "Kiki",
                             modifier = Modifier.size(80.dp)
                         )
                     }
@@ -178,7 +185,11 @@ fun CosmicSectionCompletedDialog(
                         )
                         Spacer(modifier = Modifier.width(6.dp))
                         Text(
-                            text = "CHINH PHỤC HOÀN TOÀN CHẶNG ${event.completedSectionNumber}!",
+                            text = if (isEnglish) {
+                                "SECTION ${event.completedSectionNumber} CONQUERED!"
+                            } else {
+                                "CHINH PHỤC HOÀN TOÀN CHẶNG ${event.completedSectionNumber}!"
+                            },
                             color = Color(0xFFFFD166),
                             fontSize = 14.sp,
                             fontWeight = FontWeight.ExtraBold,
@@ -196,7 +207,7 @@ fun CosmicSectionCompletedDialog(
                     Spacer(modifier = Modifier.height(8.dp))
 
                     Text(
-                        text = event.completedSectionTitle,
+                        text = completedTitle,
                         color = Color.White,
                         fontSize = 18.sp,
                         fontWeight = FontWeight.Bold,
@@ -207,7 +218,11 @@ fun CosmicSectionCompletedDialog(
                     Spacer(modifier = Modifier.height(10.dp))
 
                     Text(
-                        text = "Chúc mừng bạn đã xuất sắc làm chủ toàn bộ 10 hành tinh của chặng! Cổng dịch chuyển ngân hà đã sẵn sàng đưa bạn tới Chặng ${event.nextSectionNumber}: '${event.nextSectionTitle}'.",
+                        text = if (isEnglish) {
+                            "Congratulations on mastering all 10 planets in this section! The cosmic stargate is now ready to take you to Section ${event.nextSectionNumber}: '$nextTitle'."
+                        } else {
+                            "Chúc mừng bạn đã xuất sắc làm chủ toàn bộ 10 hành tinh của chặng! Cổng dịch chuyển ngân hà đã sẵn sàng đưa bạn tới Chặng ${event.nextSectionNumber}: '$nextTitle'."
+                        },
                         color = Color(0xCCFFFFFF),
                         fontSize = 13.sp,
                         lineHeight = 18.sp,
@@ -245,7 +260,7 @@ fun CosmicSectionCompletedDialog(
                                         fontWeight = FontWeight.ExtraBold
                                     )
                                     Text(
-                                        text = "Kinh nghiệm",
+                                        text = if (isEnglish) "Experience" else "Kinh nghiệm",
                                         color = Color(0x99FFFFFF),
                                         fontSize = 10.sp
                                     )
@@ -269,13 +284,13 @@ fun CosmicSectionCompletedDialog(
                                 Spacer(modifier = Modifier.width(6.dp))
                                 Column {
                                     Text(
-                                        text = "+${event.rewardStars} SAO",
+                                        text = if (isEnglish) "+${event.rewardStars} STARS" else "+${event.rewardStars} SAO",
                                         color = Color(0xFFFFD166),
                                         fontSize = 15.sp,
                                         fontWeight = FontWeight.ExtraBold
                                     )
                                     Text(
-                                        text = "Kho báu vũ trụ",
+                                        text = if (isEnglish) "Cosmic Treasure" else "Kho báu vũ trụ",
                                         color = Color(0x99FFFFFF),
                                         fontSize = 10.sp
                                     )
@@ -310,7 +325,7 @@ fun CosmicSectionCompletedDialog(
                             )
                             Spacer(modifier = Modifier.width(8.dp))
                             Text(
-                                text = "KHÁM PHÁ CHẶNG ${event.nextSectionNumber} 🚀",
+                                text = if (isEnglish) "EXPLORE SECTION ${event.nextSectionNumber} 🚀" else "KHÁM PHÁ CHẶNG ${event.nextSectionNumber} 🚀",
                                 color = Color(0xFF0F172A),
                                 fontSize = 14.sp,
                                 fontWeight = FontWeight.Black,
@@ -328,7 +343,7 @@ fun CosmicSectionCompletedDialog(
                         }
                     ) {
                         Text(
-                            text = "Tiếp tục xem bản đồ",
+                            text = if (isEnglish) "Stay on map" else "Tiếp tục xem bản đồ",
                             color = Color(0xB3FFFFFF),
                             fontSize = 13.sp,
                             fontWeight = FontWeight.Medium

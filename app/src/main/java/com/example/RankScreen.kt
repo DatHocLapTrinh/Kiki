@@ -55,6 +55,7 @@ fun RankScreen(viewModel: StudyViewModel) {
     val strings = LocalAppStrings.current
     val coroutineScope = rememberCoroutineScope()
 
+    val isEnglish by viewModel.isEnglish.observeAsState(false)
     val userTier by viewModel.userTier.observeAsState(LeagueTier.BRONZE)
     val players by viewModel.realtimeLeaderboard.observeAsState(emptyList())
     val isLoading by viewModel.isLeaderboardLoading.observeAsState(false)
@@ -79,6 +80,7 @@ fun RankScreen(viewModel: StudyViewModel) {
         LeagueSettlementModal(
             result = settlementEvent!!,
             strings = strings,
+            isEnglish = isEnglish,
             onDismiss = { viewModel.dismissLeagueSettlementDialog() }
         )
     }
@@ -88,13 +90,14 @@ fun RankScreen(viewModel: StudyViewModel) {
         GoogleSignInGateScreen(
             userTier = userTier,
             isLoading = isAuthLoading,
+            isEnglish = isEnglish,
             onSignInClick = {
                 viewModel.signInWithGoogle(
                     activityContext = context,
                     onSuccess = {
                         isGoogleLoggedIn = true
                         viewModel.initializeLeagueData()
-                        Toast.makeText(context, "Chào mừng bạn gia nhập Bảng Xếp Hạng!", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(context, if (isEnglish) "Welcome to the Leaderboard!" else "Chào mừng bạn gia nhập Bảng Xếp Hạng!", Toast.LENGTH_SHORT).show()
                     },
                     onError = { errMsg ->
                         Toast.makeText(context, errMsg, Toast.LENGTH_LONG).show()
@@ -142,7 +145,7 @@ fun RankScreen(viewModel: StudyViewModel) {
                     .padding(horizontal = 20.dp, vertical = 8.dp)
             ) {
                 Text(
-                    text = "Giải đấu ${displayedTier.vietnameseTitle.replace("Giải ", "")}",
+                    text = displayedTier.getTitle(isEnglish),
                     color = Color.White,
                     fontSize = 24.sp,
                     fontWeight = FontWeight.Black,
@@ -160,7 +163,7 @@ fun RankScreen(viewModel: StudyViewModel) {
                     )
                     Spacer(modifier = Modifier.width(5.dp))
                     Text(
-                        text = formatDaysRemaining(millisUntilMonday),
+                        text = formatDaysRemaining(millisUntilMonday, isEnglish),
                         color = Color(0xFF8E9BAE),
                         fontSize = 12.sp,
                         fontWeight = FontWeight.Bold,
@@ -257,7 +260,7 @@ fun RankScreen(viewModel: StudyViewModel) {
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 Text(
-                    text = displayedTier.subtitle,
+                    text = displayedTier.getSubtitle(isEnglish),
                     color = Color(0x99FFFFFF),
                     fontSize = 13.sp,
                     fontWeight = FontWeight.Medium
@@ -335,16 +338,26 @@ fun RankScreen(viewModel: StudyViewModel) {
                                 ),
                             contentAlignment = Alignment.Center
                         ) {
+                            val lockDesc = if (isEnglish) {
+                                if (isLocked) "Locked" else "Conquered"
+                            } else {
+                                if (isLocked) "Chưa mở khóa" else "Đã chinh phục"
+                            }
                             Icon(
                                 imageVector = if (isLocked) Icons.Default.Lock else Icons.Default.Check,
-                                contentDescription = if (isLocked) "Chưa mở khóa" else "Đã chinh phục",
+                                contentDescription = lockDesc,
                                 tint = if (isLocked) Color(0xFFFFD166) else Color(0xFF51FAC1),
                                 modifier = Modifier.size(28.dp)
                             )
                         }
                         Spacer(modifier = Modifier.height(12.dp))
+                        val lockText = if (isEnglish) {
+                            if (isLocked) "Locked" else "Conquered"
+                        } else {
+                            if (isLocked) "Chưa mở khóa" else "Đã chinh phục"
+                        }
                         Text(
-                            text = if (isLocked) "Chưa mở khóa" else "Đã chinh phục",
+                            text = lockText,
                             color = Color(0x99FFFFFF),
                             fontSize = 14.sp,
                             fontWeight = FontWeight.SemiBold
@@ -381,14 +394,19 @@ fun RankScreen(viewModel: StudyViewModel) {
                         )
                         Spacer(modifier = Modifier.height(16.dp))
                         Text(
-                            text = "Bạn là người tiên phong dẫn đầu!",
+                            text = if (isEnglish) "You are leading the way!" else "Bạn là người tiên phong dẫn đầu!",
                             color = Color.White,
                             fontSize = 18.sp,
                             fontWeight = FontWeight.Black
                         )
                         Spacer(modifier = Modifier.height(6.dp))
+                        val emptySub = if (isEnglish) {
+                            "You are currently leading ${displayedTier.getTitle(isEnglish)}. Earn more XP to stay on top!"
+                        } else {
+                            "Hiện tại bạn đang dẫn đầu ${userTier.vietnameseTitle}. Hãy tiếp tục tích lũy thêm XP nhé!"
+                        }
                         Text(
-                            text = "Hiện tại bạn đang dẫn đầu ${userTier.vietnameseTitle}. Hãy tiếp tục tích lũy thêm XP nhé!",
+                            text = emptySub,
                             color = Color(0x99FFFFFF),
                             fontSize = 13.sp,
                             textAlign = TextAlign.Center
@@ -406,21 +424,22 @@ fun RankScreen(viewModel: StudyViewModel) {
                         // Vạch phân cách thăng hạng (Top 5)
                         if (index == 5) {
                             ZoneLineDivider(
-                                title = "VÙNG THĂNG HẠNG (TOP 5) ▲",
+                                title = if (isEnglish) "PROMOTION ZONE (TOP 5) ▲" else "VÙNG THĂNG HẠNG (TOP 5) ▲",
                                 color = Color(0xFF51FAC1)
                             )
                         }
                         // Vạch phân cách rớt hạng (Top 16+)
                         if (index == 15 && userTier != LeagueTier.BRONZE) {
                             ZoneLineDivider(
-                                title = "VÙNG TỤT HẠNG (HẠNG 16+) ▼",
+                                title = if (isEnglish) "DEMOTION ZONE (RANK 16+) ▼" else "VÙNG TỤT HẠNG (HẠNG 16+) ▼",
                                 color = Color(0xFFFF5C5C)
                             )
                         }
 
                         DuolingoRankRow(
                             player = player,
-                            isCurrentUser = player.isCurrentUser
+                            isCurrentUser = player.isCurrentUser,
+                            isEnglish = isEnglish
                         )
                     }
                 }
@@ -433,7 +452,7 @@ fun RankScreen(viewModel: StudyViewModel) {
  * Từng dòng trong bảng xếp hạng tối giản mượt mà theo chuẩn Duolingo
  */
 @Composable
-fun DuolingoRankRow(player: RankPlayer, isCurrentUser: Boolean) {
+fun DuolingoRankRow(player: RankPlayer, isCurrentUser: Boolean, isEnglish: Boolean = false) {
     val rowBg = if (isCurrentUser) Color(0x2251FAC1) else Color.Transparent
 
     Row(
@@ -517,7 +536,7 @@ fun DuolingoRankRow(player: RankPlayer, isCurrentUser: Boolean) {
         // 3. Tên người dùng thật từ Firebase
         Column(modifier = Modifier.weight(1f)) {
             Text(
-                text = if (isCurrentUser) "${player.name} (Bạn)" else player.name,
+                text = if (isCurrentUser) "${player.name} ${if (isEnglish) "(You)" else "(Bạn)"}" else player.name,
                 color = if (isCurrentUser) Color(0xFF51FAC1) else Color.White,
                 fontWeight = if (isCurrentUser) FontWeight.Black else FontWeight.Bold,
                 fontSize = 15.sp,
@@ -616,6 +635,7 @@ fun ZoneLineDivider(title: String, color: Color) {
 fun GoogleSignInGateScreen(
     userTier: LeagueTier,
     isLoading: Boolean,
+    isEnglish: Boolean = false,
     onSignInClick: () -> Unit
 ) {
     val haptic = LocalHapticFeedback.current
@@ -667,7 +687,7 @@ fun GoogleSignInGateScreen(
                 Spacer(modifier = Modifier.height(20.dp))
 
                 Text(
-                    text = "Mở Khóa Đấu Trường",
+                    text = if (isEnglish) "Unlock Arena Leaderboard" else "Mở Khóa Đấu Trường",
                     color = Color.White,
                     fontSize = 24.sp,
                     fontWeight = FontWeight.Black,
@@ -677,7 +697,7 @@ fun GoogleSignInGateScreen(
                 Spacer(modifier = Modifier.height(10.dp))
 
                 Text(
-                    text = "Bảng xếp hạng đấu trường chỉ dành cho người dùng đăng nhập tài khoản Google để đồng bộ điểm số và tranh tài cùng cộng đồng học viên thực tế!",
+                    text = if (isEnglish) "The arena leaderboard requires a Google account to sync your scores and compete in real-time with fellow learners!" else "Bảng xếp hạng đấu trường chỉ dành cho người dùng đăng nhập tài khoản Google để đồng bộ điểm số và tranh tài cùng cộng đồng học viên thực tế!",
                     color = Color(0xCCFFFFFF),
                     fontSize = 14.sp,
                     textAlign = TextAlign.Center,
@@ -718,7 +738,7 @@ fun GoogleSignInGateScreen(
                             )
                             Spacer(modifier = Modifier.width(12.dp))
                             Text(
-                                text = "Tiếp tục với Google",
+                                text = if (isEnglish) "Continue with Google" else "Tiếp tục với Google",
                                 color = Color(0xFF1E262B),
                                 fontSize = 15.sp,
                                 fontWeight = FontWeight.Bold
@@ -738,31 +758,47 @@ fun GoogleSignInGateScreen(
 fun LeagueSettlementModal(
     result: LeagueSettlementResult,
     strings: AppStrings,
+    isEnglish: Boolean = false,
     onDismiss: () -> Unit
 ) {
     val haptic = LocalHapticFeedback.current
 
     val (title, message, trophyRes, accentColor) = when (result) {
         is LeagueSettlementResult.Promoted -> {
+            val msg = if (isEnglish) {
+                "Congratulations! You finished last week at rank #${result.finalRank} and successfully promoted to ${result.newTier.getTitle(isEnglish)}!"
+            } else {
+                "Chúc mừng bạn đã kết thúc tuần trước ở vị trí #${result.finalRank} và xuất sắc thăng hạng lên ${result.newTier.vietnameseTitle}!"
+            }
             Tuple4(
                 strings.promotedTitle,
-                "Chúc mừng bạn đã kết thúc tuần trước ở vị trí #${result.finalRank} và xuất sắc thăng hạng lên ${result.newTier.vietnameseTitle}!",
+                msg,
                 result.newTier.trophyResId,
                 Color(0xFF51FAC1)
             )
         }
         is LeagueSettlementResult.Maintained -> {
+            val msg = if (isEnglish) {
+                "You finished last week at rank #${result.finalRank} and successfully maintained your spot in ${result.currentTier.getTitle(isEnglish)}!"
+            } else {
+                "Bạn đã kết thúc tuần trước ở vị trí #${result.finalRank} và tiếp tục trụ hạng thành công tại ${result.currentTier.vietnameseTitle}!"
+            }
             Tuple4(
                 strings.maintainedTitle,
-                "Bạn đã kết thúc tuần trước ở vị trí #${result.finalRank} và tiếp tục trụ hạng thành công tại ${result.currentTier.vietnameseTitle}!",
+                msg,
                 result.currentTier.trophyResId,
                 Color(0xFFFFD166)
             )
         }
         is LeagueSettlementResult.Demoted -> {
+            val msg = if (isEnglish) {
+                "You finished last week at rank #${result.finalRank} and temporarily dropped to ${result.newTier.getTitle(isEnglish)}. Practice this week to reclaim your cup!"
+            } else {
+                "Bạn đã kết thúc tuần trước ở vị trí #${result.finalRank} và tạm thời tụt xuống ${result.newTier.vietnameseTitle}. Hãy luyện tập tuần này để lấy lại cúp nhé!"
+            }
             Tuple4(
                 strings.demotedTitle,
-                "Bạn đã kết thúc tuần trước ở vị trí #${result.finalRank} và tạm thời tụt xuống ${result.newTier.vietnameseTitle}. Hãy luyện tập tuần này để lấy lại cúp nhé!",
+                msg,
                 result.newTier.trophyResId,
                 Color(0xFFFF5C5C)
             )
@@ -835,9 +871,13 @@ fun LeagueSettlementModal(
 
 private data class Tuple4<A, B, C, D>(val first: A, val second: B, val third: C, val fourth: D)
 
-private fun formatDaysRemaining(millis: Long): String {
+private fun formatDaysRemaining(millis: Long, isEnglish: Boolean = false): String {
     val totalSec = millis / 1000
     val days = totalSec / (24 * 3600)
     val hours = (totalSec % (24 * 3600)) / 3600
-    return if (days > 0) "$days NGÀY" else "$hours GIỜ"
+    return if (isEnglish) {
+        if (days > 0) "$days DAYS" else "$hours HOURS"
+    } else {
+        if (days > 0) "$days NGÀY" else "$hours GIỜ"
+    }
 }
