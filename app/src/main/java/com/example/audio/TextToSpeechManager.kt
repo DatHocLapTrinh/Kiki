@@ -17,6 +17,8 @@ class TextToSpeechManager @Inject constructor(
 ) {
     private var tts: TextToSpeech? = null
     private var isInitialized = false
+    private var onDoneCallback: (() -> Unit)? = null
+    private val mainHandler = android.os.Handler(android.os.Looper.getMainLooper())
 
     private val _isSpeaking = mutableStateOf(false)
     val isSpeaking: State<Boolean> = _isSpeaking
@@ -45,20 +47,29 @@ class TextToSpeechManager @Inject constructor(
                     override fun onDone(utteranceId: String?) {
                         _isSpeaking.value = false
                         _currentSpeakingText.value = null
+                        val callback = onDoneCallback
+                        onDoneCallback = null
+                        if (callback != null) {
+                            mainHandler.post(callback)
+                        }
                     }
 
                     @Deprecated("Deprecated in Java")
                     override fun onError(utteranceId: String?) {
                         _isSpeaking.value = false
                         _currentSpeakingText.value = null
+                        onDoneCallback = null
                     }
                 })
             }
         }
     }
 
-    fun speak(text: String, isSlow: Boolean = false) {
-        if (text.isBlank()) return
+    fun speak(text: String, isSlow: Boolean = false, onDone: (() -> Unit)? = null) {
+        if (text.isBlank()) {
+            onDone?.invoke()
+            return
+        }
         val cleanText = sanitizeTextForSpeech(text)
 
         // Nếu đang đọc chính câu này thì bấm lần nữa để tạm dừng/ngắt
@@ -76,11 +87,13 @@ class TextToSpeechManager @Inject constructor(
         tts?.setSpeechRate(rate)
 
         _currentSpeakingText.value = cleanText
+        onDoneCallback = onDone
         val utteranceId = UUID.randomUUID().toString()
         tts?.speak(cleanText, TextToSpeech.QUEUE_FLUSH, null, utteranceId)
     }
 
     fun stop() {
+        onDoneCallback = null
         tts?.stop()
         _isSpeaking.value = false
         _currentSpeakingText.value = null
