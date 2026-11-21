@@ -78,5 +78,6 @@ data class CosmicCallResponse(
     @param:Json(name = "feedbackVi") val feedbackVi: String,
     @param:Json(name = "grammarCorrection") val grammarCorrection: String? = null,
     @param:Json(name = "nextQuestionEn") val nextQuestionEn: String? = null,
-    @param:Json(name = "nextHintVi") val nextHintVi: String? = null
+    @param:Json(name = "nextHintVi") val nextHintVi: String? = null,
+    @param:Json(name = "suggestedStarterEn") val suggestedStarterEn: String? = null
 )

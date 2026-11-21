@@ -38,7 +38,8 @@ class CosmicCallServiceTest {
               "feedbackVi": "Rất tốt! Câu giới thiệu rõ ràng, tên tiếng Việt được giữ nguyên vẹn.",
               "grammarCorrection": "Hello, my name is Truong and I live in Hanoi.",
               "nextQuestionEn": "What do you like to do on the weekends in Hanoi?",
-              "nextHintVi": "Chia sẻ về hoạt động bạn thích làm cuối tuần ở Hà Nội."
+              "nextHintVi": "Chia sẻ về hoạt động bạn thích làm cuối tuần ở Hà Nội.",
+              "suggestedStarterEn": "On the weekends, I enjoy..."
             }
             """;
         when(groqClientService.generateChatCompletion(anyString(), anyString())).thenReturn(mockAiJson);
@@ -59,6 +60,7 @@ class CosmicCallServiceTest {
         assertTrue(response.feedbackVi().contains("Rất tốt"));
         assertNotNull(response.nextQuestionEn());
         assertTrue(response.nextQuestionEn().contains("weekends"));
+        assertEquals("On the weekends, I enjoy...", response.suggestedStarterEn());
     }
 
     @Test
@@ -80,5 +82,7 @@ class CosmicCallServiceTest {
         assertNotNull(response.spokenFeedbackEn());
         assertNotNull(response.feedbackVi());
         assertNotNull(response.nextQuestionEn());
+        assertNotNull(response.suggestedStarterEn());
+        assertFalse(response.suggestedStarterEn().isEmpty());
     }
 }

@@ -39,6 +39,7 @@ class SpeechRecognitionManager @Inject constructor(
     val speechError: State<String?> = _speechError
 
     private var onResultCallback: ((String) -> Unit)? = null
+    private var onPartialResultCallback: ((String) -> Unit)? = null
     private var onErrorCallback: ((String) -> Unit)? = null
 
     fun isRecognitionAvailable(): Boolean {
@@ -48,9 +49,11 @@ class SpeechRecognitionManager @Inject constructor(
     fun startListening(
         language: String = "en-US",
         onResult: (String) -> Unit,
+        onPartialResult: ((String) -> Unit)? = null,
         onError: (String) -> Unit = {}
     ) {
         onResultCallback = onResult
+        onPartialResultCallback = onPartialResult
         onErrorCallback = onError
         _speechError.value = null
         _partialText.value = ""
@@ -159,6 +162,10 @@ class SpeechRecognitionManager @Inject constructor(
                     else -> "Speech recognition error ($error). Please try again."
                 }
                 _speechError.value = errorMsg
+                // Nếu đã thu được partialText từ trước, vẫn giữ lại để người dùng không bị mất lời đã nói!
+                if (_partialText.value.isNotBlank()) {
+                    onResultCallback?.invoke(_partialText.value)
+                }
                 onErrorCallback?.invoke(errorMsg)
             }
 
@@ -168,7 +175,7 @@ class SpeechRecognitionManager @Inject constructor(
 
                 val matches = results?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION) ?: arrayListOf()
                 _candidateResults.value = matches
-                val spokenText = matches.firstOrNull() ?: ""
+                val spokenText = matches.firstOrNull() ?: _partialText.value
                 _partialText.value = spokenText
                 onResultCallback?.invoke(spokenText)
             }
@@ -178,6 +185,7 @@ class SpeechRecognitionManager @Inject constructor(
                 val text = matches?.firstOrNull() ?: ""
                 if (text.isNotEmpty()) {
                     _partialText.value = text
+                    onPartialResultCallback?.invoke(text)
                 }
             }
 

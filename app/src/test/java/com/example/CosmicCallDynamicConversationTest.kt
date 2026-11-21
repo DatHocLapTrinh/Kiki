@@ -33,7 +33,8 @@ class CosmicCallDynamicConversationTest {
             feedbackVi = "Phản xạ xuất sắc! Câu trả lời mạch lạc và phát âm chuẩn.",
             grammarCorrection = "My name is Truong and I live in Hanoi.",
             nextQuestionEn = "What is your favorite coffee shop in Hanoi?",
-            nextHintVi = "Nói về quán cà phê bạn hay ghé."
+            nextHintVi = "Nói về quán cà phê bạn hay ghé.",
+            suggestedStarterEn = "My favorite coffee shop is..."
         )
 
         assertEquals(92, response.score)
@@ -42,6 +43,7 @@ class CosmicCallDynamicConversationTest {
         assertEquals("My name is Truong and I live in Hanoi.", response.grammarCorrection)
         assertNotNull(response.nextQuestionEn)
         assertNotNull(response.nextHintVi)
+        assertEquals("My favorite coffee shop is...", response.suggestedStarterEn)
     }
 
     @Test

@@ -1941,10 +1941,11 @@ class StudyViewModel @Inject constructor(
                     Respond strictly in this exact format (no markdown, no extra lines):
                     SCORE: [65 to 100]
                     SPOKEN_EN: [Encouraging, natural English sentence for Kiki to speak aloud, 10-20 words]
-                    FEEDBACK_VI: [1-2 short sentences in Vietnamese with praise or grammar/pronunciation tip]
+                    FEEDBACK_VI: [Warm encouraging compliment like 'Tuyệt vời lắm! 🌟' or 'Rất xuất sắc! 👏', followed by 1 pedagogical tip in Vietnamese]
                     GRAMMAR: [Natural corrected English sentence]
                     NEXT_Q: [1 context-aware follow-up question in English continuing the conversation]
                     NEXT_HINT: [Short Vietnamese hint for next question]
+                    STARTER: [Contextual 3-7 word sentence starter tailored directly for next question, e.g. 'My favorite food is...', 'I usually relax by...']
                 """.trimIndent()
 
                 val rawAnswer = fetchAnswerFromAI(context, prompt, null)
@@ -1952,12 +1953,14 @@ class StudyViewModel @Inject constructor(
                 val spokenEn = Regex("SPOKEN_EN:\\s*(.+)").find(rawAnswer)?.groupValues?.get(1)?.trim()
                     ?: "Great job! That was very clear and expressive."
                 val feedbackVi = Regex("FEEDBACK_VI:\\s*(.+)").find(rawAnswer)?.groupValues?.get(1)?.trim()
-                    ?: "Phản xạ rất tốt! Bạn nói câu rõ ý và tự tin."
+                    ?: "🌟 Rất tốt! Bạn nói câu rõ ý và tự tin, phát âm ngày càng tiến bộ."
                 val grammar = Regex("GRAMMAR:\\s*(.+)").find(rawAnswer)?.groupValues?.get(1)?.trim() ?: trimmed
                 val nextQ = Regex("NEXT_Q:\\s*(.+)").find(rawAnswer)?.groupValues?.get(1)?.trim()
                     ?: "What else do you enjoy doing every day?"
                 val nextHint = Regex("NEXT_HINT:\\s*(.+)").find(rawAnswer)?.groupValues?.get(1)?.trim()
                     ?: "Chia sẻ thêm điều bạn thích làm mỗi ngày."
+                val starter = Regex("STARTER:\\s*(.+)").find(rawAnswer)?.groupValues?.get(1)?.trim()
+                    ?: "Every day, I enjoy..."
 
                 return com.example.model.CosmicCallResponse(
                     score = score,
@@ -1965,7 +1968,8 @@ class StudyViewModel @Inject constructor(
                     feedbackVi = feedbackVi,
                     grammarCorrection = grammar,
                     nextQuestionEn = nextQ,
-                    nextHintVi = nextHint
+                    nextHintVi = nextHint,
+                    suggestedStarterEn = starter
                 )
             } catch (_: Exception) {}
         }
@@ -1993,34 +1997,38 @@ class StudyViewModel @Inject constructor(
             wordCount >= 6 -> com.example.model.CosmicCallResponse(
                 score = 92,
                 spokenFeedbackEn = "Awesome! That was a complete and fluent sentence.",
-                feedbackVi = "Phản xạ xuất sắc! Câu trả lời dài, rõ ý và phát âm rất tự tin.",
+                feedbackVi = "🌟 Xuất sắc tuyệt vời! Câu trả lời dài, rõ ý và phát âm rất tự tin.",
                 grammarCorrection = userAnswer,
                 nextQuestionEn = "How often do you get to practice English in your daily routine?",
-                nextHintVi = "Nói về tần suất bạn dùng hoặc luyện tiếng Anh mỗi ngày."
+                nextHintVi = "Nói về tần suất bạn dùng hoặc luyện tiếng Anh mỗi ngày.",
+                suggestedStarterEn = "I practice English..."
             )
             wordCount >= 3 -> com.example.model.CosmicCallResponse(
                 score = 84,
                 spokenFeedbackEn = "Good job! Try to expand with one more idea next time.",
-                feedbackVi = "Rất tốt! Bạn phát âm trôi chảy, hãy thử mở rộng thêm một ý nữa nhé.",
+                feedbackVi = "👏 Rất tốt! Bạn phát âm trôi chảy, lần tới hãy thử mở rộng thêm một ý nữa nhé.",
                 grammarCorrection = userAnswer,
                 nextQuestionEn = "Can you share what you like the most about learning English?",
-                nextHintVi = "Nói về điều bạn thích nhất khi học tiếng Anh."
+                nextHintVi = "Nói về điều bạn thích nhất khi học tiếng Anh.",
+                suggestedStarterEn = "I like learning English because..."
             )
             wordCount >= 1 -> com.example.model.CosmicCallResponse(
                 score = 75,
                 spokenFeedbackEn = "Nice start! Keep building your confidence with me.",
-                feedbackVi = "Tốt lắm! Bạn đã phản xạ kịp thời, hãy ghép thành câu hoàn chỉnh nhé.",
+                feedbackVi = "💪 Khởi đầu rất tự tin! Hãy ghép thành câu hoàn chỉnh để tăng phản xạ nhé.",
                 grammarCorrection = userAnswer,
                 nextQuestionEn = "What is your favorite hobby to relax?",
-                nextHintVi = "Nêu một sở thích giúp bạn thư giãn."
+                nextHintVi = "Nêu một sở thích giúp bạn thư giãn.",
+                suggestedStarterEn = "My favorite hobby is..."
             )
             else -> com.example.model.CosmicCallResponse(
                 score = 55,
                 spokenFeedbackEn = "I didn't quite catch that. Please speak louder into the mic!",
-                feedbackVi = "Chưa nghe rõ câu trả lời. Hãy bấm Micro và nói to hơn nhé!",
+                feedbackVi = "✨ Đừng ngại, hãy bấm Micro và nói to, rõ ràng hơn để Kiki lắng nghe nhé!",
                 grammarCorrection = userAnswer,
                 nextQuestionEn = question,
-                nextHintVi = "Nhấn giữ Micro và nói rõ ràng."
+                nextHintVi = "Nhấn giữ Micro và nói rõ ràng.",
+                suggestedStarterEn = "Hello Kiki,..."
             )
         }
     }
