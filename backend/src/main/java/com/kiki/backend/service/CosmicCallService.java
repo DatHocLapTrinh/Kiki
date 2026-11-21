@@ -9,8 +9,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
-import java.util.List;
-
 @Service
 public class CosmicCallService {
 
@@ -19,19 +17,37 @@ public class CosmicCallService {
     private final GroqClientService groqClientService;
     private final ObjectMapper objectMapper;
     private final VietnameseNameNormalizer vietnameseNameNormalizer;
+    private final CosmicCallScorer cosmicCallScorer;
 
     public CosmicCallService(
         GroqClientService groqClientService,
         ObjectMapper objectMapper,
-        VietnameseNameNormalizer vietnameseNameNormalizer
+        VietnameseNameNormalizer vietnameseNameNormalizer,
+        CosmicCallScorer cosmicCallScorer
     ) {
         this.groqClientService = groqClientService;
         this.objectMapper = objectMapper;
         this.vietnameseNameNormalizer = vietnameseNameNormalizer;
+        this.cosmicCallScorer = cosmicCallScorer;
     }
 
     public CosmicCallResponse converseAndEvaluate(CosmicCallRequest request) {
-        // Khôi phục tên riêng & địa danh tiếng Việt bị ASR ép kiểu sang tiếng Anh (vd: "my name is john" -> "my name is Truong")
+        // 1. Kiểm tra nếu người dùng chưa nói gì / im lặng hoàn toàn -> Trả về 0 điểm ngay lập tức
+        if (cosmicCallScorer.isEmptyOrSilence(request.userAnswer())) {
+            log.info("Cosmic Call: User did not speak (empty/silence). Returning 0 points immediately.");
+            return new CosmicCallResponse(
+                0,
+                "I didn't hear your voice. Please tap the mic and speak aloud!",
+                "Kiki chưa nghe thấy câu trả lời của bạn. Hãy nhấn nút Micro và nói to, rõ ràng nhé! 🎙️",
+                "",
+                request.currentQuestion() != null ? request.currentQuestion() : "What is your name?",
+                "Bấm giữ nút Micro và nói tiếng Anh.",
+                "Hello Kiki,...",
+                ""
+            );
+        }
+
+        // 2. Khôi phục tên riêng & địa danh tiếng Việt bị ASR ép kiểu sang tiếng Anh (vd: "my name is john" -> "my name is Truong")
         String sanitizedUserAnswer = vietnameseNameNormalizer.normalize(
             request.userAnswer(),
             request.userName(),
@@ -45,36 +61,44 @@ public class CosmicCallService {
 
         try {
             String systemPrompt = String.format("""
-                You are Kiki, an enthusiastic and friendly AI English Tutor in the Kiki Cosmic Universe.
+                You are Kiki, an enthusiastic, honest and pedagogical AI English Tutor in the Kiki Cosmic Universe.
                 You are having a real-time 1-on-1 voice phone call with a Vietnamese English learner named %s.
 
-                CORE CONVERSATIONAL PRINCIPLES:
-                1. BE CONTEXTUAL & ENGAGING: Directly acknowledge what the learner actually said. Do NOT give generic, robotic answers. If they mentioned their name (%s), city, hobbies, job, or opinions, incorporate those details naturally.
+                STRICT PEDAGOGICAL PRINCIPLES:
+                1. HONEST & ACCURATE SCORING (0 to 100 scale):
+                   - 0: Silence, no words spoken.
+                   - 10 to 35: Completely incorrect, irrelevant, off-topic (e.g. asked for name but answered about weather/food), nonsense, or gibberish.
+                   - 40 to 59: Fragmented, severe grammar errors, or single isolated word without sentence structure.
+                   - 60 to 79: Relevant and communicative; directly answers the question with minor grammar slips.
+                   - 80 to 89: Good, fluent, natural and grammatically correct.
+                   - 90 to 100: Excellent, elaborate, rich vocabulary, clear and natural expression.
+
+                   CRITICAL RULE: DO NOT give a passing score (60+) to incorrect, irrelevant or nonsensical answers! If the learner said something wrong, score MUST be below 40.
+
                 2. VIETNAMESE LEARNER & ASR AWARENESS:
-                   - The learner is Vietnamese. Their name is %s (or other Vietnamese names like Trường, Tuấn, Nam, Linh, Phúc, Mai, Hương) or mention Vietnamese places (Hà Nội, Sài Gòn, Đà Nẵng).
+                   - The learner's name is %s.
                    - NEVER address the learner as 'John', 'Sean', or any misheard ASR artifact! ALWAYS use their real name (%s).
                    - NEVER penalize learners for Vietnamese names or ASR phonetic artifacts! Understand their intended meaning seamlessly.
+
                 3. PEDAGOGICAL VOICE FLOW:
-                   - spokenFeedbackEn: A natural, concise English response (10-25 words) that Kiki will speak aloud through Text-To-Speech. It must sound conversational, warm, address the learner by name (%s), and encourage them.
-                   - feedbackVi: An encouraging Vietnamese explanation (1-2 sentences). MUST start with an enthusiastic compliment (e.g. 'Tuyệt vời lắm %s! 🌟', 'Rất xuất sắc! 👏', 'Khởi đầu rất tự tin! 💪'), followed by a specific note on grammar, vocabulary, or pronunciation.
+                   - spokenFeedbackEn: A natural, concise English response (10-25 words) that Kiki will speak aloud through Text-To-Speech. It must sound conversational, warm, address the learner by name (%s), and honestly critique or praise them.
+                   - feedbackVi: An encouraging Vietnamese explanation (1-2 sentences). If score >= 65, start with enthusiastic praise ('Tuyệt vời lắm %s! 🌟', 'Rất xuất sắc! 👏'). If score < 65, give constructive correction ('Câu trả lời chưa đúng trọng tâm hoặc sai ngữ pháp, bạn xem gợi ý bên dưới nhé! 💡').
                    - grammarCorrection: The most natural, native-sounding English version of their sentence.
-                   - nextQuestionEn: Exactly 1 natural follow-up question that smoothly continues the current conversation topic. Keep it focused, clear, and relevant (do not wander off into unrelated topics).
+                   - nextQuestionEn: Exactly 1 natural follow-up question that smoothly continues the current conversation topic. Keep it focused, clear, and relevant.
                    - nextHintVi: A short Vietnamese hint (5-10 words) to help the student formulate their answer.
-                   - suggestedStarterEn: A contextual sentence starter (3-7 words) tailored directly to nextQuestionEn to show the user how to begin their sentence. (e.g. If next question is about coffee: 'My favorite coffee is...', If about travel: 'I usually travel to...', If about hobbies: 'I relax by...'). DO NOT just return generic 'I think that...'!
-                4. ACCURATE SCORING:
-                   - Score between 65 and 100 based on communicative relevance, vocabulary richness, sentence structure, and communicative effort.
+                   - suggestedStarterEn: A contextual sentence starter (3-7 words) tailored directly to nextQuestionEn to show the user how to begin their sentence. (e.g. If next question is about coffee: 'My favorite coffee is...', If about travel: 'I usually travel to...'). DO NOT just return generic 'I think that...'!
 
                 CRITICAL: Return ONLY a valid JSON object matching this schema with NO markdown wrapping, NO backticks:
                 {
                   "score": 85,
                   "spokenFeedbackEn": "string (10-25 words in English to be spoken by Kiki TTS)",
-                  "feedbackVi": "string (Enthusiastic compliment and pedagogical note in Vietnamese)",
+                  "feedbackVi": "string (Pedagogical note in Vietnamese)",
                   "grammarCorrection": "string (Improved English sentence)",
                   "nextQuestionEn": "string (1 context-aware follow-up question in English)",
                   "nextHintVi": "string (Short Vietnamese hint for next question)",
                   "suggestedStarterEn": "string (Contextual 3-7 word starter specifically for nextQuestionEn)"
                 }
-                """, learnerGivenName, learnerGivenName, learnerGivenName, learnerGivenName, learnerGivenName, learnerGivenName);
+                """, learnerGivenName, learnerGivenName, learnerGivenName, learnerGivenName, learnerGivenName);
 
             StringBuilder historyBuilder = new StringBuilder();
             if (request.conversationHistory() != null && !request.conversationHistory().isEmpty()) {
@@ -95,7 +119,7 @@ public class CosmicCallService {
                 "Kiki's Previous Question: \"%s\"\n" +
                 "Learner's Spoken Answer (restored): \"%s\"\n" +
                 "%s\n" +
-                "Evaluate the learner's answer, provide encouraging English spoken feedback, Vietnamese educational notes, grammar correction, and exactly 1 contextual follow-up question.",
+                "Evaluate the learner's answer honestly using the strict 0-100 rubric, provide spoken English feedback, Vietnamese educational notes, grammar correction, and exactly 1 contextual follow-up question.",
                 learnerGivenName,
                 request.planetOrTopic() != null ? request.planetOrTopic() : "Cosmic English Conversation",
                 request.userLevel() != null ? request.userLevel() : "A1-A2 Elementary",
@@ -108,18 +132,23 @@ public class CosmicCallService {
             String cleanJson = extractCleanJson(rawResponse);
 
             JsonNode root = objectMapper.readTree(cleanJson);
-            int score = root.path("score").asInt(85);
-            if (score < 60) score = 65;
-            if (score > 100) score = 100;
+            int rawScore = root.path("score").asInt(50);
+
+            // Kiểm định và hiệu chỉnh điểm số bằng Java (loại bỏ hoàn toàn tình trạng chấm 70-72 điểm cho câu nói sai hoặc lạc đề)
+            int calibratedScore = cosmicCallScorer.calibrateScore(rawScore, request.currentQuestion(), sanitizedUserAnswer);
 
             String spokenFeedbackEn = root.path("spokenFeedbackEn").asText("").trim();
             if (spokenFeedbackEn.isEmpty()) {
-                spokenFeedbackEn = "Great job " + learnerGivenName + "! Your answer was very clear and expressive.";
+                spokenFeedbackEn = calibratedScore >= 65
+                    ? "Great job " + learnerGivenName + "! Your answer was very clear and expressive."
+                    : "That didn't quite sound right, " + learnerGivenName + ". Let's check the correct sentence!";
             }
 
             String feedbackVi = root.path("feedbackVi").asText("").trim();
             if (feedbackVi.isEmpty()) {
-                feedbackVi = "Phản xạ rất tốt " + learnerGivenName + "! Câu trả lời thể hiện sự tự tin và diễn đạt tự nhiên.";
+                feedbackVi = calibratedScore >= 65
+                    ? "Phản xạ rất tốt " + learnerGivenName + "! Câu trả lời thể hiện sự tự tin và diễn đạt tự nhiên."
+                    : "Câu trả lời chưa chính xác hoặc chưa đúng trọng tâm. Hãy xem gợi ý câu chuẩn bên dưới nhé! 💡";
             }
 
             String grammarCorrection = root.path("grammarCorrection").asText("").trim();
@@ -149,7 +178,7 @@ public class CosmicCallService {
             }
 
             return new CosmicCallResponse(
-                score,
+                calibratedScore,
                 spokenFeedbackEn,
                 feedbackVi,
                 grammarCorrection,
@@ -166,28 +195,26 @@ public class CosmicCallService {
 
     private CosmicCallResponse generateResilientFallback(CosmicCallRequest request, String sanitizedUserAnswer, String learnerGivenName) {
         String answer = (sanitizedUserAnswer != null ? sanitizedUserAnswer : request.userAnswer()).trim();
-        int wordCount = answer.split("\\s+").length;
+        int score = cosmicCallScorer.computeDeterministicScore(request.currentQuestion(), answer);
 
-        int score;
         String spokenEn;
         String feedbackVi;
 
-        if (wordCount >= 6) {
-            score = 92;
+        if (score == 0) {
+            spokenEn = "I didn't hear any words. Please press the mic and speak aloud!";
+            feedbackVi = "Kiki chưa ghi nhận được câu trả lời. Hãy bấm nút Micro và nói to, rõ ràng nhé! 🎙️";
+        } else if (score <= 35) {
+            spokenEn = "That was not quite right for this question, " + learnerGivenName + ". Let's practice with the starter!";
+            feedbackVi = "Câu trả lời chưa đúng trọng tâm câu hỏi hoặc từ ngữ chưa chính xác. Xem câu mẫu bên dưới nhé! 💡";
+        } else if (score <= 59) {
+            spokenEn = "You are on the right track " + learnerGivenName + ", but try to use a complete sentence!";
+            feedbackVi = "Bạn đã có ý trả lời nhưng còn sai hoặc thiếu ngữ pháp. Xem câu chuẩn bên dưới nhé! ✨";
+        } else if (score <= 84) {
+            spokenEn = "Good job " + learnerGivenName + "! You answered clearly and confidently.";
+            feedbackVi = "👏 Rất tốt " + learnerGivenName + "! Bạn phát âm rõ ràng, lần tới hãy thử bổ sung thêm 1 chi tiết nhỏ nhé.";
+        } else {
             spokenEn = "Excellent reflection " + learnerGivenName + "! That was fluent and very natural.";
             feedbackVi = "🌟 Xuất sắc tuyệt vời! Bạn nói câu hoàn chỉnh, mạch lạc và phát âm rất tự tin.";
-        } else if (wordCount >= 3) {
-            score = 84;
-            spokenEn = "Good job " + learnerGivenName + "! Next time, try to add one more detail to your sentence.";
-            feedbackVi = "👏 Rất tốt! Bạn phát âm rõ ràng, lần tới hãy thử bổ sung thêm 1 chi tiết nhỏ nhé.";
-        } else if (wordCount >= 1) {
-            score = 75;
-            spokenEn = "Nice start " + learnerGivenName + "! Keep building your confidence with me.";
-            feedbackVi = "💪 Khởi đầu rất tự tin! Hãy luyện nói thành cả câu hoàn chỉnh để tăng phản xạ nhé.";
-        } else {
-            score = 65;
-            spokenEn = "I didn't quite catch that. Please speak a little louder into the mic!";
-            feedbackVi = "✨ Đừng ngại, hãy giữ nút Micro và nói to, rõ ràng hơn để Kiki lắng nghe nhé.";
         }
 
         String nextQ = "Could you tell me what you like the most about learning English?";

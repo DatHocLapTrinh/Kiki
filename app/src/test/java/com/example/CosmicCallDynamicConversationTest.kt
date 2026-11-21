@@ -72,4 +72,34 @@ class CosmicCallDynamicConversationTest {
         assertEquals("Nguyễn Văn Trường", request.userName)
         assertNotNull(request.candidateTranscripts)
     }
+
+    @Test
+    fun testZeroSpeechAndInaccurateAnswerGrading() {
+        // Response with 0 points for silence
+        val zeroResponse = CosmicCallResponse(
+            score = 0,
+            spokenFeedbackEn = "I didn't hear your voice. Please tap the mic and speak aloud!",
+            feedbackVi = "Kiki chưa ghi nhận được câu trả lời. Hãy bấm nút Micro và nói tiếng Anh nhé! 🎙️",
+            grammarCorrection = "",
+            nextQuestionEn = "What is your name?",
+            nextHintVi = "Bấm giữ nút Micro và nói tiếng Anh.",
+            suggestedStarterEn = "Hello Kiki,..."
+        )
+
+        assertEquals(0, zeroResponse.score)
+        assertTrue(zeroResponse.feedbackVi.contains("chưa ghi nhận được"));
+
+        // Response with low score for inaccurate/off-topic answer
+        val inaccurateResponse = CosmicCallResponse(
+            score = 25,
+            spokenFeedbackEn = "That didn't quite make sense for this question.",
+            feedbackVi = "Câu trả lời chưa đúng trọng tâm câu hỏi hoặc từ ngữ chưa chính xác.",
+            grammarCorrection = "My name is Truong.",
+            nextQuestionEn = "What is your name?",
+            nextHintVi = "Nói tên của bạn."
+        )
+
+        assertTrue(inaccurateResponse.score <= 35)
+        assertTrue(inaccurateResponse.feedbackVi.contains("chưa đúng trọng tâm"))
+    }
 }

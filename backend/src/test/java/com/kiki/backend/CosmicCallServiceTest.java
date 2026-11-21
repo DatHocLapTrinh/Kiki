@@ -3,6 +3,7 @@ package com.kiki.backend;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.kiki.backend.dto.CosmicCallRequest;
 import com.kiki.backend.dto.CosmicCallResponse;
+import com.kiki.backend.service.CosmicCallScorer;
 import com.kiki.backend.service.CosmicCallService;
 import com.kiki.backend.service.GroqClientService;
 import com.kiki.backend.service.VietnameseNameNormalizer;
@@ -16,13 +17,14 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 class CosmicCallServiceTest {
 
     private GroqClientService groqClientService;
     private ObjectMapper objectMapper;
     private VietnameseNameNormalizer vietnameseNameNormalizer;
+    private CosmicCallScorer cosmicCallScorer;
     private CosmicCallService cosmicCallService;
 
     @BeforeEach
@@ -30,7 +32,61 @@ class CosmicCallServiceTest {
         groqClientService = Mockito.mock(GroqClientService.class);
         objectMapper = new ObjectMapper();
         vietnameseNameNormalizer = new VietnameseNameNormalizer();
-        cosmicCallService = new CosmicCallService(groqClientService, objectMapper, vietnameseNameNormalizer);
+        cosmicCallScorer = new CosmicCallScorer();
+        cosmicCallService = new CosmicCallService(groqClientService, objectMapper, vietnameseNameNormalizer, cosmicCallScorer);
+    }
+
+    @Test
+    void testConverseAndEvaluate_EmptyUserAnswerReturnsZeroPointsImmediately() {
+        CosmicCallRequest request = new CosmicCallRequest(
+            "",
+            "What is your name?",
+            "Mercury: Greetings",
+            "A1 Beginner",
+            Collections.emptyList()
+        );
+
+        CosmicCallResponse response = cosmicCallService.converseAndEvaluate(request);
+
+        assertNotNull(response);
+        assertEquals(0, response.score());
+        assertTrue(response.feedbackVi().contains("chưa nghe thấy"));
+
+        // Không tốn gọi API AI khi người dùng chưa nói
+        verifyNoInteractions(groqClientService);
+    }
+
+    @Test
+    void testConverseAndEvaluate_WrongAnswerIsCappedAtLowScoreEvenIfAiReturned72() throws IOException {
+        // Mô phỏng AI bị lỗi sinh ra điểm 72 cho câu trả lời sai/lạc đề
+        String mockAiJson = """
+            {
+              "score": 72,
+              "spokenFeedbackEn": "I heard you talking about weather.",
+              "feedbackVi": "Câu trả lời bị lạc đề hoàn toàn.",
+              "grammarCorrection": "My name is Truong.",
+              "nextQuestionEn": "What is your name?",
+              "nextHintVi": "Nói tên của bạn.",
+              "suggestedStarterEn": "My name is..."
+            }
+            """;
+        when(groqClientService.generateChatCompletion(anyString(), anyString())).thenReturn(mockAiJson);
+
+        CosmicCallRequest request = new CosmicCallRequest(
+            "the weather is rain coffee hotel",
+            "What is your name and who are you?",
+            "Mercury: Greetings",
+            "A1 Beginner",
+            Collections.emptyList(),
+            "Truong",
+            null
+        );
+
+        CosmicCallResponse response = cosmicCallService.converseAndEvaluate(request);
+
+        assertNotNull(response);
+        // Scorer hiệu chỉnh điểm: câu sai/lạc đề KHÔNG được chấm 72 mà phải bị hạ xuống <= 25 điểm
+        assertTrue(response.score() <= 25, "Score must be <= 25 for off-topic answer, but was " + response.score());
     }
 
     @Test

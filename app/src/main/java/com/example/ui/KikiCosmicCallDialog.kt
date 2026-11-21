@@ -227,6 +227,20 @@ fun KikiCosmicCallDialog(
             partialText.isNotBlank() -> partialText.trim()
             else -> ""
         }
+
+        // Nếu người dùng chưa nói gì hoặc chỉ ấn nhầm nút, báo ngay 0 điểm mà không chấm điểm bừa
+        if (finalSpoken.isBlank()) {
+            evaluationScore = 0
+            evaluationFeedback = if (isEnglish) "No voice detected. Please tap the mic and speak clearly!" else "Kiki chưa nghe thấy câu trả lời. Hãy bấm Micro và nói tiếng Anh nhé! 🎙️"
+            latestSpokenFeedbackEn = if (isEnglish) "I didn't hear your voice. Please tap the mic and speak aloud!" else "I didn't hear your voice. Please tap the mic and speak aloud!"
+            latestGrammarCorrection = ""
+            callState = CosmicCallState.EVALUATED
+            if (!isMuted) {
+                ttsManager.speak(latestSpokenFeedbackEn, targetLocale = Locale.US)
+            }
+            return
+        }
+
         userSpokenText = finalSpoken
         editableTranscriptText = finalSpoken
         isEditingTranscript = false
@@ -299,9 +313,11 @@ fun KikiCosmicCallDialog(
             }
 
             questionsAnsweredCount++
-            val earnedXp = (response.score / 4).coerceAtLeast(15)
-            totalEarnedXp += earnedXp
-            onRewardEarned(earnedXp, 5)
+            val earnedXp = if (response.score <= 0) 0 else (response.score / 4).coerceAtLeast(5)
+            if (earnedXp > 0) {
+                totalEarnedXp += earnedXp
+                onRewardEarned(earnedXp, 5)
+            }
             callState = CosmicCallState.EVALUATED
 
             if (!isMuted && response.spokenFeedbackEn.isNotBlank()) {
@@ -859,7 +875,7 @@ fun KikiCosmicCallDialog(
                                 HorizontalDivider(color = Color(0x2251FAC1), thickness = 0.8.dp)
                                 Spacer(modifier = Modifier.height(10.dp))
 
-                                // Bảng Điểm 100 Kèm Lời Động Viên Truyền Cảm Hứng
+                                // Bảng Điểm 100 Kèm Lời Động Viên Truyền Cảm Hứng & Phân Tầng Sư Phạm
                                 val (encouragementTitle, encouragementMsg, badgeColor) = when {
                                     evaluationScore >= 90 -> Triple(
                                         if (isEnglish) "🌟 Excellent Mastery!" else "🌟 Xuất sắc tuyệt vời!",
@@ -871,15 +887,25 @@ fun KikiCosmicCallDialog(
                                         if (isEnglish) "Clear response, great vocabulary and very natural tone!" else "Câu trả lời rõ ràng, lưu loát và bắt nhịp hội thoại rất chuẩn!",
                                         Color(0xFF51FAC1)
                                     )
-                                    evaluationScore >= 70 -> Triple(
-                                        if (isEnglish) "💪 Confident Effort!" else "💪 Khởi đầu rất tự tin!",
-                                        if (isEnglish) "Good bravery and clear message, keep pushing forward!" else "Bạn rất dũng cảm và phát âm rõ ý, tiếp tục phát huy năng lượng này nhé!",
+                                    evaluationScore >= 65 -> Triple(
+                                        if (isEnglish) "💪 Confident Effort!" else "💪 Khá tốt & tự tin!",
+                                        if (isEnglish) "Good bravery and clear message, keep pushing forward!" else "Bạn giao tiếp rõ ý, câu trả lời đúng trọng tâm. Hãy tiếp tục phát huy nhé!",
                                         Color(0xFF00F5D4)
                                     )
-                                    else -> Triple(
-                                        if (isEnglish) "✨ Keep Practicing!" else "✨ Cố gắng lên, bạn làm được!",
-                                        if (isEnglish) "Every practice session brings you closer to fluency!" else "Mỗi lần luyện nói là một bước tiến bộ, Kiki luôn đồng hành cùng bạn!",
+                                    evaluationScore >= 40 -> Triple(
+                                        if (isEnglish) "⚠️ Needs Practice!" else "⚠️ Cần cải thiện ngữ pháp!",
+                                        if (isEnglish) "You had the right idea, but check grammar and sentence structure!" else "Bạn đã cố gắng nhưng câu còn sai ngữ pháp hoặc cụt ý. Xem gợi ý câu chuẩn bên dưới nhé!",
                                         Color(0xFFFFB703)
+                                    )
+                                    evaluationScore > 0 -> Triple(
+                                        if (isEnglish) "❌ Inaccurate Answer!" else "❌ Chưa chính xác / Lạc đề!",
+                                        if (isEnglish) "The answer was off-topic or hard to understand. Try again with the hint!" else "Câu trả lời chưa đúng trọng tâm câu hỏi hoặc từ ngữ chưa chính xác. Hãy dùng câu gợi ý mẫu để thử lại nhé!",
+                                        Color(0xFFFF5252)
+                                    )
+                                    else -> Triple(
+                                        if (isEnglish) "🎙️ No Voice Detected!" else "🎙️ Chưa ghi nhận âm thanh!",
+                                        if (isEnglish) "Microphone did not pick up your voice. Please tap the mic and speak clearly!" else "Kiki chưa nghe thấy bạn nói gì. Hãy nhấn Micro và nói to, rõ ràng nhé!",
+                                        Color(0xFF94A3B8)
                                     )
                                 }
 
@@ -1341,13 +1367,17 @@ private fun SummaryStatRow(
  */
 private fun localEvaluateAnswer(userAnswer: String): Pair<Int, String> {
     val trimmed = userAnswer.trim()
+    if (trimmed.isEmpty()) {
+        return Pair(0, "Kiki chưa ghi nhận được âm thanh. Hãy bấm Micro và nói tiếng Anh nhé! 🎙️")
+    }
     val words = trimmed.split(Regex("\\s+")).filter { it.isNotBlank() }
     val count = words.size
     return when {
-        count >= 6 -> Pair(92, "Phản xạ xuất sắc! Câu trả lời dài, rõ ý và phát âm rất tự tin.")
-        count >= 3 -> Pair(84, "Rất tốt! Bạn phát âm trôi chảy, hãy thử mở rộng thêm một ý nữa nhé.")
-        count >= 1 -> Pair(75, "Tốt lắm! Bạn đã phản xạ kịp thời, hãy ghép thành câu hoàn chỉnh nhé.")
-        else -> Pair(55, "Chưa nghe rõ câu trả lời. Hãy bấm Micro và nói to hơn nhé!")
+        count >= 6 -> Pair(90, "Phản xạ xuất sắc! Câu trả lời dài, rõ ý và phát âm rất tự tin.")
+        count >= 3 -> Pair(75, "Khá tốt! Bạn nói rõ ý, lần tới hãy thử mở rộng thêm một chi tiết nữa nhé.")
+        count >= 2 -> Pair(60, "Cố gắng tốt! Bạn đã có phản xạ, hãy ghép thành câu hoàn chỉnh hơn nhé.")
+        count == 1 -> Pair(35, "Câu trả lời cộc lốc hoặc chưa đủ ý. Hãy xem gợi ý câu mẫu bên dưới nhé! 💡")
+        else -> Pair(0, "Chưa nghe rõ câu trả lời. Hãy bấm Micro và nói to hơn nhé!")
     }
 }
 

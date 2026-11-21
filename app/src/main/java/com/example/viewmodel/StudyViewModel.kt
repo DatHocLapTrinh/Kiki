@@ -1896,12 +1896,13 @@ class StudyViewModel @Inject constructor(
         val effectiveUserName = userName ?: _userName.value ?: "Adventurer"
         if (trimmed.isBlank()) {
             return com.example.model.CosmicCallResponse(
-                score = 50,
-                spokenFeedbackEn = "I didn't quite hear you. Please hold the mic and speak clearly!",
-                feedbackVi = "Kiki chưa nghe rõ câu trả lời. Bạn hãy nhấn giữ nút Micro và nói to hơn nhé!",
+                score = 0,
+                spokenFeedbackEn = "I didn't hear anything. Please press the mic and speak clearly!",
+                feedbackVi = "Kiki chưa ghi nhận được câu trả lời. Bạn hãy nhấn nút Micro và nói tiếng Anh nhé! 🎙️",
                 grammarCorrection = "",
                 nextQuestionEn = question,
-                nextHintVi = "Hãy nhấn giữ Micro và nói to hơn."
+                nextHintVi = "Hãy nhấn Micro và nói tiếng Anh.",
+                suggestedStarterEn = "Hello Kiki,..."
             )
         }
 
@@ -2004,47 +2005,62 @@ class StudyViewModel @Inject constructor(
         } else {
             userAnswer
         }
-        val wordCount = sanitized.trim().split(Regex("\\s+")).filter { it.isNotBlank() }.size
+        val cleanAnswer = sanitized.trim()
+        if (cleanAnswer.isBlank()) {
+            return com.example.model.CosmicCallResponse(
+                score = 0,
+                spokenFeedbackEn = "I didn't hear your voice. Let's try speaking again!",
+                feedbackVi = "Kiki chưa ghi nhận được câu trả lời. Hãy bấm nút Micro và nói tiếng Anh nhé! 🎙️",
+                grammarCorrection = "",
+                nextQuestionEn = question,
+                nextHintVi = "Hãy bấm Micro và nói tiếng Anh.",
+                suggestedStarterEn = "Hello Kiki,...",
+                sanitizedUserAnswer = ""
+            )
+        }
+
+        val words = cleanAnswer.split(Regex("\\s+")).filter { it.isNotBlank() }
+        val wordCount = words.size
         return when {
             wordCount >= 6 -> com.example.model.CosmicCallResponse(
-                score = 92,
+                score = 90,
                 spokenFeedbackEn = "Awesome $actualName! That was a complete and fluent sentence.",
                 feedbackVi = "🌟 Xuất sắc tuyệt vời $actualName! Câu trả lời dài, rõ ý và phát âm rất tự tin.",
-                grammarCorrection = sanitized,
+                grammarCorrection = cleanAnswer,
                 nextQuestionEn = "How often do you get to practice English in your daily routine?",
                 nextHintVi = "Nói về tần suất bạn dùng hoặc luyện tiếng Anh mỗi ngày.",
                 suggestedStarterEn = "I practice English...",
-                sanitizedUserAnswer = sanitized
+                sanitizedUserAnswer = cleanAnswer
             )
             wordCount >= 3 -> com.example.model.CosmicCallResponse(
-                score = 84,
+                score = 75,
                 spokenFeedbackEn = "Good job $actualName! Try to expand with one more idea next time.",
-                feedbackVi = "👏 Rất tốt $actualName! Bạn phát âm trôi chảy, lần tới hãy thử mở rộng thêm một ý nữa nhé.",
-                grammarCorrection = sanitized,
+                feedbackVi = "👏 Khá tốt $actualName! Bạn nói rõ ý, lần tới hãy mở rộng thêm một ý nữa nhé.",
+                grammarCorrection = cleanAnswer,
                 nextQuestionEn = "Can you share what you like the most about learning English?",
                 nextHintVi = "Nói về điều bạn thích nhất khi học tiếng Anh.",
                 suggestedStarterEn = "I like learning English because...",
-                sanitizedUserAnswer = sanitized
+                sanitizedUserAnswer = cleanAnswer
             )
-            wordCount >= 1 -> com.example.model.CosmicCallResponse(
-                score = 75,
-                spokenFeedbackEn = "Nice start $actualName! Keep building your confidence with me.",
-                feedbackVi = "💪 Khởi đầu rất tự tin! Hãy ghép thành câu hoàn chỉnh để tăng phản xạ nhé.",
-                grammarCorrection = sanitized,
+            wordCount >= 2 -> com.example.model.CosmicCallResponse(
+                score = 60,
+                spokenFeedbackEn = "Nice start $actualName! Try to form a full sentence next time.",
+                feedbackVi = "💪 Cố gắng tốt! Bạn đã phản xạ kịp thời, hãy ghép thành câu hoàn chỉnh nhé.",
+                grammarCorrection = cleanAnswer,
                 nextQuestionEn = "What is your favorite hobby to relax?",
                 nextHintVi = "Nêu một sở thích giúp bạn thư giãn.",
                 suggestedStarterEn = "My favorite hobby is...",
-                sanitizedUserAnswer = sanitized
+                sanitizedUserAnswer = cleanAnswer
             )
             else -> com.example.model.CosmicCallResponse(
-                score = 55,
-                spokenFeedbackEn = "I didn't quite catch that. Please speak louder into the mic!",
-                feedbackVi = "✨ Đừng ngại, hãy bấm Micro và nói to, rõ ràng hơn để Kiki lắng nghe nhé!",
-                grammarCorrection = sanitized,
+                score = 35,
+                spokenFeedbackEn = "That was too short to evaluate. Please try saying a full sentence!",
+                feedbackVi = "⚠️ Câu trả lời cộc lốc hoặc chưa đủ ý. Hãy xem câu mẫu bên dưới để nói lại nhé! 💡",
+                grammarCorrection = cleanAnswer,
                 nextQuestionEn = question,
-                nextHintVi = "Nhấn giữ Micro và nói rõ ràng.",
+                nextHintVi = "Nhấn giữ Micro và nói thành câu đầy đủ.",
                 suggestedStarterEn = "Hello Kiki,...",
-                sanitizedUserAnswer = sanitized
+                sanitizedUserAnswer = cleanAnswer
             )
         }
     }
