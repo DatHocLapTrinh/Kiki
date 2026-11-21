@@ -1079,6 +1079,7 @@ fun MainNavigation(viewModel: StudyViewModel, onLogout: () -> Unit) {
                 stages = stages,
                 ttsManager = viewModel.ttsManager,
                 speechManager = viewModel.speechRecognitionManager,
+                viewModel = viewModel,
                 isEnglish = isEnglish,
                 onRewardEarned = { xp, starsCount ->
                     viewModel.addXp(xp)

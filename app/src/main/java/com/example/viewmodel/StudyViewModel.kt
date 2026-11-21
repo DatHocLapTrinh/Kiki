@@ -1883,6 +1883,71 @@ class StudyViewModel @Inject constructor(
         askQuestion(context, spokenText, null, isAudioDialog = true, onSuccess = onSuccess)
     }
 
+    suspend fun evaluateCosmicCallResponse(
+        context: Context,
+        question: String,
+        userAnswer: String,
+        planetName: String
+    ): Pair<Int, String> {
+        if (userAnswer.isBlank()) {
+            return Pair(50, "Kiki chưa nghe rõ câu trả lời. Bạn hãy nhấn giữ nút Micro và nói to hơn nhé!")
+        }
+
+        val apiKey = getEffectiveUniversalApiKey()
+        if (apiKey.isBlank()) {
+            return fallbackEvaluateCosmicCallAnswer(userAnswer, question)
+        }
+
+        return try {
+            val prompt = """
+                Bạn là Kiến Kiki - Gia sư Tiếng Anh AI thông minh trong vũ trụ Kiki.
+                Người học đang trả lời câu hỏi đàm thoại tiếng Anh thuộc chặng '$planetName'.
+                Câu hỏi của Kiki: "$question"
+                Câu trả lời của người học: "$userAnswer"
+                
+                Hãy phân tích câu trả lời và phản hồi chính xác theo 2 dòng dưới đây (không thêm bất kỳ lời chào hay ký tự markdown thừa nào):
+                SCORE: [Điểm số từ 65 đến 100 dựa trên độ liên quan, ngữ pháp và phát âm]
+                FEEDBACK: [1 câu ngắn bằng Tiếng Việt khen ngợi điểm tốt hoặc chỉ ra lỗi ngữ pháp/phát âm kèm phiên âm IPA nếu có, tối đa 25 từ]
+            """.trimIndent()
+
+            val rawAnswer = fetchAnswerFromAI(context, prompt, null)
+            val scoreMatch = Regex("SCORE:\\s*(\\d+)").find(rawAnswer)
+            val score = scoreMatch?.groupValues?.get(1)?.toIntOrNull()?.coerceIn(60, 100) ?: 85
+            val feedbackMatch = Regex("FEEDBACK:\\s*(.+)").find(rawAnswer)
+            val feedback = feedbackMatch?.groupValues?.get(1)?.trim()
+                ?: sanitizeAiMentorReply(rawAnswer).take(120)
+
+            Pair(score, feedback)
+        } catch (e: Exception) {
+            fallbackEvaluateCosmicCallAnswer(userAnswer, question)
+        }
+    }
+
+    private fun fallbackEvaluateCosmicCallAnswer(
+        userAnswer: String,
+        question: String
+    ): Pair<Int, String> {
+        val wordCount = userAnswer.trim().split(Regex("\\s+")).filter { it.isNotBlank() }.size
+        return when {
+            wordCount >= 6 -> Pair(
+                92,
+                "Phản xạ xuất sắc! Câu trả lời dài, rõ ý và vốn từ phong phú."
+            )
+            wordCount >= 3 -> Pair(
+                84,
+                "Rất tốt! Bạn phát âm rõ ràng, lần tới hãy thử phát triển thêm một ý nữa nhé."
+            )
+            wordCount >= 1 -> Pair(
+                74,
+                "Tốt lắm! Bạn đã bắt đầu phản xạ, hãy thử nói thành một câu hoàn chỉnh nhé."
+            )
+            else -> Pair(
+                55,
+                "Chưa ghi nhận được âm thanh. Hãy nhấn giữ Micro và nói tự tin lên nhé!"
+            )
+        }
+    }
+
     fun askFollowUpQuestion(context: Context, currentQuestion: String, followUpType: String) {
         _isGenerating.value = true
         viewModelScope.launch {

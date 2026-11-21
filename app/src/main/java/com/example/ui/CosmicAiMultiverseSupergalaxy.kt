@@ -19,6 +19,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.*
@@ -64,54 +65,51 @@ fun CosmicAiMultiverseSupergalaxyView(
     val progressPercent = (completedStages.toFloat() / totalStages).coerceIn(0f, 1f)
     val isFullyUnlocked = completedStages >= totalStages
 
-    // Hệ thống Animation đa tầng mượt mà 60/120 FPS (Tự động thích ứng cấu hình máy)
-    val portalBreathingPulse: Float
-    val borderShimmerPhase: Float
-    val starParticlePhase: Float
-    val auraPulsate: Float
+    // Hệ thống Animation đa tầng mượt mà 60/120 FPS (Tự động thích ứng cấu hình máy, không bao giờ bị đóng băng)
+    val infiniteTransition = rememberInfiniteTransition(label = "supergalaxy_portal_anim")
 
-    if (isLowEnd) {
-        portalBreathingPulse = 1.0f
-        borderShimmerPhase = 0f
-        starParticlePhase = 0.5f
-        auraPulsate = 1.0f
-    } else {
-        val infiniteTransition = rememberInfiniteTransition(label = "supergalaxy_portal_anim")
-
-        // 1. Nhịp thở năng lượng điện ảnh của Cổng Không Gian (Cinematic Breath: 3.6s)
-        val pulse by infiniteTransition.animateFloat(
-            initialValue = 0.985f,
-            targetValue = 1.018f,
-            animationSpec = infiniteRepeatable(tween(3600, easing = FastOutSlowInEasing), RepeatMode.Reverse),
-            label = "portal_pulse"
-        )
-        // 2. Viền ánh sáng Holographic chuyển sắc liên tục (Shimmer Glow Phase)
-        val shimmer by infiniteTransition.animateFloat(
-            initialValue = 0f,
-            targetValue = 1200f,
-            animationSpec = infiniteRepeatable(tween(4200, easing = LinearEasing), RepeatMode.Restart),
-            label = "border_shimmer"
-        )
-        // 3. Pha chuyển động hạt bụi sao & cực quang vi mô (Micro-stardust float phase)
-        val stardust by infiniteTransition.animateFloat(
-            initialValue = 0f,
-            targetValue = 1f,
-            animationSpec = infiniteRepeatable(tween(2800, easing = LinearEasing), RepeatMode.Restart),
-            label = "stardust_phase"
-        )
-        // 4. Nhịp xung quầng hào quang sau lưng cổng (Ambient Backlight Pulse)
-        val aura by infiniteTransition.animateFloat(
-            initialValue = 0.85f,
-            targetValue = 1.15f,
-            animationSpec = infiniteRepeatable(tween(2400, easing = FastOutSlowInEasing), RepeatMode.Reverse),
-            label = "aura_pulse"
-        )
-
-        portalBreathingPulse = pulse
-        borderShimmerPhase = shimmer
-        starParticlePhase = stardust
-        auraPulsate = aura
-    }
+    // 1. Nhịp thở năng lượng điện ảnh của Cổng Không Gian (Cinematic Breath)
+    val portalBreathingPulse by infiniteTransition.animateFloat(
+        initialValue = if (isLowEnd) 0.992f else 0.985f,
+        targetValue = if (isLowEnd) 1.010f else 1.020f,
+        animationSpec = infiniteRepeatable(tween(if (isLowEnd) 4000 else 3400, easing = FastOutSlowInEasing), RepeatMode.Reverse),
+        label = "portal_pulse"
+    )
+    // 2. Viền ánh sáng Holographic chuyển sắc liên tục (Shimmer Glow Phase)
+    val borderShimmerPhase by infiniteTransition.animateFloat(
+        initialValue = 0f,
+        targetValue = 1200f,
+        animationSpec = infiniteRepeatable(tween(if (isLowEnd) 5000 else 4000, easing = LinearEasing), RepeatMode.Restart),
+        label = "border_shimmer"
+    )
+    // 3. Pha chuyển động hạt bụi sao & cực quang vi mô (Micro-stardust float phase)
+    val starParticlePhase by infiniteTransition.animateFloat(
+        initialValue = 0f,
+        targetValue = 1f,
+        animationSpec = infiniteRepeatable(tween(2800, easing = LinearEasing), RepeatMode.Restart),
+        label = "stardust_phase"
+    )
+    // 4. Nhịp xung quầng hào quang sau lưng cổng (Ambient Backlight Pulse)
+    val auraPulsate by infiniteTransition.animateFloat(
+        initialValue = if (isLowEnd) 0.92f else 0.86f,
+        targetValue = if (isLowEnd) 1.08f else 1.16f,
+        animationSpec = infiniteRepeatable(tween(if (isLowEnd) 3000 else 2400, easing = FastOutSlowInEasing), RepeatMode.Reverse),
+        label = "aura_pulse"
+    )
+    // 5. Vòng xoáy năng lượng Cổng Đa Vũ Trụ quay 360 độ (Quantum Vortex Ring Rotation)
+    val vortexRotation by infiniteTransition.animateFloat(
+        initialValue = 0f,
+        targetValue = 360f,
+        animationSpec = infiniteRepeatable(tween(14000, easing = LinearEasing), RepeatMode.Restart),
+        label = "vortex_rotation"
+    )
+    // 6. Nhịp phát sáng tín hiệu đèn Beacon lượng tử ở đỉnh cổng
+    val beaconPulse by infiniteTransition.animateFloat(
+        initialValue = 0.45f,
+        targetValue = 1.0f,
+        animationSpec = infiniteRepeatable(tween(900, easing = FastOutSlowInEasing), RepeatMode.Reverse),
+        label = "beacon_pulse"
+    )
 
     Column(
         modifier = modifier
@@ -127,10 +125,10 @@ fun CosmicAiMultiverseSupergalaxyView(
                 .graphicsLayer {},
             contentAlignment = Alignment.Center
         ) {
-            // Lớp 1.1: Quầng Hào Quang Tinh Vân Vũ Trụ Sau Lưng Cổng (Ambient Nebula Backlight)
+            // Lớp 1.1: Quầng Hào Quang & Vòng Xoáy Lượng Tử Sau Lưng Cổng (Ambient Nebula Backlight & Rotating Rings)
             Canvas(
                 modifier = Modifier
-                    .size(410.dp)
+                    .size(420.dp)
                     .graphicsLayer {
                         scaleX = auraPulsate
                         scaleY = auraPulsate
@@ -139,13 +137,14 @@ fun CosmicAiMultiverseSupergalaxyView(
                 val center = Offset(size.width / 2f, size.height / 2f)
                 val maxRadius = size.width / 2f
 
+                // Quầng Tinh Vân Vũ Trụ phát quang
                 drawCircle(
                     brush = Brush.radialGradient(
                         colors = listOf(
-                            Color(0x667C3AED), // Cosmic Violet
-                            Color(0x4406B6D4), // Quantum Cyan
-                            Color(0x33FFB703), // Starlight Gold
-                            Color(0x22EC4899), // Nebula Pink
+                            Color(0x777C3AED), // Cosmic Violet
+                            Color(0x5506B6D4), // Quantum Cyan
+                            Color(0x44FFB703), // Starlight Gold
+                            Color(0x33EC4899), // Nebula Pink
                             Color.Transparent
                         ),
                         center = center,
@@ -154,6 +153,47 @@ fun CosmicAiMultiverseSupergalaxyView(
                     center = center,
                     radius = maxRadius
                 )
+
+                // Vành đai lượng tử xoay 1: Hướng thuận chiều kim đồng hồ
+                rotate(vortexRotation, pivot = center) {
+                    drawCircle(
+                        brush = Brush.sweepGradient(
+                            listOf(
+                                Color(0x9900F5D4),
+                                Color(0x668B5CF6),
+                                Color(0x99FFD700),
+                                Color(0x66FF007F),
+                                Color(0x9900F5D4)
+                            ),
+                            center = center
+                        ),
+                        radius = maxRadius * 0.94f,
+                        style = Stroke(
+                            width = 2.4.dp.toPx(),
+                            pathEffect = PathEffect.dashPathEffect(floatArrayOf(32f, 22f, 16f, 22f), 0f)
+                        )
+                    )
+                }
+
+                // Vành đai lượng tử xoay 2: Hướng ngược chiều kim đồng hồ
+                rotate(-vortexRotation * 0.72f, pivot = center) {
+                    drawCircle(
+                        brush = Brush.sweepGradient(
+                            listOf(
+                                Color(0x6651FAC1),
+                                Color(0x55C084FC),
+                                Color(0x66FBBF24),
+                                Color(0x6651FAC1)
+                            ),
+                            center = center
+                        ),
+                        radius = maxRadius * 0.84f,
+                        style = Stroke(
+                            width = 1.8.dp.toPx(),
+                            pathEffect = PathEffect.dashPathEffect(floatArrayOf(24f, 18f), 0f)
+                        )
+                    )
+                }
             }
 
             // Lớp 1.2: Khung Cổng Không Gian Lượng Tử Bo Tròn Lộng Lẫy (Hologram Portal Frame)
@@ -218,7 +258,7 @@ fun CosmicAiMultiverseSupergalaxyView(
                     )
                 }
 
-                // Huy hiệu Cổng Chiều Không Gian Ở Đỉnh Cổng
+                // Huy hiệu Cổng Chiều Không Gian Ở Đỉnh Cổng với Đèn Beacon Neon Nhấp Nháy
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier
@@ -231,7 +271,8 @@ fun CosmicAiMultiverseSupergalaxyView(
                 ) {
                     Box(
                         modifier = Modifier
-                            .size(8.dp)
+                            .size(9.dp)
+                            .scale(beaconPulse)
                             .clip(CircleShape)
                             .background(Color(0xFF00F5D4))
                     )
@@ -344,32 +385,33 @@ private fun DrawScope.drawPortalFloatingStardust(
     phase: Float,
     isLowEnd: Boolean
 ) {
-    val count = if (isLowEnd) 20 else 46
+    val count = if (isLowEnd) 24 else 48
 
     for (i in 0 until count) {
         // Tọa độ hạt phân bố đều quanh khu vực thiên hà và chú kiến Kiki
         val seedX = (sin(i * 91.3f) * 0.5f + 0.5f)
         val seedY = (cos(i * 47.7f) * 0.5f + 0.5f)
 
-        // Bay nhẹ hướng lên trên theo phase
-        val curY = ((seedY * height - phase * 60.dp.toPx() + height) % height)
-        val curX = seedX * width + sin(phase * 2f * PI.toFloat() + i) * 10.dp.toPx()
+        // Bay nhẹ hướng lên trên theo phase với độ trôi ngang hình sin
+        val curY = ((seedY * height - phase * 64.dp.toPx() + height) % height)
+        val curX = seedX * width + sin(phase * 2f * PI.toFloat() + i) * 12.dp.toPx()
 
-        // Nhấp nháy luân phiên
-        val starAlpha = 0.35f + 0.65f * (0.5f + 0.5f * sin((phase + i * 0.2f) * 2f * PI.toFloat()))
+        // Nhấp nháy sóng hài tự nhiên
+        val starAlpha = (0.35f + 0.65f * (0.5f + 0.5f * sin((phase + i * 0.22f) * 2f * PI.toFloat()))).coerceIn(0.15f, 1f)
         val starRadius = (1.4f + (i % 3) * 0.8f).dp.toPx()
 
-        val color = when (i % 4) {
-            0 -> Color(0xFF00F5D4) // Cyan
-            1 -> Color(0xFFFFD700) // Gold
-            2 -> Color(0xFFFF007F) // Magenta
+        val color = when (i % 5) {
+            0 -> Color(0xFF00F5D4) // Quantum Cyan
+            1 -> Color(0xFFFFD700) // Solar Gold
+            2 -> Color(0xFFFF007F) // Cyber Magenta
+            3 -> Color(0xFF8B5CF6) // Royal Purple
             else -> Color.White
         }
 
-        // Quầng phát sáng
+        // Quầng phát sáng đa tầng
         drawCircle(
-            color = color.copy(alpha = starAlpha * 0.4f),
-            radius = starRadius * 2.2f,
+            color = color.copy(alpha = starAlpha * 0.45f),
+            radius = starRadius * 2.4f,
             center = Offset(curX, curY)
         )
         // Tâm hạt sao
@@ -378,6 +420,24 @@ private fun DrawScope.drawPortalFloatingStardust(
             radius = starRadius,
             center = Offset(curX, curY)
         )
+
+        // Tia lóa sao 4 cánh siêu nhỏ cho các hạt sao chủ chốt
+        if (!isLowEnd && i % 4 == 0) {
+            val flareLen = starRadius * 2.6f
+            val flareColor = color.copy(alpha = starAlpha * 0.55f)
+            drawLine(
+                color = flareColor,
+                start = Offset(curX - flareLen, curY),
+                end = Offset(curX + flareLen, curY),
+                strokeWidth = 1.dp.toPx()
+            )
+            drawLine(
+                color = flareColor,
+                start = Offset(curX, curY - flareLen),
+                end = Offset(curX, curY + flareLen),
+                strokeWidth = 1.dp.toPx()
+            )
+        }
     }
 }
 
