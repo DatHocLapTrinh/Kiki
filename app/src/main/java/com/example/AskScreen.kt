@@ -300,6 +300,7 @@ fun AskScreen(viewModel: StudyViewModel) {
             if (history.isEmpty() && !isGenerating) {
                 EmptyAskState(
                     quickPrompts = quickPrompts,
+                    isEnglish = isEnglish,
                     onSelectPrompt = { prompt ->
                         haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
                         text = prompt
@@ -738,8 +739,8 @@ fun AskScreen(viewModel: StudyViewModel) {
         AlertDialog(
             onDismissRequest = { showClearConfirmDialog = false },
             containerColor = Color(0xFF14142B),
-            title = { Text("Xóa toàn bộ lịch sử?", color = Color.White, fontWeight = FontWeight.Bold) },
-            text = { Text("Tất cả các câu hỏi và giải thích AI trước đây sẽ bị xóa hoàn toàn.", color = Color(0xCCFFFFFF)) },
+            title = { Text(if (isEnglish) "Clear all history?" else "Xóa toàn bộ lịch sử?", color = Color.White, fontWeight = FontWeight.Bold) },
+            text = { Text(if (isEnglish) "All previous AI questions and explanations will be permanently deleted." else "Tất cả các câu hỏi và giải thích AI trước đây sẽ bị xóa hoàn toàn.", color = Color(0xCCFFFFFF)) },
             confirmButton = {
                 TextButton(
                     onClick = {
@@ -747,12 +748,12 @@ fun AskScreen(viewModel: StudyViewModel) {
                         showClearConfirmDialog = false
                     }
                 ) {
-                    Text("Xóa hết", color = Color(0xFFFF6B6B), fontWeight = FontWeight.Bold)
+                    Text(if (isEnglish) "Clear all" else "Xóa hết", color = Color(0xFFFF6B6B), fontWeight = FontWeight.Bold)
                 }
             },
             dismissButton = {
                 TextButton(onClick = { showClearConfirmDialog = false }) {
-                    Text("Hủy", color = Color(0xFF51FAC1))
+                    Text(if (isEnglish) "Cancel" else "Hủy", color = Color(0xFF51FAC1))
                 }
             }
         )
@@ -763,6 +764,7 @@ fun AskScreen(viewModel: StudyViewModel) {
 @Composable
 fun EmptyAskState(
     quickPrompts: List<String> = emptyList(),
+    isEnglish: Boolean = false,
     onSelectPrompt: (String) -> Unit = {},
     isImeVisible: Boolean = false
 ) {
@@ -799,7 +801,7 @@ fun EmptyAskState(
             )
             Spacer(modifier = Modifier.height(4.dp))
             Text(
-                text = "Gõ câu hỏi hoặc nói vào micro để Kiki giải đáp...",
+                text = if (isEnglish) "Type your question or speak into the mic for Kiki to explain..." else "Gõ câu hỏi hoặc nói vào micro để Kiki giải đáp...",
                 color = Color(0x99FFFFFF),
                 textAlign = androidx.compose.ui.text.style.TextAlign.Center,
                 fontSize = 12.sp

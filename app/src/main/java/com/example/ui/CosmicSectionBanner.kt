@@ -58,8 +58,15 @@ data class CosmicSectionData(
     val description: String,
     val completedCount: Int,
     val totalPlanets: Int = 10,
-    val cefrLevel: String = "A0 - A1 • Khởi Động"
-)
+    val cefrLevel: String = "A0 - A1 • Khởi Động",
+    val titleEn: String = title,
+    val descriptionEn: String = description,
+    val cefrLevelEn: String = cefrLevel
+) {
+    fun getDisplayTitle(isEnglish: Boolean): String = if (isEnglish) titleEn else title
+    fun getDisplayDescription(isEnglish: Boolean): String = if (isEnglish) descriptionEn else description
+    fun getDisplayCefrLevel(isEnglish: Boolean): String = if (isEnglish) cefrLevelEn else cefrLevel
+}
 
 /**
  * Bảng màu đặc trưng đại diện cho từng Chặng học không gian.
@@ -84,7 +91,10 @@ object CosmicSectionConfig {
             description = "Làm chủ những mẫu câu nền tảng nhất: chào hỏi, giới thiệu bản thân, gia đình, đồ vật và thời gian trong không gian vũ trụ.",
             completedCount = 0,
             totalPlanets = 10,
-            cefrLevel = "A0 - A1 • Khởi Động"
+            cefrLevel = "A0 - A1 • Khởi Động",
+            titleEn = "Solar System & Basic Communication",
+            descriptionEn = "Master foundational phrases: greetings, self-introduction, family, objects, and time across cosmic space.",
+            cefrLevelEn = "A0 - A1 • Starter"
         ),
         CosmicSectionData(
             sectionNumber = 2,
@@ -94,7 +104,10 @@ object CosmicSectionConfig {
             description = "Băng qua trạm không gian, tự tin đặt vé tàu bay, nhận phòng khách sạn, giao thông di chuyển và thưởng thức ẩm thực ngân hà.",
             completedCount = 0,
             totalPlanets = 10,
-            cefrLevel = "A2 • Đời Sống & Du Lịch"
+            cefrLevel = "A2 • Đời Sống & Du Lịch",
+            titleEn = "Andromeda Galaxy & Travel Life",
+            descriptionEn = "Traverse space stations, book flights, check in hotels, navigate transit, and savor cosmic cuisine.",
+            cefrLevelEn = "A2 • Daily Life & Travel"
         ),
         CosmicSectionData(
             sectionNumber = 3,
@@ -104,7 +117,10 @@ object CosmicSectionConfig {
             description = "Làm chủ văn phong email, điều phối cuộc họp, phỏng vấn tuyển dụng, xử lý khiếu nại và thuyết trình báo cáo dữ liệu chuyên nghiệp.",
             completedCount = 0,
             totalPlanets = 10,
-            cefrLevel = "B1 - B2 • Công Sở & Dự Án"
+            cefrLevel = "B1 - B2 • Công Sở & Dự Án",
+            titleEn = "Infinity Nebula & Workplace Life",
+            descriptionEn = "Master professional emails, meetings, interviews, handling complaints, and presenting business reports.",
+            cefrLevelEn = "B1 - B2 • Career & Projects"
         ),
         CosmicSectionData(
             sectionNumber = 4,
@@ -114,7 +130,10 @@ object CosmicSectionConfig {
             description = "Khai mở kho tàng thuật ngữ học thuật, đảo ngữ hùng biện, đàm phán hợp đồng cấp cao và tranh biện phản xạ tốc độ cao.",
             completedCount = 0,
             totalPlanets = 10,
-            cefrLevel = "C1 • Tinh Hoa & Hùng Biện"
+            cefrLevel = "C1 • Tinh Hoa & Hùng Biện",
+            titleEn = "Dark Horse Cluster & C1 Mastery",
+            descriptionEn = "Unlock academic lexicon, rhetorical inversions, executive negotiations, and high-speed debate reflexes.",
+            cefrLevelEn = "C1 • Elite & Rhetoric"
         )
     )
 
@@ -136,7 +155,10 @@ object CosmicSectionConfig {
                 description = "Chinh phục các chặng bài học nâng cao để tiến gần hơn tới đỉnh cao giao tiếp toàn diện.",
                 completedCount = completedPlanets.coerceIn(0, totalInThisSection),
                 totalPlanets = totalInThisSection,
-                cefrLevel = "C2 • Bậc Thầy Vũ Trụ"
+                cefrLevel = "C2 • Bậc Thầy Vũ Trụ",
+                titleEn = "Galaxy Section $sectionNumber: Expanding Knowledge",
+                descriptionEn = "Conquer advanced lessons to reach full English fluency mastery.",
+                cefrLevelEn = "C2 • Cosmic Master"
             )
         }
     }
@@ -243,6 +265,7 @@ object CosmicSectionConfig {
 fun CosmicSectionBanner(
     section: CosmicSectionData,
     modifier: Modifier = Modifier,
+    isEnglish: Boolean = false,
     onClick: (() -> Unit)? = null
 ) {
     val progress = (section.completedCount.toFloat() / section.totalPlanets.coerceAtLeast(1)).coerceIn(0f, 1f)
@@ -306,7 +329,11 @@ fun CosmicSectionBanner(
                 ) {
                     // Tag tiêu đề nhỏ: "CHẶNG X • HÀNH TINH A - B"
                     Text(
-                        text = "CHẶNG ${section.sectionNumber} • HÀNH TINH ${section.startPlanet} - ${section.endPlanet}".uppercase(),
+                        text = if (isEnglish) {
+                            "SECTION ${section.sectionNumber} • PLANETS ${section.startPlanet} - ${section.endPlanet}".uppercase()
+                        } else {
+                            "CHẶNG ${section.sectionNumber} • HÀNH TINH ${section.startPlanet} - ${section.endPlanet}".uppercase()
+                        },
                         color = animatedPrimary,
                         fontSize = 11.sp,
                         fontWeight = FontWeight.ExtraBold,
@@ -317,7 +344,7 @@ fun CosmicSectionBanner(
 
                     // Tiêu đề trọng tâm của chặng
                     Text(
-                        text = section.title,
+                        text = section.getDisplayTitle(isEnglish),
                         color = Color.White,
                         fontSize = 15.sp,
                         fontWeight = FontWeight.Bold,
@@ -355,7 +382,7 @@ fun CosmicSectionBanner(
                         Spacer(modifier = Modifier.width(8.dp))
 
                         Text(
-                            text = "${section.completedCount}/${section.totalPlanets} hoàn thành",
+                            text = if (isEnglish) "${section.completedCount}/${section.totalPlanets} completed" else "${section.completedCount}/${section.totalPlanets} hoàn thành",
                             color = Color(0xCCFFFFFF),
                             fontSize = 11.sp,
                             fontWeight = FontWeight.SemiBold
@@ -379,6 +406,7 @@ fun CosmicMilestoneDivider(
     completedInPrev: Int = 10,
     totalInPrev: Int = 10,
     isChestClaimed: Boolean = false,
+    isEnglish: Boolean = false,
     onClaimChest: (() -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
@@ -461,7 +489,7 @@ fun CosmicMilestoneDivider(
                     Column(modifier = Modifier.weight(1f)) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Text(
-                                text = "CỔNG DỊCH CHUYỂN • CHẶNG $sectionNum".uppercase(),
+                                text = if (isEnglish) "STARGATE • SECTION $sectionNum".uppercase() else "CỔNG DỊCH CHUYỂN • CHẶNG $sectionNum".uppercase(),
                                 color = if (isUnlocked) palette.primaryColor else Color(0x88FFFFFF),
                                 fontSize = 10.sp,
                                 fontWeight = FontWeight.ExtraBold,
@@ -475,7 +503,7 @@ fun CosmicMilestoneDivider(
                                     .padding(horizontal = 5.dp, vertical = 1.dp)
                             ) {
                                 Text(
-                                    text = sectionData.cefrLevel.split("•").firstOrNull()?.trim() ?: "A2",
+                                    text = sectionData.getDisplayCefrLevel(isEnglish).split("•").firstOrNull()?.trim() ?: "A2",
                                     color = if (isUnlocked) palette.primaryColor else Color(0x99FFFFFF),
                                     fontSize = 9.sp,
                                     fontWeight = FontWeight.Bold
@@ -486,7 +514,7 @@ fun CosmicMilestoneDivider(
                         Spacer(modifier = Modifier.height(2.dp))
 
                         Text(
-                            text = sectionData.title,
+                            text = sectionData.getDisplayTitle(isEnglish),
                             color = if (isUnlocked) Color.White else Color(0xB3FFFFFF),
                             fontSize = 13.sp,
                             fontWeight = FontWeight.Bold,
@@ -497,7 +525,11 @@ fun CosmicMilestoneDivider(
                         Spacer(modifier = Modifier.height(2.dp))
 
                         Text(
-                            text = if (isUnlocked) "✨ Cổng đã mở • Sẵn sàng du hành" else "🔒 Cần hoàn thành ${totalInPrev - completedInPrev} hành tinh nữa ở Chặng ${sectionNum - 1}",
+                            text = if (isUnlocked) {
+                                if (isEnglish) "✨ Stargate open • Ready to explore" else "✨ Cổng đã mở • Sẵn sàng du hành"
+                            } else {
+                                if (isEnglish) "🔒 Complete ${totalInPrev - completedInPrev} more planets in Section ${sectionNum - 1}" else "🔒 Cần hoàn thành ${totalInPrev - completedInPrev} hành tinh nữa ở Chặng ${sectionNum - 1}"
+                            },
                             color = if (isUnlocked) palette.secondaryColor else Color(0x88FFFFFF),
                             fontSize = 10.5.sp,
                             fontWeight = FontWeight.Normal
@@ -532,7 +564,7 @@ fun CosmicMilestoneDivider(
                                 )
                                 Spacer(modifier = Modifier.width(4.dp))
                                 Text(
-                                    text = if (!isChestClaimed) "+100 XP" else "Đã nhận",
+                                    text = if (!isChestClaimed) "+100 XP" else (if (isEnglish) "Claimed" else "Đã nhận"),
                                     color = if (!isChestClaimed) Color(0xFF0F172A) else Color(0xCCFFFFFF),
                                     fontSize = 10.sp,
                                     fontWeight = FontWeight.Black

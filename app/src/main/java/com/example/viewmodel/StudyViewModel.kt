@@ -105,9 +105,13 @@ class StudyViewModel @Inject constructor(
     private val _history = MutableLiveData<List<QAItem>>(emptyList())
     val history: LiveData<List<QAItem>> = _history
 
-    private val _isEnglish = MutableLiveData(false)
+    private val initialIsEnglish: Boolean = prefs.getBoolean("english", false)
+    private val _isEnglish = MutableLiveData(initialIsEnglish)
     val isEnglish: LiveData<Boolean> = _isEnglish
-    fun setEnglish(isEnglish: Boolean) { _isEnglish.value = isEnglish }
+    fun setEnglish(isEnglish: Boolean) {
+        prefs.edit().putBoolean("english", isEnglish).apply()
+        _isEnglish.value = isEnglish
+    }
 
     private val _kikiExplorerSection = MutableLiveData(KikiExplorerSection.PROFILE)
     val kikiExplorerSection: LiveData<KikiExplorerSection> = _kikiExplorerSection

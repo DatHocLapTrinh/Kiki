@@ -88,6 +88,20 @@ enum class LeagueTier(
         }
     }
 
+    fun getTitle(isEnglish: Boolean): String = if (isEnglish) "$tierName League" else vietnameseTitle
+
+    fun getSubtitle(isEnglish: Boolean): String = if (isEnglish) {
+        when (this) {
+            BRONZE -> "Curious Explorer"
+            SILVER -> "Diligent Scholar"
+            GOLD -> "Distinguished Academic"
+            PLATINUM -> "Master Graduate"
+            DIAMOND -> "Grand Cosmic Sage"
+        }
+    } else {
+        subtitle
+    }
+
     companion object {
         fun fromString(value: String?): LeagueTier {
             if (value.isNullOrBlank()) return BRONZE

@@ -61,6 +61,7 @@ import com.example.JourneyStageUiModel
 fun CosmicSectionSelectorDialog(
     currentSectionNumber: Int,
     stages: List<JourneyStageUiModel>,
+    isEnglish: Boolean = false,
     onSelectSection: (sectionNumber: Int) -> Unit,
     onDismiss: () -> Unit
 ) {
@@ -156,7 +157,7 @@ fun CosmicSectionSelectorDialog(
 
                         Column(modifier = Modifier.weight(1f)) {
                             Text(
-                                text = "CỔNG DỊCH CHUYỂN NGÂN HÀ 🛸",
+                                text = if (isEnglish) "COSMIC STARGATE 🛸" else "CỔNG DỊCH CHUYỂN NGÂN HÀ 🛸",
                                 color = Color(0xFF00F5D4),
                                 fontSize = 15.sp,
                                 fontWeight = FontWeight.ExtraBold,
@@ -164,7 +165,7 @@ fun CosmicSectionSelectorDialog(
                             )
                             Spacer(modifier = Modifier.height(2.dp))
                             Text(
-                                text = "Lộ trình 4 Chặng Không Gian • 40 Hành Tinh",
+                                text = if (isEnglish) "Roadmap of 4 Cosmic Sections • 40 Planets" else "Lộ trình 4 Chặng Không Gian • 40 Hành Tinh",
                                 color = Color(0xB3FFFFFF),
                                 fontSize = 12.sp,
                                 fontWeight = FontWeight.Normal
@@ -183,7 +184,7 @@ fun CosmicSectionSelectorDialog(
                         ) {
                             Icon(
                                 imageVector = Icons.Default.Close,
-                                contentDescription = "Đóng",
+                                contentDescription = if (isEnglish) "Close" else "Đóng",
                                 tint = Color.White,
                                 modifier = Modifier.size(18.dp)
                             )
@@ -208,14 +209,14 @@ fun CosmicSectionSelectorDialog(
                                 horizontalArrangement = Arrangement.SpaceBetween
                             ) {
                                 Text(
-                                    text = "TIẾN ĐỘ CHINH PHỤC VŨ TRỤ",
+                                    text = if (isEnglish) "COSMIC CONQUEST PROGRESS" else "TIẾN ĐỘ CHINH PHỤC VŨ TRỤ",
                                     color = Color(0xFF00F5D4),
                                     fontSize = 10.sp,
                                     fontWeight = FontWeight.ExtraBold,
                                     letterSpacing = 0.6.sp
                                 )
                                 Text(
-                                    text = "$totalCompleted/40 Hành Tinh (${(overallProgress * 100).toInt()}%)",
+                                    text = if (isEnglish) "$totalCompleted/40 Planets (${(overallProgress * 100).toInt()}%)" else "$totalCompleted/40 Hành Tinh (${(overallProgress * 100).toInt()}%)",
                                     color = Color.White,
                                     fontSize = 11.sp,
                                     fontWeight = FontWeight.Bold
@@ -243,7 +244,7 @@ fun CosmicSectionSelectorDialog(
                                                 )
                                             )
                                         )
-                                )
+                                    )
                             }
                         }
                     }
@@ -264,6 +265,7 @@ fun CosmicSectionSelectorDialog(
                                 section = sectionData,
                                 isCurrent = (sectionData.sectionNumber == currentSectionNumber),
                                 isUnlocked = isUnlocked,
+                                isEnglish = isEnglish,
                                 onSelect = {
                                     haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
                                     onSelectSection(sectionData.sectionNumber)
@@ -285,7 +287,7 @@ fun CosmicSectionSelectorDialog(
                             .padding(horizontal = 12.dp, vertical = 8.dp)
                     ) {
                         Text(
-                            text = "💡 Mỗi chặng vũ trụ gồm 10 hành tinh với các bài học vi mô thích ứng thông minh, giúp bạn duy trì phản xạ tiếng Anh mỗi ngày.",
+                            text = if (isEnglish) "💡 Each cosmic section contains 10 planets with adaptive micro-lessons to maintain your English reflexes every day." else "💡 Mỗi chặng vũ trụ gồm 10 hành tinh với các bài học vi mô thích ứng thông minh, giúp bạn duy trì phản xạ tiếng Anh mỗi ngày.",
                             color = Color(0xCC00F5D4),
                             fontSize = 11.sp,
                             lineHeight = 15.sp,
@@ -304,6 +306,7 @@ private fun CosmicSectionCard(
     section: CosmicSectionData,
     isCurrent: Boolean,
     isUnlocked: Boolean,
+    isEnglish: Boolean = false,
     onSelect: () -> Unit
 ) {
     val palette = remember(section.sectionNumber) {
@@ -355,7 +358,7 @@ private fun CosmicSectionCard(
                 ) {
                     // Tag số chặng và hành tinh
                     Text(
-                        text = "CHẶNG ${section.sectionNumber} • HÀNH TINH ${section.startPlanet} - ${section.endPlanet}".uppercase(),
+                        text = if (isEnglish) "SECTION ${section.sectionNumber} • PLANETS ${section.startPlanet} - ${section.endPlanet}".uppercase() else "CHẶNG ${section.sectionNumber} • HÀNH TINH ${section.startPlanet} - ${section.endPlanet}".uppercase(),
                         color = if (isUnlocked) palette.primaryColor else Color(0x88FFFFFF),
                         fontSize = 11.sp,
                         fontWeight = FontWeight.ExtraBold,
@@ -371,7 +374,7 @@ private fun CosmicSectionCard(
                             .padding(horizontal = 8.dp, vertical = 2.dp)
                     ) {
                         Text(
-                            text = section.cefrLevel,
+                            text = section.getDisplayCefrLevel(isEnglish),
                             color = if (isUnlocked) palette.primaryColor else Color(0x99FFFFFF),
                             fontSize = 10.sp,
                             fontWeight = FontWeight.Bold
@@ -383,7 +386,7 @@ private fun CosmicSectionCard(
 
                 // Tiêu đề chặng
                 Text(
-                    text = section.title,
+                    text = section.getDisplayTitle(isEnglish),
                     color = if (isUnlocked) Color.White else Color(0xB3FFFFFF),
                     fontSize = 15.sp,
                     fontWeight = FontWeight.Bold,
@@ -394,7 +397,7 @@ private fun CosmicSectionCard(
 
                 // Mô tả chặng
                 Text(
-                    text = section.description,
+                    text = section.getDisplayDescription(isEnglish),
                     color = Color(0xB3FFFFFF),
                     fontSize = 12.sp,
                     lineHeight = 16.sp
@@ -458,7 +461,7 @@ private fun CosmicSectionCard(
                                 .padding(horizontal = 10.dp, vertical = 6.dp)
                         ) {
                             Text(
-                                text = "🚀 ĐANG Ở CHẶNG NÀY",
+                                text = if (isEnglish) "🚀 CURRENT SECTION" else "🚀 ĐANG Ở CHẶNG NÀY",
                                 color = Color(0xFF34D399),
                                 fontSize = 11.sp,
                                 fontWeight = FontWeight.Bold
@@ -482,7 +485,7 @@ private fun CosmicSectionCard(
                                 )
                                 Spacer(modifier = Modifier.width(4.dp))
                                 Text(
-                                    text = "CHƯA MỞ KHÓA",
+                                    text = if (isEnglish) "LOCKED" else "CHƯA MỞ KHÓA",
                                     color = Color(0x99FFFFFF),
                                     fontSize = 10.sp,
                                     fontWeight = FontWeight.Bold
@@ -519,9 +522,9 @@ private fun CosmicSectionCard(
                             Spacer(modifier = Modifier.width(4.dp))
                             Text(
                                 text = when {
-                                    !isUnlocked -> "Xem trước chặng"
-                                    section.completedCount == section.totalPlanets -> "Xem lại chặng"
-                                    else -> "Du hành tới chặng"
+                                    !isUnlocked -> if (isEnglish) "Preview Section" else "Xem trước chặng"
+                                    section.completedCount == section.totalPlanets -> if (isEnglish) "Review Section" else "Xem lại chặng"
+                                    else -> if (isEnglish) "Travel to Section" else "Du hành tới chặng"
                                 },
                                 color = if (isUnlocked) Color(0xFF0F0C20) else Color.White,
                                 fontSize = 11.sp,

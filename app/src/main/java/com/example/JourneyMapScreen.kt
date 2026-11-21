@@ -226,6 +226,7 @@ fun JourneyMapScreen(
 
                 CosmicSectionBanner(
                     section = currentSectionData,
+                    isEnglish = isEnglish,
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(98.dp),
@@ -334,6 +335,7 @@ fun JourneyMapScreen(
             CosmicSectionSelectorDialog(
                 currentSectionNumber = activeSectionNum,
                 stages = stages,
+                isEnglish = isEnglish,
                 onSelectSection = { targetSectionNum ->
                     showSectionSelector = false
                     if (stages.isNotEmpty()) {
@@ -353,6 +355,7 @@ fun JourneyMapScreen(
         sectionCompletionEvent?.let { secEvent ->
             CosmicSectionCompletedDialog(
                 event = secEvent,
+                isEnglish = isEnglish,
                 onExploreNextSection = { nextSecNum ->
                     viewModel.claimSectionChest(secEvent.completedSectionNumber)
                     viewModel.clearSectionCompletionEvent()
@@ -703,6 +706,7 @@ private fun JourneyPath(
                             completedInPrev = completedInPrev,
                             totalInPrev = if (prevSectionStages.isNotEmpty()) prevSectionStages.size else 10,
                             isChestClaimed = isChestClaimed,
+                            isEnglish = isEnglish,
                             onClaimChest = {
                                 onClaimSectionChest?.invoke(nextSectionNum - 1)
                             },
