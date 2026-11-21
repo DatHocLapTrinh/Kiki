@@ -23,6 +23,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AutoAwesome
+import androidx.compose.material.icons.filled.Explore
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.RocketLaunch
 import androidx.compose.material3.Card
@@ -386,6 +387,34 @@ fun CosmicSectionBanner(
                             color = Color(0xCCFFFFFF),
                             fontSize = 11.sp,
                             fontWeight = FontWeight.SemiBold
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.width(10.dp))
+
+                // Nút Cổng Dịch Chuyển Ngân Hà (Mở hộp thoại chọn nhanh giữa 4 chặng)
+                Box(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(14.dp))
+                        .background(animatedPrimary.copy(alpha = 0.16f))
+                        .border(1.2.dp, animatedPrimary.copy(alpha = 0.5f), RoundedCornerShape(14.dp))
+                        .padding(horizontal = 9.dp, vertical = 7.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            imageVector = Icons.Default.Explore,
+                            contentDescription = "Cosmic Stargate",
+                            tint = animatedPrimary,
+                            modifier = Modifier.size(15.dp)
+                        )
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text(
+                            text = if (isEnglish) "Chặng 1-4 🌌" else "Chặng 1-4 🌌",
+                            color = Color.White,
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.ExtraBold
                         )
                     }
                 }
