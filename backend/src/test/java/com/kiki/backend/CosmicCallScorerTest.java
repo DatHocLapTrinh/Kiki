@@ -54,6 +54,19 @@ class CosmicCallScorerTest {
     }
 
     @Test
+    void testDontKnowOrEvasion_CapsScoreAt25() {
+        assertTrue(scorer.isDontKnowOrEvasion("no I don't know either"));
+        assertTrue(scorer.isDontKnowOrEvasion("i don't know"));
+        assertTrue(scorer.isDontKnowOrEvasion("no i dont know"));
+        assertTrue(scorer.isDontKnowOrEvasion("i have no idea"));
+        assertTrue(scorer.isDontKnowOrEvasion("I'm not sure"));
+
+        // Người dùng nói "no I don't know either", AI chấm 78 điểm -> Scorer phải hạ xuống <= 25 điểm
+        int calibrated = scorer.calibrateScore(78, "What do you like to do on weekends?", "no I don't know either");
+        assertTrue(calibrated <= 25, "Score must be <= 25 for 'no I don't know either', but was " + calibrated);
+    }
+
+    @Test
     void testRelevantAndFluentAnswer_MaintainsHighScore() {
         String question = "What is your name?";
         String answer = "Hello Kiki, my name is Truong";

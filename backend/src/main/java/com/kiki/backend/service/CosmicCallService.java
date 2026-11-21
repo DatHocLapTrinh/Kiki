@@ -59,6 +59,22 @@ public class CosmicCallService {
             learnerGivenName = "Learner";
         }
 
+        // 3. Kiểm tra nếu người học nói "I don't know", "No I don't know either", "I have no idea"
+        if (cosmicCallScorer.isDontKnowOrEvasion(sanitizedUserAnswer)) {
+            log.info("Cosmic Call: Learner said 'I don't know' or evasion ('{}'). Scoring 25 points with supportive guidance.", sanitizedUserAnswer);
+            String starter = deriveContextualStarter(request.currentQuestion() != null ? request.currentQuestion() : "");
+            return new CosmicCallResponse(
+                25,
+                "That's okay if you don't know, " + learnerGivenName + "! Let's practice with the example starter together.",
+                "Đừng lo lắng nếu bạn chưa rõ câu trả lời nhé! Kiki đã chuẩn bị câu gợi ý bên dưới để bạn học và luyện tập nào. 💡",
+                "Try saying: \"" + starter + "\"",
+                request.currentQuestion() != null ? request.currentQuestion() : "What is your favorite hobby to relax?",
+                "Xem câu gợi ý mẫu và luyện nói lại nhé.",
+                starter,
+                sanitizedUserAnswer
+            );
+        }
+
         try {
             String systemPrompt = String.format("""
                 You are Kiki, an enthusiastic, honest and pedagogical AI English Tutor in the Kiki Cosmic Universe.
@@ -67,7 +83,7 @@ public class CosmicCallService {
                 STRICT PEDAGOGICAL PRINCIPLES:
                 1. HONEST & ACCURATE SCORING (0 to 100 scale):
                    - 0: Silence, no words spoken.
-                   - 10 to 35: Completely incorrect, irrelevant, off-topic (e.g. asked for name but answered about weather/food), nonsense, or gibberish.
+                   - 10 to 35: Completely incorrect, irrelevant, off-topic (e.g. asked for name but answered about weather/food), nonsense, evasion, or saying 'I don't know'.
                    - 40 to 59: Fragmented, severe grammar errors, or single isolated word without sentence structure.
                    - 60 to 79: Relevant and communicative; directly answers the question with minor grammar slips.
                    - 80 to 89: Good, fluent, natural and grammatically correct.
@@ -82,7 +98,9 @@ public class CosmicCallService {
 
                 3. PEDAGOGICAL VOICE FLOW:
                    - spokenFeedbackEn: A natural, concise English response (10-25 words) that Kiki will speak aloud through Text-To-Speech. It must sound conversational, warm, address the learner by name (%s), and honestly critique or praise them.
-                   - feedbackVi: An encouraging Vietnamese explanation (1-2 sentences). If score >= 65, start with enthusiastic praise ('Tuyệt vời lắm %s! 🌟', 'Rất xuất sắc! 👏'). If score < 65, give constructive correction ('Câu trả lời chưa đúng trọng tâm hoặc sai ngữ pháp, bạn xem gợi ý bên dưới nhé! 💡').
+                   - feedbackVi: An encouraging Vietnamese explanation (1-2 sentences).
+                     * IF score >= 65: Enthusiastic praise ('Tuyệt vời lắm %s! 🌟', 'Rất xuất sắc! 👏').
+                     * IF score < 65: Constructive correction ('Câu trả lời chưa đúng trọng tâm hoặc sai ngữ pháp, bạn xem gợi ý bên dưới nhé! 💡'). NEVER praise a wrong or off-topic answer with 'Tuyệt vời lắm'!
                    - grammarCorrection: The most natural, native-sounding English version of their sentence.
                    - nextQuestionEn: Exactly 1 natural follow-up question that smoothly continues the current conversation topic. Keep it focused, clear, and relevant.
                    - nextHintVi: A short Vietnamese hint (5-10 words) to help the student formulate their answer.
@@ -134,7 +152,7 @@ public class CosmicCallService {
             JsonNode root = objectMapper.readTree(cleanJson);
             int rawScore = root.path("score").asInt(50);
 
-            // Kiểm định và hiệu chỉnh điểm số bằng Java (loại bỏ hoàn toàn tình trạng chấm 70-72 điểm cho câu nói sai hoặc lạc đề)
+            // Kiểm định và hiệu chỉnh điểm số bằng Java (loại bỏ hoàn toàn tình trạng chấm 70-78 điểm cho câu nói sai hoặc lạc đề)
             int calibratedScore = cosmicCallScorer.calibrateScore(rawScore, request.currentQuestion(), sanitizedUserAnswer);
 
             String spokenFeedbackEn = root.path("spokenFeedbackEn").asText("").trim();
@@ -145,6 +163,12 @@ public class CosmicCallService {
             }
 
             String feedbackVi = root.path("feedbackVi").asText("").trim();
+            if (calibratedScore < 60) {
+                // Bảo vệ sư phạm: Không để AI khen "Tuyệt vời lắm" khi điểm dưới 60
+                if (feedbackVi.contains("Tuyệt vời") || feedbackVi.contains("xuất sắc") || feedbackVi.contains("Rất tốt")) {
+                    feedbackVi = "Câu trả lời chưa đúng trọng tâm hoặc sai ngữ pháp. Bạn xem câu gợi ý bên dưới để hoàn thiện nhé! 💡";
+                }
+            }
             if (feedbackVi.isEmpty()) {
                 feedbackVi = calibratedScore >= 65
                     ? "Phản xạ rất tốt " + learnerGivenName + "! Câu trả lời thể hiện sự tự tin và diễn đạt tự nhiên."

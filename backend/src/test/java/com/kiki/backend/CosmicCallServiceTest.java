@@ -90,6 +90,27 @@ class CosmicCallServiceTest {
     }
 
     @Test
+    void testConverseAndEvaluate_NoIDontKnowEither_ReturnsScore25AndNoMisleadingPraise() {
+        CosmicCallRequest request = new CosmicCallRequest(
+            "no I don't know either",
+            "What do you usually do to relax on weekends?",
+            "Andromeda: Daily Life",
+            "A2 Elementary",
+            Collections.emptyList(),
+            "Truong",
+            null
+        );
+
+        CosmicCallResponse response = cosmicCallService.converseAndEvaluate(request);
+
+        assertNotNull(response);
+        assertEquals(25, response.score());
+        assertFalse(response.feedbackVi().contains("Tuyệt vời"));
+        assertFalse(response.feedbackVi().contains("đúng trọng tâm"));
+        assertTrue(response.feedbackVi().contains("Đừng lo lắng"));
+    }
+
+    @Test
     void testConverseAndEvaluate_SuccessWithVietnameseName() throws IOException {
         String mockAiJson = """
             {

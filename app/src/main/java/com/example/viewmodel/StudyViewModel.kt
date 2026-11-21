@@ -1932,34 +1932,67 @@ class StudyViewModel @Inject constructor(
         } catch (_: Exception) {}
 
         // 2. Fallback: Gọi Gemini/Groq client-side nếu backend chưa bật
+        val lowerAns = trimmed.lowercase(Locale.ROOT)
+            .replace("'", "")
+            .replace("’", "")
+            .trim()
+        val isDontKnow = lowerAns == "i dont know" || lowerAns == "i do not know" ||
+            lowerAns.contains("dont know") || lowerAns.contains("dont know either") ||
+            lowerAns.contains("have no idea") || lowerAns.contains("not sure") ||
+            lowerAns.contains("no idea") || lowerAns.contains("no clue") ||
+            lowerAns == "idk" || lowerAns == "nothing"
+
+        if (isDontKnow) {
+            return com.example.model.CosmicCallResponse(
+                score = 25,
+                spokenFeedbackEn = "That's okay if you don't know! Let's practice with the example sentence together.",
+                feedbackVi = "Đừng lo lắng nếu bạn chưa rõ câu trả lời nhé! Kiki đã chuẩn bị câu gợi ý bên dưới để bạn học và luyện tập nào. 💡",
+                grammarCorrection = "For example: \"I usually relax by listening to music.\"",
+                nextQuestionEn = question,
+                nextHintVi = "Xem câu mẫu và luyện nói lại nhé.",
+                suggestedStarterEn = "For me, I usually...",
+                sanitizedUserAnswer = trimmed
+            )
+        }
+
         val apiKey = getEffectiveUniversalApiKey()
         if (apiKey.isNotBlank()) {
             try {
                 val prompt = """
-                    You are Kiki, an encouraging AI English Tutor in a 1-1 phone call with a Vietnamese learner.
+                    You are Kiki, an honest, encouraging and pedagogical AI English Tutor in a 1-1 phone call with a Vietnamese learner.
                     Learner is practicing English speaking.
-                    NOTE: Learner is Vietnamese. ASR speech recognition might mishear Vietnamese names (e.g. 'Trường' transcribed as 'John' or 'Sean'). Never penalize Vietnamese names or ASR artifacts!
                     
                     Topic/Planet: $planetName
                     Kiki's question: "$question"
                     Learner's answer: "$trimmed"
                     
+                    STRICT SCORING GUIDELINES (0 to 100 scale):
+                    - 0 to 35: Learner avoided answering, said "I don't know", spoke off-topic, or gave a completely incorrect answer. FEEDBACK_VI MUST NOT praise them with 'Tuyệt vời', explain constructive correction!
+                    - 40 to 59: Fragmented, major grammar errors, or single-word cộc lốc answer.
+                    - 60 to 79: Relevant and understandable with minor grammar mistakes.
+                    - 80 to 89: Good, fluent, natural and grammatically correct.
+                    - 90 to 100: Excellent, elaborate and native-like.
+                    
                     Respond strictly in this exact format (no markdown, no extra lines):
-                    SCORE: [65 to 100]
-                    SPOKEN_EN: [Encouraging, natural English sentence for Kiki to speak aloud, 10-20 words]
-                    FEEDBACK_VI: [Warm encouraging compliment like 'Tuyệt vời lắm! 🌟' or 'Rất xuất sắc! 👏', followed by 1 pedagogical tip in Vietnamese]
+                    SCORE: [0 to 100]
+                    SPOKEN_EN: [English sentence for Kiki to speak aloud, 10-20 words]
+                    FEEDBACK_VI: [Pedagogical note in Vietnamese matching the score. If score < 60, point out the error gently, NEVER say 'Tuyệt vời']
                     GRAMMAR: [Natural corrected English sentence]
                     NEXT_Q: [1 context-aware follow-up question in English continuing the conversation]
                     NEXT_HINT: [Short Vietnamese hint for next question]
-                    STARTER: [Contextual 3-7 word sentence starter tailored directly for next question, e.g. 'My favorite food is...', 'I usually relax by...']
+                    STARTER: [Contextual 3-7 word sentence starter tailored directly for next question]
                 """.trimIndent()
 
                 val rawAnswer = fetchAnswerFromAI(context, prompt, null)
-                val score = Regex("SCORE:\\s*(\\d+)").find(rawAnswer)?.groupValues?.get(1)?.toIntOrNull()?.coerceIn(60, 100) ?: 85
+                val rawScore = Regex("SCORE:\\s*(\\d+)").find(rawAnswer)?.groupValues?.get(1)?.toIntOrNull() ?: 50
+                val score = rawScore.coerceIn(0, 100)
                 val spokenEn = Regex("SPOKEN_EN:\\s*(.+)").find(rawAnswer)?.groupValues?.get(1)?.trim()
-                    ?: "Great job! That was very clear and expressive."
-                val feedbackVi = Regex("FEEDBACK_VI:\\s*(.+)").find(rawAnswer)?.groupValues?.get(1)?.trim()
-                    ?: "🌟 Rất tốt! Bạn nói câu rõ ý và tự tin, phát âm ngày càng tiến bộ."
+                    ?: if (score >= 60) "Great job! That was very clear and expressive." else "That was not quite right. Let's try again!"
+                var feedbackVi = Regex("FEEDBACK_VI:\\s*(.+)").find(rawAnswer)?.groupValues?.get(1)?.trim()
+                    ?: if (score >= 60) "🌟 Rất tốt! Bạn nói câu rõ ý và tự tin, phát âm ngày càng tiến bộ." else "Câu trả lời chưa đúng trọng tâm hoặc sai ngữ pháp. Bạn xem câu mẫu bên dưới nhé! 💡"
+                if (score < 60 && (feedbackVi.contains("Tuyệt vời") || feedbackVi.contains("xuất sắc") || feedbackVi.contains("Rất tốt"))) {
+                    feedbackVi = "Câu trả lời chưa đúng trọng tâm hoặc sai ngữ pháp. Bạn xem câu gợi ý bên dưới để hoàn thiện nhé! 💡"
+                }
                 val grammar = Regex("GRAMMAR:\\s*(.+)").find(rawAnswer)?.groupValues?.get(1)?.trim() ?: trimmed
                 val nextQ = Regex("NEXT_Q:\\s*(.+)").find(rawAnswer)?.groupValues?.get(1)?.trim()
                     ?: "What else do you enjoy doing every day?"

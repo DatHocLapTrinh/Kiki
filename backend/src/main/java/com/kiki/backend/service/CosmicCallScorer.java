@@ -10,8 +10,8 @@ import java.util.Set;
 /**
  * Bộ chấm điểm sư phạm chặt chẽ cho đàm thoại 1-1 bằng Java:
  * - 0 điểm: Người dùng chưa nói / im lặng / chuỗi rỗng / chỉ có tiếng thở
- * - 15 - 35 điểm: Nói sai câu hỏi, lạc đề, từ vô nghĩa, hoặc tiếng Việt không liên quan
- * - 40 - 59 điểm: Nói ngắt quãng, sai ngữ pháp nặng hoặc câu cụt 1 từ
+ * - 20 - 30 điểm: Nói "I don't know", "No I don't know either", từ chối trả lời, hoặc lạc đề/sai hoàn toàn
+ * - 40 - 55 điểm: Nói ngắt quãng, sai ngữ pháp nặng hoặc câu cụt 1 từ
  * - 60 - 79 điểm: Nói đúng trọng tâm, hiểu được, còn vài lỗi ngữ pháp nhỏ
  * - 80 - 89 điểm: Nói đúng, lưu loát, tự nhiên
  * - 90 - 100 điểm: Xuất sắc, cấu trúc câu đa dạng, phát âm rõ ràng
@@ -26,6 +26,18 @@ public class CosmicCallScorer {
         "uh", "um", "ah", "er", "hmm", "eh", "oh", "ha", "huh", "asdf", "blabla", "...", "abc"
     );
 
+    // Các mẫu câu từ chối trả lời / "Tôi không biết" (Evasion phrases)
+    private static final Set<String> DONT_KNOW_PHRASES = Set.of(
+        "i don't know", "i dont know", "i do not know",
+        "no i don't know", "no i dont know", "no i do not know",
+        "no i don't know either", "no i dont know either", "i don't know either", "i dont know either",
+        "i have no idea", "no idea", "have no idea",
+        "i'm not sure", "i am not sure", "not sure",
+        "i don't remember", "i dont remember",
+        "i don't understand", "i dont understand",
+        "no clue", "idk", "nothing"
+    );
+
     /**
      * Kiểm tra xem câu trả lời có hoàn toàn trống / im lặng không
      */
@@ -36,6 +48,28 @@ public class CosmicCallScorer {
         // Loại bỏ ký tự đặc biệt, kiểm tra xem có ký tự chữ cái/số thực sự không
         String cleaned = trimmed.replaceAll("[^a-zA-Z0-9àáạảãâầấậẩẫăằắặẳẵèéẹẻẽêềếệểễìíịỉĩòóọỏõôồốộổỗơờớợởỡùúụủũưừứựửữỳýỵỷỹđÀÁẠẢÃÂẦẤẬẨẪĂẰẮẶẲẴÈÉẸẺẼÊỀẾỆỂỄÌÍỊỈĨÒÓỌỎÕÔỒỐỘỔỖƠỜỚỢỞỠÙÚỤỦŨƯỪỨỰỬỮỲÝỴỶỸĐ]", "");
         return cleaned.isEmpty();
+    }
+
+    /**
+     * Kiểm tra xem câu trả lời có phải là từ chối trả lời ("Tôi không biết", "No I don't know either") không
+     */
+    public boolean isDontKnowOrEvasion(String text) {
+        if (text == null) return false;
+        String normalized = text.trim().toLowerCase(Locale.ROOT)
+            .replaceAll("['’]", "")
+            .replaceAll("[^a-z0-9\\s]", " ")
+            .replaceAll("\\s+", " ")
+            .trim();
+
+        if (normalized.isEmpty()) return false;
+
+        for (String phrase : DONT_KNOW_PHRASES) {
+            String cleanPhrase = phrase.replaceAll("['’]", "");
+            if (normalized.equals(cleanPhrase) || normalized.startsWith(cleanPhrase) || normalized.endsWith(cleanPhrase)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /**
@@ -57,7 +91,7 @@ public class CosmicCallScorer {
     }
 
     /**
-     * Hiệu chỉnh và bảo vệ điểm số, loại bỏ hoàn toàn tình trạng chấm nới 70-72 điểm cho câu nói sai hoặc không nói gì
+     * Hiệu chỉnh và bảo vệ điểm số, loại bỏ hoàn toàn tình trạng chấm nới 70-78 điểm cho câu nói sai hoặc "I don't know"
      *
      * @param rawAiScore Điểm do AI sinh ra (nếu có)
      * @param question   Câu hỏi của Kiki
@@ -71,7 +105,13 @@ public class CosmicCallScorer {
             return 0;
         }
 
-        // 2. Nếu chỉ có tiếng ồn hoặc từ đệm rỗng -> 15 điểm
+        // 2. Nếu người học nói "I don't know", "No I don't know either" -> Chặn trần điểm tối đa 25 điểm
+        if (isDontKnowOrEvasion(answer)) {
+            log.info("CosmicCallScorer: Evasion/Don't know detected ('{}') -> capped at 25 points", answer);
+            return Math.min(rawAiScore, 25);
+        }
+
+        // 3. Nếu chỉ có tiếng ồn hoặc từ đệm rỗng -> 15 điểm
         if (isGibberishOrPureNoise(answer)) {
             log.info("CosmicCallScorer: Gibberish or pure noise detected -> 15 points");
             return 15;
@@ -81,14 +121,14 @@ public class CosmicCallScorer {
         String lowerAns = answer.toLowerCase(Locale.ROOT);
         String lowerQ = question != null ? question.toLowerCase(Locale.ROOT) : "";
 
-        // 3. Kiểm tra tính liên quan (Relevance) với câu hỏi:
+        // 4. Kiểm tra tính liên quan (Relevance) với câu hỏi:
         boolean isOffTopic = checkOffTopic(lowerQ, lowerAns);
         if (isOffTopic) {
             log.info("CosmicCallScorer: Off-topic answer detected ('{}' vs Q: '{}') -> capped at 25 points", answer, question);
             return Math.min(rawAiScore, 25);
         }
 
-        // 4. Nếu câu trả lời quá ngắn (chỉ 1 từ cụt lủn):
+        // 5. Nếu câu trả lời quá ngắn (chỉ 1 từ cụt lủn):
         if (words.length == 1) {
             if (rawAiScore > 50) {
                 log.info("CosmicCallScorer: Single isolated word answer -> capped at 45 points");
@@ -96,7 +136,7 @@ public class CosmicCallScorer {
             }
         }
 
-        // 5. Đảm bảo điểm số nằm trong khoảng [0, 100] không bị ép sàn
+        // 6. Đảm bảo điểm số nằm trong khoảng [0, 100] không bị ép sàn
         return Math.max(0, Math.min(100, rawAiScore));
     }
 
@@ -139,6 +179,7 @@ public class CosmicCallScorer {
      */
     public int computeDeterministicScore(String question, String answer) {
         if (isEmptyOrSilence(answer)) return 0;
+        if (isDontKnowOrEvasion(answer)) return 25;
         if (isGibberishOrPureNoise(answer)) return 15;
 
         String lowerAns = answer.toLowerCase(Locale.ROOT);

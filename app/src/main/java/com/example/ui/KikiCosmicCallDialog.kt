@@ -898,8 +898,8 @@ fun KikiCosmicCallDialog(
                                         Color(0xFFFFB703)
                                     )
                                     evaluationScore > 0 -> Triple(
-                                        if (isEnglish) "❌ Inaccurate Answer!" else "❌ Chưa chính xác / Lạc đề!",
-                                        if (isEnglish) "The answer was off-topic or hard to understand. Try again with the hint!" else "Câu trả lời chưa đúng trọng tâm câu hỏi hoặc từ ngữ chưa chính xác. Hãy dùng câu gợi ý mẫu để thử lại nhé!",
+                                        if (isEnglish) "❌ Inaccurate / Unanswered!" else "❌ Chưa chính xác / Chưa trả lời được!",
+                                        if (isEnglish) "You haven't answered the question yet or the answer was off-topic. Try again with the hint below!" else "Bạn chưa trả lời được hoặc câu trả lời chưa đúng trọng tâm. Hãy xem gợi ý câu mẫu bên dưới để học và thử lại nhé!",
                                         Color(0xFFFF5252)
                                     )
                                     else -> Triple(
