@@ -68,7 +68,9 @@ data class CosmicCallRequest(
     @param:Json(name = "currentQuestion") val currentQuestion: String? = null,
     @param:Json(name = "planetOrTopic") val planetOrTopic: String? = null,
     @param:Json(name = "userLevel") val userLevel: String? = null,
-    @param:Json(name = "conversationHistory") val conversationHistory: List<CosmicCallTurnDto> = emptyList()
+    @param:Json(name = "conversationHistory") val conversationHistory: List<CosmicCallTurnDto> = emptyList(),
+    @param:Json(name = "userName") val userName: String? = null,
+    @param:Json(name = "candidateTranscripts") val candidateTranscripts: List<String>? = null
 )
 
 @JsonClass(generateAdapter = true)
@@ -79,5 +81,6 @@ data class CosmicCallResponse(
     @param:Json(name = "grammarCorrection") val grammarCorrection: String? = null,
     @param:Json(name = "nextQuestionEn") val nextQuestionEn: String? = null,
     @param:Json(name = "nextHintVi") val nextHintVi: String? = null,
-    @param:Json(name = "suggestedStarterEn") val suggestedStarterEn: String? = null
+    @param:Json(name = "suggestedStarterEn") val suggestedStarterEn: String? = null,
+    @param:Json(name = "sanitizedUserAnswer") val sanitizedUserAnswer: String? = null
 )

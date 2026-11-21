@@ -144,6 +144,7 @@ fun KikiCosmicCallDialog(
         isEditingTranscript = false
         speechManager.startListening(
             language = "en-US",
+            continuous = true,
             onResult = { spoken ->
                 if (spoken.isNotBlank()) {
                     userSpokenText = spoken
@@ -239,16 +240,20 @@ fun KikiCosmicCallDialog(
             }
 
             val q = currentQuestion
+            val currentUserName = viewModel?.userName?.value ?: "Adventurer"
+            val candidates = speechManager.candidateResults.value
             val response = if (viewModel != null && q != null) {
                 viewModel.converseCosmicCall(
                     context = context,
                     question = q.englishQuestion,
                     userAnswer = finalSpoken,
                     planetName = q.planetName,
-                    conversationHistory = conversationHistory.toList()
+                    conversationHistory = conversationHistory.toList(),
+                    userName = currentUserName,
+                    candidateTranscripts = candidates
                 )
             } else {
-                viewModel?.fallbackConverseCosmicCall(finalSpoken, q?.englishQuestion ?: "")
+                viewModel?.fallbackConverseCosmicCall(finalSpoken, q?.englishQuestion ?: "", currentUserName)
                     ?: com.example.model.CosmicCallResponse(
                         score = 80,
                         spokenFeedbackEn = "Good effort! Keep speaking English with me.",
@@ -257,6 +262,12 @@ fun KikiCosmicCallDialog(
                         nextQuestionEn = "What is your favorite hobby to relax?",
                         nextHintVi = "Nói về sở thích lúc rảnh rỗi."
                     )
+            }
+
+            // Cập nhật câu nói đã được khôi phục tên tiếng Việt chính xác (vd: "my name is Truong" thay vì "my name is john")
+            if (!response.sanitizedUserAnswer.isNullOrBlank()) {
+                userSpokenText = response.sanitizedUserAnswer
+                editableTranscriptText = response.sanitizedUserAnswer
             }
 
             // Ghi nhận lịch sử hội thoại cho các lượt tiếp theo
@@ -463,14 +474,10 @@ fun KikiCosmicCallDialog(
                                 .clickable { onInterruptKiki() },
                             contentAlignment = Alignment.Center
                         ) {
-                            if (callState == CosmicCallState.KIKI_SPEAKING || callState == CosmicCallState.LISTENING_USER) {
+                            if (callState == CosmicCallState.KIKI_SPEAKING) {
                                 Canvas(modifier = Modifier.fillMaxSize()) {
                                     val radius = (size.width / 2f) * wavePulse
-                                    val waveColor = if (callState == CosmicCallState.KIKI_SPEAKING) {
-                                        Color(0xFF8B5CF6)
-                                    } else {
-                                        Color(0xFF00F5D4)
-                                    }
+                                    val waveColor = Color(0xFF8B5CF6)
                                     drawCircle(
                                         color = waveColor.copy(alpha = ringAlpha),
                                         radius = radius,
@@ -481,6 +488,32 @@ fun KikiCosmicCallDialog(
                                         radius = radius * 1.15f,
                                         center = center
                                     )
+                                }
+                            } else if (callState == CosmicCallState.LISTENING_USER) {
+                                // Diễn tả animation thu âm phản ứng theo giọng nói:
+                                // Khi nói: sóng âm lan toả theo lực giọng nói thực tế
+                                // Khi yên lặng / ngắt nghỉ: hoàn toàn tĩnh lặng, không có sóng
+                                val rawUserPower = if (rmsDb > 1.8f) ((rmsDb - 1.8f) / 6.5f).coerceIn(0f, 1f) else 0f
+                                val animatedUserPower by animateFloatAsState(
+                                    targetValue = rawUserPower,
+                                    animationSpec = tween(durationMillis = 80, easing = LinearEasing),
+                                    label = "user_voice_power_halo"
+                                )
+                                if (animatedUserPower > 0.04f) {
+                                    Canvas(modifier = Modifier.fillMaxSize()) {
+                                        val radius = (size.width / 2f) * (1.0f + animatedUserPower * 0.35f)
+                                        val waveColor = Color(0xFF00F5D4)
+                                        drawCircle(
+                                            color = waveColor.copy(alpha = animatedUserPower * 0.65f),
+                                            radius = radius,
+                                            center = center
+                                        )
+                                        drawCircle(
+                                            color = waveColor.copy(alpha = animatedUserPower * 0.3f),
+                                            radius = radius * 1.18f,
+                                            center = center
+                                        )
+                                    }
                                 }
                             }
 
@@ -1197,15 +1230,18 @@ fun KikiCosmicCallDialog(
 }
 
 /**
- * Hiệu ứng sóng âm thanh thời gian thực dựa trên rmsDb thật từ Micro
+ * Hiệu ứng sóng âm thanh thời gian thực dựa trên rmsDb thật từ Micro:
+ * - Khi người dùng nói (rmsDb > 1.8f): các cột âm thanh nhảy múa theo lực giọng nói
+ * - Khi im lặng hoặc ngắt nghỉ (rmsDb <= 1.8f): sóng âm hạ phẳng (2.dp) hoàn toàn tĩnh lặng
  */
 @Composable
 private fun RealtimeAudioWaveform(
     rmsDb: Float,
     isListening: Boolean
 ) {
-    val barCount = 7
-    val baseRms = if (isListening) rmsDb.coerceIn(0f, 10f) else 0f
+    val barCount = 9
+    val isVoiceActive = isListening && rmsDb > 1.8f
+    val normalizedVoice = if (isVoiceActive) ((rmsDb - 1.8f) / 6.5f).coerceIn(0f, 1f) else 0f
 
     Row(
         modifier = Modifier
@@ -1216,29 +1252,35 @@ private fun RealtimeAudioWaveform(
     ) {
         for (i in 0 until barCount) {
             val factor = when (i) {
-                0, 6 -> 0.35f
-                1, 5 -> 0.65f
-                2, 4 -> 0.85f
+                0, 8 -> 0.3f
+                1, 7 -> 0.55f
+                2, 6 -> 0.8f
+                3, 5 -> 0.95f
                 else -> 1.0f
             }
-            val targetHeight = (6.dp + (baseRms * factor * 2.2f).dp).coerceIn(6.dp, 26.dp)
+            val targetHeight = if (isVoiceActive) {
+                (4.dp + (normalizedVoice * factor * 24f).dp).coerceIn(4.dp, 28.dp)
+            } else {
+                2.dp
+            }
             val animatedHeight by animateDpAsState(
                 targetValue = targetHeight,
-                animationSpec = tween(durationMillis = 100, easing = LinearEasing),
+                animationSpec = tween(durationMillis = 75, easing = LinearEasing),
                 label = "waveform_bar_$i"
             )
+            val barAlpha = if (isVoiceActive) 1.0f else 0.22f
 
             Box(
                 modifier = Modifier
-                    .padding(horizontal = 3.dp)
-                    .width(4.dp)
+                    .padding(horizontal = 2.5.dp)
+                    .width(3.5.dp)
                     .height(animatedHeight)
                     .clip(RoundedCornerShape(2.dp))
                     .background(
                         Brush.verticalGradient(
                             listOf(
-                                Color(0xFF00F5D4),
-                                Color(0xFF8B5CF6)
+                                Color(0xFF00F5D4).copy(alpha = barAlpha),
+                                Color(0xFF8B5CF6).copy(alpha = barAlpha)
                             )
                         )
                     )

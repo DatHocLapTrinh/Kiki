@@ -1888,9 +1888,12 @@ class StudyViewModel @Inject constructor(
         question: String,
         userAnswer: String,
         planetName: String,
-        conversationHistory: List<com.example.model.CosmicCallTurnDto> = emptyList()
+        conversationHistory: List<com.example.model.CosmicCallTurnDto> = emptyList(),
+        userName: String? = null,
+        candidateTranscripts: List<String>? = null
     ): com.example.model.CosmicCallResponse {
         val trimmed = userAnswer.trim()
+        val effectiveUserName = userName ?: _userName.value ?: "Adventurer"
         if (trimmed.isBlank()) {
             return com.example.model.CosmicCallResponse(
                 score = 50,
@@ -1910,7 +1913,9 @@ class StudyViewModel @Inject constructor(
                 currentQuestion = question,
                 planetOrTopic = planetName,
                 userLevel = _selectedLevel.value ?: "A1-A2 Elementary",
-                conversationHistory = conversationHistory
+                conversationHistory = conversationHistory,
+                userName = effectiveUserName,
+                candidateTranscripts = candidateTranscripts
             )
             val response = withContext(Dispatchers.IO) {
                 kotlinx.coroutines.withTimeoutOrNull(4500) {
@@ -1990,45 +1995,56 @@ class StudyViewModel @Inject constructor(
 
     fun fallbackConverseCosmicCall(
         userAnswer: String,
-        question: String
+        question: String,
+        userName: String? = null
     ): com.example.model.CosmicCallResponse {
-        val wordCount = userAnswer.trim().split(Regex("\\s+")).filter { it.isNotBlank() }.size
+        val actualName = (userName ?: _userName.value ?: "Truong").trim().split(Regex("\\s+")).lastOrNull() ?: "Truong"
+        val sanitized = if (userAnswer.contains("john", ignoreCase = true) || userAnswer.contains("sean", ignoreCase = true) || userAnswer.contains("shawn", ignoreCase = true)) {
+            userAnswer.replace(Regex("(?i)\\b(john|sean|shawn)\\b"), actualName)
+        } else {
+            userAnswer
+        }
+        val wordCount = sanitized.trim().split(Regex("\\s+")).filter { it.isNotBlank() }.size
         return when {
             wordCount >= 6 -> com.example.model.CosmicCallResponse(
                 score = 92,
-                spokenFeedbackEn = "Awesome! That was a complete and fluent sentence.",
-                feedbackVi = "🌟 Xuất sắc tuyệt vời! Câu trả lời dài, rõ ý và phát âm rất tự tin.",
-                grammarCorrection = userAnswer,
+                spokenFeedbackEn = "Awesome $actualName! That was a complete and fluent sentence.",
+                feedbackVi = "🌟 Xuất sắc tuyệt vời $actualName! Câu trả lời dài, rõ ý và phát âm rất tự tin.",
+                grammarCorrection = sanitized,
                 nextQuestionEn = "How often do you get to practice English in your daily routine?",
                 nextHintVi = "Nói về tần suất bạn dùng hoặc luyện tiếng Anh mỗi ngày.",
-                suggestedStarterEn = "I practice English..."
+                suggestedStarterEn = "I practice English...",
+                sanitizedUserAnswer = sanitized
             )
             wordCount >= 3 -> com.example.model.CosmicCallResponse(
                 score = 84,
-                spokenFeedbackEn = "Good job! Try to expand with one more idea next time.",
-                feedbackVi = "👏 Rất tốt! Bạn phát âm trôi chảy, lần tới hãy thử mở rộng thêm một ý nữa nhé.",
-                grammarCorrection = userAnswer,
+                spokenFeedbackEn = "Good job $actualName! Try to expand with one more idea next time.",
+                feedbackVi = "👏 Rất tốt $actualName! Bạn phát âm trôi chảy, lần tới hãy thử mở rộng thêm một ý nữa nhé.",
+                grammarCorrection = sanitized,
                 nextQuestionEn = "Can you share what you like the most about learning English?",
                 nextHintVi = "Nói về điều bạn thích nhất khi học tiếng Anh.",
-                suggestedStarterEn = "I like learning English because..."
+                suggestedStarterEn = "I like learning English because...",
+                sanitizedUserAnswer = sanitized
             )
             wordCount >= 1 -> com.example.model.CosmicCallResponse(
                 score = 75,
-                spokenFeedbackEn = "Nice start! Keep building your confidence with me.",
+                spokenFeedbackEn = "Nice start $actualName! Keep building your confidence with me.",
                 feedbackVi = "💪 Khởi đầu rất tự tin! Hãy ghép thành câu hoàn chỉnh để tăng phản xạ nhé.",
-                grammarCorrection = userAnswer,
+                grammarCorrection = sanitized,
                 nextQuestionEn = "What is your favorite hobby to relax?",
                 nextHintVi = "Nêu một sở thích giúp bạn thư giãn.",
-                suggestedStarterEn = "My favorite hobby is..."
+                suggestedStarterEn = "My favorite hobby is...",
+                sanitizedUserAnswer = sanitized
             )
             else -> com.example.model.CosmicCallResponse(
                 score = 55,
                 spokenFeedbackEn = "I didn't quite catch that. Please speak louder into the mic!",
                 feedbackVi = "✨ Đừng ngại, hãy bấm Micro và nói to, rõ ràng hơn để Kiki lắng nghe nhé!",
-                grammarCorrection = userAnswer,
+                grammarCorrection = sanitized,
                 nextQuestionEn = question,
                 nextHintVi = "Nhấn giữ Micro và nói rõ ràng.",
-                suggestedStarterEn = "Hello Kiki,..."
+                suggestedStarterEn = "Hello Kiki,...",
+                sanitizedUserAnswer = sanitized
             )
         }
     }

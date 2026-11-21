@@ -13,5 +13,17 @@ public record CosmicCallRequest(
     String currentQuestion,
     String planetOrTopic,
     String userLevel,
-    List<CosmicCallTurnDto> conversationHistory
-) {}
+    List<CosmicCallTurnDto> conversationHistory,
+    String userName,
+    List<String> candidateTranscripts
+) {
+    public CosmicCallRequest(
+        String userAnswer,
+        String currentQuestion,
+        String planetOrTopic,
+        String userLevel,
+        List<CosmicCallTurnDto> conversationHistory
+    ) {
+        this(userAnswer, currentQuestion, planetOrTopic, userLevel, conversationHistory, null, null);
+    }
+}

@@ -5,12 +5,14 @@ import com.kiki.backend.dto.CosmicCallRequest;
 import com.kiki.backend.dto.CosmicCallResponse;
 import com.kiki.backend.service.CosmicCallService;
 import com.kiki.backend.service.GroqClientService;
+import com.kiki.backend.service.VietnameseNameNormalizer;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
 import java.io.IOException;
 import java.util.Collections;
+import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -20,13 +22,15 @@ class CosmicCallServiceTest {
 
     private GroqClientService groqClientService;
     private ObjectMapper objectMapper;
+    private VietnameseNameNormalizer vietnameseNameNormalizer;
     private CosmicCallService cosmicCallService;
 
     @BeforeEach
     void setUp() {
         groqClientService = Mockito.mock(GroqClientService.class);
         objectMapper = new ObjectMapper();
-        cosmicCallService = new CosmicCallService(groqClientService, objectMapper);
+        vietnameseNameNormalizer = new VietnameseNameNormalizer();
+        cosmicCallService = new CosmicCallService(groqClientService, objectMapper, vietnameseNameNormalizer);
     }
 
     @Test
@@ -49,7 +53,9 @@ class CosmicCallServiceTest {
             "Can you introduce yourself?",
             "Mercury: Greetings",
             "A1 Beginner",
-            Collections.emptyList()
+            Collections.emptyList(),
+            "Nguyễn Văn Trường",
+            List.of("Hello, my name is Truong and I live in Hanoi")
         );
 
         CosmicCallResponse response = cosmicCallService.converseAndEvaluate(request);
@@ -61,6 +67,43 @@ class CosmicCallServiceTest {
         assertNotNull(response.nextQuestionEn());
         assertTrue(response.nextQuestionEn().contains("weekends"));
         assertEquals("On the weekends, I enjoy...", response.suggestedStarterEn());
+        assertNotNull(response.sanitizedUserAnswer());
+        assertTrue(response.sanitizedUserAnswer().contains("Truong"));
+    }
+
+    @Test
+    void testConverseAndEvaluate_RestoresJohnToTruongInAnswer() throws IOException {
+        String mockAiJson = """
+            {
+              "score": 88,
+              "spokenFeedbackEn": "Great to meet you, Truong!",
+              "feedbackVi": "🌟 Tuyệt vời lắm Trường! Giới thiệu bản thân rất rõ ràng.",
+              "grammarCorrection": "My name is Truong.",
+              "nextQuestionEn": "What is your favorite hobby, Truong?",
+              "nextHintVi": "Kể về sở thích của bạn.",
+              "suggestedStarterEn": "My favorite hobby is..."
+            }
+            """;
+        when(groqClientService.generateChatCompletion(anyString(), anyString())).thenReturn(mockAiJson);
+
+        // ASR erroneously produced "my name is john"
+        CosmicCallRequest request = new CosmicCallRequest(
+            "my name is john",
+            "What is your name?",
+            "Mercury: Greetings",
+            "A1 Beginner",
+            Collections.emptyList(),
+            "Trường",
+            List.of("my name is john", "my name is tron")
+        );
+
+        CosmicCallResponse response = cosmicCallService.converseAndEvaluate(request);
+
+        assertNotNull(response);
+        assertEquals("my name is Truong", response.sanitizedUserAnswer());
+        assertTrue(response.spokenFeedbackEn().contains("Truong"));
+        assertFalse(response.spokenFeedbackEn().contains("John"));
+        assertEquals("My name is Truong.", response.grammarCorrection());
     }
 
     @Test

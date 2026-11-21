@@ -2,8 +2,11 @@ package com.kiki.backend.controller;
 
 import com.kiki.backend.dto.CosmicCallRequest;
 import com.kiki.backend.dto.CosmicCallResponse;
+import com.kiki.backend.dto.TranscriptNormalizationRequest;
+import com.kiki.backend.dto.TranscriptNormalizationResponse;
 import com.kiki.backend.security.UserPrincipal;
 import com.kiki.backend.service.CosmicCallService;
+import com.kiki.backend.service.VietnameseNameNormalizer;
 import jakarta.validation.Valid;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -14,8 +17,6 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.io.IOException;
-
 @RestController
 @RequestMapping("/api/v1/ai/call")
 public class CosmicCallController {
@@ -23,9 +24,14 @@ public class CosmicCallController {
     private static final Logger log = LoggerFactory.getLogger(CosmicCallController.class);
 
     private final CosmicCallService cosmicCallService;
+    private final VietnameseNameNormalizer vietnameseNameNormalizer;
 
-    public CosmicCallController(CosmicCallService cosmicCallService) {
+    public CosmicCallController(
+        CosmicCallService cosmicCallService,
+        VietnameseNameNormalizer vietnameseNameNormalizer
+    ) {
         this.cosmicCallService = cosmicCallService;
+        this.vietnameseNameNormalizer = vietnameseNameNormalizer;
     }
 
     @PostMapping("/converse")
@@ -38,5 +44,17 @@ public class CosmicCallController {
 
         CosmicCallResponse response = cosmicCallService.converseAndEvaluate(request);
         return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/normalize-transcript")
+    public ResponseEntity<TranscriptNormalizationResponse> normalizeTranscript(
+        @RequestBody TranscriptNormalizationRequest request
+    ) {
+        String normalized = vietnameseNameNormalizer.normalize(
+            request.rawTranscript(),
+            request.userName(),
+            request.candidateTranscripts()
+        );
+        return ResponseEntity.ok(new TranscriptNormalizationResponse(request.rawTranscript(), normalized));
     }
 }

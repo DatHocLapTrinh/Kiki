@@ -10,6 +10,18 @@ public record CosmicCallResponse(
     String grammarCorrection,   // Câu chuẩn ngữ pháp gợi ý để người học hoàn thiện
     String nextQuestionEn,      // Câu hỏi tiếp theo bằng tiếng Anh đúng ngữ cảnh hội thoại
     String nextHintVi,          // Gợi ý tiếng Việt cho câu hỏi tiếp theo
-    String suggestedStarterEn   // Mẫu câu gợi ý mở đầu (Starter) đúng theo ngữ cảnh câu hỏi tiếp theo
-) {}
-
+    String suggestedStarterEn,  // Mẫu câu gợi ý mở đầu (Starter) đúng theo ngữ cảnh câu hỏi tiếp theo
+    String sanitizedUserAnswer  // Câu trả lời sau khi được khôi phục tên riêng & địa danh tiếng Việt
+) {
+    public CosmicCallResponse(
+        int score,
+        String spokenFeedbackEn,
+        String feedbackVi,
+        String grammarCorrection,
+        String nextQuestionEn,
+        String nextHintVi,
+        String suggestedStarterEn
+    ) {
+        this(score, spokenFeedbackEn, feedbackVi, grammarCorrection, nextQuestionEn, nextHintVi, suggestedStarterEn, null);
+    }
+}

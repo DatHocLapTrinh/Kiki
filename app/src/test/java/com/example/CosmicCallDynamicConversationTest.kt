@@ -34,7 +34,8 @@ class CosmicCallDynamicConversationTest {
             grammarCorrection = "My name is Truong and I live in Hanoi.",
             nextQuestionEn = "What is your favorite coffee shop in Hanoi?",
             nextHintVi = "Nói về quán cà phê bạn hay ghé.",
-            suggestedStarterEn = "My favorite coffee shop is..."
+            suggestedStarterEn = "My favorite coffee shop is...",
+            sanitizedUserAnswer = "My name is Truong"
         )
 
         assertEquals(92, response.score)
@@ -44,6 +45,7 @@ class CosmicCallDynamicConversationTest {
         assertNotNull(response.nextQuestionEn)
         assertNotNull(response.nextHintVi)
         assertEquals("My favorite coffee shop is...", response.suggestedStarterEn)
+        assertEquals("My name is Truong", response.sanitizedUserAnswer)
     }
 
     @Test
@@ -58,12 +60,16 @@ class CosmicCallDynamicConversationTest {
             currentQuestion = "What kind of coffee do you usually drink?",
             planetOrTopic = "Earth: Food & Drinks",
             userLevel = "A2 Elementary",
-            conversationHistory = history
+            conversationHistory = history,
+            userName = "Nguyễn Văn Trường",
+            candidateTranscripts = listOf("I usually drink egg coffee in the morning")
         )
 
         assertEquals("I usually drink egg coffee in the morning", request.userAnswer)
         assertEquals(2, request.conversationHistory.size)
         assertEquals("kiki", request.conversationHistory[0].role)
         assertEquals("user", request.conversationHistory[1].role)
+        assertEquals("Nguyễn Văn Trường", request.userName)
+        assertNotNull(request.candidateTranscripts)
     }
 }
