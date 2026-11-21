@@ -1883,43 +1883,145 @@ class StudyViewModel @Inject constructor(
         askQuestion(context, spokenText, null, isAudioDialog = true, onSuccess = onSuccess)
     }
 
+    suspend fun converseCosmicCall(
+        context: Context,
+        question: String,
+        userAnswer: String,
+        planetName: String,
+        conversationHistory: List<com.example.model.CosmicCallTurnDto> = emptyList()
+    ): com.example.model.CosmicCallResponse {
+        val trimmed = userAnswer.trim()
+        if (trimmed.isBlank()) {
+            return com.example.model.CosmicCallResponse(
+                score = 50,
+                spokenFeedbackEn = "I didn't quite hear you. Please hold the mic and speak clearly!",
+                feedbackVi = "Kiki chưa nghe rõ câu trả lời. Bạn hãy nhấn giữ nút Micro và nói to hơn nhé!",
+                grammarCorrection = "",
+                nextQuestionEn = question,
+                nextHintVi = "Hãy nhấn giữ Micro và nói to hơn."
+            )
+        }
+
+        // 1. Thử gọi Java Backend API trước (Spring Boot /api/v1/ai/call/converse)
+        try {
+            val token = authManager.getIdToken() ?: "mock_dev_token_kiki_explorer"
+            val request = com.example.model.CosmicCallRequest(
+                userAnswer = trimmed,
+                currentQuestion = question,
+                planetOrTopic = planetName,
+                userLevel = _selectedLevel.value ?: "A1-A2 Elementary",
+                conversationHistory = conversationHistory
+            )
+            val response = withContext(Dispatchers.IO) {
+                kotlinx.coroutines.withTimeoutOrNull(4500) {
+                    backendApiService.converseCosmicCall("Bearer $token", request)
+                }
+            }
+            if (response != null && response.isSuccessful && response.body() != null) {
+                val body = response.body()!!
+                if (body.spokenFeedbackEn.isNotBlank() || body.feedbackVi.isNotBlank()) {
+                    return body
+                }
+            }
+        } catch (_: Exception) {}
+
+        // 2. Fallback: Gọi Gemini/Groq client-side nếu backend chưa bật
+        val apiKey = getEffectiveUniversalApiKey()
+        if (apiKey.isNotBlank()) {
+            try {
+                val prompt = """
+                    You are Kiki, an encouraging AI English Tutor in a 1-1 phone call with a Vietnamese learner.
+                    Learner is practicing English speaking.
+                    NOTE: Learner is Vietnamese. ASR speech recognition might mishear Vietnamese names (e.g. 'Trường' transcribed as 'John' or 'Sean'). Never penalize Vietnamese names or ASR artifacts!
+                    
+                    Topic/Planet: $planetName
+                    Kiki's question: "$question"
+                    Learner's answer: "$trimmed"
+                    
+                    Respond strictly in this exact format (no markdown, no extra lines):
+                    SCORE: [65 to 100]
+                    SPOKEN_EN: [Encouraging, natural English sentence for Kiki to speak aloud, 10-20 words]
+                    FEEDBACK_VI: [1-2 short sentences in Vietnamese with praise or grammar/pronunciation tip]
+                    GRAMMAR: [Natural corrected English sentence]
+                    NEXT_Q: [1 context-aware follow-up question in English continuing the conversation]
+                    NEXT_HINT: [Short Vietnamese hint for next question]
+                """.trimIndent()
+
+                val rawAnswer = fetchAnswerFromAI(context, prompt, null)
+                val score = Regex("SCORE:\\s*(\\d+)").find(rawAnswer)?.groupValues?.get(1)?.toIntOrNull()?.coerceIn(60, 100) ?: 85
+                val spokenEn = Regex("SPOKEN_EN:\\s*(.+)").find(rawAnswer)?.groupValues?.get(1)?.trim()
+                    ?: "Great job! That was very clear and expressive."
+                val feedbackVi = Regex("FEEDBACK_VI:\\s*(.+)").find(rawAnswer)?.groupValues?.get(1)?.trim()
+                    ?: "Phản xạ rất tốt! Bạn nói câu rõ ý và tự tin."
+                val grammar = Regex("GRAMMAR:\\s*(.+)").find(rawAnswer)?.groupValues?.get(1)?.trim() ?: trimmed
+                val nextQ = Regex("NEXT_Q:\\s*(.+)").find(rawAnswer)?.groupValues?.get(1)?.trim()
+                    ?: "What else do you enjoy doing every day?"
+                val nextHint = Regex("NEXT_HINT:\\s*(.+)").find(rawAnswer)?.groupValues?.get(1)?.trim()
+                    ?: "Chia sẻ thêm điều bạn thích làm mỗi ngày."
+
+                return com.example.model.CosmicCallResponse(
+                    score = score,
+                    spokenFeedbackEn = spokenEn,
+                    feedbackVi = feedbackVi,
+                    grammarCorrection = grammar,
+                    nextQuestionEn = nextQ,
+                    nextHintVi = nextHint
+                )
+            } catch (_: Exception) {}
+        }
+
+        // 3. Fallback thông minh cục bộ nếu hoàn toàn không có mạng
+        return fallbackConverseCosmicCall(trimmed, question)
+    }
+
     suspend fun evaluateCosmicCallResponse(
         context: Context,
         question: String,
         userAnswer: String,
         planetName: String
     ): Pair<Int, String> {
-        if (userAnswer.isBlank()) {
-            return Pair(50, "Kiki chưa nghe rõ câu trả lời. Bạn hãy nhấn giữ nút Micro và nói to hơn nhé!")
-        }
+        val res = converseCosmicCall(context, question, userAnswer, planetName)
+        return Pair(res.score, res.feedbackVi)
+    }
 
-        val apiKey = getEffectiveUniversalApiKey()
-        if (apiKey.isBlank()) {
-            return fallbackEvaluateCosmicCallAnswer(userAnswer, question)
-        }
-
-        return try {
-            val prompt = """
-                Bạn là Kiến Kiki - Gia sư Tiếng Anh AI thông minh trong vũ trụ Kiki.
-                Người học đang trả lời câu hỏi đàm thoại tiếng Anh thuộc chặng '$planetName'.
-                Câu hỏi của Kiki: "$question"
-                Câu trả lời của người học: "$userAnswer"
-                
-                Hãy phân tích câu trả lời và phản hồi chính xác theo 2 dòng dưới đây (không thêm bất kỳ lời chào hay ký tự markdown thừa nào):
-                SCORE: [Điểm số từ 65 đến 100 dựa trên độ liên quan, ngữ pháp và phát âm]
-                FEEDBACK: [1 câu ngắn bằng Tiếng Việt khen ngợi điểm tốt hoặc chỉ ra lỗi ngữ pháp/phát âm kèm phiên âm IPA nếu có, tối đa 25 từ]
-            """.trimIndent()
-
-            val rawAnswer = fetchAnswerFromAI(context, prompt, null)
-            val scoreMatch = Regex("SCORE:\\s*(\\d+)").find(rawAnswer)
-            val score = scoreMatch?.groupValues?.get(1)?.toIntOrNull()?.coerceIn(60, 100) ?: 85
-            val feedbackMatch = Regex("FEEDBACK:\\s*(.+)").find(rawAnswer)
-            val feedback = feedbackMatch?.groupValues?.get(1)?.trim()
-                ?: sanitizeAiMentorReply(rawAnswer).take(120)
-
-            Pair(score, feedback)
-        } catch (e: Exception) {
-            fallbackEvaluateCosmicCallAnswer(userAnswer, question)
+    fun fallbackConverseCosmicCall(
+        userAnswer: String,
+        question: String
+    ): com.example.model.CosmicCallResponse {
+        val wordCount = userAnswer.trim().split(Regex("\\s+")).filter { it.isNotBlank() }.size
+        return when {
+            wordCount >= 6 -> com.example.model.CosmicCallResponse(
+                score = 92,
+                spokenFeedbackEn = "Awesome! That was a complete and fluent sentence.",
+                feedbackVi = "Phản xạ xuất sắc! Câu trả lời dài, rõ ý và phát âm rất tự tin.",
+                grammarCorrection = userAnswer,
+                nextQuestionEn = "How often do you get to practice English in your daily routine?",
+                nextHintVi = "Nói về tần suất bạn dùng hoặc luyện tiếng Anh mỗi ngày."
+            )
+            wordCount >= 3 -> com.example.model.CosmicCallResponse(
+                score = 84,
+                spokenFeedbackEn = "Good job! Try to expand with one more idea next time.",
+                feedbackVi = "Rất tốt! Bạn phát âm trôi chảy, hãy thử mở rộng thêm một ý nữa nhé.",
+                grammarCorrection = userAnswer,
+                nextQuestionEn = "Can you share what you like the most about learning English?",
+                nextHintVi = "Nói về điều bạn thích nhất khi học tiếng Anh."
+            )
+            wordCount >= 1 -> com.example.model.CosmicCallResponse(
+                score = 75,
+                spokenFeedbackEn = "Nice start! Keep building your confidence with me.",
+                feedbackVi = "Tốt lắm! Bạn đã phản xạ kịp thời, hãy ghép thành câu hoàn chỉnh nhé.",
+                grammarCorrection = userAnswer,
+                nextQuestionEn = "What is your favorite hobby to relax?",
+                nextHintVi = "Nêu một sở thích giúp bạn thư giãn."
+            )
+            else -> com.example.model.CosmicCallResponse(
+                score = 55,
+                spokenFeedbackEn = "I didn't quite catch that. Please speak louder into the mic!",
+                feedbackVi = "Chưa nghe rõ câu trả lời. Hãy bấm Micro và nói to hơn nhé!",
+                grammarCorrection = userAnswer,
+                nextQuestionEn = question,
+                nextHintVi = "Nhấn giữ Micro và nói rõ ràng."
+            )
         }
     }
 
@@ -1927,25 +2029,8 @@ class StudyViewModel @Inject constructor(
         userAnswer: String,
         question: String
     ): Pair<Int, String> {
-        val wordCount = userAnswer.trim().split(Regex("\\s+")).filter { it.isNotBlank() }.size
-        return when {
-            wordCount >= 6 -> Pair(
-                92,
-                "Phản xạ xuất sắc! Câu trả lời dài, rõ ý và vốn từ phong phú."
-            )
-            wordCount >= 3 -> Pair(
-                84,
-                "Rất tốt! Bạn phát âm rõ ràng, lần tới hãy thử phát triển thêm một ý nữa nhé."
-            )
-            wordCount >= 1 -> Pair(
-                74,
-                "Tốt lắm! Bạn đã bắt đầu phản xạ, hãy thử nói thành một câu hoàn chỉnh nhé."
-            )
-            else -> Pair(
-                55,
-                "Chưa ghi nhận được âm thanh. Hãy nhấn giữ Micro và nói tự tin lên nhé!"
-            )
-        }
+        val res = fallbackConverseCosmicCall(userAnswer, question)
+        return Pair(res.score, res.feedbackVi)
     }
 
     fun askFollowUpQuestion(context: Context, currentQuestion: String, followUpType: String) {

@@ -32,6 +32,9 @@ class SpeechRecognitionManager @Inject constructor(
     private val _partialText = mutableStateOf("")
     val partialText: State<String> = _partialText
 
+    private val _candidateResults = mutableStateOf<List<String>>(emptyList())
+    val candidateResults: State<List<String>> = _candidateResults
+
     private val _speechError = mutableStateOf<String?>(null)
     val speechError: State<String?> = _speechError
 
@@ -51,6 +54,7 @@ class SpeechRecognitionManager @Inject constructor(
         onErrorCallback = onError
         _speechError.value = null
         _partialText.value = ""
+        _candidateResults.value = emptyList()
         _rmsDb.floatValue = 0f
 
         mainHandler.post {
@@ -65,8 +69,9 @@ class SpeechRecognitionManager @Inject constructor(
                     putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
                     putExtra(RecognizerIntent.EXTRA_LANGUAGE, language)
                     putExtra(RecognizerIntent.EXTRA_LANGUAGE_PREFERENCE, language)
+                    putExtra(RecognizerIntent.EXTRA_ONLY_RETURN_LANGUAGE_PREFERENCE, false)
                     putExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS, true)
-                    putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, 3)
+                    putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, 5)
                     putExtra(RecognizerIntent.EXTRA_CALLING_PACKAGE, context.packageName)
                 }
 
@@ -161,8 +166,9 @@ class SpeechRecognitionManager @Inject constructor(
                 _isListening.value = false
                 _rmsDb.floatValue = 0f
 
-                val matches = results?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)
-                val spokenText = matches?.firstOrNull() ?: ""
+                val matches = results?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION) ?: arrayListOf()
+                _candidateResults.value = matches
+                val spokenText = matches.firstOrNull() ?: ""
                 _partialText.value = spokenText
                 onResultCallback?.invoke(spokenText)
             }

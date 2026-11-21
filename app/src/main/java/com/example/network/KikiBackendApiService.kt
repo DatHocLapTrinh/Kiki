@@ -27,6 +27,12 @@ interface KikiBackendApiService {
         @Body request: MentorChatRequest
     ): Response<MentorChatResponse>
 
+    @POST("api/v1/ai/call/converse")
+    suspend fun converseCosmicCall(
+        @Header("Authorization") authHeader: String,
+        @Body request: CosmicCallRequest
+    ): Response<CosmicCallResponse>
+
     companion object {
         // 10.0.2.2 trỏ về localhost của máy tính chạy backend khi dùng Android Emulator
         const val DEFAULT_BASE_URL = "http://10.0.2.2:8080/"
