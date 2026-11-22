@@ -65,7 +65,17 @@ class TextToSpeechManager @Inject constructor(
         }
     }
 
-    fun speak(text: String, isSlow: Boolean = false, onDone: (() -> Unit)? = null) {
+    fun isVietnameseText(text: String): Boolean {
+        val vietnamesePattern = Regex("[àáạảãâầấậẩẫăằắặẳẵèéẹẻẽêềếệểễìíịỉĩòóọỏõôồốộổỗơờớợởỡùúụủũưừứựửữỳýỵỷỹđÀÁẠẢÃÂẦẤẬẨẪĂẰẮẶẲẴÈÉẸẺẼÊỀẾỆỂỄÌÍỊỈĨÒÓỌỎÕÔỒỐỘỔỖƠỜỚỢỞỠÙÚỤỦŨƯỪỨỰỬỮỲÝỴỶỸĐ]")
+        return vietnamesePattern.containsMatchIn(text)
+    }
+
+    fun speak(
+        text: String,
+        isSlow: Boolean = false,
+        targetLocale: Locale? = null,
+        onDone: (() -> Unit)? = null
+    ) {
         if (text.isBlank()) {
             onDone?.invoke()
             return
@@ -80,6 +90,22 @@ class TextToSpeechManager @Inject constructor(
 
         if (!isInitialized) {
             initTts()
+        }
+
+        // Tự động nhận diện ngôn ngữ nếu không chỉ định rõ: tiếng Việt hay tiếng Anh
+        val effectiveLocale = targetLocale ?: if (isVietnameseText(cleanText)) {
+            Locale("vi", "VN")
+        } else {
+            Locale.US
+        }
+
+        try {
+            val res = tts?.setLanguage(effectiveLocale)
+            if (res == TextToSpeech.LANG_MISSING_DATA || res == TextToSpeech.LANG_NOT_SUPPORTED) {
+                tts?.setLanguage(Locale.US)
+            }
+        } catch (_: Exception) {
+            tts?.setLanguage(Locale.US)
         }
 
         // Điều chỉnh tốc độ phát âm (chậm 0.68f cho người mới / luyện nghe âm đuôi, chuẩn 0.92f)

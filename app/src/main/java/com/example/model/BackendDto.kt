@@ -55,3 +55,32 @@ data class VocabularyCardDto(
     @param:Json(name = "meaning") val meaning: String,
     @param:Json(name = "example") val example: String? = null
 )
+
+@JsonClass(generateAdapter = true)
+data class CosmicCallTurnDto(
+    @param:Json(name = "role") val role: String,
+    @param:Json(name = "text") val text: String
+)
+
+@JsonClass(generateAdapter = true)
+data class CosmicCallRequest(
+    @param:Json(name = "userAnswer") val userAnswer: String,
+    @param:Json(name = "currentQuestion") val currentQuestion: String? = null,
+    @param:Json(name = "planetOrTopic") val planetOrTopic: String? = null,
+    @param:Json(name = "userLevel") val userLevel: String? = null,
+    @param:Json(name = "conversationHistory") val conversationHistory: List<CosmicCallTurnDto> = emptyList(),
+    @param:Json(name = "userName") val userName: String? = null,
+    @param:Json(name = "candidateTranscripts") val candidateTranscripts: List<String>? = null
+)
+
+@JsonClass(generateAdapter = true)
+data class CosmicCallResponse(
+    @param:Json(name = "score") val score: Int,
+    @param:Json(name = "spokenFeedbackEn") val spokenFeedbackEn: String,
+    @param:Json(name = "feedbackVi") val feedbackVi: String,
+    @param:Json(name = "grammarCorrection") val grammarCorrection: String? = null,
+    @param:Json(name = "nextQuestionEn") val nextQuestionEn: String? = null,
+    @param:Json(name = "nextHintVi") val nextHintVi: String? = null,
+    @param:Json(name = "suggestedStarterEn") val suggestedStarterEn: String? = null,
+    @param:Json(name = "sanitizedUserAnswer") val sanitizedUserAnswer: String? = null
+)
