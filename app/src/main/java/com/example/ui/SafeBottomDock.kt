@@ -1,17 +1,51 @@
 package com.example.ui
 
+import android.view.ViewGroup
+import android.view.WindowManager
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.composed
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.DialogWindowProvider
+import androidx.core.view.WindowCompat
+import androidx.core.view.WindowInsetsControllerCompat
+
+/**
+ * Configures a Compose Dialog's native Window to span edge-to-edge full-screen cleanly,
+ * ensuring valid system bar / IME insets and dark-theme light system bar icons across OEM ROMs.
+ */
+@Composable
+fun ConfigureFullscreenDialogWindow(adjustResize: Boolean = false) {
+    val view = LocalView.current
+    DisposableEffect(view, adjustResize) {
+        val window = (view.parent as? DialogWindowProvider)?.window
+        window?.let { w ->
+            w.setLayout(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT)
+            w.setDimAmount(0f)
+            w.setBackgroundDrawableResource(android.R.color.transparent)
+            if (adjustResize) {
+                @Suppress("DEPRECATION")
+                w.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE)
+            }
+            WindowCompat.setDecorFitsSystemWindows(w, false)
+            WindowInsetsControllerCompat(w, view).apply {
+                isAppearanceLightStatusBars = false
+                isAppearanceLightNavigationBars = false
+            }
+        }
+        onDispose {}
+    }
+}
 
 /**
  * ARCHITECTURAL DESIGN SYSTEM UTILITY:

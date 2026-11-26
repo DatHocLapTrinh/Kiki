@@ -102,7 +102,7 @@ fun KikiCosmicCallDialog(
     }
     val userSavedVocab = viewModel?.vocabularyList?.value ?: emptyList()
 
-    val callQuestions = remember(completedStages, userSavedVocab) {
+    val callQuestions = remember(completedStages, userSavedVocab, isEnglish) {
         generateSmartQuestionsForCall(completedStages, userSavedVocab, isEnglish)
     }
 
@@ -232,7 +232,7 @@ fun KikiCosmicCallDialog(
         if (finalSpoken.isBlank()) {
             evaluationScore = 0
             evaluationFeedback = if (isEnglish) "No voice detected. Please tap the mic and speak clearly!" else "Kiki chưa nghe thấy câu trả lời. Hãy bấm Micro và nói tiếng Anh nhé! 🎙️"
-            latestSpokenFeedbackEn = if (isEnglish) "I didn't hear your voice. Please tap the mic and speak aloud!" else "I didn't hear your voice. Please tap the mic and speak aloud!"
+            latestSpokenFeedbackEn = "I didn't hear your voice. Please tap the mic and speak aloud!"
             latestGrammarCorrection = ""
             callState = CosmicCallState.EVALUATED
             if (!isMuted) {
@@ -383,14 +383,20 @@ fun KikiCosmicCallDialog(
         },
         properties = DialogProperties(
             usePlatformDefaultWidth = false,
+            decorFitsSystemWindows = false,
             dismissOnBackPress = true,
             dismissOnClickOutside = false
         )
     ) {
+        ConfigureFullscreenDialogWindow(adjustResize = true)
+
+        val topSafeInset = WindowInsets.statusBars.union(WindowInsets.displayCutout).asPaddingValues().calculateTopPadding()
+        val safeTopPadding = if (topSafeInset > 0.dp) topSafeInset + 8.dp else 16.dp
+
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .background(Color(0xF0070314))
+                .background(Color(0xFF070314))
         ) {
             // Nền radial gradient vũ trụ mờ ảo
             Canvas(modifier = Modifier.fillMaxSize()) {
@@ -414,9 +420,9 @@ fun KikiCosmicCallDialog(
             Column(
                 modifier = Modifier
                     .fillMaxSize()
-                    .statusBarsPadding()
-                    .navigationBarsPadding()
-                    .padding(horizontal = 20.dp, vertical = 14.dp),
+                    .imePadding()
+                    .safeBottomDockPadding(minClearance = 24.dp, extraPadding = 14.dp)
+                    .padding(start = 20.dp, end = 20.dp, top = safeTopPadding),
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.SpaceBetween
             ) {
@@ -929,7 +935,7 @@ fun KikiCosmicCallDialog(
                                             fontWeight = FontWeight.Black
                                         )
                                         Text(
-                                            text = "$evaluationScore / 100 Điểm",
+                                            text = if (isEnglish) "$evaluationScore / 100 Pts" else "$evaluationScore / 100 Điểm",
                                             color = badgeColor,
                                             fontSize = 14.sp,
                                             fontWeight = FontWeight.Black
@@ -973,7 +979,7 @@ fun KikiCosmicCallDialog(
                                 // 2. Gợi ý cấu trúc chuẩn tự nhiên
                                 if (latestGrammarCorrection.isNotBlank() && !latestGrammarCorrection.equals(userSpokenText, ignoreCase = true)) {
                                     Text(
-                                        text = "✨ Gợi ý chuẩn: \"$latestGrammarCorrection\"",
+                                        text = if (isEnglish) "✨ Natural phrasing: \"$latestGrammarCorrection\"" else "✨ Gợi ý chuẩn: \"$latestGrammarCorrection\"",
                                         color = Color(0xFFFFD166),
                                         fontSize = 12.5.sp,
                                         fontWeight = FontWeight.Medium,
@@ -989,7 +995,7 @@ fun KikiCosmicCallDialog(
                                     horizontalArrangement = Arrangement.SpaceBetween
                                 ) {
                                     Text(
-                                        text = "💡 Nhận xét: $evaluationFeedback",
+                                        text = if (isEnglish) "💡 Feedback: $evaluationFeedback" else "💡 Nhận xét: $evaluationFeedback",
                                         color = Color(0xFF51FAC1),
                                         fontSize = 12.5.sp,
                                         fontWeight = FontWeight.Medium,
@@ -1000,7 +1006,7 @@ fun KikiCosmicCallDialog(
                                         onClick = {
                                             ttsManager.speak(
                                                 text = evaluationFeedback,
-                                                targetLocale = Locale("vi", "VN")
+                                                targetLocale = Locale.forLanguageTag("vi-VN")
                                             )
                                         },
                                         modifier = Modifier.size(28.dp)
@@ -1132,7 +1138,7 @@ fun KikiCosmicCallDialog(
                                     .height(48.dp)
                             ) {
                                 Text(
-                                    text = if (isEnglish) "Tiếp tục luyện nói ! 🎙️" else "Tiếp tục luyện nói ! 🎙️",
+                                    text = if (isEnglish) "Continue Speaking! 🎙️" else "Tiếp tục luyện nói ! 🎙️",
                                     color = Color(0xFF092E20),
                                     fontSize = 14.sp,
                                     fontWeight = FontWeight.Black

@@ -38,9 +38,6 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalHapticFeedback
-import androidx.compose.ui.platform.LocalView
-import androidx.compose.ui.window.DialogWindowProvider
-import android.view.ViewGroup
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -67,25 +64,15 @@ fun VocabularyVaultDialog(
 
     Dialog(
         onDismissRequest = onDismiss,
-        properties = DialogProperties(usePlatformDefaultWidth = false)
+        properties = DialogProperties(
+            usePlatformDefaultWidth = false,
+            decorFitsSystemWindows = false
+        )
     ) {
-        val view = LocalView.current
-        DisposableEffect(view) {
-            val window = (view.parent as? DialogWindowProvider)?.window
-            window?.let { w ->
-                w.setLayout(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT)
-                w.setDimAmount(0f)
-                w.setBackgroundDrawableResource(android.R.color.transparent)
-                try {
-                    w.statusBarColor = android.graphics.Color.parseColor("#0D0A1A")
-                    w.navigationBarColor = android.graphics.Color.parseColor("#140F24")
-                } catch (_: Exception) {}
-            }
-            onDispose {}
-        }
+        ConfigureFullscreenDialogWindow()
 
-        val statusBarTop = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
-        val safeTopPadding = if (statusBarTop > 0.dp) statusBarTop + 6.dp else 12.dp
+        val statusBarTop = WindowInsets.statusBars.union(WindowInsets.displayCutout).asPaddingValues().calculateTopPadding()
+        val safeTopPadding = if (statusBarTop > 0.dp) statusBarTop + 6.dp else 16.dp
 
         Surface(
             modifier = Modifier.fillMaxSize(),
@@ -1185,9 +1172,6 @@ private fun FlashcardDeckView(
             )
         }
 
-        val navBarBottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
-        val safeBottomPadding = if (navBarBottom > 0.dp) navBarBottom + 8.dp else 16.dp
-
         // Dedicated Elevated Bottom Dock: [Chưa nhớ] [Quay lại] [Đã học]
         Surface(
             color = Color(0xFF140F24),
@@ -1201,7 +1185,8 @@ private fun FlashcardDeckView(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(start = 16.dp, end = 16.dp, top = 10.dp, bottom = safeBottomPadding),
+                    .safeBottomDockPadding(minClearance = 36.dp, extraPadding = 16.dp)
+                    .padding(start = 16.dp, end = 16.dp, top = 12.dp),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
@@ -1292,8 +1277,8 @@ private fun VocabularyListView(
     isEnglish: Boolean
 ) {
     val haptic = LocalHapticFeedback.current
-    val navBarBottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
-    val safeBottomListPadding = if (navBarBottom > 0.dp) navBarBottom + 20.dp else 28.dp
+    val navBarBottom = WindowInsets.navigationBars.union(WindowInsets.displayCutout).asPaddingValues().calculateBottomPadding()
+    val safeBottomListPadding = if (navBarBottom > 0.dp) navBarBottom + 20.dp else 44.dp
 
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
