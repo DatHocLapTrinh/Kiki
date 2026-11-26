@@ -57,6 +57,7 @@ val WeakPointEntity.correctAnswerText: String
 fun WeakPointsClinicDialog(
     viewModel: StudyViewModel,
     isEnglish: Boolean = false,
+    useInWindowOverlay: Boolean = false,
     onDismiss: () -> Unit
 ) {
     val weakPoints by viewModel.weakPoints.observeAsState(emptyList())
@@ -64,17 +65,15 @@ fun WeakPointsClinicDialog(
     var selectedTab by remember { mutableIntStateOf(0) } // 0: Rehab Quiz, 1: Record List
     var showConfetti by remember { mutableStateOf(false) }
 
-    Dialog(
-        onDismissRequest = onDismiss,
-        properties = DialogProperties(usePlatformDefaultWidth = false, decorFitsSystemWindows = false)
-    ) {
+    val clinicContent: @Composable () -> Unit = {
+        val topSafeInset = WindowInsets.statusBars.union(WindowInsets.displayCutout).asPaddingValues().calculateTopPadding()
+        val safeTop = if (topSafeInset > 0.dp) topSafeInset + 8.dp else 16.dp
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .background(Color(0xD9000000))
-                .statusBarsPadding()
-                .navigationBarsPadding()
-                .padding(top = 12.dp, bottom = 16.dp, start = 8.dp, end = 8.dp),
+                .background(Color(0xFF090612))
+                .safeBottomDockPadding(minClearance = 28.dp, extraPadding = 16.dp)
+                .padding(top = safeTop, start = 8.dp, end = 8.dp),
             contentAlignment = Alignment.Center
         ) {
             Surface(
@@ -280,7 +279,19 @@ fun WeakPointsClinicDialog(
             }
         }
     }
-}
+    }
+
+    if (useInWindowOverlay) {
+        FullscreenInWindowOverlay(onDismiss = onDismiss, content = clinicContent)
+    } else {
+        Dialog(
+            onDismissRequest = onDismiss,
+            properties = DialogProperties(usePlatformDefaultWidth = false, decorFitsSystemWindows = false)
+        ) {
+            ConfigureFullscreenDialogWindow()
+            clinicContent()
+        }
+    }
 }
 
 @Composable

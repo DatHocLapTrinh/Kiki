@@ -917,6 +917,11 @@ fun MainNavigation(viewModel: StudyViewModel, onLogout: () -> Unit) {
     }
 
     Box(modifier = Modifier.fillMaxSize()) {
+        var activeFullscreenOverlay by remember { mutableStateOf<com.example.ui.FullscreenOverlayType?>(null) }
+        androidx.compose.runtime.CompositionLocalProvider(
+            com.example.ui.LocalOpenFullscreenOverlay provides { activeFullscreenOverlay = it }
+        ) {
+            Box(modifier = Modifier.fillMaxSize()) {
         NavHost(
             navController = navController,
             startDestination = "map",
@@ -1063,32 +1068,6 @@ fun MainNavigation(viewModel: StudyViewModel, onLogout: () -> Unit) {
             )
         }
 
-        if (showKikiCallDialog) {
-            val availableChapters by viewModel.availableChapters.observeAsState(emptyList())
-            val chapterProgress by viewModel.chapterProgress.observeAsState(emptyList())
-            val stages = remember(availableChapters, chapterProgress) {
-                JourneyStageMapper.mapStages(
-                    chapterTitles = availableChapters,
-                    nodeProgress = chapterProgress,
-                    energyProvider = { idx, isCompleted, totalCompleted ->
-                        viewModel.getPlanetEnergy(idx, isCompleted, totalCompleted)
-                    }
-                )
-            }
-            com.example.ui.KikiCosmicCallDialog(
-                stages = stages,
-                ttsManager = viewModel.ttsManager,
-                speechManager = viewModel.speechRecognitionManager,
-                viewModel = viewModel,
-                isEnglish = isEnglish,
-                onRewardEarned = { xp, starsCount ->
-                    viewModel.addXp(xp)
-                    viewModel.addStars(starsCount)
-                },
-                onDismiss = { showKikiCallDialog = false }
-            )
-        }
-
         val newlyUnlockedBadge by viewModel.newlyUnlockedBadge.observeAsState(null)
         if (newlyUnlockedBadge != null) {
             com.example.ui.AchievementUnlockedCelebrationDialog(
@@ -1111,8 +1090,16 @@ fun MainNavigation(viewModel: StudyViewModel, onLogout: () -> Unit) {
             com.example.ui.CosmicFeedbackDialog(
                 isEnglish = isEnglish,
                 onOpenSurvey = {
-                    viewModel.addStars(50)
-                    com.example.util.FeedbackPromptManager.openSurveyInBrowser(context)
+                    val opened = com.example.util.FeedbackPromptManager.openSurveyInBrowser(context)
+                    if (opened) {
+                        viewModel.addStars(50)
+                    } else {
+                        android.widget.Toast.makeText(
+                            context,
+                            if (isEnglish) "Could not open the survey link in browser." else "Không tìm thấy trình duyệt để mở link khảo sát.",
+                            android.widget.Toast.LENGTH_SHORT
+                        ).show()
+                    }
                     showFeedbackPrompt = false
                 },
                 onDismiss = {
@@ -1133,6 +1120,56 @@ fun MainNavigation(viewModel: StudyViewModel, onLogout: () -> Unit) {
                 .navigationBarsPadding()
                 .padding(bottom = 12.dp)
         )
+
+        // Fullscreen In-Window Overlays (rendered above FloatingNavBar with true Activity insets)
+        if (showKikiCallDialog) {
+            val availableChapters by viewModel.availableChapters.observeAsState(emptyList())
+            val chapterProgress by viewModel.chapterProgress.observeAsState(emptyList())
+            val stages = remember(availableChapters, chapterProgress) {
+                JourneyStageMapper.mapStages(
+                    chapterTitles = availableChapters,
+                    nodeProgress = chapterProgress,
+                    energyProvider = { idx, isCompleted, totalCompleted ->
+                        viewModel.getPlanetEnergy(idx, isCompleted, totalCompleted)
+                    }
+                )
+            }
+            com.example.ui.KikiCosmicCallDialog(
+                stages = stages,
+                ttsManager = viewModel.ttsManager,
+                speechManager = viewModel.speechRecognitionManager,
+                viewModel = viewModel,
+                isEnglish = isEnglish,
+                useInWindowOverlay = true,
+                onRewardEarned = { xp, starsCount ->
+                    viewModel.addXp(xp)
+                    viewModel.addStars(starsCount)
+                },
+                onDismiss = { showKikiCallDialog = false }
+            )
+        }
+
+        when (activeFullscreenOverlay) {
+            com.example.ui.FullscreenOverlayType.VOCABULARY_VAULT -> {
+                com.example.ui.VocabularyVaultDialog(
+                    viewModel = viewModel,
+                    isEnglish = isEnglish,
+                    useInWindowOverlay = true,
+                    onDismiss = { activeFullscreenOverlay = null }
+                )
+            }
+            com.example.ui.FullscreenOverlayType.WEAK_POINTS_CLINIC -> {
+                com.example.ui.WeakPointsClinicDialog(
+                    viewModel = viewModel,
+                    isEnglish = isEnglish,
+                    useInWindowOverlay = true,
+                    onDismiss = { activeFullscreenOverlay = null }
+                )
+            }
+            null -> {}
+        }
+            }
+        }
     }
 }
 
@@ -1418,9 +1455,9 @@ fun DuolingoMoreFloatingMenu(
 
             HorizontalDivider(color = Color(0x1A51FAC1), thickness = 0.8.dp)
 
-            // 4. Cuộc Gọi Trực Tiếp Với Kiki (AI Voice Tutor 1-1 👑)
+            // 4. Call Kiki trong Mini Tab
             DuolingoMenuItem(
-                title = if (isEnglish) "Call Kiki (AI Voice 1-1 👑)" else "Gọi Với Kiki 1-1 (AI Call 👑)",
+                title = "Call Kiki",
                 icon = Icons.Default.PhoneInTalk,
                 iconTint = Color(0xFFFFD700),
                 iconBg = Color(0x33FFD700),

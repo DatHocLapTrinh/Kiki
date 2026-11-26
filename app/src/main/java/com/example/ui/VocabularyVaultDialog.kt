@@ -41,6 +41,7 @@ import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
@@ -54,6 +55,7 @@ import com.example.viewmodel.StudyViewModel
 fun VocabularyVaultDialog(
     viewModel: StudyViewModel,
     isEnglish: Boolean,
+    useInWindowOverlay: Boolean = false,
     onDismiss: () -> Unit
 ) {
     val vocabularyList by viewModel.vocabularyList.observeAsState(emptyList())
@@ -62,15 +64,7 @@ fun VocabularyVaultDialog(
     var selectedTab by remember { mutableIntStateOf(0) } // 0: Flashcard, 1: Danh sách
     var showAddDialog by remember { mutableStateOf(false) }
 
-    Dialog(
-        onDismissRequest = onDismiss,
-        properties = DialogProperties(
-            usePlatformDefaultWidth = false,
-            decorFitsSystemWindows = false
-        )
-    ) {
-        ConfigureFullscreenDialogWindow()
-
+    val vaultContent: @Composable () -> Unit = {
         val statusBarTop = WindowInsets.statusBars.union(WindowInsets.displayCutout).asPaddingValues().calculateTopPadding()
         val safeTopPadding = if (statusBarTop > 0.dp) statusBarTop + 6.dp else 16.dp
 
@@ -219,6 +213,21 @@ fun VocabularyVaultDialog(
                     }
                 }
             }
+        }
+    }
+
+    if (useInWindowOverlay) {
+        FullscreenInWindowOverlay(onDismiss = onDismiss, content = vaultContent)
+    } else {
+        Dialog(
+            onDismissRequest = onDismiss,
+            properties = DialogProperties(
+                usePlatformDefaultWidth = false,
+                decorFitsSystemWindows = false
+            )
+        ) {
+            ConfigureFullscreenDialogWindow()
+            vaultContent()
         }
     }
 
@@ -1198,6 +1207,7 @@ private fun FlashcardDeckView(
                         .height(48.dp),
                     shape = RoundedCornerShape(14.dp),
                     border = BorderStroke(1.5.dp, Color(0xFFEF4444)),
+                    contentPadding = PaddingValues(horizontal = 8.dp, vertical = 0.dp),
                     colors = ButtonDefaults.outlinedButtonColors(
                         containerColor = Color(0x24EF4444),
                         contentColor = Color(0xFFFF8B8B)
@@ -1207,13 +1217,16 @@ private fun FlashcardDeckView(
                         Icons.Default.Close,
                         contentDescription = "Chưa nhớ",
                         tint = Color(0xFFFF6B6B),
-                        modifier = Modifier.size(18.dp)
+                        modifier = Modifier.size(16.dp)
                     )
-                    Spacer(modifier = Modifier.width(6.dp))
+                    Spacer(modifier = Modifier.width(4.dp))
                     Text(
                         text = if (isEnglish) "Need Review" else "Chưa nhớ",
                         fontWeight = FontWeight.Bold,
-                        fontSize = 13.5.sp
+                        fontSize = 12.5.sp,
+                        maxLines = 1,
+                        softWrap = false,
+                        overflow = TextOverflow.Ellipsis
                     )
                 }
 
@@ -1247,6 +1260,7 @@ private fun FlashcardDeckView(
                         .weight(1f)
                         .height(48.dp),
                     shape = RoundedCornerShape(14.dp),
+                    contentPadding = PaddingValues(horizontal = 8.dp, vertical = 0.dp),
                     colors = ButtonDefaults.buttonColors(
                         containerColor = Color(0xFF22C55E),
                         contentColor = Color(0xFF0D0A1A)
@@ -1256,13 +1270,16 @@ private fun FlashcardDeckView(
                         Icons.Default.Check,
                         contentDescription = "Đã nhớ",
                         tint = Color(0xFF0D0A1A),
-                        modifier = Modifier.size(18.dp)
+                        modifier = Modifier.size(16.dp)
                     )
-                    Spacer(modifier = Modifier.width(6.dp))
+                    Spacer(modifier = Modifier.width(4.dp))
                     Text(
                         text = if (isEnglish) "Remembered" else "Đã nhớ",
                         fontWeight = FontWeight.ExtraBold,
-                        fontSize = 13.5.sp
+                        fontSize = 12.5.sp,
+                        maxLines = 1,
+                        softWrap = false,
+                        overflow = TextOverflow.Ellipsis
                     )
                 }
             }

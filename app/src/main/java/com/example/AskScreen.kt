@@ -256,10 +256,15 @@ fun AskScreen(viewModel: StudyViewModel) {
             },
             actions = {
                 // Sổ tay từ vựng (Vocabulary Vault) button
+                val openFullscreenOverlay = com.example.ui.LocalOpenFullscreenOverlay.current
                 IconButton(
                     onClick = {
                         haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                        showVaultDialog = true
+                        if (openFullscreenOverlay != null) {
+                            openFullscreenOverlay(com.example.ui.FullscreenOverlayType.VOCABULARY_VAULT)
+                        } else {
+                            showVaultDialog = true
+                        }
                     }
                 ) {
                     BadgedBox(

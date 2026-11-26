@@ -83,6 +83,7 @@ fun KikiCosmicCallDialog(
     speechManager: SpeechRecognitionManager,
     viewModel: StudyViewModel? = null,
     isEnglish: Boolean = false,
+    useInWindowOverlay: Boolean = false,
     onRewardEarned: (xp: Int, stars: Int) -> Unit = { _, _ -> },
     onDismiss: () -> Unit
 ) {
@@ -375,21 +376,13 @@ fun KikiCosmicCallDialog(
         label = "ring_alpha"
     )
 
-    Dialog(
-        onDismissRequest = {
-            ttsManager.stop()
-            speechManager.cancel()
-            onDismiss()
-        },
-        properties = DialogProperties(
-            usePlatformDefaultWidth = false,
-            decorFitsSystemWindows = false,
-            dismissOnBackPress = true,
-            dismissOnClickOutside = false
-        )
-    ) {
-        ConfigureFullscreenDialogWindow(adjustResize = true)
+    val closeCallSafely = {
+        ttsManager.stop()
+        speechManager.cancel()
+        onDismiss()
+    }
 
+    val callUiContent: @Composable () -> Unit = {
         val topSafeInset = WindowInsets.statusBars.union(WindowInsets.displayCutout).asPaddingValues().calculateTopPadding()
         val safeTopPadding = if (topSafeInset > 0.dp) topSafeInset + 8.dp else 16.dp
 
@@ -421,7 +414,7 @@ fun KikiCosmicCallDialog(
                 modifier = Modifier
                     .fillMaxSize()
                     .imePadding()
-                    .safeBottomDockPadding(minClearance = 24.dp, extraPadding = 14.dp)
+                    .safeBottomDockPadding(minClearance = 36.dp, extraPadding = 18.dp)
                     .padding(start = 20.dp, end = 20.dp, top = safeTopPadding),
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.SpaceBetween
@@ -468,7 +461,7 @@ fun KikiCosmicCallDialog(
                             .padding(horizontal = 12.dp, vertical = 6.dp)
                     ) {
                         Text(
-                            text = if (isEnglish) "👑 COSMIC CALL VIP" else "👑 GIA SƯ KIKI 1-1",
+                            text = "📞 CALL KIKI",
                             color = Color(0xFFFFD700),
                             fontSize = 11.sp,
                             fontWeight = FontWeight.Black,
@@ -1059,7 +1052,7 @@ fun KikiCosmicCallDialog(
                         Spacer(modifier = Modifier.height(6.dp))
 
                         Text(
-                            text = if (isEnglish) "You've successfully completed the 1-1 AI practice session with Kiki!" else "Bạn đã hoàn thành buổi đàm thoại 1-1 với Kiki xuất sắc!",
+                            text = if (isEnglish) "You've successfully completed the call with Kiki!" else "Bạn đã hoàn thành cuộc gọi cùng Kiki!",
                             color = Color(0xFFCBD5E1),
                             fontSize = 13.sp,
                             textAlign = TextAlign.Center
@@ -1240,7 +1233,7 @@ fun KikiCosmicCallDialog(
                     } else {
                         // Nút thoát khi ở màn hình tổng kết
                         Button(
-                            onClick = onDismiss,
+                            onClick = closeCallSafely,
                             colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF51FAC1)),
                             shape = RoundedCornerShape(22.dp),
                             modifier = Modifier
@@ -1251,12 +1244,31 @@ fun KikiCosmicCallDialog(
                                 text = if (isEnglish) "Return to Cosmic Journey 🚀" else "Quay Lại Vũ Trụ Học Tập 🚀",
                                 color = Color(0xFF092E20),
                                 fontSize = 15.sp,
-                                fontWeight = FontWeight.Black
+                                fontWeight = FontWeight.Black,
+                                maxLines = 1,
+                                softWrap = false
                             )
                         }
                     }
                 }
             }
+        }
+    }
+
+    if (useInWindowOverlay) {
+        FullscreenInWindowOverlay(onDismiss = closeCallSafely, content = callUiContent)
+    } else {
+        Dialog(
+            onDismissRequest = closeCallSafely,
+            properties = DialogProperties(
+                usePlatformDefaultWidth = false,
+                decorFitsSystemWindows = false,
+                dismissOnBackPress = true,
+                dismissOnClickOutside = false
+            )
+        ) {
+            ConfigureFullscreenDialogWindow(adjustResize = true)
+            callUiContent()
         }
     }
 }

@@ -104,16 +104,6 @@ fun JourneyMapScreen(
     val isCosmicPassActive by viewModel.isCosmicPassActive.observeAsState(false)
     var showOutOfHeartsPrompt by remember { mutableStateOf(false) }
     var showSectionSelector by remember { mutableStateOf(false) }
-    var showKikiCallDialog by remember { mutableStateOf(false) }
-    var showCosmicPassPaywallDialog by remember { mutableStateOf(false) }
-
-    fun handleStartKikiCall() {
-        if (isCosmicPassActive) {
-            showKikiCallDialog = true
-        } else {
-            showCosmicPassPaywallDialog = true
-        }
-    }
     val availableChapters by viewModel.availableChapters.observeAsState(emptyList())
     val chapterProgress by viewModel.chapterProgress.observeAsState(emptyList())
     val chaptersLoading by viewModel.chaptersLoading.observeAsState(false)
@@ -308,8 +298,7 @@ fun JourneyMapScreen(
                             }
                         },
                         onCheckChestClaimed = viewModel::isSectionChestClaimed,
-                        onClaimSectionChest = { secNum -> viewModel.claimSectionChest(secNum) },
-                        onStartKikiCall = { handleStartKikiCall() }
+                        onClaimSectionChest = { secNum -> viewModel.claimSectionChest(secNum) }
                     )
                 }
             }
@@ -384,33 +373,6 @@ fun JourneyMapScreen(
                     viewModel.claimSectionChest(secEvent.completedSectionNumber)
                     viewModel.clearSectionCompletionEvent()
                 }
-            )
-        }
-
-        if (showKikiCallDialog) {
-            com.example.ui.KikiCosmicCallDialog(
-                stages = stages,
-                ttsManager = viewModel.ttsManager,
-                speechManager = viewModel.speechRecognitionManager,
-                viewModel = viewModel,
-                isEnglish = isEnglish,
-                onRewardEarned = { xp, starsCount ->
-                    viewModel.addXp(xp)
-                    viewModel.addStars(starsCount)
-                },
-                onDismiss = { showKikiCallDialog = false }
-            )
-        }
-
-        if (showCosmicPassPaywallDialog) {
-            com.example.ui.CosmicPassPaywallDialog(
-                isCurrentActive = isCosmicPassActive,
-                onSubscribeTier = { tier ->
-                    viewModel.subscribeCosmicPass(tier)
-                    showCosmicPassPaywallDialog = false
-                    showKikiCallDialog = true
-                },
-                onDismiss = { showCosmicPassPaywallDialog = false }
             )
         }
     }
@@ -557,8 +519,7 @@ private fun JourneyPath(
     onStageLongClick: ((JourneyStageUiModel, Int) -> Unit)? = null,
     onEnsureVisible: ((Float, Float) -> Unit)? = null,
     onCheckChestClaimed: ((Int) -> Boolean)? = null,
-    onClaimSectionChest: ((Int) -> Unit)? = null,
-    onStartKikiCall: (() -> Unit)? = null
+    onClaimSectionChest: ((Int) -> Unit)? = null
 ) {
     val stageStep = 255.dp
     val sectionBreakHeight = 88.dp
@@ -566,7 +527,7 @@ private fun JourneyPath(
     val totalSectionBreaks = if (stages.isEmpty()) 0 else (stages.lastIndex / 10)
     val rewardTop = (stages.size * stageStep.value + totalSectionBreaks * sectionBreakHeight.value + 10).dp
     val multiverseTop = rewardTop + 130.dp
-    val multiverseHeight = 500.dp
+    val multiverseHeight = 440.dp
     val totalPathHeight = multiverseTop + multiverseHeight + 140.dp
 
     val auroraAnim = rememberCosmicAuroraAnimation()
@@ -820,7 +781,6 @@ private fun JourneyPath(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(top = multiverseTop),
-            onStartKikiCall = onStartKikiCall,
             onExploreClick = {
                 showMultiversePreviewDialog = true
             }
@@ -829,7 +789,6 @@ private fun JourneyPath(
         if (showMultiversePreviewDialog) {
             CosmicMultiversePreviewDialog(
                 isEnglish = isEnglish,
-                onStartKikiCall = onStartKikiCall,
                 onDismiss = { showMultiversePreviewDialog = false }
             )
         }

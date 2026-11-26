@@ -268,13 +268,18 @@ fun ProfileScreen(
                         )
                     }
                     KikiExplorerSection.VOCABULARY -> {
+                        val openFullscreenOverlay = com.example.ui.LocalOpenFullscreenOverlay.current
                         ProfileVocabularySection(
                             vocabularyList = vocabularyList,
                             masteredCount = masteredVocabCount,
                             isEnglish = isEnglish,
                             onOpenFlashcards = {
                                 haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.TextHandleMove)
-                                showVaultDialog = true
+                                if (openFullscreenOverlay != null) {
+                                    openFullscreenOverlay(com.example.ui.FullscreenOverlayType.VOCABULARY_VAULT)
+                                } else {
+                                    showVaultDialog = true
+                                }
                             },
                             onAddWord = {
                                 haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.TextHandleMove)
@@ -292,13 +297,18 @@ fun ProfileScreen(
                         )
                     }
                     KikiExplorerSection.MISTAKES -> {
+                        val openFullscreenOverlay = com.example.ui.LocalOpenFullscreenOverlay.current
                         ProfileMistakesSection(
                             weakPoints = weakPoints,
                             curedCount = curedWeakPoints,
                             isEnglish = isEnglish,
                             onStartClinic = {
                                 haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.TextHandleMove)
-                                showClinicDialog = true
+                                if (openFullscreenOverlay != null) {
+                                    openFullscreenOverlay(com.example.ui.FullscreenOverlayType.WEAK_POINTS_CLINIC)
+                                } else {
+                                    showClinicDialog = true
+                                }
                             },
                             onResolveSingle = { weakId ->
                                 viewModel.resolveWeakPoint(weakId)

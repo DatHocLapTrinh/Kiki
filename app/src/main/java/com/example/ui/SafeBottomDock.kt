@@ -2,12 +2,17 @@ package com.example.ui
 
 import android.view.ViewGroup
 import android.view.WindowManager
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.composed
@@ -19,6 +24,43 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.DialogWindowProvider
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsControllerCompat
+
+/**
+ * Full-screen in-window overlay destinations hosted directly in MainNavigation so they
+ * inherit true Activity edge-to-edge WindowInsets without OEM Dialog sub-window shifting.
+ */
+enum class FullscreenOverlayType {
+    VOCABULARY_VAULT,
+    WEAK_POINTS_CLINIC
+}
+
+/**
+ * CompositionLocal launcher provided by MainNavigation to open full-screen views in-window.
+ */
+val LocalOpenFullscreenOverlay = staticCompositionLocalOf<((FullscreenOverlayType) -> Unit)?> { null }
+
+/**
+ * Renders full-screen modal content inside the Activity's root Compose hierarchy, handling
+ * back navigation and blocking background touches without spawning a floating Dialog window.
+ */
+@Composable
+fun FullscreenInWindowOverlay(
+    onDismiss: () -> Unit,
+    content: @Composable () -> Unit
+) {
+    BackHandler(onBack = onDismiss)
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .clickable(
+                interactionSource = remember { MutableInteractionSource() },
+                indication = null,
+                onClick = {}
+            )
+    ) {
+        content()
+    }
+}
 
 /**
  * Configures a Compose Dialog's native Window to span edge-to-edge full-screen cleanly,
@@ -58,10 +100,13 @@ fun Modifier.safeBottomDockPadding(
     minClearance: Dp = 36.dp,
     extraPadding: Dp = 16.dp
 ): Modifier = composed {
-    val navInsets = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
-    // Nếu hệ thống trả về insets hợp lệ (> 0dp) thì dùng insets + extraPadding.
-    // Nếu insets bị nuốt (như trong Compose Dialog = 0dp), tự động kích hoạt ngưỡng an toàn tối thiểu (minClearance + extraPadding).
-    val baseClearance = if (navInsets > 0.dp) navInsets else minClearance
+    val bottomSystemInset = WindowInsets.navigationBars
+        .union(WindowInsets.displayCutout)
+        .asPaddingValues()
+        .calculateBottomPadding()
+    // Đảm bảo luôn đạt ít nhất minClearance ngay cả trên các ROM HyperOS/MIUI
+    // báo navigationBars nhỏ hơn vùng vuốt cử chỉ & bo góc màn hình thực tế.
+    val baseClearance = maxOf(bottomSystemInset, minClearance)
     this.padding(bottom = baseClearance + extraPadding)
 }
 
