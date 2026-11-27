@@ -97,7 +97,7 @@ fun IdentityContent(
             )
 
             Text(
-                text = "Gia Sư Tiếng Anh AI Cá Nhân Hóa",
+                text = strings.aiTutorSubtitle,
                 fontSize = 13.sp,
                 fontWeight = FontWeight.Medium,
                 color = Color(0xFF51FAC1),
@@ -125,7 +125,7 @@ fun IdentityContent(
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     Text(
-                        text = "Chào mừng bạn trở lại!",
+                        text = strings.welcomeBack,
                         color = Color.White,
                         fontSize = 18.sp,
                         fontWeight = FontWeight.ExtraBold,
@@ -133,7 +133,7 @@ fun IdentityContent(
                     )
 
                     Text(
-                        text = "Đăng nhập để đồng bộ tiến trình học và mở khóa huy hiệu",
+                        text = strings.welcomeBackSubtitle,
                         color = Color(0x99FFFFFF),
                         fontSize = 12.sp,
                         textAlign = TextAlign.Center,
@@ -184,7 +184,7 @@ fun IdentityContent(
                             color = Color(0x26FFFFFF)
                         )
                         Text(
-                            text = "HOẶC",
+                            text = strings.orDivider,
                             color = Color(0x66FFFFFF),
                             fontSize = 11.sp,
                             fontWeight = FontWeight.SemiBold,
@@ -215,7 +215,7 @@ fun IdentityContent(
                         )
                         Spacer(modifier = Modifier.width(6.dp))
                         Text(
-                            text = if (showEmailForm) "Ẩn đăng nhập Email" else "Đăng nhập bằng Email & Mật khẩu",
+                            text = if (showEmailForm) strings.hideEmailFormLabel else strings.showEmailFormLabel,
                             color = Color(0xFF51FAC1),
                             fontSize = 13.sp,
                             fontWeight = FontWeight.SemiBold
@@ -299,7 +299,7 @@ fun IdentityContent(
                 )
                 Spacer(modifier = Modifier.width(6.dp))
                 Text(
-                    text = "Bảo mật tài khoản & đồng bộ đám mây",
+                    text = strings.secureAccountHint,
                     color = Color(0x66FFFFFF),
                     fontSize = 11.sp
                 )
@@ -313,6 +313,7 @@ fun GoogleSignInButton(
     isLoading: Boolean,
     onClick: () -> Unit
 ) {
+    val strings = LocalAppStrings.current
     Box(
         modifier = Modifier
             .fillMaxWidth()
@@ -337,7 +338,7 @@ fun GoogleSignInButton(
                 GoogleLogo(modifier = Modifier.size(22.dp))
                 Spacer(modifier = Modifier.width(12.dp))
                 Text(
-                    text = "Tiếp tục với Google",
+                    text = strings.continueWithGoogle,
                     color = Color(0xFF1F1F1F),
                     fontWeight = FontWeight.Bold,
                     fontSize = 15.sp
@@ -352,6 +353,7 @@ fun GuestSignInButton(
     isLoading: Boolean,
     onClick: () -> Unit
 ) {
+    val strings = LocalAppStrings.current
     Box(
         modifier = Modifier
             .fillMaxWidth()
@@ -385,7 +387,7 @@ fun GuestSignInButton(
                 )
                 Spacer(modifier = Modifier.width(10.dp))
                 Text(
-                    text = "Đang khởi tạo tài khoản Khách...",
+                    text = strings.initializingGuest,
                     color = Color(0xFF51FAC1),
                     fontWeight = FontWeight.Bold,
                     fontSize = 14.sp
@@ -404,7 +406,7 @@ fun GuestSignInButton(
                 )
                 Spacer(modifier = Modifier.width(10.dp))
                 Text(
-                    text = "Khám phá ngay (Chế độ Khách)",
+                    text = strings.exploreAsGuest,
                     color = Color(0xFF51FAC1),
                     fontWeight = FontWeight.Bold,
                     fontSize = 14.sp

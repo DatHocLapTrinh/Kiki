@@ -368,7 +368,11 @@ fun QuestReviewScreen(viewModel: StudyViewModel, onBack: () -> Unit) {
                                     val correctText = item.options.getOrNull(item.correctIndex) ?: ""
                                     viewModel.askQuestion(
                                         context,
-                                        "Giải thích chi tiết vì sao câu: \"${item.question}\" lại có đáp án đúng là \"$correctText\". Phân tích từ vựng và quy tắc ngữ pháp liên quan.",
+                                        if (isEnglish) {
+                                            "Explain in detail why for the question: \"${item.question}\", the correct answer is \"$correctText\". Analyze key vocabulary and relevant grammar rules."
+                                        } else {
+                                            "Giải thích chi tiết vì sao câu: \"${item.question}\" lại có đáp án đúng là \"$correctText\". Phân tích từ vựng và quy tắc ngữ pháp liên quan."
+                                        },
                                         null
                                     )
                                     Toast.makeText(

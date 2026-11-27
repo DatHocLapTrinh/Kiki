@@ -38,7 +38,19 @@ import com.example.JourneyStageUiModel
  * Ví dụ: "Chặng 1: Sao Thủy - Chào Hỏi & Làm Quen Cơ Bản (Mercury: Greetings & Hello)"
  *      -> "Chào Hỏi & Làm Quen Cơ Bản"
  */
-fun cleanLessonTitle(rawTitle: String): String {
+fun cleanLessonTitle(rawTitle: String, isEnglish: Boolean = false): String {
+    if (isEnglish) {
+        val match = Regex("\\(([^)]+)\\)").find(rawTitle)
+        if (match != null) {
+            var en = match.groupValues[1].trim()
+            if (en.contains(":")) {
+                en = en.substringAfterLast(":").trim()
+            } else if (en.contains(" - ")) {
+                en = en.substringAfterLast(" - ").trim()
+            }
+            if (en.isNotBlank()) return en
+        }
+    }
     // 1. Loại bỏ phần trong ngoặc đơn (phần song ngữ tiếng Anh)
     var cleaned = rawTitle.replace(Regex("\\s*\\([^)]*\\)"), "").trim()
     // 2. Nếu có dấu gạch ngang (Chặng X: Tên Hành Tinh - Nội dung bài học), lấy nội dung bài học
@@ -82,8 +94,8 @@ fun CosmicPlanetLessonPopup(
 
     val isLocked = stage.state == JourneyStageState.LOCKED
     val isCompleted = stage.state == JourneyStageState.COMPLETED
-    val cleanTitle = remember(stage.title) {
-        cleanLessonTitle(stage.title)
+    val cleanTitle = remember(stage.title, isEnglish) {
+        cleanLessonTitle(stage.title, isEnglish)
     }
 
     val popupShape = remember(arrowX) {
@@ -242,7 +254,9 @@ fun CosmicPlanetLessonPopup(
                             },
                             color = buttonTextColor,
                             fontWeight = FontWeight.Black,
-                            fontSize = 13.5.sp,
+                            fontSize = if (isRecharge) 11.5.sp else 13.sp,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
                             letterSpacing = 0.5.sp
                         )
                     }

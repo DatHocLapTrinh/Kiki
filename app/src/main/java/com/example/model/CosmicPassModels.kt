@@ -43,7 +43,37 @@ enum class CosmicPassTier(
         savingsBadge = "NẠP NHANH",
         isBestValue = false,
         bonusDescription = "Hồi đầy 5 Tim ngay lập tức hoặc mua vật phẩm tại Cửa hàng"
-    )
+    );
+
+    fun getTitle(isEnglish: Boolean): String = if (isEnglish) when (this) {
+        ANNUAL -> "1-Year Cosmic Plan"
+        MONTHLY -> "1-Month Flexible Plan"
+        STAR_BUNDLE -> "100 Cosmic Stars Pack"
+    } else title
+
+    fun getPeriodLabel(isEnglish: Boolean): String = if (isEnglish) when (this) {
+        ANNUAL -> "Billed annually"
+        MONTHLY -> "Billed monthly"
+        STAR_BUNDLE -> "Instant top-up"
+    } else periodLabel
+
+    fun getMonthlyEquivalent(isEnglish: Boolean): String = if (isEnglish) when (this) {
+        ANNUAL -> "59,000 VND / mo"
+        MONTHLY -> "99,000 VND / mo"
+        STAR_BUNDLE -> "One-time"
+    } else monthlyEquivalent
+
+    fun getSavingsBadge(isEnglish: Boolean): String? = if (isEnglish) when (this) {
+        ANNUAL -> "SAVE 45% • MOST POPULAR"
+        MONTHLY -> null
+        STAR_BUNDLE -> "QUICK PACK"
+    } else savingsBadge
+
+    fun getBonusDescription(isEnglish: Boolean): String = if (isEnglish) when (this) {
+        ANNUAL -> "Includes 10 Shields + Gold Avatar + 7-day free trial"
+        MONTHLY -> "Includes 2 Shields • Flexible renewal monthly"
+        STAR_BUNDLE -> "Instant full refill (5 Hearts) or shop items"
+    } else bonusDescription
 }
 
 data class CosmicPassBenefit(
@@ -52,7 +82,35 @@ data class CosmicPassBenefit(
     val description: String,
     val freeLimitation: String,
     val vipAdvantage: String
-)
+) {
+    fun getDisplayTitle(isEnglish: Boolean): String = if (isEnglish) when (title) {
+        "Trái Tim Học Tập" -> "Learning Hearts"
+        "Kiki AI Super Tutor 24/7" -> "Kiki AI Super Tutor 24/7"
+        "Bảo Vệ Chuỗi Tự Động" -> "Auto Streak Protection"
+        else -> title
+    } else title
+
+    fun getDisplayDescription(isEnglish: Boolean): String = if (isEnglish) when (title) {
+        "Trái Tim Học Tập" -> "Practice speaking & reflexes without interruptions"
+        "Kiki AI Super Tutor 24/7" -> "Free conversation & deep pronunciation analysis with Gemini AI"
+        "Bảo Vệ Chuỗi Tự Động" -> "Cosmic shield automatically saves streak when you are busy"
+        else -> description
+    } else description
+
+    fun getDisplayFreeLimitation(isEnglish: Boolean): String = if (isEnglish) when (title) {
+        "Trái Tim Học Tập" -> "Fixed 5 Hearts (wait 4h to refill)"
+        "Kiki AI Super Tutor 24/7" -> "Limited to 3-5 questions/day"
+        "Bảo Vệ Chuỗi Tự Động" -> "Requires manual shields"
+        else -> freeLimitation
+    } else freeLimitation
+
+    fun getDisplayVipAdvantage(isEnglish: Boolean): String = if (isEnglish) when (title) {
+        "Trái Tim Học Tập" -> "UNLIMITED HEARTS (Learn freely)"
+        "Kiki AI Super Tutor 24/7" -> "UNLIMITED QUESTIONS"
+        "Bảo Vệ Chuỗi Tự Động" -> "AUTO STREAK PROTECTION"
+        else -> vipAdvantage
+    } else vipAdvantage
+}
 
 object CosmicPassConfig {
     val benefits = listOf(

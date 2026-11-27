@@ -73,6 +73,7 @@ import com.example.model.CosmicPassTier
 @Composable
 fun CosmicPassPaywallDialog(
     isCurrentActive: Boolean = false,
+    isEnglish: Boolean = false,
     onSubscribeTier: (CosmicPassTier) -> Unit,
     onDismiss: () -> Unit
 ) {
@@ -179,7 +180,7 @@ fun CosmicPassPaywallDialog(
                         ) {
                             Icon(
                                 imageVector = Icons.Default.Close,
-                                contentDescription = "Đóng",
+                                contentDescription = if (isEnglish) "Close" else "Đóng",
                                 tint = Color.White,
                                 modifier = Modifier.size(18.dp)
                             )
@@ -241,7 +242,7 @@ fun CosmicPassPaywallDialog(
                                 contentAlignment = Alignment.Center
                             ) {
                                 Text(
-                                    text = "✨ ĐỒNG HÀNH KHÔNG GIỚI HẠN CÙNG KIKI HOÀNG GIA ✨",
+                                    text = if (isEnglish) "✨ UNLIMITED COMPANIONSHIP WITH ROYAL KIKI ✨" else "✨ ĐỒNG HÀNH KHÔNG GIỚI HẠN CÙNG KIKI HOÀNG GIA ✨",
                                     color = Color(0xFFFFE066),
                                     fontSize = 10.5.sp,
                                     fontWeight = FontWeight.Bold,
@@ -254,7 +255,7 @@ fun CosmicPassPaywallDialog(
 
                         // Tiêu đề & Lời hứa giá trị
                         Text(
-                            text = "Khai Mở Toàn Bộ Sức Mạnh Vũ Trụ 👑",
+                            text = if (isEnglish) "Unlock Full Cosmic Power 👑" else "Khai Mở Toàn Bộ Sức Mạnh Vũ Trụ 👑",
                             color = Color.White,
                             fontSize = 18.sp,
                             fontWeight = FontWeight.Black,
@@ -262,7 +263,7 @@ fun CosmicPassPaywallDialog(
                         )
                         Spacer(modifier = Modifier.height(4.dp))
                         Text(
-                            text = "Học không giới hạn • Tự tin bứt phá giao tiếp phản xạ tự nhiên",
+                            text = if (isEnglish) "Unlimited learning • Speak English with natural reflexes" else "Học không giới hạn • Tự tin bứt phá giao tiếp phản xạ tự nhiên",
                             color = Color(0xCCFFFFFF),
                             fontSize = 12.sp,
                             textAlign = TextAlign.Center
@@ -280,6 +281,7 @@ fun CosmicPassPaywallDialog(
                                 PricingTierCard(
                                     tier = tier,
                                     isSelected = isSelected,
+                                    isEnglish = isEnglish,
                                     onClick = {
                                         haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
                                         selectedTier = tier
@@ -306,7 +308,7 @@ fun CosmicPassPaywallDialog(
                         ) {
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 Text(
-                                    text = "💎 SO SÁNH QUYỀN LỢI VIP",
+                                    text = if (isEnglish) "💎 VIP BENEFITS COMPARISON" else "💎 SO SÁNH QUYỀN LỢI VIP",
                                     color = Color(0xFFFFD700),
                                     fontSize = 12.sp,
                                     fontWeight = FontWeight.ExtraBold,
@@ -329,7 +331,7 @@ fun CosmicPassPaywallDialog(
                                 verticalArrangement = Arrangement.spacedBy(8.dp)
                             ) {
                                 CosmicPassConfig.benefits.forEach { benefit ->
-                                    BenefitComparisonRow(benefit = benefit)
+                                    BenefitComparisonRow(benefit = benefit, isEnglish = isEnglish)
                                 }
                             }
                         }
@@ -395,9 +397,9 @@ fun CosmicPassPaywallDialog(
                                         Spacer(modifier = Modifier.width(8.dp))
                                         Text(
                                             text = when (selectedTier) {
-                                                CosmicPassTier.ANNUAL -> "DÙNG THỬ 7 NGÀY MIỄN PHÍ"
-                                                CosmicPassTier.MONTHLY -> "NÂNG CẤP GÓI 1 THÁNG NGAY"
-                                                CosmicPassTier.STAR_BUNDLE -> "NẠP 100 SAO VŨ TRỤ"
+                                                CosmicPassTier.ANNUAL -> if (isEnglish) "START 7-DAY FREE TRIAL" else "DÙNG THỬ 7 NGÀY MIỄN PHÍ"
+                                                CosmicPassTier.MONTHLY -> if (isEnglish) "UPGRADE 1-MONTH PASS" else "NÂNG CẤP GÓI 1 THÁNG NGAY"
+                                                CosmicPassTier.STAR_BUNDLE -> if (isEnglish) "TOP UP 100 COSMIC STARS" else "NẠP 100 SAO VŨ TRỤ"
                                             },
                                             color = Color(0xFF180E02),
                                             fontSize = 14.sp,
@@ -412,9 +414,9 @@ fun CosmicPassPaywallDialog(
 
                             Text(
                                 text = when (selectedTier) {
-                                    CosmicPassTier.ANNUAL -> "Sau 7 ngày: 708.000 đ/năm (59.000 đ/tháng) • Hủy bất kỳ lúc nào"
-                                    CosmicPassTier.MONTHLY -> "Thanh toán 99.000 đ/tháng • Tự động gia hạn • Hủy mọi lúc"
-                                    CosmicPassTier.STAR_BUNDLE -> "Thanh toán 1 lần 19.000 đ • Nhận 100 Sao ngay lập tức"
+                                    CosmicPassTier.ANNUAL -> if (isEnglish) "After 7 days: 708,000 VND/year (59,000 VND/mo) • Cancel anytime" else "Sau 7 ngày: 708.000 đ/năm (59.000 đ/tháng) • Hủy bất kỳ lúc nào"
+                                    CosmicPassTier.MONTHLY -> if (isEnglish) "99,000 VND/month • Auto-renews • Cancel anytime" else "Thanh toán 99.000 đ/tháng • Tự động gia hạn • Hủy mọi lúc"
+                                    CosmicPassTier.STAR_BUNDLE -> if (isEnglish) "One-time 19,000 VND • Instant 100 Stars" else "Thanh toán 1 lần 19.000 đ • Nhận 100 Sao ngay lập tức"
                                 },
                                 color = Color(0x99FFFFFF),
                                 fontSize = 10.5.sp,
@@ -435,6 +437,7 @@ fun CosmicPassPaywallDialog(
 private fun PricingTierCard(
     tier: CosmicPassTier,
     isSelected: Boolean,
+    isEnglish: Boolean = false,
     onClick: () -> Unit
 ) {
     val borderColor = if (isSelected) Color(0xFFFFD700) else Color(0x28FFFFFF)
@@ -489,13 +492,13 @@ private fun PricingTierCard(
 
                     Column {
                         Text(
-                            text = tier.title,
+                            text = tier.getTitle(isEnglish),
                             color = if (isSelected) Color.White else Color(0xDDFFFFFF),
                             fontSize = 14.sp,
                             fontWeight = FontWeight.Bold
                         )
                         Text(
-                            text = tier.periodLabel,
+                            text = tier.getPeriodLabel(isEnglish),
                             color = Color(0x88FFFFFF),
                             fontSize = 11.sp
                         )
@@ -505,7 +508,7 @@ private fun PricingTierCard(
                 // Cột giá
                 Column(horizontalAlignment = Alignment.End) {
                     Text(
-                        text = tier.monthlyEquivalent,
+                        text = tier.getMonthlyEquivalent(isEnglish),
                         color = if (isSelected) Color(0xFFFFD700) else Color.White,
                         fontSize = 13.5.sp,
                         fontWeight = FontWeight.ExtraBold
@@ -522,7 +525,7 @@ private fun PricingTierCard(
             }
 
             // Badge tiết kiệm nếu có
-            tier.savingsBadge?.let { badge ->
+            tier.getSavingsBadge(isEnglish)?.let { badge ->
                 Spacer(modifier = Modifier.height(8.dp))
                 Box(
                     modifier = Modifier
@@ -548,7 +551,7 @@ private fun PricingTierCard(
 
             Spacer(modifier = Modifier.height(4.dp))
             Text(
-                text = "🎁 " + tier.bonusDescription,
+                text = "🎁 " + tier.getBonusDescription(isEnglish),
                 color = Color(0xB3FFD700),
                 fontSize = 10.5.sp,
                 fontWeight = FontWeight.Medium
@@ -561,7 +564,10 @@ private fun PricingTierCard(
  * Một dòng so sánh đặc quyền giữa Free và VIP.
  */
 @Composable
-private fun BenefitComparisonRow(benefit: com.example.model.CosmicPassBenefit) {
+private fun BenefitComparisonRow(
+    benefit: com.example.model.CosmicPassBenefit,
+    isEnglish: Boolean = false
+) {
     Box(
         modifier = Modifier
             .fillMaxWidth()
@@ -581,13 +587,13 @@ private fun BenefitComparisonRow(benefit: com.example.model.CosmicPassBenefit) {
             Spacer(modifier = Modifier.width(10.dp))
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = benefit.title,
+                    text = benefit.getDisplayTitle(isEnglish),
                     color = Color.White,
                     fontSize = 12.sp,
                     fontWeight = FontWeight.Bold
                 )
                 Text(
-                    text = benefit.vipAdvantage,
+                    text = benefit.getDisplayVipAdvantage(isEnglish),
                     color = Color(0xFFFFD700),
                     fontSize = 10.5.sp,
                     fontWeight = FontWeight.ExtraBold

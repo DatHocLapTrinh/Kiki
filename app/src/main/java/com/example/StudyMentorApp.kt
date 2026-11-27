@@ -1048,6 +1048,7 @@ fun MainNavigation(viewModel: StudyViewModel, onLogout: () -> Unit) {
         if (showCosmicPassPaywall) {
             com.example.ui.CosmicPassPaywallDialog(
                 isCurrentActive = isCosmicPassActive,
+                isEnglish = isEnglish,
                 onSubscribeTier = { tier ->
                     viewModel.subscribeCosmicPass(tier)
                     showCosmicPassPaywall = false

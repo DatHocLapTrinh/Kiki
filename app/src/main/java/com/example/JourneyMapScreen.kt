@@ -405,6 +405,7 @@ fun JourneyMapScreen(
         if (showCosmicPassPaywallDialog) {
             com.example.ui.CosmicPassPaywallDialog(
                 isCurrentActive = isCosmicPassActive,
+                isEnglish = isEnglish,
                 onSubscribeTier = { tier ->
                     viewModel.subscribeCosmicPass(tier)
                     showCosmicPassPaywallDialog = false

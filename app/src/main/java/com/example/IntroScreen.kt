@@ -40,6 +40,7 @@ import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
@@ -526,18 +527,22 @@ fun IntroContent(currentX: Float, currentY: Float, onBurst: (x: Float, y: Float)
                             )
                         }
                     }
-                    .padding(32.dp)
+                    .padding(horizontal = 20.dp, vertical = 26.dp)
             ) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.fillMaxWidth()) {
                     ChromaticText("KIKI HIHI")
                     Spacer(modifier = Modifier.height(16.dp))
                     val strings = LocalAppStrings.current
                     Text(
-                        strings.awakenMagic,
+                        text = strings.awakenMagic,
                         color = Color.White.copy(alpha = 0.9f),
-                        letterSpacing = 6.sp,
+                        letterSpacing = if (strings.awakenMagic.length > 18) 2.sp else 5.sp,
                         fontWeight = FontWeight.Medium,
-                        fontSize = 15.sp
+                        fontSize = if (strings.awakenMagic.length > 18) 13.5.sp else 15.sp,
+                        textAlign = TextAlign.Center,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.fillMaxWidth()
                     )
                     Spacer(modifier = Modifier.height(32.dp))
                     UltimateButton(

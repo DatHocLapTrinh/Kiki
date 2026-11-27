@@ -563,7 +563,7 @@ fun CosmicMultiversePreviewDialog(
                         accentColor = Color(0xFF00F5D4),
                         title = if (isEnglish) "Live Persona" else "Persona Sống",
                         desc = if (isEnglish) "Real-time 1-on-1 spoken AI practice" else "Luyện nói phản xạ 1-1 tự nhiên",
-                        badgeText = "GỌI KIKI 📞",
+                        badgeText = if (isEnglish) "CALL KIKI 📞" else "GỌI KIKI 📞",
                         onClick = onStartKikiCall?.let { callAction ->
                             {
                                 onDismiss()

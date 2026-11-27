@@ -1,4 +1,4 @@
-﻿package com.example
+package com.example
 
 import androidx.compose.runtime.staticCompositionLocalOf
 
@@ -43,6 +43,15 @@ data class AppStrings(
     val login: String = "Đăng Nhập",
     val alreadyHaveAccount: String = "Đã có tài khoản? Đăng nhập",
     val dontHaveAccount: String = "Chưa có tài khoản? Đăng ký",
+    val aiTutorSubtitle: String = "Gia Sư Tiếng Anh AI Cá Nhân Hóa",
+    val welcomeBackSubtitle: String = "Đăng nhập để đồng bộ tiến trình học và mở khóa huy hiệu",
+    val continueWithGoogle: String = "Tiếp tục với Google",
+    val exploreAsGuest: String = "Khám phá ngay (Chế độ Khách)",
+    val orDivider: String = "HOẶC",
+    val showEmailFormLabel: String = "Đăng nhập bằng Email & Mật khẩu",
+    val hideEmailFormLabel: String = "Ẩn đăng nhập Email",
+    val secureAccountHint: String = "Bảo mật tài khoản & đồng bộ đám mây",
+    val initializingGuest: String = "Đang khởi tạo tài khoản Khách...",
     // MainMapScreen
     val noChaptersFound: String = "Không tìm thấy chương nào cho cấp độ của bạn. Vui lòng thử lại!",
     val manaLabel: String = "NĂNG LƯỢNG",
@@ -321,6 +330,15 @@ val EnglishStrings = AppStrings(
     login = "Login",
     alreadyHaveAccount = "Already have an account? Login",
     dontHaveAccount = "Don't have an account? Sign Up",
+    aiTutorSubtitle = "Personalized AI English Tutor",
+    welcomeBackSubtitle = "Sign in to sync your progress and unlock badges",
+    continueWithGoogle = "Continue with Google",
+    exploreAsGuest = "Explore Now (Guest Mode)",
+    orDivider = "OR",
+    showEmailFormLabel = "Sign in with Email & Password",
+    hideEmailFormLabel = "Hide Email Sign-in",
+    secureAccountHint = "Account security & cloud synchronization",
+    initializingGuest = "Initializing Guest Account...",
     
     noChaptersFound = "No chapters found for your level. Try another preference!",
     manaLabel = "ENERGY",

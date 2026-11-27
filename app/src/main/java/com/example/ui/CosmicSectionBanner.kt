@@ -411,7 +411,7 @@ fun CosmicSectionBanner(
                         )
                         Spacer(modifier = Modifier.width(4.dp))
                         Text(
-                            text = if (isEnglish) "Chặng 1-4 🌌" else "Chặng 1-4 🌌",
+                            text = if (isEnglish) "Section 1-4 🌌" else "Chặng 1-4 🌌",
                             color = Color.White,
                             fontSize = 11.sp,
                             fontWeight = FontWeight.ExtraBold
